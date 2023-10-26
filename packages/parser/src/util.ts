@@ -53,19 +53,35 @@ export function logGrammar(verbose: number, msg: string): void {
     }
 }
 
-export class Options {
-    public maxRecursion: number = 2; 
-    public maxChars: number = 100;
-    public verbose: number = SILENT;
-    public optimizeAtomicity: boolean = true;
-    public directionLTR: boolean = false;
+export type Options = {
+    maxRecursion: number, 
+    maxChars: number,
+    verbose: number,
+    optimizeAtomicity: boolean,
+    directionLTR: boolean
+}
+
+export const DEFAULT_OPTIONS: Options = {
+    maxRecursion: 2, 
+    maxChars: 100,
+    verbose: SILENT,
+    optimizeAtomicity: true,
+    directionLTR: true
+}
+
+export function Options(opt: Partial<Options> = {}): Options {
+    return {...DEFAULT_OPTIONS, ...opt};
 }
 
 export class Env {
 
+    public opt: Options;
+
     constructor(
-        public opt: Options
-    ) { }
+        opt: Partial<Options> = {}
+    ) { 
+        this.opt = Options(opt);
+    }
 
 }
 

@@ -20,7 +20,6 @@ import { PassEnv } from '../src/passes';
 import { NAME_PASSES } from '../src/passes/allPasses';
 import { lengthRange } from '../src/passes/infinityProtection';
 import { Grammar } from '../src/grammars';
-import { Options } from '../src/util';
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -46,7 +45,7 @@ function testLength(
     tape: string, 
     expectedLength: [number, number] | null,
 ): void {
-    const env: PassEnv = new PassEnv(new Options())
+    const env: PassEnv = new PassEnv();
 
     grammar.calculateTapes(new CounterStack(), env);
     const length = lengthRange(grammar, tape, new CounterStack(2), env);

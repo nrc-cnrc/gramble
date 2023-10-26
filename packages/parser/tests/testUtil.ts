@@ -7,7 +7,7 @@ import { Grammar } from "../src/grammars";
 import { Tape } from "../src/tapes";
 import {
     HIDDEN_PREFIX, StringDict,
-    SILENT, VERBOSE_DEBUG, logDebug, timeIt,
+    SILENT, VERBOSE_DEBUG, logDebug, timeIt, Options,
 } from "../src/util";
 
 export const DEFAULT_MAX_RECURSION = 4;
@@ -150,14 +150,14 @@ export function testMatchOutputs(
 
 export function prepareInterpreter(
     grammar: Grammar | Interpreter,
-    verbose: number = SILENT,
+    opt: Options,
     symbolName: string = "",
-    maxRecursion: number = DEFAULT_MAX_RECURSION,
-    throwError: boolean = false // in case a test wants to catch errors itself
+    throwError: boolean = false, // in case a test wants to catch errors itself
 ): Interpreter {
+
     const interpreter = (grammar instanceof Interpreter) ?
                         grammar :
-                        Interpreter.fromGrammar(grammar, {verbose: verbose, maxRecursion:maxRecursion});
+                        Interpreter.fromGrammar(grammar, opt);
     
     // In case there are any tests, we want to run them so their errors accumulate
     interpreter.runTests();
@@ -182,15 +182,18 @@ export function prepareInterpreter(
 
 export function generateOutputsFromGrammar(
     grammar: Grammar | Interpreter,
-    verbose: number = SILENT,
+    opt: Partial<Options> = {},
     symbolName: string = "",
     restriction: StringDict[] | StringDict = {},
-    maxRecursion: number = DEFAULT_MAX_RECURSION,
     stripHidden: boolean = true,
-    throwError: boolean = false // in case a test wants to catch errors itself
+    throwError: boolean = false, // in case a test wants to catch errors itself
 ): StringDict[] {
-    maxRecursion = Math.min(maxRecursion, DEBUG_MAX_RECURSION);
-    const interpreter = prepareInterpreter(grammar, verbose, symbolName, maxRecursion, throwError);
+    
+    const opts = Options(opt);
+
+    opts.maxRecursion = Math.min(opts.maxRecursion, DEBUG_MAX_RECURSION);
+    const interpreter = prepareInterpreter(grammar, opts, 
+        symbolName, throwError);
                           
     let outputs: StringDict[] = [];
 
@@ -214,18 +217,17 @@ export function generateOutputsFromGrammar(
 export function testGenerate(
     grammar: Grammar | Interpreter,
     expectedResults: StringDict[],
-    verbose: number = SILENT,
+    opt: Options,
     symbolName: string = "",
     restriction: StringDict[] | StringDict = {},
-    maxRecursion: number = DEFAULT_MAX_RECURSION,
     stripHidden: boolean = true,
     allowDuplicateOutputs: boolean = false,
     shortDesc: string = ""
 ): void {
     timeIt(() => {
         const outputs: StringDict[] =
-            generateOutputsFromGrammar(grammar, verbose, symbolName,
-                                restriction, maxRecursion, stripHidden);
+            generateOutputsFromGrammar(grammar, opt, symbolName,
+                                restriction, stripHidden, false);
         testNumOutputs(outputs, expectedResults.length,
                        allowDuplicateOutputs, symbolName);
         testMatchOutputs(outputs, expectedResults, symbolName);

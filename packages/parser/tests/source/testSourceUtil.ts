@@ -2,8 +2,8 @@ import { dirname, basename } from "path";
 import { existsSync } from "fs";
 import { expect } from 'chai';
 
-import { StringDict, SILENT } from '../../src/util';
-import { testErrors, testGenerate } from '../testUtil';
+import { StringDict, SILENT, DEFAULT_MAX_CHARS, Options } from '../../src/util';
+import { DEFAULT_MAX_RECURSION, testErrors, testGenerate } from '../testUtil';
 import { Interpreter } from "../../src/interpreter";
 import { TextDevEnvironment } from "../../src/textInterface";
 
@@ -30,8 +30,12 @@ export interface ProjectTest {
     dir: string,
     results: StringDict[],
     errors: ProjectError[],
-    verbose: number,
     symbol: string
+    verbose: number,
+    directionLTR: boolean,
+    optimizeAtomicity: boolean,
+    maxRecursion: number,
+    maxChars: number,
 }
 
 export function testProject({
@@ -40,9 +44,22 @@ export function testProject({
     dir,
     results = undefined,
     errors = [],
+    symbol = "word",
     verbose = SILENT,
-    symbol = "word"
+    directionLTR = true,
+    optimizeAtomicity = true,
+    maxRecursion = DEFAULT_MAX_RECURSION,
+    maxChars = DEFAULT_MAX_CHARS,
 }: Partial<ProjectTest>): void {
+
+    const opt = Options({
+        verbose: verbose,
+        directionLTR: directionLTR,
+        optimizeAtomicity: optimizeAtomicity,
+        maxRecursion: maxRecursion,
+        maxChars: maxChars
+    });
+
     const projectName = filename || `${dir}${id}`;
     const path = `${dir}/csvs/${projectName}.csv`;
     const abspath = `${TEST_DIR}/${path}`;
@@ -58,7 +75,7 @@ export function testProject({
     });
     testErrors(project, expectedErrors);
     if (results !== undefined) {
-        testGenerate(project, results, verbose, qualifiedName);
+        testGenerate(project, results, opt, qualifiedName);
     }
 }
 

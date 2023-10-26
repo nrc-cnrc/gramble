@@ -14,7 +14,6 @@ import {
     DevEnvironment, Gen, iterTake, 
     msToTime, StringDict, timeIt, 
     stripHiddenTapes, Options,
-    SILENT,
     VERBOSE_TIME,
     logTime,
     logGrammar,
@@ -65,7 +64,7 @@ export class Interpreter {
     // as compilation towards an Expr progresses.
     public grammar: CollectionGrammar;
 
-    public opt: Options = new Options();
+    public opt: Options;
 
     public tapeNS: TapeNamespace = new TapeNamespace();
 
@@ -78,7 +77,7 @@ export class Interpreter {
         opt: Partial<Options> = {}
     ) { 
 
-        Object.assign(this.opt, opt);
+        this.opt = Options(opt);
         const timeVerbose = (this.opt.verbose & VERBOSE_TIME) != 0;
 
         // Next, we perform a variety of grammar-to-grammar passes in order
@@ -131,8 +130,7 @@ export class Interpreter {
         opt: Partial<Options> = {}
     ): Interpreter {
 
-        const passOpts = new Options();
-        Object.assign(passOpts, opt);
+        const passOpts = Options(opt);
 
         // First, load all the sheets
         let startTime = Date.now();

@@ -10,7 +10,7 @@ import {
 export class PassEnv extends Env {
 
     constructor(
-        opt: Options,
+        opt: Partial<Options> = {},
         public symbolNS: Namespace<Grammar> = new Namespace()
     ) { 
         super(opt);

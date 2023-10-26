@@ -4,7 +4,7 @@ import { ParseClass, headerID, parseHeaderCell } from "../../src/headers";
 import { parseOp, autoID as opID } from "../../src/ops";
 import { PassEnv } from "../../src/passes";
 import { CombineLiterals } from "../../src/passes/combineLiterals";
-import { Options, tokenizeUnicode } from "../../src/util";
+import { tokenizeUnicode } from "../../src/util";
 import { Grammar } from "../../src/grammars";
 import { Msgs } from "../../src/msgs";
 //import { autoID } from "../../src/components";
@@ -81,7 +81,7 @@ function testCellID(
     numErrorsExpected: number = 0
 ): void {
     const parseResult = parseCell(parseClass, text);
-    const env = new PassEnv(new Options());
+    const env = new PassEnv();
     const [result, msgs] = new CombineLiterals()
                                 .go(parseResult, env)
                                 .destructure() as [Grammar, Msgs];

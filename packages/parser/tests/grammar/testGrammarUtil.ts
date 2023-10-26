@@ -15,7 +15,7 @@ import {
 } from '../testUtil';
 
 import {
-    StringDict, SILENT
+    StringDict, SILENT, Options, DEFAULT_MAX_CHARS
 } from "../../src/util";
 
 export function grammarTestSuiteName(mod: NodeModule): string {
@@ -28,20 +28,19 @@ export const t3 = (s: string) => Lit("t3", s);
 export const t4 = (s: string) => Lit("t4", s);
 export const t5 = (s: string) => Lit("t5", s);
 
-export interface GrammarTestAux {
+export type GrammarTestAux = {
     grammar: Grammar,
     tapes: string[],
     vocab: {[tape: string]: number},
     results: StringDict[],
-    verbose: number,
     symbol: string,
     restriction: StringDict[] | StringDict,
     maxRecursion: number,
     stripHidden: boolean,
     allowDuplicateOutputs: boolean,
     skipGeneration: boolean,
-    shortDesc: string,
-}
+    shortDesc: string
+} & Options;
 
 export function testGrammarAux({
     grammar,
@@ -49,14 +48,26 @@ export function testGrammarAux({
     vocab,
     results,
     verbose = SILENT,
+    directionLTR = true,
+    optimizeAtomicity = true,
+    maxRecursion = DEFAULT_MAX_RECURSION,
+    maxChars = DEFAULT_MAX_CHARS,
     symbol = "",
     restriction = {},
-    maxRecursion = DEFAULT_MAX_RECURSION,
     stripHidden = true,
     allowDuplicateOutputs = false,
     skipGeneration = false,
     shortDesc = "",
 }: Partial<GrammarTestAux>): void {
+
+    const opt = Options({
+        verbose: verbose,
+        directionLTR: directionLTR,
+        optimizeAtomicity: optimizeAtomicity,
+        maxRecursion: maxRecursion,
+        maxChars: maxChars
+    });
+
     if (grammar === undefined){
         it("grammar must be defined", function() {
             expect(grammar).to.not.be.undefined;
@@ -70,8 +81,8 @@ export function testGrammarAux({
         testHasVocab(grammar, vocab);
     }
     if (!skipGeneration && results !== undefined) {
-        testGenerate(grammar, results, verbose, symbol, restriction,
-            maxRecursion, stripHidden, allowDuplicateOutputs, shortDesc);
+        testGenerate(grammar, results, opt, symbol, restriction,
+            stripHidden, allowDuplicateOutputs, shortDesc);
     } else {
         it("skipping generation", function() {
             expect(skipGeneration).to.be.true;
