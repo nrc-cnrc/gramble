@@ -10,8 +10,6 @@ import {
     SILENT, VERBOSE_DEBUG, logDebug, timeIt, Options,
 } from "../src/util";
 
-export const DEFAULT_MAX_RECURSION = 4;
-
 // DEBUG_MAX_RECURSION is a forced upper bound for maxRecursion.
 export const DEBUG_MAX_RECURSION: number = 4;      // 4
 

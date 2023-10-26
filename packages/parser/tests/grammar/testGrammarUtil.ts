@@ -9,13 +9,13 @@ import {
 } from "../../src/grammarConvenience";
 
 import {
-    DEFAULT_MAX_RECURSION,
     testSuiteName, verbose,
     testHasTapes, testHasVocab, testGenerate
 } from '../testUtil';
 
 import {
-    StringDict, SILENT, Options, DEFAULT_MAX_CHARS
+    StringDict, SILENT, Options, 
+    DEFAULT_MAX_CHARS, DEFAULT_MAX_RECURSION
 } from "../../src/util";
 
 export function grammarTestSuiteName(mod: NodeModule): string {
@@ -28,19 +28,18 @@ export const t3 = (s: string) => Lit("t3", s);
 export const t4 = (s: string) => Lit("t4", s);
 export const t5 = (s: string) => Lit("t5", s);
 
-export type GrammarTestAux = {
+export interface GrammarTestAux extends Options {
     grammar: Grammar,
     tapes: string[],
     vocab: {[tape: string]: number},
     results: StringDict[],
     symbol: string,
     restriction: StringDict[] | StringDict,
-    maxRecursion: number,
     stripHidden: boolean,
     allowDuplicateOutputs: boolean,
     skipGeneration: boolean,
     shortDesc: string
-} & Options;
+};
 
 export function testGrammarAux({
     grammar,

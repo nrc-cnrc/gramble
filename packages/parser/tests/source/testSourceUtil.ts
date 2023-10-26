@@ -2,8 +2,8 @@ import { dirname, basename } from "path";
 import { existsSync } from "fs";
 import { expect } from 'chai';
 
-import { StringDict, SILENT, DEFAULT_MAX_CHARS, Options } from '../../src/util';
-import { DEFAULT_MAX_RECURSION, testErrors, testGenerate } from '../testUtil';
+import { StringDict, SILENT, DEFAULT_MAX_CHARS, Options, DEFAULT_MAX_RECURSION } from '../../src/util';
+import { testErrors, testGenerate } from '../testUtil';
 import { Interpreter } from "../../src/interpreter";
 import { TextDevEnvironment } from "../../src/textInterface";
 

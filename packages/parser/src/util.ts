@@ -19,6 +19,7 @@ export const ALL_SYMBOL_NAME = "All"
 export const AUTO_SYMBOL_NAME = INTERNAL_PREFIX + "Auto"
 
 export const DEFAULT_MAX_CHARS = 100;
+export const DEFAULT_MAX_RECURSION = 4;
 
 export const SILENT = 0;
 export const VERBOSE_TIME = 1;
@@ -53,8 +54,8 @@ export function logGrammar(verbose: number, msg: string): void {
     }
 }
 
-export type Options = {
-    maxRecursion: number, 
+export interface Options {
+    maxRecursion: number,
     maxChars: number,
     verbose: number,
     optimizeAtomicity: boolean,
@@ -62,8 +63,8 @@ export type Options = {
 }
 
 export const DEFAULT_OPTIONS: Options = {
-    maxRecursion: 2, 
-    maxChars: 100,
+    maxRecursion: DEFAULT_MAX_RECURSION, 
+    maxChars: DEFAULT_MAX_CHARS,
     verbose: SILENT,
     optimizeAtomicity: true,
     directionLTR: true
