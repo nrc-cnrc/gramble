@@ -58,7 +58,7 @@ export class Options {
     public maxChars: number = 100;
     public verbose: number = SILENT;
     public optimizeAtomicity: boolean = true;
-    public directionLTR: boolean = true;
+    public directionLTR: boolean = false;
 }
 
 export class Env {

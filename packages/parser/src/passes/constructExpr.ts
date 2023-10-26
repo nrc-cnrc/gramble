@@ -277,8 +277,8 @@ export function constructNotContains(
     env: Env,
     fromTapeName: string,
     children: Expr[], 
-    begin: boolean,
-    end: boolean
+    begin: boolean = false,
+    end: boolean = false,
 ): Expr {
     const dotStar: Expr = constructDotStar(fromTapeName);
     let seq: Expr;
