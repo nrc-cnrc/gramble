@@ -2,8 +2,8 @@ import { testPlaintextID } from "./testParseUtils";
 
 describe(`Parse plaintext`, function() {
 
-    testPlaintextID("1a", "", "");
-    testPlaintextID("1b", " ", "");
+    testPlaintextID("1a", "", "ε");
+    testPlaintextID("1b", " ", "ε");
     testPlaintextID("1c", "()", "()");
     testPlaintextID("1d", "( )", "()");
     testPlaintextID("1e", "1SG", "1SG");
@@ -21,15 +21,15 @@ describe(`Parse plaintext`, function() {
     testPlaintextID("1q", "\\)", ")");
 
     // testing alternation
-    testPlaintextID("2a", "1SG|2SG", "OR[1SG,2SG]");
+    testPlaintextID("2a", "1SG|2SG", "(alt 1SG 2SG)");
     testPlaintextID("2b", "1SG\\|2SG", "1SG|2SG");
     testPlaintextID("2c", "|1SG", "ε", 1);
     testPlaintextID("2d", "1SG|", "ε", 1);
-    testPlaintextID("2e", "(1SG)|(2SG)", "OR[(1SG),(2SG)]");
-    testPlaintextID("2f", "(1SG|2SG)", "OR[(1SG,2SG)]");
+    testPlaintextID("2e", "(1SG)|(2SG)", "(alt (1SG) (2SG))");
+    testPlaintextID("2f", "(1SG|2SG)", "(alt (1SG 2SG))");
     testPlaintextID("2g", "|", "ε", 1);
-    testPlaintextID("2h", "1SG 2SG|3SG", "OR[1SG2SG,3SG]");
-    testPlaintextID("2i", "1SG|2SG 3SG", "OR[1SG,2SG3SG]");
+    testPlaintextID("2h", "1SG 2SG|3SG", "(alt 1SG2SG 3SG)");
+    testPlaintextID("2i", "1SG|2SG 3SG", "(alt 1SG 2SG3SG)");
     testPlaintextID("2j", "\\|", "|");
 
     // plaintext may contain Unicode letters anywhere

@@ -1,5 +1,6 @@
-import { Grammar } from "../grammars";
+import { DotGrammar, Grammar, LiteralGrammar, RepeatGrammar } from "../grammars";
 import { Component } from "../components";
+import { DUMMY_REGEX_TAPE } from "../util";
 
 export function grammarID(
     x: any,
@@ -45,6 +46,30 @@ function setToID<T>(
     return enclose(elements, "{", "}", "", brac);
 }
 
+export function litToID(x: LiteralGrammar): string {
+    if (x.tapeName == DUMMY_REGEX_TAPE && x.text == "") return "ε"
+    if (x.tapeName == DUMMY_REGEX_TAPE) return x.text;
+    return `${x.tapeName}:${x.text}`;
+}
+
+export function dotToID(x: DotGrammar): string {
+    if (x.tapeName == DUMMY_REGEX_TAPE) return ".";
+    return `${x.tapeName}:.`;
+}
+
+export function repeatToID(g: RepeatGrammar): string {
+    let tag = "repeat";
+    let elements: any[] = [g.child];
+
+    if (g.minReps == 0 && g.maxReps == 1) tag = "ques";
+    else if (g.minReps == 1 && g.maxReps == Infinity) tag = "plus";
+    else if (g.minReps == 0 && g.maxReps == Infinity) tag = "star";
+    else elements.push(g.minReps, g.maxReps);
+
+    const strs = elements.map(e => grammarID(e));
+    return enclose([tag, ...strs]);
+}
+
 export function grammarToID(x: Grammar): string {
 
     // first, common "leaf" nodes get abbreviated forms 
@@ -52,8 +77,9 @@ export function grammarToID(x: Grammar): string {
     switch (x.tag) {
         case "epsilon": return "ε";
         case "null":    return "∅";
-        case "lit":     return `${x.tapeName}:${x.text}`;
-        case "dot":     return `${x.tapeName}:.`;
+        case "lit":     return litToID(x);
+        case "dot":     return dotToID(x);
+        case "repeat":  return repeatToID(x);
     }
 
     // otherwise your id is an s-expr created automatically

@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { cellID, parseCell } from "../../src/cell";
+import { parseCell } from "../../src/cell";
 import { ParseClass, headerID, parseHeaderCell } from "../../src/headers";
 import { parseOp, autoID as opID } from "../../src/ops";
 import { PassEnv } from "../../src/passes";
@@ -7,6 +7,7 @@ import { CombineLiterals } from "../../src/passes/combineLiterals";
 import { tokenizeUnicode } from "../../src/util";
 import { Grammar } from "../../src/grammars";
 import { Msgs } from "../../src/msgs";
+import { grammarID } from "../../src/passes/grammarID";
 //import { autoID } from "../../src/components";
 
 export function testHeaderID(
@@ -90,7 +91,7 @@ function testCellID(
     }
     describe(`${testPrefix}"${text}"`, function() {
         it(`should parse as "${expectedID}"`, function() {
-            expect(cellID(result)).to.equal(expectedID);
+            expect(grammarID(result)).to.equal(expectedID);
         });
         it(`should have ${numErrorsExpected} errors`, function() {
             if (msgs.length != numErrorsExpected) {
