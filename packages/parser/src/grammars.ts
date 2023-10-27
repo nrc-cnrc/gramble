@@ -145,11 +145,6 @@ export abstract class AbstractGrammar extends Component {
         return this._tapes;
     }
 
-    /**
-     * A string ID for the grammar, for debugging purposes.
-     */
-    public abstract get id(): string;
-
     public abstract getChildren(): Grammar[];
     
 
@@ -249,10 +244,6 @@ abstract class AtomicGrammar extends AbstractGrammar {
 export class EpsilonGrammar extends AtomicGrammar {
     public readonly tag = "epsilon";
 
-    public get id(): string {
-        return 'ε';
-    }
-
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
             this._tapes = [];
@@ -265,10 +256,6 @@ const EPSILON_GRAMMAR = new EpsilonGrammar();
 
 export class NullGrammar extends AtomicGrammar {
     public readonly tag = "null";
-    
-    public get id(): string {
-        return "∅";
-    }
 
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
@@ -289,10 +276,6 @@ export class LiteralGrammar extends AtomicGrammar {
     ) {
         super();
         this.tokens = tokenizeUnicode(text);
-    }
-
-    public get id(): string {
-        return `${this.tapeName}:${this.text}`;
     }
     
     public collectVocab(
@@ -330,10 +313,6 @@ export class DotGrammar extends AtomicGrammar {
         super();
     }
 
-    public get id(): string {
-        return `Dot(${this.tapeName})`;
-    }
-
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
             this._tapes = [this.tapeName];
@@ -358,19 +337,10 @@ abstract class NAryGrammar extends AbstractGrammar {
 
 export class SequenceGrammar extends NAryGrammar {
     public readonly tag = "seq";
-
-    public get id(): string {
-        return this.children.map(c => c.id).join("+");
-    }
-
 }
 
 export class AlternationGrammar extends NAryGrammar {
     public readonly tag = "alt";
-
-    public get id(): string {
-        return this.children.map(c => c.id).join("|");
-    }
 }
 
 export abstract class UnaryGrammar extends AbstractGrammar {
@@ -402,35 +372,14 @@ abstract class BinaryGrammar extends AbstractGrammar {
 
 export class ShortGrammar extends UnaryGrammar {
     public readonly tag = "short";
-
-    public get id(): string {
-        return `Pref(${this.child.id})`;
-    }
 }
 
 export class IntersectionGrammar extends BinaryGrammar {
     public readonly tag = "intersect";
-
-    public get id(): string {
-        return `Intersect(${this.child1.id},${this.child2.id})`;
-    }
 }
-
-/*
-function fillOutWithDotStar(state: Expr, tapes: string[]) {
-    for (const tape of tapes) {
-        const dotStar = constructDotStar(tape);
-        state = constructBinaryConcat(state, dotStar);
-    } 
-    return state;
-} */
 
 export class JoinGrammar extends BinaryGrammar {
     public readonly tag = "join";
-
-    public get id(): string {
-        return `Join(${this.child1.id},${this.child2.id})`;
-    }
 
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
@@ -455,19 +404,10 @@ export class CountGrammar extends UnaryGrammar {
     ) {
         super(child);
     }
-
-    public get id(): string {
-        return `Count_${this.tapeName}:${this.maxChars}(${this.child.id})`;
-    }
 }
 
 export class FilterGrammar extends BinaryGrammar {
     public readonly tag = "filter";
-
-    public get id(): string {
-        return `Filter(${this.child1.id},${this.child2.id})`;
-    }
-
 }
 
 abstract class ConditionGrammar extends UnaryGrammar {
@@ -483,26 +423,14 @@ abstract class ConditionGrammar extends UnaryGrammar {
 
 export class StartsGrammar extends ConditionGrammar {
     public readonly tag = "starts";
-
-    public get id(): string {
-        return `Starts(${this.child.id})`;
-    }
 }
 
 export class EndsGrammar extends ConditionGrammar {
     public readonly tag = "ends";
-
-    public get id(): string {
-        return `Ends(${this.child.id})`;
-    }
 }
 
 export class ContainsGrammar extends ConditionGrammar {
     public readonly tag = "contains";
-
-    public get id(): string {
-        return `Contains(${this.child.id})`;
-    }
 }
 
 /** This is used internally, to wrap potentially complex grammars
@@ -529,10 +457,6 @@ export class SingleTapeGrammar extends UnaryGrammar {
         child: Grammar
     ) {
         super(child);
-    }
-
-    public get id(): string {
-        return `Tape<${this.tapeName}>(${this.child.id}`;
     }
 
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
@@ -565,10 +489,6 @@ export class RenameGrammar extends UnaryGrammar {
         public toTape: string
     ) {
         super(child);
-    }
-
-    public get id(): string {
-        return `${this.toTape}<-${this.fromTape}(${this.child.id})`;
     }
 
     public collectVocab(
@@ -622,21 +542,10 @@ export class RepeatGrammar extends UnaryGrammar {
     ) {
         super(child);
     }
-
-    public get id(): string {
-        if (this.minReps == 0 && this.maxReps == Infinity) {
-            return `(${this.child.id})*`;
-        }
-        return `Repeat(${this.child.id},${this.minReps},${this.maxReps})`;
-    }
 }
 
 export class NegationGrammar extends UnaryGrammar {
     public readonly tag = "not";
-
-    public get id(): string {
-        return `Not(${this.child.id})`;
-    }
 }
 
 export class CursorGrammar extends UnaryGrammar {
@@ -648,11 +557,6 @@ export class CursorGrammar extends UnaryGrammar {
     ) {
         super(child);
     }
-
-    public get id(): string {
-        return `Cursor_${this.tape}(${this.child.id})`;
-    }
-
 }
 
 export class PreTapeGrammar extends UnaryGrammar {
@@ -664,10 +568,6 @@ export class PreTapeGrammar extends UnaryGrammar {
         child: Grammar
     ) {
         super(child);
-    }
-
-    public get id(): string {
-        return `Pre(${this.child.id})`;
     }
 }
 
@@ -687,10 +587,6 @@ export class HideGrammar extends UnaryGrammar {
         } else if (!toTape.startsWith(HIDDEN_PREFIX)) {
             this.toTape = `${HIDDEN_PREFIX}${toTape}`;
         }
-    }
-    
-    public get id(): string {
-        return `Hide(${this.child.id},${this.tapeName})`;
     }
     
     public collectVocab(
@@ -742,10 +638,6 @@ export class MatchGrammar extends UnaryGrammar {
         public vocabBypass: boolean = false
     ) {
         super(child);
-    }
-
-    public get id(): string {
-        return `Match(${this.fromTape}->${this.toTape}:${this.child.id})`;
     }
 
     /**
@@ -823,14 +715,6 @@ export class CollectionGrammar extends AbstractGrammar {
                             symbolName);
     }
 
-    public get id(): string {
-        let results: string[] = [];
-        for (const [k, v] of Object.entries(this.symbols)) {
-            results.push(`${k}:${v.id}`);
-        }
-        return `Ns(\n  ${results.join("\n  ")}\n)`;
-    }
-
     public allSymbols(): string[] {
         return Object.keys(this.symbols);
     }
@@ -897,10 +781,6 @@ export class EmbedGrammar extends AtomicGrammar {
         public name: string
     ) {
         super();
-    }
-
-    public get id(): string {
-        return `{${this.name}}`;
     }
 
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
@@ -972,11 +852,6 @@ export class LocatorGrammar extends UnaryGrammar {
         return this.position;
     }
 
-    public get id(): string {
-        return this.child.id;
-        //return `${this.pos}@${this.child.id}`;
-    }
-
 }
 
 export abstract class AbstractTestGrammar extends UnaryGrammar {
@@ -987,10 +862,6 @@ export abstract class AbstractTestGrammar extends UnaryGrammar {
         public uniques: LiteralGrammar[] = []
     ) {
         super(child);
-    }
-
-    public get id(): string {
-        return this.child.id;
     }
 
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
@@ -1033,11 +904,6 @@ export class ReplaceBlockGrammar extends AbstractGrammar {
     ) {
         super();
     }
-
-    public get id(): string {
-        const cs = this.rules.map(r => r.id).join(",");
-        return `ReplaceBlock(${this.child.id},${cs})`;
-    }
     
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
@@ -1059,10 +925,6 @@ export class ReplaceBlockGrammar extends AbstractGrammar {
 
 export class CorrespondGrammar extends UnaryGrammar {
     public readonly tag = "correspond";
-
-    public get id(): string {
-        return `Cor_${this.tape1}>${this.tape2}(${this.child.id})`;
-    }
     
     constructor(
         child: Grammar,
@@ -1077,10 +939,6 @@ export class CorrespondGrammar extends UnaryGrammar {
 let REPLACE_INDEX = 0;
 export class ReplaceGrammar extends AbstractGrammar {
     public readonly tag = "replace";
-
-    public get id(): string {
-        return `Replace(${this.fromGrammar.id}->${this.toGrammar.id}|${this.preContext.id}_${this.postContext.id})`;
-    }
 
     constructor(
         public fromGrammar: Grammar,
@@ -1158,10 +1016,6 @@ export class RuleContextGrammar extends AbstractGrammar {
         public ends: boolean = false
     ) {
         super();
-    }
-
-    public get id(): string {
-        throw new Error("Method not implemented.");
     }
 
     public getChildren(): Grammar[] {

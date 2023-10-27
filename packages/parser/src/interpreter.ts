@@ -2,7 +2,7 @@ import {
     Grammar, 
     CollectionGrammar,
     LocatorGrammar,
-    JoinGrammar
+    JoinGrammar,
 } from "./grammars";
 
 import { 
@@ -16,10 +16,10 @@ import {
     stripHiddenTapes, Options,
     VERBOSE_TIME,
     logTime,
-    logGrammar,
     Dict,
     HIDDEN_PREFIX,
-    DEFAULT_SYMBOL_NAME
+    DEFAULT_SYMBOL_NAME,
+    VERBOSE_GRAMMAR
 } from "./util";
 import { Worksheet, Workbook } from "./sources";
 import { backgroundColor, parseHeaderCell } from "./headers";
@@ -40,6 +40,7 @@ import { resolveName } from "./passes/qualifyNames";
 import { infinityProtection } from "./passes/infinityProtection";
 import { prioritizeTapes } from "./passes/prioritizeTapes";
 import { constructExpr } from "./passes/constructExpr";
+import { grammarID } from "./passes/grammarID";
 
 /**
  * An interpreter object is responsible for applying the passes in between sheets
@@ -112,7 +113,7 @@ export class Interpreter {
             this.grammar.collectAllVocab(this.tapeNS, env);
         }, timeVerbose, "Collected vocab");
 
-        logGrammar(this.opt.verbose, this.grammar.id)
+        logGrammar(this.opt.verbose, this.grammar);
     }
 
     public static fromCSV(
@@ -371,4 +372,10 @@ function addSheet(
     } 
 
     return;
+}
+
+export function logGrammar(verbose: number, g: Grammar): void {
+    if ((verbose & VERBOSE_GRAMMAR) == VERBOSE_GRAMMAR) {
+        console.log(grammarID(g));
+    }
 }

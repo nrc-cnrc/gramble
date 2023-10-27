@@ -1,7 +1,7 @@
 import {
     Gen, Options, 
     logDebug, logTime, logStates, 
-    logGrammar, setDifference, foldRight, foldLeft,
+    setDifference, foldRight, foldLeft,
     VERBOSE_DEBUG,
     Dict,
     Namespace,
@@ -144,13 +144,7 @@ export class DerivEnv extends Env {
     public logStates(msg: string): void {
         logStates(this.opt.verbose, msg);
     }
-
-    public logGrammar(msg: string): void {
-        logGrammar(this.opt.verbose, msg);
-    }
-
 }
-
 
 /**
  * This is the parsing/generation engine that underlies Gramble.

@@ -60,6 +60,8 @@
     "testGrammarShort": "mocha -r ts-node/register tests/grammar/testGrammarShort.ts",
     "testGrammarRecursion": "mocha -r ts-node/register tests/grammar/testGrammarRecursion.ts",
 
+    "testGrammarID": "mocha -r ts-node/register tests/grammar/testGrammarID.ts",
+    
     "testParse": "mocha -r ts-node/register tests/parse/*.ts",
     "testParseHeader": "mocha -r ts-node/register tests/parse/testParseHeader.ts",
     "testParseOp": "mocha -r ts-node/register tests/parse/testParseOp.ts",
