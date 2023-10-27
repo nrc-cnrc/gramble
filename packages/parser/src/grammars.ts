@@ -150,10 +150,6 @@ export abstract class AbstractGrammar extends Component {
      */
     public abstract get id(): string;
 
-    public getLiterals(): LiteralGrammar[] {
-        throw new Error(`Cannot get literals from this grammar`);
-    }
-
     public abstract getChildren(): Grammar[];
     
 
@@ -232,7 +228,6 @@ export abstract class AbstractGrammar extends Component {
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
             const children = this.getChildren();
-            //const children = this.getChildren().reverse();
             const childTapes = children.map(
                                 s => s.calculateTapes(stack, env));
             this._tapes = listUnique(flatten(childTapes));
@@ -256,10 +251,6 @@ export class EpsilonGrammar extends AtomicGrammar {
 
     public get id(): string {
         return 'ε';
-    }
-
-    public getLiterals(): LiteralGrammar[] {
-        return [];
     }
 
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
@@ -302,10 +293,6 @@ export class LiteralGrammar extends AtomicGrammar {
 
     public get id(): string {
         return `${this.tapeName}:${this.text}`;
-    }
-
-    public getLiterals(): LiteralGrammar[] {
-        return [this];
     }
     
     public collectVocab(
@@ -374,24 +361,6 @@ export class SequenceGrammar extends NAryGrammar {
 
     public get id(): string {
         return this.children.map(c => c.id).join("+");
-    }
-
-    public getLiterals(): LiteralGrammar[] {
-        return flatten(this.children.map(c => c.getLiterals()));
-    }
-
-    public finalChild(): Grammar {
-        if (this.children.length == 0) {
-            return new EpsilonGrammar();
-        }
-        return this.children[this.children.length-1];
-    }
-
-    public nonFinalChildren(): Grammar[] {
-        if (this.children.length <= 1) {
-            return [];
-        }
-        return this.children.slice(0, this.children.length-1);
     }
 
 }
@@ -584,16 +553,6 @@ export class SingleTapeGrammar extends UnaryGrammar {
         }
         return this._tapes;
     }
-    
-    public getLiterals(): LiteralGrammar[] {
-        return this.child.getLiterals()
-                    .map(c => {
-                        if (c.tapeName == DUMMY_REGEX_TAPE) {
-                            return new LiteralGrammar(this.tapeName, c.text);
-                        }
-                        return c;
-                    });
-    }
 
 }
 
@@ -610,16 +569,6 @@ export class RenameGrammar extends UnaryGrammar {
 
     public get id(): string {
         return `${this.toTape}<-${this.fromTape}(${this.child.id})`;
-    }
-
-    public getLiterals(): LiteralGrammar[] {
-        return this.child.getLiterals()
-                    .map(c => {
-                        if (c.tapeName == this.fromTape) {
-                            return new LiteralGrammar(this.toTape, c.text);
-                        }
-                        return c;
-                    });
     }
 
     public collectVocab(
@@ -1026,10 +975,6 @@ export class LocatorGrammar extends UnaryGrammar {
     public get id(): string {
         return this.child.id;
         //return `${this.pos}@${this.child.id}`;
-    }
-
-    public getLiterals(): LiteralGrammar[] {
-        return this.child.getLiterals();
     }
 
 }
