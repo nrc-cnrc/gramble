@@ -619,8 +619,7 @@ export class MatchGrammar extends UnaryGrammar {
     constructor(
         child: Grammar,
         public fromTape: string,
-        public toTape: string,
-        public vocabBypass: boolean = false
+        public toTape: string
     ) {
         super(child);
     }
@@ -659,19 +658,6 @@ export class MatchGrammar extends UnaryGrammar {
 
         return childVocab;
 
-    }
-
-    public getVocabCopyEdges(
-        tapeName: string,
-        tapeNS: TapeNamespace,
-        symbolsVisited: StringPairSet,
-        env: PassEnv
-    ): StringPairSet {
-        const results = super.getVocabCopyEdges(tapeName, tapeNS, symbolsVisited, env);
-        if (this.vocabBypass && tapeName == this.fromTape) {    
-            results.add([this.fromTape, this.toTape]);
-        }
-        return results;
     }
 }
 
