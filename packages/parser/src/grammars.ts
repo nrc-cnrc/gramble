@@ -29,7 +29,7 @@ import {
     ValueSet
 } from "./util";
 
-import { Component } from "./components";
+import { Component, getChildren } from "./components";
 import { determineAtomicity } from "./passes/determineAtomicity";
 
 export { CounterStack, Expr };
@@ -145,8 +145,9 @@ export abstract class AbstractGrammar extends Component {
         return this._tapes;
     }
 
-    public abstract getChildren(): Grammar[];
-    
+    public getChildren(): Grammar[] {
+        return getChildren(this as Grammar);
+    }
 
     /**
      * Collects all explicitly mentioned characters in the grammar for all tapes.
@@ -235,11 +236,7 @@ export abstract class AbstractGrammar extends Component {
     }
 }
 
-abstract class AtomicGrammar extends AbstractGrammar {
-
-    public getChildren(): Grammar[] { return []; }
-
-}
+abstract class AtomicGrammar extends AbstractGrammar { }
 
 export class EpsilonGrammar extends AtomicGrammar {
     public readonly tag = "epsilon";
@@ -328,10 +325,6 @@ abstract class NAryGrammar extends AbstractGrammar {
     ) {
         super();
     }
-    
-    public getChildren(): Grammar[] { 
-        return this.children; 
-    }
 
 }
 
@@ -350,10 +343,6 @@ export abstract class UnaryGrammar extends AbstractGrammar {
     ) {
         super();
     }
-
-    public getChildren(): Grammar[] { 
-        return [this.child]; 
-    }
 }
 
 abstract class BinaryGrammar extends AbstractGrammar {
@@ -363,10 +352,6 @@ abstract class BinaryGrammar extends AbstractGrammar {
         public child2: Grammar
     ) {
         super();
-    }
-    
-    public getChildren(): Grammar[] { 
-        return [this.child1, this.child2];
     }
 }
 
@@ -719,10 +704,6 @@ export class CollectionGrammar extends AbstractGrammar {
         return Object.keys(this.symbols);
     }
 
-    public getChildren(): Grammar[] { 
-        return Object.values(this.symbols);
-    }
-
     /**
      * Looks up a symbol name and returns the referent (if any) 
      */
@@ -917,10 +898,6 @@ export class ReplaceBlockGrammar extends AbstractGrammar {
         return this._tapes;
     }
 
-    public getChildren(): Grammar[] {
-        return [ this.child, ...this.rules ];
-    }
-
 } 
 
 export class CorrespondGrammar extends UnaryGrammar {
@@ -959,10 +936,6 @@ export class ReplaceGrammar extends AbstractGrammar {
         } else if (!this.hiddenTapeName.startsWith(HIDDEN_PREFIX)) {
             this.hiddenTapeName = HIDDEN_PREFIX + this.hiddenTapeName;
         }
-    }
-
-    public getChildren(): Grammar[] { 
-        return [this.fromGrammar, this.toGrammar, this.preContext, this.postContext, this.otherContext];
     }
 
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
@@ -1016,10 +989,6 @@ export class RuleContextGrammar extends AbstractGrammar {
         public ends: boolean = false
     ) {
         super();
-    }
-
-    public getChildren(): Grammar[] {
-        throw new Error("Method not implemented.");
     }
 
 }

@@ -86,3 +86,37 @@ export function mapObj<T extends Component>(x: any, f: Pass<T,T>, env: PassEnv):
     }
     return result(results).msg(msgs);
 }
+
+export function getChildren<T extends Component>(c: T): T[] {
+    const children: T[] = [];
+    for (const [k,v] of Object.entries(c)) {
+        if (!c.hasOwnProperty(k)) continue;
+        if (k == "tag") continue;
+        if (k.startsWith("_")) continue;
+        if (Array.isArray(v)) {
+            children.push(...getChildrenFromArray<T>(v));
+        } else if (v instanceof Component) {
+            children.push(v as T);
+        } else if (v instanceof Object) {
+            children.push(...getChildrenObj<T>(v));
+        }
+    }
+    return children;
+}
+
+function getChildrenFromArray<T extends Component>(c: any[]): T[] {
+    return c.filter(v => v instanceof Component);
+}
+
+function getChildrenObj<T extends Component>(c: Object): T[] {
+    const children: T[] = [];
+    for (const [k,v] of Object.entries(c)) {
+        if (!c.hasOwnProperty(k)) continue;
+        if (k == "tag") continue;
+        if (k.startsWith("_")) continue;
+        if (v instanceof Component) {
+            children.push(v as T);
+        }
+    }
+    return children;
+}

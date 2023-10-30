@@ -93,9 +93,7 @@ export function grammarToID(x: Grammar): string {
                              !k.startsWith("_"));
     for (let i = 0; i < kvPairs.length; i++) {
         const [k,v] = kvPairs[i];
-        console.log(`child ${k}`);
         const isLast = i == kvPairs.length-1;
-        console.log(`child ${k} is last? ${isLast}`);
         const childID = grammarID(v, !isLast);
         elements.push(childID);
     }

@@ -298,36 +298,3 @@ export function parseCell(
     }
     return results[0];
 }
-
-/*
-export function cellID(g: Grammar): string {
-
-    switch (g.tag) {
-        case "lit": 
-            return g.text;
-        case "embed": 
-            return g.name;
-        case "dot":
-            return "DOT";
-        case "seq": 
-            return "[" + g.children.map(c => cellID(c)).join(",") + "]";
-        case "alt": 
-            return "OR[" + g.children.map(c => cellID(c)).join(",") + "]";
-        case "repeat": 
-            if (g.minReps == 0 && g.maxReps == 1) return `QUES[${cellID(g.child)}]`;
-            if (g.minReps == 1 && g.maxReps == Infinity) return `PLUS[${cellID(g.child)}]`;
-            if (g.minReps == 0 && g.maxReps == Infinity) return `STAR[${cellID(g.child)}]`;
-            return "???"; // other options don't correspond to any possible cell
-        case "not":
-            return "NOT[" + cellID(g.child) + "]";
-        case "epsilon":
-            return "ε";
-        case "context":
-            const begins = g.begins ? '#,' : '';
-            const ends = g.ends ? ',#': '';
-            return `CONTEXT[${begins}${cellID(g.preContext)},${cellID(g.postContext)}${ends}]`
-        default: 
-            return "???";
-    }
-}
-*/
