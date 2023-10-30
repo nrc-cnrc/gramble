@@ -40,7 +40,7 @@ import { resolveName } from "./passes/qualifyNames";
 import { infinityProtection } from "./passes/infinityProtection";
 import { prioritizeTapes } from "./passes/prioritizeTapes";
 import { constructExpr } from "./passes/constructExpr";
-import { grammarID } from "./passes/grammarID";
+import { toStr } from "./passes/toStr";
 
 /**
  * An interpreter object is responsible for applying the passes in between sheets
@@ -376,6 +376,6 @@ function addSheet(
 
 export function logGrammar(verbose: number, g: Grammar): void {
     if ((verbose & VERBOSE_GRAMMAR) == VERBOSE_GRAMMAR) {
-        console.log(grammarID(g));
+        console.log(toStr(g));
     }
 }

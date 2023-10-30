@@ -5,6 +5,7 @@ import {
     ResultVoid
 } from "./msgs";
 import { Pass, PassEnv } from "./passes";
+import { toStr } from "./passes/toStr";
 import { CellPos, Dict } from "./util";
 
 export function exhaustive(h: never): never { return h };
@@ -86,6 +87,8 @@ export function mapObj<T extends Component>(x: any, f: Pass<T,T>, env: PassEnv):
     }
     return result(results).msg(msgs);
 }
+
+/// GETTING CHILDREN
 
 export function getChildren<T extends Component>(c: T): T[] {
     const children: T[] = [];

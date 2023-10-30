@@ -435,16 +435,6 @@ export function backgroundColor(
     }
 }
 
-export function headerID(x: Header): string {
-    const elements = [ x.tag,
-                      ("text" in x) ? x.text as string : "",
-                      ("child" in x) ? headerID(x.child as Header) : "",
-                      ("child1" in x) ? headerID(x.child1 as Header) : "",
-                      ("child2" in x) ? headerID(x.child2 as Header) : "" ]
-    const str = elements.filter(s => s.length > 0).join(" ");
-    return "(" + str + ")";
-}
-
 export function paramName(h: Header): string {
     switch (h.tag) {
         // most params just contribute normal content

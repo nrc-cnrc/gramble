@@ -1,5 +1,5 @@
 import { Grammar } from "../../src/grammars";
-import { grammarID } from "../../src/passes/grammarID";
+import { toStr } from "../../src/passes/toStr";
 import { expect } from "chai";
 import { t1, t2 } from "../testUtil";
 import { Any, Collection, Embed, Epsilon, Hide, Null, Rename, Seq, Uni } from "../../src/grammarConvenience";
@@ -16,7 +16,7 @@ export function testGrammarID({
     grammar,
     id
 }: GrammarIDTest): void {
-    const result = grammarID(grammar);
+    const result = toStr(grammar);
     it(`${testnum} should have id "${id}"`, function() {
         expect(result).to.equal(id);
     });

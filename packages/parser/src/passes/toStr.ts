@@ -1,27 +1,32 @@
-import { DotGrammar, Grammar, LiteralGrammar, RepeatGrammar } from "../grammars";
+import { 
+    AbstractGrammar,
+    DotGrammar, Grammar, 
+    LiteralGrammar, RepeatGrammar 
+} from "../grammars";
 import { Component } from "../components";
 import { DUMMY_REGEX_TAPE } from "../util";
 
-export function grammarID(
+export function toStr(
     x: any,
     brac: boolean = true
 ): string {
-    if (x instanceof Component) return grammarToID(x as Grammar);
-    if (Array.isArray(x)) return arrayToID(x, brac);
-    if (x instanceof Set) return setToID(x, brac);
-    if (x instanceof Object) return objToID(x, brac);
+    if (x instanceof AbstractGrammar) return grammarToStr(x as Grammar);
+    if (x instanceof Component) return componentToStr(x as Grammar);
+    if (Array.isArray(x)) return arrayToStr(x, brac);
+    if (x instanceof Set) return setToStr(x, brac);
+    if (x instanceof Object) return objToStr(x, brac);
     return `${x}`;
 }
 
-function arrayToID(
+function arrayToStr(
     xs: any[], 
     brac: boolean = true
 ): string {
-    const results = xs.map(x => grammarID(x));
+    const results = xs.map(x => toStr(x));
     return enclose(results, "[", "]", " ", brac);
 }
 
-function objToID(
+function objToStr(
     g: Object,
     brac: boolean = true
 ): string {
@@ -30,34 +35,34 @@ function objToID(
         if (!g.hasOwnProperty(k)) continue;
         if (k == "tag") continue;
         if (k.startsWith("_")) continue;
-        elements.push(`  ${k}:${grammarID(v)}\n`);
+        elements.push(`  ${k}:${toStr(v)}\n`);
     }
     return enclose(elements, "{\n", "}", "", brac);
 }
 
-function setToID<T>(
+function setToStr<T>(
     g: Set<T>,
     brac: boolean = true
 ): string {
     let elements: string[] = [];
     for (const x in g) {
-        elements.push(grammarID(x));
+        elements.push(toStr(x));
     }
     return enclose(elements, "{", "}", "", brac);
 }
 
-export function litToID(x: LiteralGrammar): string {
+export function litToStr(x: LiteralGrammar): string {
     if (x.tapeName == DUMMY_REGEX_TAPE && x.text == "") return "ε"
     if (x.tapeName == DUMMY_REGEX_TAPE) return x.text;
     return `${x.tapeName}:${x.text}`;
 }
 
-export function dotToID(x: DotGrammar): string {
+export function dotToStr(x: DotGrammar): string {
     if (x.tapeName == DUMMY_REGEX_TAPE) return ".";
     return `${x.tapeName}:.`;
 }
 
-export function repeatToID(g: RepeatGrammar): string {
+export function repeatToStr(g: RepeatGrammar): string {
     let tag = "repeat";
     let elements: any[] = [g.child];
 
@@ -66,39 +71,45 @@ export function repeatToID(g: RepeatGrammar): string {
     else if (g.minReps == 0 && g.maxReps == Infinity) tag = "star";
     else elements.push(g.minReps, g.maxReps);
 
-    const strs = elements.map(e => grammarID(e));
+    const strs = elements.map(e => toStr(e));
     return enclose([tag, ...strs]);
 }
 
-export function grammarToID(x: Grammar): string {
-
-    // first, common "leaf" nodes get abbreviated forms 
-    // for brevity
-    switch (x.tag) {
-        case "epsilon": return "ε";
-        case "null":    return "∅";
-        case "lit":     return litToID(x);
-        case "dot":     return dotToID(x);
-        case "repeat":  return repeatToID(x);
-    }
+export function componentToStr(c: Component): string {
 
     // otherwise your id is an s-expr created automatically
     // from your tag and children
-    const elements = [ x.tag ];
+    const elements = [ c.tag ];
 
-    const kvPairs = Object.entries(x)
-                          .filter(([k,v]) =>
-                             x.hasOwnProperty(k) &&
+    const kvPairs = Object.entries(c)
+                          .filter(([k,_]) =>
+                             c.hasOwnProperty(k) &&
                              k != "tag" &&
                              !k.startsWith("_"));
     for (let i = 0; i < kvPairs.length; i++) {
-        const [k,v] = kvPairs[i];
+        const [_,v] = kvPairs[i];
         const isLast = i == kvPairs.length-1;
-        const childID = grammarID(v, !isLast);
+        const childID = toStr(v, !isLast);
         elements.push(childID);
     }
 
     return enclose(elements);
+
+}
+
+export function grammarToStr(g: Grammar): string {
+
+    // first, common "leaf" nodes get abbreviated forms 
+    // for brevity
+    switch (g.tag) {
+        case "epsilon": return "ε";
+        case "null":    return "∅";
+        case "lit":     return litToStr(g);
+        case "dot":     return dotToStr(g);
+        case "repeat":  return repeatToStr(g);
+    }
+
+    return componentToStr(g);
 }
 
 function enclose(
