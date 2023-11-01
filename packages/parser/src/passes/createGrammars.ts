@@ -8,7 +8,6 @@ import {
     TstReplace, TstSequence, 
     TstTable, TstTest, TstJoin, TST 
 } from "../tsts";
-import { Component, exhaustive } from "../components";
 import { Pass, PassEnv } from "../passes";
 import { 
     AlternationGrammar,

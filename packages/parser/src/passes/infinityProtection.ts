@@ -12,9 +12,9 @@ import { AlternationGrammar,
     RepeatGrammar,
     SequenceGrammar
 } from "../grammars";
-import { exhaustive } from "../components";
 import { renameTape } from "../tapes";
 import { Count } from "../grammarConvenience";
+import { exhaustive } from "../util";
 
 export function infinityProtection(
     grammar: Grammar,

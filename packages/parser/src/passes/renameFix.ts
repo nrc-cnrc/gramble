@@ -66,6 +66,4 @@ export class RenameFix extends PostPass<Grammar> {
 
         return g;
     }
-
-
 }

@@ -5,13 +5,13 @@ import {
 } from "./miniParser";
 
 import { 
-    HSVtoRGB, RGBtoString, CellPos, PLAIN_PARAM
+    HSVtoRGB, RGBtoString, CellPos, PLAIN_PARAM, exhaustive
 } from "./util";
 
 import { Result } from "./msgs";
 
 import { ALL_RESERVED, isValidSymbolName, RESERVED_SYMBOLS } from "./reserved";
-import { Component, exhaustive } from "./components";
+import { Component } from "./components";
 
 export const DEFAULT_SATURATION = 0.05;
 export const DEFAULT_VALUE = 1.0;

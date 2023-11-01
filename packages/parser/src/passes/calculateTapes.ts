@@ -1,73 +1,139 @@
-import { MissingSymbolError, Msgs, Result } from "../msgs";
+import { Msgs, Result } from "../msgs";
 import { 
-    EmbedGrammar,
-    EpsilonGrammar,
     Grammar,
-    GrammarResult,
     CollectionGrammar,
-    LocatorGrammar
+    MatchGrammar,
+    RenameGrammar,
+    HideGrammar,
+    GrammarResult,
+    EmbedGrammar
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { DEFAULT_SYMBOL_NAME, flatten, listUnique } from "../util";
+import { Dict, update } from "../util";
+import { TapeID, TapeLit, TapeRef, TapeRename, TapeSet, resolveTapes, tapeToStr } from "../tapes";
 
 /**
- * Goes through the tree and 
- * 
- * (1) flattens the collection structure, replacing the 
- * potentially complex tree of collections with a single 
- * one at the root
- * 
- * (2) replaces unqualified symbol references (like "VERB") to 
- * fully-qualified names (like "MainSheet.VERB")
+ * Calculates tapes for each grammar and adds them to the .tapeSet member
  */
+
 export class CalculateTapes extends Pass<Grammar,Grammar> {
 
     constructor(
-        public nameStack: string[] = [],
-        public collectionStack: CollectionGrammar[] = []
+        public knownTapes: Dict<TapeID> = {}
     ) {
         super();
     }
 
-    public transform(t: Grammar, env: PassEnv): Result<Grammar> {
-        throw new Error("Method not implemented.");
-    }
+    public transform(g: Grammar, env: PassEnv): Result<Grammar> {
+        return g.mapChildren(this, env).bind(g => {
+            switch (g.tag) {
 
+                // have no tapes, don't bother
+                case "epsilon":
+                case "null": return g;
+
+                case "lit": return updateTapes(g, TapeLit(g.tapeName));
+                case "dot": return updateTapes(g, TapeLit(g.tapeName));
+
+                // embeds get a special ad-hoc tape with their name
+                case "embed": return getTapesEmbed(g, this.knownTapes);
+                // tapes are just the union of children's tapes
+                
+                case "seq": 
+                case "alt": 
+                case "intersect": 
+                case "join": 
+                case "contains":
+                case "starts": 
+                case "ends":
+                case "short": 
+                case "count": 
+                case "locator": return getTapesDefault(g);
+                
+                // something special
+                case "collection": return getTapesCollection(g, env);
+                case "singletape": return updateTapes(g, TapeLit(g.tapeName));
+                case "match":      return getTapesMatch(g);
+                case "rename":     return getTapesRename(g);
+                case "hide":       return getTapesHide(g);
+
+                //default: exhaustive(g.tag);
+                default: throw new Error(`unhandled grammar in getTapes: ${g.tag}`);
+            }
+        });
+    }
 }
 
-
-function getChildTapes(g: Grammar): string[] {
-    const children = g.getChildren();
-    const childTapes = children.map(s => calculateTapes(g));
-    return listUnique(flatten(childTapes));
+function updateTapes(g: Grammar, tapes: TapeID): Grammar {
+    return update(g, { tapeSet: tapes });
 }
 
-function calculateTapes(g: Grammar): string[] {
-    switch (g.tag) {
+function getTapesDefault(g: Grammar): Grammar {
+    return updateTapes(g, getChildTapes(g));
+}
 
-        case "epsilon": return [];
-        case "null": return [];
-        case "lit": return [g.tapeName];
-        case "dot": return [g.tapeName];
-        case "seq": return getChildTapes(g);
-        case "alt": return getChildTapes(g);
-        case "intersect": return getChildTapes(g);
-        case "join": return getChildTapes(g);
-        case "collection": return [];
-        case "contains": return getChildTapes(g);
-        case "starts": return getChildTapes(g);
-        case "ends": return getChildTapes(g);
-        case "short": return getChildTapes(g);
-        case "singletape": return [g.tapeName];
-        case "count": return getChildTapes(g);
-        case "locator": return getChildTapes(g);
-        case "match": return listUnique([...getChildTapes(g), g.fromTape, g.toTape]);
-        case "rename": 
-            return getChildTapes(g).map(t => 
-                t === g.fromTape ? g.toTape : t)
-        
-        //default: exhaustive(g.tag);
+function getChildTapes(g: Grammar): TapeID {
+    const childTapes = g.getChildren().map(c => c.tapeSet);
+    return TapeSet(...childTapes);
+}
+
+function getTapesEmbed(
+    g: EmbedGrammar, 
+    knownTapes:Dict<TapeID>
+): Grammar {
+    if (!(g.name in knownTapes)) return updateTapes(g, TapeRef(g.name));
+    return updateTapes(g, knownTapes[g.name]);
+}
+
+function getTapesMatch(g: MatchGrammar): Grammar {
+    const tapes = TapeSet(getChildTapes(g), 
+            TapeLit(g.fromTape), TapeLit(g.toTape));
+    return updateTapes(g, tapes);
+}
+
+function getTapesRename(g: RenameGrammar): Grammar {
+    const tapes = TapeRename(g.child.tapeSet, g.fromTape, g.toTape);
+    return updateTapes(g, tapes);
+}
+
+function getTapesHide(g: HideGrammar): Grammar {
+    const tapes = TapeRename(g.child.tapeSet, g.tapeName, g.toTape);
+    return updateTapes(g, tapes);
+}
+
+function getTapesCollection(g: CollectionGrammar, env: PassEnv): GrammarResult {
+    const msgs: Msgs = [];
+    
+    // first get the initial tapes for each symbol
+    const tapeIDs: Dict<TapeID> = {};
+    for (const [k,v] of Object.entries(g.symbols)) {
+        tapeIDs[k] = v.tapeSet;
     }
 
-    return [];
+    // now resolve the references and renames until you're
+    // left with only sets of literals
+    const keys = Object.keys(tapeIDs);
+    for (let i = 0; i < keys.length; i++) {
+        const k1 = keys[i];
+        const v1 = tapeIDs[k1];
+        for (let j = 0; j < keys.length; j++) {
+            const k2 = keys[j];
+            const v2 = resolveTapes(tapeIDs[k2], k1, v1, new Set(k2));
+            tapeIDs[k2] = v2;
+        }
+    }
+
+    // now feed those back into the structure so that every
+    // grammar node has only literal tapes
+    const tapePusher = new CalculateTapes(tapeIDs);
+    for (const [k,v] of Object.entries(g.symbols)) {
+        const newV = tapePusher.transform(v, env).msgTo(msgs);
+        g.symbols[k] = newV;
+    }
+
+    // if a symbol is selected, we share its tape set
+    const selectedSymbol = g.getSymbol(g.selectedSymbol);
+    if (selectedSymbol === undefined) return g.msg(msgs);
+    return updateTapes(g, selectedSymbol.tapeSet).msg(msgs);
+
 }

@@ -5,10 +5,7 @@ import {
     ResultVoid
 } from "./msgs";
 import { Pass, PassEnv } from "./passes";
-import { toStr } from "./passes/toStr";
 import { CellPos, Dict } from "./util";
-
-export function exhaustive(h: never): never { return h };
 
 export abstract class Component {
     public abstract readonly tag: string;

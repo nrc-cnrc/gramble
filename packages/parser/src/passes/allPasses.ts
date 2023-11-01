@@ -19,6 +19,7 @@ import { HandleSingleTapes } from "./handleSingleTapes";
 import { SanityCheckRules } from "./sanityCheckRules";
 import { CombineLiterals } from "./combineLiterals";
 import { ProcessFilters } from "./processFilters";
+import { CalculateTapes } from "./calculateTapes";
 
 export const SHEET_PASSES = 
 
@@ -89,6 +90,8 @@ export const NAME_PASSES =
 
 export const POST_NAME_PASSES =
 
+    new CalculateTapes().compose(
+
     // Joins sequences of single-character literals into multi-
     // char literals for effeciency.
     new CombineLiterals().compose(
@@ -113,7 +116,7 @@ export const POST_NAME_PASSES =
     // some conditions (like `starts re text: ~k`) have counterintuitive
     // results, rescope them as necessary to try to have the 
     // semantics that the programmer anticipates 
-    new AdjustConditions()))))));
+    new AdjustConditions())))))));
 
 export const GRAMMAR_PASSES = 
 

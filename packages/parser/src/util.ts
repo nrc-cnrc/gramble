@@ -88,6 +88,8 @@ export function update<T>(orig: T, update: any): T {
     return clone as T;
 }
 
+export function exhaustive(h: never): never { return h };
+
 export type Gen<T> = Generator<T, void, undefined>;
 
 export type Dict<T> = {[k:string]:T};
@@ -489,8 +491,16 @@ export function listIntersection<T>(s1: T[], s2: T[]): T[] {
     return s1.filter(i => set2.has(i));
 }
 
-export function setUnion<T>(s1: Set<T>, s2: Set<T>): Set<T> {
+export function setUnion<T>(s1: Iterable<T>, s2: Iterable<T>): Set<T> {
     return new Set([...s1, ...s2]);
+}
+
+export function setMap<T1,T2>(ss: Iterable<T1>, f: (s: T1) => T2): Set<T2> {
+    const result: Set<T2> = new Set();
+    for (const s of ss) {
+        result.add(f(s));
+    }
+    return result;
 }
 
 export function setDifference<T>(s1: Set<T>, s2: Set<T>): Set<T> {

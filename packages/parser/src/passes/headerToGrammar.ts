@@ -19,9 +19,7 @@ import {
     UnaryHeader, FromHeader, 
     ToHeader, RuleContextHeader 
 } from "../headers";
-import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
-import { exhaustive } from "../components";
-
+import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, exhaustive } from "../util";
 
 export class HeaderToGrammar extends Pass<Header, Grammar> {
     

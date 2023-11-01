@@ -61,6 +61,7 @@
     "testGrammarRecursion": "mocha -r ts-node/register tests/grammar/testGrammarRecursion.ts",
 
     "testGrammarID": "mocha -r ts-node/register tests/grammar/testGrammarID.ts",
+    "testGrammarTapes": "mocha -r ts-node/register tests/grammar/testGrammarTapes.ts",
     
     "testParse": "mocha -r ts-node/register tests/parse/*.ts",
     "testParseHeader": "mocha -r ts-node/register tests/parse/testParseHeader.ts",

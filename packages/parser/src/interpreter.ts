@@ -299,6 +299,7 @@ export class Interpreter {
         }
         
         let tapePriority = prioritizeTapes(targetGrammar, this.tapeNS, env);
+        console.log(tapePriority);
         targetGrammar = infinityProtection(targetGrammar, tapePriority, env);
         targetGrammar = Cursor(tapePriority, targetGrammar);
         

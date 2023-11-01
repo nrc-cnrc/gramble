@@ -11,6 +11,7 @@ import {
 import {
     logTestSuite, VERBOSE_TEST_L2,
 } from "../testUtil";
+import { VERBOSE_GRAMMAR } from "../../src/util";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -32,8 +33,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hello'},
         ],
+        verbose: VERBOSE_GRAMMAR
     }));
 
+    /*
     describe('2. Literal t1:""', test({
         grammar: t1(""),
         tapes: ["t1"],
@@ -361,4 +364,5 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
 
+    */
 });

@@ -1,4 +1,4 @@
-import { Component, exhaustive } from "./components";
+import { Component } from "./components";
 import { 
     miniParse, MiniParseEnv, 
     MPAlt, MPParser, 
@@ -10,6 +10,7 @@ import {
     ALL_RESERVED, RESERVED_SYMBOLS, 
     isValidSymbolName, BLANK_PARAM_SET, TEST_PARAM_SET 
 } from "./reserved";
+import { exhaustive } from "./util";
 
 export type Requirement = "required" | "forbidden";
 

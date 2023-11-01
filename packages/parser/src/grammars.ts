@@ -8,7 +8,11 @@ import {
 import {
     renameTape,
     Tape, 
-    TapeNamespace
+    TapeID, 
+    TapeNamespace,
+    TapeSet,
+    tapeToLits,
+    tapeToStr
 } from "./tapes";
 import { Pass, PassEnv } from "./passes";
 
@@ -31,6 +35,7 @@ import {
 
 import { Component, getChildren } from "./components";
 import { determineAtomicity } from "./passes/determineAtomicity";
+import { CalculateTapes } from "./passes/calculateTapes";
 
 export { CounterStack, Expr };
 
@@ -136,17 +141,24 @@ export abstract class AbstractGrammar extends Component {
         return super.mapChildren(f, env) as GrammarResult;
     }
 
-    public _tapes: string[] | undefined = undefined;
+    public tapeSet: TapeID = TapeSet()
+
+    //public _tapes: string[] | undefined = undefined;
 
     public get tapes(): string[] {
-        if (this._tapes == undefined) {
+        /*if (this._tapes == undefined) {
             throw new Error("Trying to get tapes before calculating them");
         }
-        return this._tapes;
+        return this._tapes; */
+        return tapeToLits(this.tapeSet);
     }
 
     public getChildren(): Grammar[] {
         return getChildren(this as Grammar);
+    }
+
+    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
+        return tapeToLits(this.tapeSet);
     }
 
     /**
@@ -221,16 +233,6 @@ export abstract class AbstractGrammar extends Component {
         return results;
     }
 
-    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
-        if (this._tapes == undefined) {
-            const children = this.getChildren();
-            const childTapes = children.map(
-                                s => s.calculateTapes(stack, env));
-            this._tapes = listUnique(flatten(childTapes));
-        }
-        return this._tapes;
-    }
-
     public allSymbols(): string[] {
         return [];
     }
@@ -240,26 +242,12 @@ abstract class AtomicGrammar extends AbstractGrammar { }
 
 export class EpsilonGrammar extends AtomicGrammar {
     public readonly tag = "epsilon";
-
-    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
-        if (this._tapes == undefined) {
-            this._tapes = [];
-        }
-        return this._tapes;
-    }
 }
 
 const EPSILON_GRAMMAR = new EpsilonGrammar();
 
 export class NullGrammar extends AtomicGrammar {
     public readonly tag = "null";
-
-    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
-        if (this._tapes == undefined) {
-            this._tapes = [];
-        }
-        return this._tapes;
-    }
 }
 
 export class LiteralGrammar extends AtomicGrammar {
@@ -292,13 +280,6 @@ export class LiteralGrammar extends AtomicGrammar {
         return new Set(this.tokens);
     }
 
-    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
-        if (this._tapes == undefined) {
-            this._tapes = [this.tapeName];
-        }
-        return this._tapes;
-    }
-
 }
 
 export class DotGrammar extends AtomicGrammar {
@@ -308,13 +289,6 @@ export class DotGrammar extends AtomicGrammar {
         public tapeName: string
     ) {
         super();
-    }
-
-    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
-        if (this._tapes == undefined) {
-            this._tapes = [this.tapeName];
-        }
-        return this._tapes;
     }
 }
 
@@ -365,16 +339,6 @@ export class IntersectionGrammar extends BinaryGrammar {
 
 export class JoinGrammar extends BinaryGrammar {
     public readonly tag = "join";
-
-    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
-        if (this._tapes == undefined) {
-            const child1Tapes = this.child1.calculateTapes(stack, env);
-            const child2Tapes = this.child2.calculateTapes(stack, env);
-            const intersection = listIntersection(child1Tapes, child2Tapes);
-            this._tapes = listUnique([...intersection, ...child1Tapes, ...child2Tapes]);
-        }
-        return this._tapes;
-    }
 }
 
 export class CountGrammar extends UnaryGrammar {
@@ -399,10 +363,10 @@ abstract class ConditionGrammar extends UnaryGrammar {
 
     constructor(
         child: Grammar,
-        tapes: string[] | undefined = undefined
+        public _tapes: string[] | undefined = undefined
     ) {
         super(child);
-        this._tapes = tapes;
+        //this._tapes = tapes;
     }
 }
 
@@ -444,6 +408,7 @@ export class SingleTapeGrammar extends UnaryGrammar {
         super(child);
     }
 
+    /*
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
             this._tapes = [];
@@ -461,7 +426,7 @@ export class SingleTapeGrammar extends UnaryGrammar {
             this._tapes = listUnique(this._tapes);
         }
         return this._tapes;
-    }
+    } */
 
 }
 
@@ -499,21 +464,6 @@ export class RenameGrammar extends UnaryGrammar {
         const newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
         const newTapeNS = tapeNS.rename(this.toTape, this.fromTape);
         return this.child.getVocabCopyEdges(newTapeName, newTapeNS, symbolsVisited, env);
-    }
-
-    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
-        if (this._tapes == undefined) {
-            this._tapes = [];
-            for (const tapeName of this.child.calculateTapes(stack, env)) {
-                if (tapeName == this.fromTape) {
-                    this._tapes.push(this.toTape);
-                } else {
-                    this._tapes.push(tapeName);
-                }
-            }
-            this._tapes = listUnique(this._tapes);
-        }
-        return this._tapes;
     }
 }
 
@@ -597,20 +547,6 @@ export class HideGrammar extends UnaryGrammar {
         const newTapeNS = tapeNS.rename(this.toTape, this.tapeName);
         return this.child.getVocabCopyEdges(newTapeName, newTapeNS, symbolsVisited, env);
     }
-
-    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
-        if (this._tapes == undefined) {
-            this._tapes = [];
-            for (const tapeName of this.child.calculateTapes(stack, env)) {
-                if (tapeName == this.tapeName) {
-                    this._tapes.push(this.toTape);
-                } else {
-                    this._tapes.push(tapeName);
-                }
-            }
-        }
-        return this._tapes;
-    }    
 }
 
 export class MatchGrammar extends UnaryGrammar {
@@ -622,22 +558,6 @@ export class MatchGrammar extends UnaryGrammar {
         public toTape: string
     ) {
         super(child);
-    }
-
-    /**
-     * For the purposes of calculating what tapes exist, we consider
-     * both MatchGrammar.fromTape and .toTape to exist even if they 
-     * appear nowhere else in the grammar.
-     */
-    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
-        if (this._tapes == undefined) {
-            this._tapes = listUnique([
-                ...this.child.calculateTapes(stack, env),
-                this.fromTape,
-                this.toTape
-            ]);
-        }
-        return this._tapes;
     }
 
     public collectVocab(
@@ -681,9 +601,7 @@ export class CollectionGrammar extends AbstractGrammar {
         if (referent == undefined) {
             throw new Error(`cannot find symbol ${symbolName}, candidates are ${Object.keys(this.symbols)}`);
         }
-        return new CollectionGrammar(this.symbols, 
-                            //this.aliases, 
-                            symbolName);
+        return new CollectionGrammar(this.symbols, symbolName);
     }
 
     public allSymbols(): string[] {
@@ -702,6 +620,7 @@ export class CollectionGrammar extends AbstractGrammar {
         return undefined;
     }
 
+    /*
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
             this._tapes = [];
@@ -713,7 +632,7 @@ export class CollectionGrammar extends AbstractGrammar {
             this._tapes = listUnique(this._tapes);
         }
         return this._tapes;
-    }
+    } */
 
     public collectVocab(
         tapeName: string,
@@ -750,6 +669,7 @@ export class EmbedGrammar extends AtomicGrammar {
         super();
     }
 
+    /*
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
         if (this._tapes == undefined) {
             if (stack.exceedsMax(this.name)) {
@@ -764,7 +684,7 @@ export class EmbedGrammar extends AtomicGrammar {
             }
         }
         return this._tapes;
-    }
+    } */
 
     public collectVocab(
         tapeName: string,
@@ -830,15 +750,6 @@ export abstract class AbstractTestGrammar extends UnaryGrammar {
     ) {
         super(child);
     }
-
-    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
-        if (this._tapes == undefined) {
-            const childTapes = this.child.calculateTapes(stack, env);
-            const testTapes = this.test.calculateTapes(stack, env);
-            this._tapes = listUnique([...childTapes, ...testTapes]);
-        }
-        return this._tapes;
-    }
     
     public collectVocab(
         tapeName: string,
@@ -871,19 +782,6 @@ export class ReplaceBlockGrammar extends AbstractGrammar {
     ) {
         super();
     }
-    
-    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
-        if (this._tapes == undefined) {
-            this._tapes = this.child.calculateTapes(stack, env);
-            for (const rule of this.rules) {
-                // we don't need the answer here, but we have to calculate it so that 
-                // the grammars have a .tapes property
-                rule.calculateTapes(stack, env);
-            }
-        }
-        return this._tapes;
-    }
-
 } 
 
 export class CorrespondGrammar extends UnaryGrammar {
@@ -922,13 +820,6 @@ export class ReplaceGrammar extends AbstractGrammar {
         } else if (!this.hiddenTapeName.startsWith(HIDDEN_PREFIX)) {
             this.hiddenTapeName = HIDDEN_PREFIX + this.hiddenTapeName;
         }
-    }
-
-    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
-        if (this._tapes == undefined) {
-            this._tapes = super.calculateTapes(stack, env);
-        }
-        return this._tapes;
     }
     
     public getVocabCopyEdges(

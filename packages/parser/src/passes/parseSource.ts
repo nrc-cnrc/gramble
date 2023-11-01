@@ -8,9 +8,8 @@ import {
     TstGrid,
     TST
 } from "../tsts";
-import { exhaustive } from "../components";
 import { Worksheet, Workbook, Source } from "../sources";
-import { Cell, CellPos } from "../util";
+import { Cell, CellPos, exhaustive } from "../util";
 import { CollectionOp, parseOp } from "../ops";
 import { RESERVED_WORDS } from "../reserved";
 

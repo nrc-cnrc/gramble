@@ -1,5 +1,5 @@
 import { 
-    Namespace
+    Namespace, exhaustive, flatten, setMap, setUnion
 } from "./util";
 
 /**
@@ -51,4 +51,112 @@ export function renameTape(
     toTape: string
 ): string {
     return (tapeName == fromTape) ? toTape : tapeName;
+}
+
+export type TapeID 
+    = TapeLit
+    | TapeRef
+    | TapeRename
+    | TapeSet; 
+
+export type TapeLit = { tag: "tapeLit", text: string };
+export function TapeLit(s: string): TapeID {
+    return { tag: "tapeLit", text: s }
+};
+
+export type TapeRef = { tag: "tapeRef", text: string };
+export function TapeRef(s: string): TapeID {
+    return { tag: "tapeRef", text: s }
+};
+
+export type TapeRename =  { 
+    tag: "tapeRename", 
+    child: TapeID, 
+    fromTape: string, 
+    toTape: string 
+};
+
+export function TapeRename(
+    child: TapeID, 
+    fromTape: string, 
+    toTape: string
+): TapeID {
+    if (child.tag === "tapeLit") {
+        if (child.text === fromTape) return TapeLit(toTape);
+        return child;
+    }
+
+    if (child.tag === "tapeSet") {
+        const children = setMap(child.children, 
+                c => TapeRename(c, fromTape, toTape));
+        return TapeSet(...children);
+    }
+
+    return { tag: "tapeRename", child: child, 
+             fromTape: fromTape, toTape: toTape }
+}
+
+export type TapeSet = { tag: "tapeSet", children: Set<TapeID> };
+
+export function TapeSet(
+    ...children: TapeID[]
+): TapeID {
+    let newChildren: Set<TapeID> = new Set();
+    for (const c of children) {
+        if (c.tag !== "tapeSet") {
+            newChildren.add(c);
+            continue;
+        }
+        newChildren = setUnion(newChildren, c.children);
+    }
+    return { tag: "tapeSet", children: newChildren }
+};
+
+export function resolveTapes(
+    t: TapeID, 
+    key:string, 
+    val:TapeID,
+    visited: Set<string>
+): TapeID {
+    switch (t.tag) {
+        case "tapeLit": return t;
+        case "tapeRef": return resolveTapeRefs(t, key, val, visited);
+        case "tapeRename": 
+            return TapeRename(resolveTapes(t.child, key, val, visited), 
+                                t.fromTape, t.toTape);
+        case "tapeSet": 
+            return TapeSet(...setMap(t.children, c => 
+                resolveTapes(c, key, val, visited)));
+    }
+}
+
+function resolveTapeRefs(    
+    t: TapeRef, 
+    key:string, 
+    val:TapeID,
+    visited: Set<string>
+): TapeID {
+    if (key !== t.text) return t;
+    if (visited.has(key)) return TapeSet();
+    const newVisited = new Set([...visited, key]);
+    return resolveTapes(val, key, val, newVisited);
+}
+
+export function tapeToStr(t: TapeID): string {
+    switch (t.tag) {
+        case "tapeLit": return t.text;
+        case "tapeRef": return "${" + t.text + "}";
+        case "tapeRename": return `${t.fromTape}>${t.toTape}(${tapeToStr(t.child)})`;
+        case "tapeSet": return "[" + [...setMap(t.children, c => tapeToStr(c))].join(",") + "]";
+        default: exhaustive(t);
+    }
+}
+
+export function tapeToLits(t: TapeID): string[] {
+    switch (t.tag) {
+        case "tapeLit": return [t.text];
+        case "tapeSet": return flatten([...t.children]
+                                     .map(c => tapeToLits(c)))
+        default: throw new Error(`unresolved tape structure: ${tapeToStr(t)}`)
+    }
 }
