@@ -50,8 +50,9 @@ export class CombineLiterals extends PostPass<Grammar> {
             results.push(child);
         }
 
-        if (results.length == 0) return new EpsilonGrammar();
-        if (results.length == 1) return results[0];
-        return new SequenceGrammar(results);
+        if (results.length == 0) return new EpsilonGrammar().tapify(env);
+        if (results.length == 1) return results[0].tapify(env);
+        return new SequenceGrammar(results).tapify(env);
+        
     }
 }

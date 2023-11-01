@@ -261,6 +261,7 @@ export function testHasTapes(
             return;
         }
         let tapes = referent.tapes;
+        console.log(`referent tapes = ${tapes}`);
         if (stripHidden) {
             // for the purpose of this comparison, leave out any internal-only
             // tapes, like those created by a Hide().

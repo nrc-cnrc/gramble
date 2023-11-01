@@ -1,5 +1,5 @@
 import { 
-    Namespace, exhaustive, flatten, setMap, setUnion
+    Namespace, ValueSet, exhaustive, flatten, setMap, setUnion
 } from "./util";
 
 /**
@@ -57,7 +57,13 @@ export type TapeID
     = TapeLit
     | TapeRef
     | TapeRename
-    | TapeSet; 
+    | TapeSet
+    | TapeUnknown; 
+
+export type TapeUnknown = { tag: "tapeUnknown" };
+export function TapeUnknown(): TapeID {
+    return { tag: "tapeUnknown" };
+}
 
 export type TapeLit = { tag: "tapeLit", text: string };
 export function TapeLit(s: string): TapeID {
@@ -96,18 +102,18 @@ export function TapeRename(
              fromTape: fromTape, toTape: toTape }
 }
 
-export type TapeSet = { tag: "tapeSet", children: Set<TapeID> };
+export type TapeSet = { tag: "tapeSet", children: ValueSet<TapeID> };
 
 export function TapeSet(
     ...children: TapeID[]
 ): TapeID {
-    let newChildren: Set<TapeID> = new Set();
+    let newChildren: ValueSet<TapeID> = new ValueSet([], tapeToStr);
     for (const c of children) {
         if (c.tag !== "tapeSet") {
             newChildren.add(c);
             continue;
         }
-        newChildren = setUnion(newChildren, c.children);
+        newChildren.add(...c.children);
     }
     return { tag: "tapeSet", children: newChildren }
 };
@@ -119,6 +125,7 @@ export function resolveTapes(
     visited: Set<string>
 ): TapeID {
     switch (t.tag) {
+        case "tapeUnknown": return TapeSet();
         case "tapeLit": return t;
         case "tapeRef": return resolveTapeRefs(t, key, val, visited);
         case "tapeRename": 
@@ -144,6 +151,7 @@ function resolveTapeRefs(
 
 export function tapeToStr(t: TapeID): string {
     switch (t.tag) {
+        case "tapeUnknown": return "?";
         case "tapeLit": return t.text;
         case "tapeRef": return "${" + t.text + "}";
         case "tapeRename": return `${t.fromTape}>${t.toTape}(${tapeToStr(t.child)})`;
@@ -155,8 +163,7 @@ export function tapeToStr(t: TapeID): string {
 export function tapeToLits(t: TapeID): string[] {
     switch (t.tag) {
         case "tapeLit": return [t.text];
-        case "tapeSet": return flatten([...t.children]
-                                     .map(c => tapeToLits(c)))
+        case "tapeSet": return flatten(setMap(t.children, c => tapeToLits(c)));
         default: throw new Error(`unresolved tape structure: ${tapeToStr(t)}`)
     }
 }

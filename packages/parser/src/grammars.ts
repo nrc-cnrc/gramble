@@ -2,6 +2,7 @@ import {
     CounterStack, Expr
 } from "./exprs";
 import { 
+    Msgs,
     Result,
 } from "./msgs";
 
@@ -12,7 +13,8 @@ import {
     TapeNamespace,
     TapeSet,
     tapeToLits,
-    tapeToStr
+    tapeToStr,
+    TapeUnknown
 } from "./tapes";
 import { Pass, PassEnv } from "./passes";
 
@@ -20,11 +22,7 @@ import {
     CellPos,
     DEFAULT_SYMBOL_NAME,
     Dict,
-    DUMMY_REGEX_TAPE,
-    flatten,
     HIDDEN_PREFIX,
-    listIntersection,
-    listUnique,
     REPLACE_INPUT_TAPE,
     REPLACE_OUTPUT_TAPE,
     setUnion,
@@ -36,6 +34,7 @@ import {
 import { Component, getChildren } from "./components";
 import { determineAtomicity } from "./passes/determineAtomicity";
 import { CalculateTapes } from "./passes/calculateTapes";
+import { toStr } from "./passes/toStr";
 
 export { CounterStack, Expr };
 
@@ -141,15 +140,11 @@ export abstract class AbstractGrammar extends Component {
         return super.mapChildren(f, env) as GrammarResult;
     }
 
-    public tapeSet: TapeID = TapeSet()
+    public tapeSet: TapeID = TapeUnknown();
 
     //public _tapes: string[] | undefined = undefined;
 
     public get tapes(): string[] {
-        /*if (this._tapes == undefined) {
-            throw new Error("Trying to get tapes before calculating them");
-        }
-        return this._tapes; */
         return tapeToLits(this.tapeSet);
     }
 
@@ -158,7 +153,29 @@ export abstract class AbstractGrammar extends Component {
     }
 
     public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
-        return tapeToLits(this.tapeSet);
+        try {
+            return tapeToLits(this.tapeSet);
+        } catch (e) {
+            throw new Error(`Error in ${toStr(this)}: ${e}`);
+        }
+    }
+
+    /**
+     * A convenience method to make sure that results have their tapes calculated, for
+     * use in other Passes.  (NOT for calculating the tapes of grammars built from Gramble
+     * source, just for grammars that we're making with `new SequenceGrammar(...)` and such.)
+     * 
+     * It assumes that the structure it's operating on has a sound tape 
+     * structure.  If it encounters any error in this process, it throws an exception.
+     * (Result-type messages are for the Gramble programmer, not for us.  Nothing we
+     * should be doing results in a Result-type message.  So if somehow you're creating
+     * structure in a Pass that creates a tape paradox or something, stop doing that.)
+     */
+    public tapify(env: PassEnv): Grammar {
+        const pass = new CalculateTapes();
+        const [result, msgs] = pass.go(this as Grammar, env).destructure();
+        if (msgs.length > 0) throw new Error(JSON.stringify(msgs));
+        return result;
     }
 
     /**

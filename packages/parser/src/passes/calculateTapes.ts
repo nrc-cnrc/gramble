@@ -11,6 +11,7 @@ import {
 import { Pass, PassEnv } from "../passes";
 import { Dict, update } from "../util";
 import { TapeID, TapeLit, TapeRef, TapeRename, TapeSet, resolveTapes, tapeToStr } from "../tapes";
+import { toStr } from "./toStr";
 
 /**
  * Calculates tapes for each grammar and adds them to the .tapeSet member
@@ -19,18 +20,23 @@ import { TapeID, TapeLit, TapeRef, TapeRename, TapeSet, resolveTapes, tapeToStr 
 export class CalculateTapes extends Pass<Grammar,Grammar> {
 
     constructor(
+        public recalculate: boolean = false,
         public knownTapes: Dict<TapeID> = {}
     ) {
         super();
     }
 
     public transform(g: Grammar, env: PassEnv): Result<Grammar> {
+        if (g.tapeSet.tag !== "tapeUnknown" && !this.recalculate) {
+            return g.msg();
+        }
+
         return g.mapChildren(this, env).bind(g => {
             switch (g.tag) {
 
-                // have no tapes, don't bother
+                // have no tapes
                 case "epsilon":
-                case "null": return g;
+                case "null": return updateTapes(g, TapeSet())
 
                 case "lit": return updateTapes(g, TapeLit(g.tapeName));
                 case "dot": return updateTapes(g, TapeLit(g.tapeName));
@@ -125,7 +131,7 @@ function getTapesCollection(g: CollectionGrammar, env: PassEnv): GrammarResult {
 
     // now feed those back into the structure so that every
     // grammar node has only literal tapes
-    const tapePusher = new CalculateTapes(tapeIDs);
+    const tapePusher = new CalculateTapes(true, tapeIDs);
     for (const [k,v] of Object.entries(g.symbols)) {
         const newV = tapePusher.transform(v, env).msgTo(msgs);
         g.symbols[k] = newV;

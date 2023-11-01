@@ -101,14 +101,15 @@ export class ValueSet<T> {
     private items: Set<T> = new Set();
 
     constructor(
-        items: Set<T> = new Set()
+        items: Iterable<T> = new Set(),
+        public hasher: (t: T) => string = t => JSON.stringify(t)
     ) { 
         this.add(...items);
     }
 
     public add(...items: T[]): void {
         for (const item of items) {
-            const key = JSON.stringify(item);
+            const key = this.hasher(item);
             if (this.keys.has(key)) {
                 return;
             }
@@ -118,7 +119,7 @@ export class ValueSet<T> {
     }
 
     public has(item: T): boolean {
-        const key = JSON.stringify(item);
+        const key = this.hasher(item);
         return this.keys.has(key);
     }
 

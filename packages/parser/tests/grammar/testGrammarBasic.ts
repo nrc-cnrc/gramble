@@ -33,10 +33,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hello'},
         ],
-        verbose: VERBOSE_GRAMMAR
     }));
 
-    /*
     describe('2. Literal t1:""', test({
         grammar: t1(""),
         tapes: ["t1"],
@@ -60,7 +58,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         // vocab: {t1: 7},
         results: [
             {t1: 'helloworld'},
-        ],
+        ]
     }));
 
     describe('5. Empty sequence', test({
@@ -363,6 +361,4 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'ii'}
         ],
     }));
-
-    */
 });

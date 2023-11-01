@@ -41,6 +41,7 @@ import { infinityProtection } from "./passes/infinityProtection";
 import { prioritizeTapes } from "./passes/prioritizeTapes";
 import { constructExpr } from "./passes/constructExpr";
 import { toStr } from "./passes/toStr";
+import { CalculateTapes } from "./passes/calculateTapes";
 
 /**
  * An interpreter object is responsible for applying the passes in between sheets
@@ -297,9 +298,11 @@ export class Interpreter {
             // there might be new chars in the query
             targetGrammar.collectAllVocab(this.tapeNS, env);
         }
+
+        const taper = new CalculateTapes();
+        targetGrammar = taper.go(targetGrammar, env).msgTo([]);
         
         let tapePriority = prioritizeTapes(targetGrammar, this.tapeNS, env);
-        console.log(tapePriority);
         targetGrammar = infinityProtection(targetGrammar, tapePriority, env);
         targetGrammar = Cursor(tapePriority, targetGrammar);
         
