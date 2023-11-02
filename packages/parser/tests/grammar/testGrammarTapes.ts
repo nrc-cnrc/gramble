@@ -2,7 +2,7 @@ import { CollectionGrammar, CounterStack, Grammar } from "../../src/grammars";
 import { toStr } from "../../src/passes/toStr";
 import { assert, expect } from "chai";
 import { t1, t2, t3 } from "../testUtil";
-import { Any, Collection, Embed, Epsilon, Hide, Match, Null, Rename, Seq, Uni } from "../../src/grammarConvenience";
+import { Any, Collection, Embed, Epsilon, Hide, Join, Match, Null, Rename, Seq, Uni } from "../../src/grammarConvenience";
 import { CalculateTapes } from "../../src/passes/calculateTapes";
 import { PassEnv } from "../../src/passes";
 
@@ -24,7 +24,7 @@ export function testGrammarTapes({
     let [newGrammar, _] = pass.go(grammar, env).destructure();
     
     if (symbol && newGrammar instanceof CollectionGrammar) {
-        newGrammar = newGrammar.selectSymbol(symbol);
+        newGrammar = newGrammar.selectSymbol(symbol).tapify(env);
     }
 
     let resultTapes: Set<string> = new Set();
@@ -236,6 +236,18 @@ describe(`GrammarIDs`, function() {
         testnum: "11b",
         grammar: Match(t1("hello"), "t2", "t3"),
         tapes: ["t1", "t2", "t3"]
+    });
+
+    testGrammarTapes({
+        testnum: "12a",
+        grammar: Join(t1("hello"), t2("world")),
+        tapes: ["t1", "t2"]
+    });
+
+    testGrammarTapes({
+        testnum: "12a",
+        grammar: Join(t1("hello"), Seq(t1("hello"), t2("world"))),
+        tapes: ["t1", "t2"]
     });
 
 });

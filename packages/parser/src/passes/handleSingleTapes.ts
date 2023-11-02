@@ -6,7 +6,6 @@ import {
     Grammar,
     GrammarPass,
     GrammarResult, 
-    HideGrammar, 
     LiteralGrammar, 
     RenameGrammar, 
     SingleTapeGrammar

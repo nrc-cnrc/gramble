@@ -9,7 +9,7 @@ import {
     EmbedGrammar
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { Dict, update } from "../util";
+import { Dict, exhaustive, update } from "../util";
 import { TapeID, TapeLit, TapeRef, TapeRename, TapeSet, resolveTapes, tapeToStr } from "../tapes";
 import { toStr } from "./toStr";
 
@@ -54,6 +54,13 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
                 case "ends":
                 case "short": 
                 case "count": 
+                case "filter":
+                case "not":
+                case "test":
+                case "testnot":
+                case "repeat":
+                case "correspond":
+                case "context":
                 case "locator": return getTapesDefault(g);
                 
                 // something special
@@ -75,6 +82,7 @@ function updateTapes(g: Grammar, tapes: TapeID): Grammar {
 }
 
 function getTapesDefault(g: Grammar): Grammar {
+    const childTapes = getChildTapes(g);
     return updateTapes(g, getChildTapes(g));
 }
 
@@ -139,7 +147,12 @@ function getTapesCollection(g: CollectionGrammar, env: PassEnv): GrammarResult {
 
     // if a symbol is selected, we share its tape set
     const selectedSymbol = g.getSymbol(g.selectedSymbol);
-    if (selectedSymbol === undefined) return g.msg(msgs);
+    if (selectedSymbol === undefined) {
+        // if there's no selected symbol, the collection as a whole
+        // has the semantics of epsilon, and thus its tapes are
+        // an empty TapeSet rather than TapeUnknown.   
+        return updateTapes(g, TapeSet()).msg(msgs);
+    }
     return updateTapes(g, selectedSymbol.tapeSet).msg(msgs);
 
 }

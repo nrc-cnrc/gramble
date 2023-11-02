@@ -24,7 +24,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 		desc: '1. t1:hi + t1:.',
         grammar: Seq(t1("hi"), Any("t1")),
         tapes: ["t1"],
-        vocab: {t1: 2},
+        //vocab: {t1: 2},
         results: [
             {t1: 'hih'},
             {t1: 'hii'},

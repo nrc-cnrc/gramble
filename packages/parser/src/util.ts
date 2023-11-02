@@ -111,7 +111,7 @@ export class ValueSet<T> {
         for (const item of items) {
             const key = this.hasher(item);
             if (this.keys.has(key)) {
-                return;
+                continue;
             }
             this.items.add(item);
             this.keys.add(key);

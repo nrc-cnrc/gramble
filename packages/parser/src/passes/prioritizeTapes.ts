@@ -18,9 +18,14 @@ export function prioritizeTapes(
     const tapeNames = g.calculateTapes(new CounterStack(2), env);
     const priorities: [string, number][] = tapeNames.map(t => {
         const joinWeight = getTapePriority(g, t, new StringPairSet(), env);
-        const tape = tapeNS.get(t);
-        const priority = joinWeight * Math.max(tape.vocab.size, 1);
-        return [t, priority];
+        
+        /* TODO: temporarily removing vocab size from
+          this calculation; return it later */
+        //const tape = tapeNS.get(t);
+        //const priority = joinWeight * Math.max(tape.vocab.size, 1);
+        //return [t, priority];
+
+        return [t, joinWeight];
     });
 
     const result = priorities.filter(([t, priority]) => priority >= 0)

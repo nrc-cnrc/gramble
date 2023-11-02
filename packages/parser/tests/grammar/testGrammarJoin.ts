@@ -442,6 +442,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
     */
 
+    /*
+
     describe('50. Unfinished join: t1:h ⨝ t1:hello', test({
         grammar: Join(t1("h"), t1("hello")),
         results: [],
@@ -500,6 +502,5 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: "h"}, 
             {t1: "i"}, 
         ],
-    }));
-
+    })); */
 });

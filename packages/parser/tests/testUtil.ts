@@ -260,14 +260,14 @@ export function testHasTapes(
         if (referent == undefined) {
             return;
         }
-        let tapes = referent.tapes;
-        console.log(`referent tapes = ${tapes}`);
-        if (stripHidden) {
-            // for the purpose of this comparison, leave out any internal-only
-            // tapes, like those created by a Hide().
-            tapes = referent.tapes.filter(t => !t.startsWith(HIDDEN_PREFIX));
-        }
+        let tapes: string[] = [];
         try {
+            tapes = referent.tapes;
+            if (stripHidden) {
+                // for the purpose of this comparison, leave out any internal-only
+                // tapes, like those created by a Hide().
+                tapes = referent.tapes.filter(t => !t.startsWith(HIDDEN_PREFIX));
+            }
             expect(tapes.length).to.equal(bSet.size);
             for (const a of tapes) {
                 expect(bSet).to.contain(a);

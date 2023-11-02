@@ -108,11 +108,11 @@ export class Interpreter {
                         .msgTo(m => sendMsg(this.devEnv, m)) as CollectionGrammar
 
         // Next we collect the vocabulary on all tapes
-        timeIt(() => {
+        /* timeIt(() => {
             // collect vocabulary
             this.tapeNS = new TapeNamespace();
             this.grammar.collectAllVocab(this.tapeNS, env);
-        }, timeVerbose, "Collected vocab");
+        }, timeVerbose, "Collected vocab"); */
 
         logGrammar(this.opt.verbose, this.grammar);
     }
@@ -291,16 +291,16 @@ export class Interpreter {
             const allSymbols = this.grammar.allSymbols();
             throw new Error(`Missing symbol: ${symbolName}; choices are [${allSymbols}]`);
         }
+        targetGrammar = targetGrammar.tapify(env);
 
         if (Object.keys(query).length > 0) {
             const querySeq = Query(query);
-            targetGrammar = new JoinGrammar(targetGrammar, querySeq);
+            targetGrammar = new JoinGrammar(targetGrammar, querySeq).tapify(env);
             // there might be new chars in the query
-            targetGrammar.collectAllVocab(this.tapeNS, env);
+            //targetGrammar.collectAllVocab(this.tapeNS, env);
         }
 
-        const taper = new CalculateTapes();
-        targetGrammar = taper.go(targetGrammar, env).msgTo([]);
+        targetGrammar.collectAllVocab(this.tapeNS, env);
         
         let tapePriority = prioritizeTapes(targetGrammar, this.tapeNS, env);
         targetGrammar = infinityProtection(targetGrammar, tapePriority, env);
