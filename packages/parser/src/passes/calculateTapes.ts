@@ -9,8 +9,8 @@ import {
     EmbedGrammar
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { Dict, exhaustive, update } from "../util";
-import { TapeID, TapeLit, TapeRef, TapeRename, TapeSet, resolveTapes, tapeToStr } from "../tapes";
+import { Dict, HIDDEN_PREFIX, exhaustive, update } from "../util";
+import { TapeID, TapeLit, TapeRef, TapeRename, TapeSet, hasTape, resolveTapes, tapeToStr } from "../tapes";
 import { toStr } from "./toStr";
 
 /**
@@ -105,17 +105,41 @@ function getTapesMatch(g: MatchGrammar): Grammar {
     return updateTapes(g, tapes);
 }
 
-function getTapesRename(g: RenameGrammar): Grammar {
+function getTapesRename(g: RenameGrammar): Result<Grammar> {
+
+    if (hasTape(g.child.tapeSet, g.fromTape) === false) {
+        return g.child.err("Renaming missing tape",
+            `The ${g.child.constructor.name} to undergo renaming does not contain the tape ${g.fromTape}. ` +
+            `Available tapes: [${[...g.child.tapes]}]`);
+    }
+
+    if (g.fromTape !== g.toTape && hasTape(g.child.tapeSet, g.toTape) === true) {
+        const errTapeName = `${HIDDEN_PREFIX}ERR${g.toTape}`;
+        let repair: Grammar = new RenameGrammar(g.child, g.toTape, errTapeName);
+        repair = updateTapes(repair, TapeRename(repair.child.tapeSet, g.toTape, errTapeName));
+        repair = new RenameGrammar(repair, g.fromTape, g.toTape);
+        repair = updateTapes(repair, TapeRename(repair.child.tapeSet, g.fromTape, g.toTape));
+        return repair.err("Destination tape already exists",
+                    `Trying to rename ${g.fromTape}->${g.toTape} but the grammar ` +
+                    `to the left already contains the tape ${g.toTape}. `)
+    }
+
     const tapes = TapeRename(g.child.tapeSet, g.fromTape, g.toTape);
-    return updateTapes(g, tapes);
+    return updateTapes(g, tapes).msg();
 }
 
-function getTapesHide(g: HideGrammar): Grammar {
+function getTapesHide(g: HideGrammar): Result<Grammar> {
+    if (hasTape(g.child.tapeSet, g.tapeName) === false) {
+        return g.child.err("Hiding missing tape",
+                    `The grammar being hidden does not contain the tape ${g.tapeName}. ` +
+                    ` Available tapes: [${[...g.child.tapes]}]`);
+    }
+
     const tapes = TapeRename(g.child.tapeSet, g.tapeName, g.toTape);
-    return updateTapes(g, tapes);
+    return updateTapes(g, tapes).msg();
 }
 
-function getTapesCollection(g: CollectionGrammar, env: PassEnv): GrammarResult {
+function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar> {
     const msgs: Msgs = [];
     
     // first get the initial tapes for each symbol

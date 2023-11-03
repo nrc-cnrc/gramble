@@ -63,8 +63,8 @@ export function testProject({
     const projectName = filename || `${dir}${id}`;
     const path = `${dir}/csvs/${projectName}.csv`;
     const abspath = `${TEST_DIR}/${path}`;
-    const project = sheetFromFile(abspath, verbose);
-    if (project === undefined)
+    const interpreter = sheetFromFile(abspath, verbose);
+    if (interpreter === undefined)
         return;
     const qualifiedName = [ projectName, symbol ]
                             .filter(s => s !== undefined && s.length > 0)
@@ -73,9 +73,9 @@ export function testProject({
         const sheet = e.sheet === undefined ? projectName : e.sheet;
         return [ sheet, e.row, e.col, e.severity || "error" ];
     });
-    testErrors(project, expectedErrors);
+    testErrors(interpreter, expectedErrors);
     if (results !== undefined) {
-        testGenerate(project, results, opt, qualifiedName);
+        testGenerate(interpreter, results, opt, qualifiedName);
     }
 }
 

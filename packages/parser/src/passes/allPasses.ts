@@ -1,6 +1,5 @@
 import { CreateCollections } from "./createCollections";
 import { QualifyNames } from "./qualifyNames";
-import { RenameFix } from "./renameFix";
 import { AdjustConditions } from "./adjustConditions";
 import { CheckNamedParams } from "./checkNamedParams";
 import { RescopeLeftBinders } from "./rescopeLeftBinders";
@@ -104,7 +103,7 @@ export const POST_NAME_PASSES =
     // if the programmer has specified an invalid renaming/hiding
     // structure that would cause problems during evaluation, fix
     // it so it doesn't
-    new RenameFix().compose(
+    //new RenameFix().compose(
 
     // do some sanity checking of rules
     new SanityCheckRules().compose(
@@ -116,7 +115,7 @@ export const POST_NAME_PASSES =
     // some conditions (like `starts re text: ~k`) have counterintuitive
     // results, rescope them as necessary to try to have the 
     // semantics that the programmer anticipates 
-    new AdjustConditions())))))));
+    new AdjustConditions()))))));
 
 export const GRAMMAR_PASSES = 
 

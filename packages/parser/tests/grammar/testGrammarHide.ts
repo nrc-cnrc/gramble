@@ -27,22 +27,21 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     logTestSuite(this.title);
 
-    describe('1a. hide(t2, t1:hello)', test({
-        grammar: Hide(t1("hello"), "t2"),
-        tapes: ["t1"],
+    describe('1a. hide(t1, t1:hello)', test({
+        grammar: Hide(t1("hello"), "t1"),
+        tapes: [],
         // vocab: {t1: 4},
         results: [
-            {t1: 'hello'},
+            {},
         ],
     }));
 
-    describe('1b. hide(t2, t1:hello)', test({
-        grammar: Hide(t1("hello"), "t2", "HIDDEN"),
+    describe('1b. hide(t1, t1:hello)', test({
+        grammar: Hide(t1("hello"), "t1", "HIDDEN"),
         stripHidden: false,
-        tapes: ["t1"],
-        // vocab: {t1: 4},
+        tapes: [".HIDDEN"],
         results: [
-            {t1: 'hello'},
+            {'.HIDDEN': 'hello'},
         ],
     }));
 
@@ -227,27 +226,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
 
-    describe('12a. Rename t2>t3, hide(t2, t1:hello+t2:foo)', test({
-        grammar: Rename(Hide(Seq(t1("hello"), t2("foo")), "t2"),
-                        "t2", "t3"),
-        tapes: ["t1"],
-        // vocab: {t1: 4},
-        results: [
-            {t1: 'hello'},
-        ],
-    }));
-
-    describe('12b. Rename t2>t3, hide(t2, t1:hello+t2:foo)', test({
-        grammar: Rename(Hide(Seq(t1("hello"), t2("foo")), "t2", "HIDDEN"),
-                        "t2", "t3"),
-        stripHidden: false,
-        tapes: ["t1", ".HIDDEN"],
-        // vocab: {t1: 4, '.HIDDEN': 2},
-        results: [
-            {t1: 'hello', '.HIDDEN': 'foo'},
-        ],
-    }));
-
     describe('13a. Join using a field and then hide it: ' +
              'hide(t2, t1:hello+t2:foo ⨝ t2:foo)', test({
         grammar: Hide(Join(Seq(t1("hello"), t2("foo")),
@@ -361,6 +339,52 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hello'},
         ],
+    }));
+
+    
+    describe('E1a. hide(t2, t1:hello)', test({
+        grammar: Hide(t1("hello"), "t2"),
+        tapes: ["t1"],
+        // vocab: {t1: 4},
+        results: [
+            {t1: 'hello'},
+        ],
+        numErrors: 1
+    }));
+
+    describe('E1b. hide(t2, t1:hello)', test({
+        grammar: Hide(t1("hello"), "t2", "HIDDEN"),
+        stripHidden: false,
+        tapes: ["t1"],
+        // vocab: {t1: 4},
+        results: [
+            {t1: 'hello'},
+        ],
+        numErrors: 1
+    }));
+
+    
+    describe('E2a. Rename t2>t3, hide(t2, t1:hello+t2:foo)', test({
+        grammar: Rename(Hide(Seq(t1("hello"), t2("foo")), "t2"),
+                        "t2", "t3"),
+        tapes: ["t1"],
+        // vocab: {t1: 4},
+        results: [
+            {t1: 'hello'},
+        ],
+        numErrors: 1
+    }));
+
+    describe('E2b. Rename t2>t3, hide(t2, t1:hello+t2:foo)', test({
+        grammar: Rename(Hide(Seq(t1("hello"), t2("foo")), "t2", "HIDDEN"),
+                        "t2", "t3"),
+        stripHidden: false,
+        tapes: ["t1", ".HIDDEN"],
+        // vocab: {t1: 4, '.HIDDEN': 2},
+        results: [
+            {t1: 'hello', '.HIDDEN': 'foo'},
+        ],
+        numErrors: 1
     }));
 
 });

@@ -167,3 +167,28 @@ export function tapeToLits(t: TapeID): string[] {
         default: throw new Error(`unresolved tape structure: ${tapeToStr(t)}`)
     }
 }
+
+// Testing whether a tape is in a set
+
+export type Trivalent = true | false | "unknown"
+export function hasTape(t: TapeID, query: string): Trivalent  {
+    switch (t.tag) {
+        case "tapeUnknown": return "unknown";
+        case "tapeRef":     return "unknown";
+        case "tapeLit":     return t.text === query;
+        case "tapeRename":  return t.toTape === query 
+                                     ? hasTape(t.child, t.fromTape)
+                                     : hasTape(t.child, query);
+        case "tapeSet":     return tapeInSet(t, query);
+    }
+}
+
+function tapeInSet(t: TapeSet, query: string): Trivalent {
+    let found: Trivalent = false;
+    for (const c of t.children) {
+        const result = hasTape(c, query);
+        if (result === true) return true;
+        if (result === "unknown") found = "unknown";
+    }
+    return found;
+}

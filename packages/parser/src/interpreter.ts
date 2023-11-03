@@ -318,15 +318,11 @@ export class Interpreter {
         const pass = new ExecuteTests(this.tapeNS, symbols);
         
         pass.transform(this.grammar, env)
-            .msgTo(m => sendMsg(this.devEnv, m));
+            .msgTo(m => this.devEnv.message(m));
     }
 }
 
 function sendMsg(devEnv: DevEnvironment, msg: Msg): void {
-    if (msg.pos == undefined) {
-        // if it's got no location we have nowhere to display it
-        return;
-    }
     devEnv.message(msg);
 }
 

@@ -371,4 +371,17 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
 
+    describe('E1. Missing symbol', test({
+        grammar: Collection({
+            a: t1("hi"), 
+            b: Embed("c")
+        }),
+        symbol: "a",
+        tapes: ["t1"],
+        results: [
+            {t1: 'hi'},
+        ],
+        numErrors: 1
+    }));
+
 });

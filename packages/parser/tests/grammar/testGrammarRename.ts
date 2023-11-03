@@ -64,6 +64,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {},
         ],
+        numErrors: 1
     });
 
     testGrammar({
@@ -71,6 +72,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Rename(Null(), "t1", "t2"),
         tapes: [],
         results: [],
+        numErrors: 1
     });
 
     testGrammar({
@@ -89,6 +91,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t2: "hi"},
         ],
+        numErrors: 1
     });
 
     testGrammar({
@@ -98,6 +101,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: "hello", t2: "foo"},
         ],
+        numErrors: 1
     });
 
     testGrammar({
@@ -221,17 +225,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [],
     });
 
-    /*
-    // this next one is iffy, and we've kept going back and forth on
-    // whether the result is null or t2:hiwo.
-    describe('Filter t2:hiwo [Rename t1>t2, t1:hi + t2:wo]', function() {
-        const grammar = Filter(t2("hiwo"),
-                               Rename(Seq(t1("hi"), t2("wo")), "t1", "t2"));
-        testHasTapes(grammar, ["t2"]);
-        //testHasVocab(grammar, {t2: 4});
-        testGenerate(grammar, []);
-    }); 
-    */
 
     testGrammar({
         desc: '23. Rename t2>t3 of symbol t1:hi+t2:world)',
@@ -245,6 +238,31 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     });
 
+    testGrammar({
+        desc: 'E1. Rename t3>t4 of symbol t1:hi+t2:world)',
+        grammar: Collection({ 
+                     a: Seq(t1("hi"), t2("world")),
+                     default: Rename(Embed("a"), "t3", "t4") 
+                 }),
+        tapes: ['t1', 't2'],
+        results: [
+            {t1: "hi", t2: "world"},
+        ],
+        numErrors: 1
+    });
+
+    /*
+    // this next one is iffy, and we've kept going back and forth on
+    // whether the result is null or t2:hiwo.
+    describe('Filter t2:hiwo [Rename t1>t2, t1:hi + t2:wo]', function() {
+        const grammar = Filter(t2("hiwo"),
+                               Rename(Seq(t1("hi"), t2("wo")), "t1", "t2"));
+        testHasTapes(grammar, ["t2"]);
+        //testHasVocab(grammar, {t2: 4});
+        testGenerate(grammar, []);
+    }); 
+    */
+    
     /*
     describe('Rename + embed bug encountered in implementing templates', function() {
         const symbolTable = makeTestNamespace({ "s": Seq(t2("hi"), t3("hello"), t4("goodbye")) });

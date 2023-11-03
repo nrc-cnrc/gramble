@@ -150,7 +150,8 @@ export function prepareInterpreter(
     grammar: Grammar | Interpreter,
     opt: Options,
     symbolName: string = "",
-    throwError: boolean = false, // in case a test wants to catch errors itself
+    rethrow: boolean = false, // in case a test wants to catch errors itself
+    numErrors: number = 0
 ): Interpreter {
 
     const interpreter = (grammar instanceof Interpreter) ?
@@ -160,10 +161,12 @@ export function prepareInterpreter(
     // In case there are any tests, we want to run them so their errors accumulate
     interpreter.runTests();
 
+    testNumErrors(interpreter, numErrors);
+
     try {
         interpreter.resolveName(symbolName);
     } catch(e) {
-        if (throwError) throw e;
+        if (rethrow) throw e;
         it(`symbol "${symbolName} should exist`, function() {
             console.log("");
             console.log(`[${this.test?.fullTitle()}]`);
@@ -173,35 +176,26 @@ export function prepareInterpreter(
     }
     
     // In case there are any tests, we want to run them so their errors accumulate
-    interpreter.runTests();
+    //interpreter.runTests();
 
     return interpreter;
 }
 
-export function generateOutputsFromGrammar(
-    grammar: Grammar | Interpreter,
+export function generateOutputs(
+    interpreter: Interpreter,
     opt: Partial<Options> = {},
     symbolName: string = "",
     restriction: StringDict[] | StringDict = {},
     stripHidden: boolean = true,
-    throwError: boolean = false, // in case a test wants to catch errors itself
+    rethrow: boolean = false, // in case a test wants to catch errors itself
 ): StringDict[] {
-    
-    const opts = Options(opt);
-
-    opts.maxRecursion = Math.min(opts.maxRecursion, DEBUG_MAX_RECURSION);
-    const interpreter = prepareInterpreter(grammar, opts, 
-        symbolName, throwError);
-                          
     let outputs: StringDict[] = [];
-
-
     try {
         outputs = [
             ...interpreter.generate(symbolName, restriction, Infinity, stripHidden)
         ];
     } catch (e) {
-        if (throwError) throw e;
+        if (rethrow) throw e;
         it("Unexpected Exception", function() {
             console.log("");
             console.log(`[${this.test?.fullTitle()}]`);
@@ -220,11 +214,18 @@ export function testGenerate(
     restriction: StringDict[] | StringDict = {},
     stripHidden: boolean = true,
     allowDuplicateOutputs: boolean = false,
-    shortDesc: string = ""
+    shortDesc: string = "",
+    numErrors: number = 0,
 ): void {
     timeIt(() => {
+        const opts = Options(opt);
+
+        opts.maxRecursion = Math.min(opts.maxRecursion, DEBUG_MAX_RECURSION);
+        const interpreter = prepareInterpreter(grammar, opts, 
+            symbolName, false, numErrors);
+
         const outputs: StringDict[] =
-            generateOutputsFromGrammar(grammar, opt, symbolName,
+            generateOutputs(interpreter, opt, symbolName,
                                 restriction, stripHidden, false);
         testNumOutputs(outputs, expectedResults.length,
                        allowDuplicateOutputs, symbolName);
@@ -339,19 +340,9 @@ export function testDoesNotHaveSymbols(
 export function testErrors(
     interpreter: Interpreter,
     expectedErrors: [string, number, number, string][]
-) {
-    //interpreter.runChecks();
+): void {
+    testNumErrors(interpreter, expectedErrors.length);
     const devEnv = interpreter.devEnv;
-    it(`should have ${expectedErrors.length} errors/warnings`, function() {
-        try {
-            expect(devEnv.numErrors("any")).to.equal(expectedErrors.length);
-        } catch (e) {
-            console.log(`[${this.test?.fullTitle()}]`);
-            console.log(`outputs: ${JSON.stringify(devEnv.getErrorMessages())}`);
-            throw e;
-        }
-    });
-
     for (const [sheet, row, col, level] of expectedErrors) {
         const levelMsg = (level == "warning") ? `a ${level}` : `an ${level}`;
         it(`should have ${levelMsg} at ${sheet}:${row}:${col}`, function() {
@@ -364,6 +355,22 @@ export function testErrors(
             }
         });
     }
+}
+
+export function testNumErrors(
+    interpreter: Interpreter,
+    numErrors: number
+): void {
+    const devEnv = interpreter.devEnv;
+    it(`should have ${numErrors} errors/warnings`, function() {
+        try {
+            expect(devEnv.numErrors("any")).to.equal(numErrors);
+        } catch (e) {
+            console.log(`[${this.test?.fullTitle()}]`);
+            console.log(`outputs: ${JSON.stringify(devEnv.getErrorMessages())}`);
+            throw e;
+        }
+    });
 }
 
 export type InputResultsPair = [StringDict, StringDict[]];
