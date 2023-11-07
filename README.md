@@ -11,7 +11,7 @@ The other twist of Gramble is that, unlike most other languages, it is a *tabula
 
 Why?  Well, 99% of Gramble code/data ends up being tabular in nature: dictionaries of roots, conjugation tables, orthography charts, etc.  Rather than the programmer taking these tables and translating them into low-readability XFST code, these stay as tables.  The tables are the code itself, keeping the programmers and subject-matter experts on the same page.
 
-To better support programmer/expert collaboration, we've also made a plug-in to Google Sheets (in `/sheets_addon`), letting you use Sheets as a multi-user IDE for Gramble programming.  It's not yet in the GSuite add-on "store", but in the meantime you can install it in your own Sheets using `clasp`.
+To better support programmer/expert collaboration, we've also made a plug-in to Google Sheets (in `packages/sheets_addon`), letting you use Sheets as a multi-user IDE for Gramble programming.  It's not yet in the GSuite add-on "store", but in the meantime you can install it in your own Sheets using `clasp`.
 
 Tutorials and documentation
 ---------------
@@ -36,10 +36,23 @@ First make sure Node and npm are installed according to the instructions above. 
 
 Then:
 
-    npm run build
     npm install
 
+At this point you should consider adding the path to `node_modules/.bin` to your system `PATH`.
+
+After the initial install of all dependencies, you can recompile the gramble parser and/or gramble-cli by running:
+
+    npm run build
+
 ### Running from the command line
+
+For help info, try:
+
+    gramble help
+
+If you did not add `node_modules/.bin` to your `PATH`, you can instead run gramble as:
+
+    ./node_modules/.bin/gramble help
 
 Try generating from a sample file:
 

@@ -1,26 +1,19 @@
 {
-  "name": "@gramble/cli",
+  "name": "@gramble/sheets_addon",
   "version": "1.0.0",
-  "description": "Command line interface to Gramble",
+  "description": "Google Sheets addon for Gramble",
   "keywords": [
     "gramble",
-    "cli",
-    "table",
-    "grammar",
     "tsv",
     "csv"
   ],
   "author": "Patrick Littell",
   "contributors": [
     "Patrick Littell <Patrick.Littell@nrc-cnrc.gc.ca>",
-    "Darlene Stewart <Darlene.Stewart@nrc-crnc.gc.ca>",
-    "Eddie Antonio Santos <Eddie.Santos@nrc-cnrc.gc.ca>"
+    "Darlene Stewart <Darlene.Stewart@nrc-crnc.gc.ca>"
   ],
   "homepage": "https://github.com/nrc-cnrc/gramble#readme",
   "license": "MIT",
-  "bin": {
-    "gramble": "./bin/index.js"
-  },
   "directories": {
     "lib": "dist",
     "test": "tests"
@@ -38,26 +31,19 @@
   "scripts": {
     "build": "tsc --build --verbose",
     "prepare": "npm run build",
-    "test": "./run-locally help"
+    "test": "./deploy.sh --help",
+    "clasp": "../../node_modules/.bin/clasp",
+    "deploy": "./deploy.sh"
   },
   "bugs": {
     "url": "https://github.com/nrc-cnrc/gramble/issues"
   },
   "devDependencies": {
-    "@types/chai": "^4.3.7",
-    "@types/command-line-args": "^5.2.1",
-    "@types/command-line-usage": "^5.0.2",
-    "@types/mocha": "^10.0.2",
-    "@types/node": "^18.11.9",
-    "@types/papaparse": "^5.3.8",
+    "@google/clasp": "^2.4.2",
+    "browserify": "^17.0.0",
+    "tsify": "^5.0.4",
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "@gramble/parser": "^1.0.0",
-    "command-line-args": "^5.2.1",
-    "command-line-usage": "^7.0.1",
-    "es6-promisify": "^7.0.0",
-    "papaparse": "^5.4.1",
-    "ts-node": "^10.9.1"
   }
 }

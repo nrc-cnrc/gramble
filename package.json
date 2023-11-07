@@ -6,7 +6,9 @@
   "scripts": {
     "build": "lerna run build",
     "test": "lerna exec npm test",
-    "postinstall": "node ./libexec/postinstall.js"
+    "postinstall": "node ./libexec/postinstall.js",
+    "clasp": "./node_modules/.bin/clasp",
+    "deploy": "./packages/sheets_addon/deploy.sh"
   },
   "workspaces": [
     "packages/*"
