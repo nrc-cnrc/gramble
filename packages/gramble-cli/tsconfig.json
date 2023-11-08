@@ -11,8 +11,6 @@
     "composite": true,
     "tsBuildInfoFile": "../../.build-cache/gramble-cli.tsbuildinfo",
     "types": [
-      "chai",
-      "mocha",
       "node",
       "command-line-args",
       "command-line-usage"
