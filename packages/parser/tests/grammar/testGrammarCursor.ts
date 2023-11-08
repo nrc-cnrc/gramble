@@ -3,6 +3,7 @@ import {
     Cursor,
     Embed,
     Epsilon,
+    Join,
     Rename,
     Seq,
     Uni,
@@ -270,4 +271,43 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t2: 'hello', t3: "world"},
         ]
     });    
+    
+    testGrammar({
+        desc: '13a. Cursor inside a join, tape unshared',
+        grammar: Join(Cursor(["t2"], Seq(t1("hello"), t2("world"))), t1("hello")),
+        tapes: ["t1", "t2"],
+        results: [
+            {t1: 'hello', t2: "world"},
+        ],
+    });
+
+    testGrammar({
+        desc: '13b. Cursor inside a join, tape unshared',
+        grammar: Join(t1("hello"), Cursor(["t2"], Seq(t1("hello"), t2("world")))),
+        tapes: ["t1", "t2"],
+        results: [
+            {t1: 'hello', t2: "world"},
+        ]
+    });    
+
+    testGrammar({
+        desc: '14. Cursor inside a join, tape shared',
+        grammar: Join(Seq(t1("hello"), t2("world")), 
+                        Cursor(["t2"], Seq(t1("hello"), t2("kitty")))),
+        tapes: ["t1", "t2"],
+        results: [
+            {t1: 'hello', t2: "world"},
+        ]
+    });    
+    
+    testGrammar({
+        desc: '14b. Cursor inside a join, tape shared, with safety Cursor',
+        grammar: Cursor("t2", Join(Seq(t1("hello"), t2("world")), 
+                        Cursor(["t2"], Seq(t1("hello"), t2("kitty"))))),
+        tapes: ["t1", "t2"],
+        results: [
+            {t1: 'hello', t2: "world"},
+        ]
+    });   
+
 });

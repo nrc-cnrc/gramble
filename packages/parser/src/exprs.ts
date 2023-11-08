@@ -950,6 +950,15 @@ class IntersectExpr extends BinaryExpr {
         }
     } 
 
+    public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
+        for (const [handled1, next1] of this.child1.forward(env)) {
+            for (const [handled2, next2] of this.child2.forward(env)) {
+                const wrapped = constructIntersection(env, next1, next2);
+                yield [handled1 || handled2, wrapped];
+            }
+        }
+    }
+
     public simplify(env: Env): Expr {
         if (this.child1 instanceof NullExpr) return this.child1;
         if (this.child2 instanceof NullExpr) return this.child2;
@@ -978,6 +987,16 @@ class JoinExpr extends BinaryExpr {
 
     public get id(): string {
         return `(${this.child1.id}⋈${this.child2.id})`;
+    }
+    
+    public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
+        for (const [handled1, next1] of this.child1.forward(env)) {
+            for (const [handled2, next2] of this.child2.forward(env)) {
+                const wrapped = constructJoin(env, next1, next2, 
+                                    this.tapes1, this.tapes2);
+                yield [handled1 || handled2, wrapped];
+            }
+        }
     }
 
     public delta(
