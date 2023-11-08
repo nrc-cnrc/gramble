@@ -29,6 +29,7 @@ import { Err, Msgs, resultList } from "../msgs";
 import { HeaderToGrammar } from "./headerToGrammar";
 import { parseCell } from "../cell";
 import { PLAIN_PARAM } from "../util";
+import { uniqueLiterals } from "./uniqueLiterals";
 
 /**
  * This is the workhorse of grammar creation, turning the 
@@ -194,8 +195,8 @@ export class CreateGrammars extends Pass<TST,Grammar> {
         for (const params of t.child.rows) {
             const testInputs = this.transform(params.getParam(PLAIN_PARAM), env).msgTo(msgs);
             const unique = this.transform(params.getParam("unique"), env).msgTo(msgs);
-            const uniqueLiterals = unique.getLiterals();
-            result = result.bind(c => new TestGrammar(c, testInputs, uniqueLiterals))
+            const uniqueLits = uniqueLiterals(unique);
+            result = result.bind(c => new TestGrammar(c, testInputs, uniqueLits))
                            .bind(c => new LocatorGrammar(params.pos, c));
         }
 

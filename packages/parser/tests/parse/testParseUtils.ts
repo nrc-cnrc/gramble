@@ -1,12 +1,13 @@
 import { expect } from "chai";
-import { cellID, parseCell } from "../../src/cell";
-import { ParseClass, headerID, parseHeaderCell } from "../../src/headers";
+import { parseCell } from "../../src/cell";
+import { ParseClass, parseHeaderCell } from "../../src/headers";
 import { parseOp, autoID as opID } from "../../src/ops";
 import { PassEnv } from "../../src/passes";
 import { CombineLiterals } from "../../src/passes/combineLiterals";
 import { tokenizeUnicode } from "../../src/util";
 import { Grammar } from "../../src/grammars";
 import { Msgs } from "../../src/msgs";
+import { toStr } from "../../src/passes/toStr";
 //import { autoID } from "../../src/components";
 
 export function testHeaderID(
@@ -19,7 +20,7 @@ export function testHeaderID(
         testPrefix += '. ';
     }
     it(`${testPrefix}"${text}" should parse as "${expectedID}"`, function() {
-        expect(headerID(result)).to.equal(expectedID);
+        expect(toStr(result)).to.equal(expectedID);
     });
 }
 
@@ -90,7 +91,7 @@ function testCellID(
     }
     describe(`${testPrefix}"${text}"`, function() {
         it(`should parse as "${expectedID}"`, function() {
-            expect(cellID(result)).to.equal(expectedID);
+            expect(toStr(result)).to.equal(expectedID);
         });
         it(`should have ${numErrorsExpected} errors`, function() {
             if (msgs.length != numErrorsExpected) {

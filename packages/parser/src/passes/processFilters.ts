@@ -50,7 +50,7 @@ export class ProcessFilters extends PostPass<Grammar> {
         if (conditionTapes.length === 0) return g.child1; // it's an epsilon or failure and caught elsewhere
         if (conditionTapes.length > 1) {
             throw g.child1.err("Filters must be single-tape", 
-            `A filter like equals, starts, etc. should only reference a single tape.  ID: ${g.child2.id}`);
+            `A filter like equals, starts, etc. should only reference a single tape.`);
         }
         const childTapes = new Set(g.child1.tapes);
         if (!(childTapes.has(conditionTapes[0]))) {

@@ -48,12 +48,6 @@ export function logStates(verbose: number, msg: string): void {
     }
 }
 
-export function logGrammar(verbose: number, msg: string): void {
-    if ((verbose & VERBOSE_GRAMMAR) == VERBOSE_GRAMMAR) {
-        console.log(msg);
-    }
-}
-
 export interface Options {
     maxRecursion: number,
     maxChars: number,
