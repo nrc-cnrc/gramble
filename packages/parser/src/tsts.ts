@@ -5,7 +5,7 @@
  * more abstract grammar that they're representing thereby.)
  */
 
-import { Cell, CellPos } from "./util";
+import { Cell, Pos } from "./utils/cell";
 import {
     Header,
     paramName,
@@ -66,7 +66,7 @@ export abstract class TstCellComponent extends AbstractTST {
         return this.cell.text;
     }
 
-    public get pos(): CellPos {
+    public get pos(): Pos {
         return this.cell.pos;
     }
 

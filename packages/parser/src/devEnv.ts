@@ -1,6 +1,31 @@
-import { DevEnvironment } from "./util";
 import { parseCSV } from "./utils/strings";
 
+
+/**
+ * DevEnvironment
+ * 
+ * To make an editor (e.g. Google Sheets) "smart" about Gramble, you implement this interface.  Most
+ * of the public-facing methods of the Project edifice take an DevEnvironment instance as an argument.
+ * When parsing a spreadsheet, executing a unit test, etc., the Parser will notify the DevEnvironment instance
+ * that particular cells are errors, comments, column headers, etc.
+ */
+export interface DevEnvironment {
+    getErrorMessages(): [string, number, number, string, "error"|"warning"|"info"][];
+    numErrors(level: "error" | "warning"|"any"): number;
+    logErrors(): void;
+    getErrors(sheet: string, row: number, col: number): string[];
+
+    hasSource(sheet: string): boolean;
+    loadSource(sheet: string): string[][];
+
+    addSourceAsText(sheetName: string, text: string): void;
+    addSourceAsCells(sheetName: string, cells: string[][]): void;
+    
+    message(msg: any): void;
+    
+    highlight(): void;
+    alert(msg: string): void;
+}
 
 export function posToStr(sheet: string, row: number, col: number) {
     return `${sheet}:${row}:${col}`;

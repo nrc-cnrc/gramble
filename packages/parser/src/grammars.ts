@@ -13,7 +13,6 @@ import {
 import { Pass, PassEnv } from "./passes";
 
 import {
-    CellPos,
     Dict,
     flatten,
     listIntersection,
@@ -27,6 +26,7 @@ import { Component, getChildren } from "./components";
 import { determineAtomicity } from "./passes/determineAtomicity";
 import { DEFAULT_SYMBOL_NAME, DUMMY_REGEX_TAPE, HIDDEN_PREFIX, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "./utils/constants";
 import { tokenizeUnicode } from "./utils/strings";
+import { Pos } from "./utils/cell";
 
 export { CounterStack, Expr };
 
@@ -800,7 +800,7 @@ export class LocatorGrammar extends UnaryGrammar {
     public readonly tag = "locator";
 
     constructor(
-        public position: CellPos,
+        public position: Pos,
         child: Grammar
     ) {
         super(child);
@@ -811,7 +811,7 @@ export class LocatorGrammar extends UnaryGrammar {
                     .localize(this.pos);
     }
 
-    public get pos(): CellPos {
+    public get pos(): Pos {
         return this.position;
     }
 

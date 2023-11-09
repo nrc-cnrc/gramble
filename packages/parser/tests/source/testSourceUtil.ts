@@ -2,12 +2,13 @@ import { dirname, basename } from "path";
 import { existsSync } from "fs";
 import { expect } from 'chai';
 
-import { StringDict, Options } from '../../src/util';
+import { StringDict } from '../../src/util';
 import { testErrors, testGenerate } from '../testUtil';
 import { Interpreter } from "../../src/interpreter";
 import { TextDevEnvironment } from "../../src/textInterface";
 import { DEFAULT_MAX_RECURSION, DEFAULT_MAX_CHARS } from "../../src/utils/constants";
 import { SILENT } from "../../src/utils/logging";
+import { Options } from "../../src/utils/options";
 
 const TEST_DIR = dirname(module.filename);
 

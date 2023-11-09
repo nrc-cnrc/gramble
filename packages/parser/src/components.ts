@@ -6,14 +6,15 @@ import {
 } from "./msgs";
 import { Pass, PassEnv } from "./passes";
 import { toStr } from "./passes/toStr";
-import { CellPos, Dict } from "./util";
+import { Dict } from "./util";
+import { Pos } from "./utils/cell";
 
 export function exhaustive(h: never): never { return h };
 
 export abstract class Component {
     public abstract readonly tag: string;
 
-    public get pos(): CellPos | undefined {
+    public get pos(): Pos | undefined {
         return undefined;
     } 
 

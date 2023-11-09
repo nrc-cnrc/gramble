@@ -10,7 +10,7 @@ import {
 } from "../tsts";
 import { exhaustive } from "../components";
 import { Worksheet, Workbook, Source } from "../sources";
-import { Cell, CellPos } from "../util";
+import { Cell, Pos } from "../utils/cell";
 import { CollectionOp, parseOp } from "../ops";
 import { RESERVED_WORDS } from "../utils/reserved";
 
@@ -36,7 +36,7 @@ export class ParseSource extends Pass<Source,TST> {
 
     public handleWorkbook(s: Workbook, env: PassEnv): Result<TST> {
 
-        const projectCell = new Cell("", new CellPos("", -1, -1));
+        const projectCell = new Cell("", new Pos("", -1, -1));
         const project = new TstCollection(projectCell);
         const msgs: Msgs = [];
 
@@ -45,7 +45,7 @@ export class ParseSource extends Pass<Source,TST> {
             if (RESERVED_WORDS.has(sheetName.toLowerCase())) {
                 msgs.push(Err("Reserved sheet name",
                     `${sheetName} is a reserved word; you cannot name a sheet this.`)
-                    .localize(new CellPos(sheetName, 0, 0)))
+                    .localize(new Pos(sheetName, 0, 0)))
                 continue;
             }
             const tstSheet = this.transform(sheet, env).msgTo(msgs) as TstAssignment;
@@ -96,7 +96,7 @@ export class ParseSource extends Pass<Source,TST> {
         const msgs: Msgs = [];
 
         // sheets are treated as having an invisible cell containing their names at 0, -1
-        const startCell = new Cell(s.name, new CellPos(s.name, 0, 0));
+        const startCell = new Cell(s.name, new Pos(s.name, 0, 0));
 
         const root = new TstOp(startCell, new CollectionOp());
 
@@ -129,7 +129,7 @@ export class ParseSource extends Pass<Source,TST> {
                                ? s.cells[rowIndex][colIndex].trim().normalize("NFD")
                                : "";
                 
-                const cellPos = new CellPos(s.name, rowIndex, colIndex);
+                const cellPos = new Pos(s.name, rowIndex, colIndex);
                 const cell = new Cell(cellText, cellPos);
                 let top = stack[stack.length-1];
 

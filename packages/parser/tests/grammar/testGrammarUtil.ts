@@ -14,10 +14,11 @@ import {
 } from '../testUtil';
 
 import {
-    StringDict, Options
+    StringDict
 } from "../../src/util";
 import { DEFAULT_MAX_CHARS, DEFAULT_MAX_RECURSION } from "../../src/utils/constants";
 import { SILENT } from "../../src/utils/logging";
+import { Options } from "../../src/utils/options";
 
 export function grammarTestSuiteName(mod: NodeModule): string {
     return `Grammar ${testSuiteName(mod)}`

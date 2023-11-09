@@ -1,25 +1,4 @@
-import { DEFAULT_MAX_CHARS, DEFAULT_MAX_RECURSION, HIDDEN_PREFIX } from './utils/constants';
-import { SILENT } from './utils/logging';
-
-export interface Options {
-    maxRecursion: number,
-    maxChars: number,
-    verbose: number,
-    optimizeAtomicity: boolean,
-    directionLTR: boolean
-}
-
-export const DEFAULT_OPTIONS: Options = {
-    maxRecursion: DEFAULT_MAX_RECURSION, 
-    maxChars: DEFAULT_MAX_CHARS,
-    verbose: SILENT,
-    optimizeAtomicity: true,
-    directionLTR: true
-}
-
-export function Options(opt: Partial<Options> = {}): Options {
-    return {...DEFAULT_OPTIONS, ...opt};
-}
+import { Options } from './utils/options';
 
 export class Env {
 
@@ -33,6 +12,11 @@ export class Env {
 
 }
 
+export type Gen<T> = Generator<T, void, undefined>;
+export type Dict<T> = {[k:string]:T};
+export type StringDict = Dict<string>;
+export type StringSet = Set<string>;
+
 export function update<T>(orig: T, update: any): T {
     let clone = Object.create(Object.getPrototypeOf(orig));
     Object.assign(clone, orig);
@@ -40,11 +24,6 @@ export function update<T>(orig: T, update: any): T {
     clone._tapes = undefined;
     return clone as T;
 }
-
-export type Gen<T> = Generator<T, void, undefined>;
-
-export type Dict<T> = {[k:string]:T};
-export type StringDict = Dict<string>;
 
 export class ValueSet<T> {
 
@@ -79,119 +58,6 @@ export class ValueSet<T> {
         }
     }
 
-}
-
-export type StringSet = Set<string>;
-
-
-/**
- * Namespace<T> is a convenience wrapper around Map<string, T> that
- * allows us to rename a given item statelessly.  This is used for Tapes
- * in particular.
- */
- export class Namespace<T> {
-
-    constructor(
-        public entries: Dict<T> = {},
-        public prev: Namespace<T> | undefined = undefined
-    ) { }
-
-    public get(key: string): T {
-        const result = this.attemptGet(key);
-        if (result != undefined) {
-            return result;
-        }
-        throw new Error(`Cannot find ${key} in namespace, candidates: ${Object.keys(this.entries)}`);
-    }
-
-    public attemptGet(key: string): T | undefined {
-        const result = this.entries[key];
-        if (result == undefined && this.prev != undefined) {
-            return this.prev.attemptGet(key);
-        }
-        return result;
-    }
-
-    public set(key: string, value: T): void {
-        this.entries[key] = value;
-    }
-
-    public push(d: Dict<T>): Namespace<T> {
-        return new Namespace<T>(d, this);
-    }
-
-    public rename(fromKey: string, toKey: string): Namespace<T> {
-        if (fromKey == toKey) {
-            return this;
-        }
-        const referent = this.attemptGet(fromKey);
-        if (referent == undefined) {
-            return this;
-        }
-        return this.push({[toKey]: referent});
-    }
-
-}
-
-/**
- * A convenience class encapsulating information about where a cell
- * is.  Every component of the abstract syntax tree has one of these;
- * if it's a cell, that's just its position on a spreadsheet; if it's a
- * complex component, it's the position of its first cell.
- *
- * By convention we treat the spreadsheet itself as a component with 
- * its first cell at -1, -1.
- */
-export class CellPos {
-
-    constructor(
-        public readonly sheet: string = "?",
-        public readonly row: number = -1,
-        public readonly col: number = -1
-    ) { }
-
-    public toString(): string {
-        return `${this.sheet}:${this.row}:${this.col}`;
-    }
-}
-
-export class Cell {
-
-    constructor(
-        public text: string,
-        public pos: CellPos
-    ) { }
-
-    public get id(): string { 
-        return this.pos.toString();
-    }
-
-}
-
-/**
- * DevEnvironment
- * 
- * To make an editor (e.g. Google Sheets) "smart" about Gramble, you implement this interface.  Most
- * of the public-facing methods of the Project edifice take an DevEnvironment instance as an argument.
- * When parsing a spreadsheet, executing a unit test, etc., the Parser will notify the DevEnvironment instance
- * that particular cells are errors, comments, column headers, etc.
- */
-export interface DevEnvironment {
-    getErrorMessages(): [string, number, number, string, "error"|"warning"|"info"][];
-    numErrors(level: "error" | "warning"|"any"): number;
-    logErrors(): void;
-    getErrors(sheet: string, row: number, col: number): string[];
-
-    hasSource(sheet: string): boolean;
-    loadSource(sheet: string): string[][];
-
-    addSourceAsText(sheetName: string, text: string): void;
-    addSourceAsCells(sheetName: string, cells: string[][]): void;
-    
-    message(msg: any): void;
-    
-    highlight(): void;
-    alert(msg: string): void;
 }
 
 export function *iterUnit<T>(item: T): Gen<T> {

@@ -1,11 +1,12 @@
 import { Grammar } from "./grammars";
 import { Msgs, Result, result } from "./msgs";
 import { 
-    Dict, Options, 
-    Namespace, 
+    Dict,
     Env
 } from "./util";
 import { VERBOSE_TIME, timeIt } from "./utils/logging";
+import { Namespace } from "./utils/namespace";
+import { Options } from "./utils/options";
 
 export class PassEnv extends Env {
 

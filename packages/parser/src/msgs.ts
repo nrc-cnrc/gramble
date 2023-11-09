@@ -1,11 +1,8 @@
-import { CellPos, Dict } from "./util";
+import { Dict } from "./util";
+import { Pos } from "./utils/cell";
 
 type MsgType = "error" | "warning" | "info" | 
-                "command" | "header" | "comment" | "content"
-
-function isPositioned(p: any): p is { pos: CellPos } {
-    return p !== undefined && p.pos !== undefined;
-}
+                "command" | "header" | "comment" | "content";
 
 /**
  * Msg ("message") is a communication between the compiler and 
@@ -24,7 +21,7 @@ export class Msg {
         public type: MsgType,
         public shortMsg: string,
         public longMsg: string,
-        public pos: CellPos | undefined = undefined
+        public pos: Pos | undefined = undefined
     ) {}
 
     public get sheet(): string | undefined {
@@ -39,7 +36,7 @@ export class Msg {
         return this.pos?.col;
     }
 
-    public localize(pos?: CellPos): Msg {
+    public localize(pos?: Pos): Msg {
         if (this.pos != undefined) {
             return this;
         }
@@ -52,7 +49,7 @@ export class Msg {
      * and only consider the item, by providing a callback that
      * handles them as a side effect.
      */
-     public msgTo(f: Msgs | MsgCallback, pos?: CellPos): void {
+     public msgTo(f: Msgs | MsgCallback, pos?: Pos): void {
         const msg = this.localize(pos);
         if (Array.isArray(f)) {
             f.push(msg);
@@ -167,7 +164,7 @@ export class Result<T> {
         return this;
     }
 
-    public localize(pos: CellPos | undefined): Result<T> {
+    public localize(pos: Pos | undefined): Result<T> {
         const [item, msgs] = this.destructure();
         const newMsgs = msgs.map(m => m.localize(pos));
         return new Result(item, newMsgs);

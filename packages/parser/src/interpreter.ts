@@ -11,16 +11,15 @@ import {
 } from "./grammarConvenience";
 
 import { 
-    DevEnvironment, Gen, iterTake, 
-    StringDict, 
-    Options,
+    Gen, iterTake, 
+    StringDict,
     Dict,
 } from "./util";
 import { Worksheet, Workbook } from "./sources";
 import { backgroundColor, parseHeaderCell } from "./headers";
 import { TapeNamespace } from "./tapes";
 import { Expr, CollectionExpr } from "./exprs";
-import { SimpleDevEnvironment } from "./devEnv";
+import { DevEnvironment, SimpleDevEnvironment } from "./devEnv";
 import { generate } from "./generator";
 import { MissingSymbolError, Msg, result } from "./msgs";
 import { PassEnv } from "./passes";
@@ -38,6 +37,7 @@ import { constructExpr } from "./passes/constructExpr";
 import { toStr } from "./passes/toStr";
 import { DEFAULT_SYMBOL_NAME, HIDDEN_PREFIX } from "./utils/constants";
 import { VERBOSE_GRAMMAR, VERBOSE_TIME, logTime, msToTime, timeIt } from "./utils/logging";
+import { Options } from "./utils/options";
 
 /**
  * An interpreter object is responsible for applying the passes in between sheets

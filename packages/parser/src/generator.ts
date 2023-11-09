@@ -9,11 +9,12 @@ import {
 } from "./exprs";
 import { TapeNamespace } from "./tapes";
 import { 
-    Gen, Options,
+    Gen,
     iterTake,
     StringDict
 } from "./util";
 import { msToTime } from "./utils/logging";
+import { Options } from "./utils/options";
 
 /**
  * Performs a breadth-first traversal of the graph.  This will be the function that most 

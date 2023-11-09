@@ -1,8 +1,7 @@
 import {
-    Gen, Options,
+    Gen,
     setDifference, foldRight, foldLeft,
     Dict,
-    Namespace,
     StringDict,
     outputProduct,
     flatten,
@@ -16,6 +15,8 @@ import {
 } from "./tapes";
 import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "./utils/constants";
 import { VERBOSE_DEBUG, logDebug, logStates, logTime } from "./utils/logging";
+import { Namespace } from "./utils/namespace";
+import { Options } from "./utils/options";
 
 export type Query = TokenExpr | DotExpr;
 

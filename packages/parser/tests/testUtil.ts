@@ -6,11 +6,11 @@ import { Interpreter } from "../src/interpreter";
 import { Grammar } from "../src/grammars";
 import { Tape } from "../src/tapes";
 import {
-    StringDict,
-    Options,
+    StringDict
 } from "../src/util";
 import { HIDDEN_PREFIX } from "../src/utils/constants";
 import { SILENT, VERBOSE_DEBUG, logDebug, timeIt } from "../src/utils/logging";
+import { Options } from "../src/utils/options";
 
 // DEBUG_MAX_RECURSION is a forced upper bound for maxRecursion.
 export const DEBUG_MAX_RECURSION: number = 4;      // 4
