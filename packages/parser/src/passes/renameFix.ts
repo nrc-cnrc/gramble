@@ -1,4 +1,4 @@
-import { HIDDEN_PREFIX } from "../util";
+import { HIDDEN_PREFIX } from "../utils/constants";
 import { 
     CounterStack, 
     Grammar,

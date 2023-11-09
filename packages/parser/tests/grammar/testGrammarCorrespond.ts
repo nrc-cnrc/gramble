@@ -14,7 +14,7 @@ import {
 import {
     logTestSuite, VERBOSE_TEST_L2,
 } from "../testUtil";
-import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, VERBOSE_DEBUG } from "../../src/util";
+import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../../src/utils/constants";
 import { Grammar } from "../../src/grammars";
 
 // File level control over verbose output

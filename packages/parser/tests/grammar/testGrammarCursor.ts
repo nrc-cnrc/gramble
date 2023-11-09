@@ -20,8 +20,8 @@ import {
 } from '../testUtil';
 
 import {
-    SILENT, VERBOSE_DEBUG, VERBOSE_STATES
-} from "../../src/util";
+    SILENT
+} from "../../src/utils/logging";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;

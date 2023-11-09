@@ -1,16 +1,12 @@
 import {
-    Gen, Options, 
-    logDebug, logTime, logStates, 
+    Gen, Options,
     setDifference, foldRight, foldLeft,
-    VERBOSE_DEBUG,
     Dict,
     Namespace,
     StringDict,
     outputProduct,
     flatten,
     iterUnit,
-    REPLACE_INPUT_TAPE,
-    REPLACE_OUTPUT_TAPE,
     Env,
     update,
 } from "./util";
@@ -18,6 +14,8 @@ import {
     Tape, TapeNamespace, 
     renameTape
 } from "./tapes";
+import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "./utils/constants";
+import { VERBOSE_DEBUG, logDebug, logStates, logTime } from "./utils/logging";
 
 export type Query = TokenExpr | DotExpr;
 

@@ -11,8 +11,9 @@ import { TapeNamespace } from "./tapes";
 import { 
     Gen, Options,
     iterTake,
-    msToTime, StringDict
+    StringDict
 } from "./util";
+import { msToTime } from "./utils/logging";
 
 /**
  * Performs a breadth-first traversal of the graph.  This will be the function that most 

@@ -6,7 +6,7 @@ import {
     LocatorGrammar
 } from "../grammars";
 import { PassEnv } from "../passes";
-import { ALL_SYMBOL_NAME } from "../util";
+import { ALL_SYMBOL_NAME } from "../utils/constants";
 import { PostPass } from "./ancestorPasses";
 
 /**

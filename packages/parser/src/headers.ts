@@ -4,14 +4,12 @@ import {
     MPSequence, MPUnreserved 
 } from "./miniParser";
 
-import { 
-    HSVtoRGB, RGBtoString, CellPos, PLAIN_PARAM
-} from "./util";
-
 import { Result } from "./msgs";
 
-import { ALL_RESERVED, isValidSymbolName, RESERVED_SYMBOLS } from "./reserved";
+import { ALL_RESERVED, isValidSymbolName, RESERVED_SYMBOLS } from "./utils/reserved";
 import { Component, exhaustive } from "./components";
+import { PLAIN_PARAM } from "./utils/constants";
+import { colorFromText } from "./utils/colors";
 
 export const DEFAULT_SATURATION = 0.05;
 export const DEFAULT_VALUE = 1.0;
@@ -384,23 +382,6 @@ export function fontColor(h: Header): string {
         case "ruleContext": return "#bd1128";
         case "symbol":      return "#333333"; 
     }
-}
-
-function colorFromText(
-    text: string, 
-    saturation: number = DEFAULT_SATURATION, 
-    value: number = DEFAULT_VALUE
-): string { 
-    const str = text + "abcde" // otherwise short strings are boring colors
-    let hash = 0; 
-
-    for (let i = 0; i < str.length; i++) { 
-        hash = ((hash << 5) - hash) + str.charCodeAt(i); 
-        hash = hash & hash; 
-    } 
-    
-    const hue = (hash & 0xFF) / 255;
-    return RGBtoString(...HSVtoRGB(hue, saturation, value));
 }
 
 export function backgroundColor(

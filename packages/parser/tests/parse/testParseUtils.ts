@@ -4,10 +4,10 @@ import { ParseClass, parseHeaderCell } from "../../src/headers";
 import { parseOp, autoID as opID } from "../../src/ops";
 import { PassEnv } from "../../src/passes";
 import { CombineLiterals } from "../../src/passes/combineLiterals";
-import { tokenizeUnicode } from "../../src/util";
 import { Grammar } from "../../src/grammars";
 import { Msgs } from "../../src/msgs";
 import { toStr } from "../../src/passes/toStr";
+import { tokenizeUnicode } from "../../src/utils/strings";
 //import { autoID } from "../../src/components";
 
 export function testHeaderID(

@@ -4,7 +4,7 @@ import {
     LiteralGrammar, RepeatGrammar 
 } from "../grammars";
 import { Component } from "../components";
-import { DUMMY_REGEX_TAPE } from "../util";
+import { DUMMY_REGEX_TAPE } from "../utils/constants";
 
 export function toStr(
     x: any,

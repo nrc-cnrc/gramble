@@ -8,7 +8,6 @@ import {
     TstReplace, TstSequence, 
     TstTable, TstTest, TstJoin, TST 
 } from "../tsts";
-import { Component, exhaustive } from "../components";
 import { Pass, PassEnv } from "../passes";
 import { 
     AlternationGrammar,
@@ -28,7 +27,7 @@ import { Header, parseClass, TapeHeader } from "../headers";
 import { Err, Msgs, resultList } from "../msgs";
 import { HeaderToGrammar } from "./headerToGrammar";
 import { parseCell } from "../cell";
-import { PLAIN_PARAM } from "../util";
+import { PLAIN_PARAM } from "../utils/constants";
 import { uniqueLiterals } from "./uniqueLiterals";
 
 /**

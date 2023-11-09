@@ -8,7 +8,7 @@ import {
     RenameGrammar,
     CounterStack
 } from "../grammars";
-import { HIDDEN_PREFIX } from "../util";
+import { HIDDEN_PREFIX } from "../utils/constants";
 import { PostPass } from "./ancestorPasses";
 
 /**

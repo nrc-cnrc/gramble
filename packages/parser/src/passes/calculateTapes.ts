@@ -1,14 +1,10 @@
-import { MissingSymbolError, Msgs, Result } from "../msgs";
+import { Result } from "../msgs";
 import { 
-    EmbedGrammar,
-    EpsilonGrammar,
     Grammar,
-    GrammarResult,
     CollectionGrammar,
-    LocatorGrammar
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { DEFAULT_SYMBOL_NAME, flatten, listUnique } from "../util";
+import { flatten, listUnique } from "../util";
 
 /**
  * Goes through the tree and 

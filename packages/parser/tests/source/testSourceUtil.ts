@@ -2,10 +2,12 @@ import { dirname, basename } from "path";
 import { existsSync } from "fs";
 import { expect } from 'chai';
 
-import { StringDict, SILENT, DEFAULT_MAX_CHARS, Options, DEFAULT_MAX_RECURSION } from '../../src/util';
+import { StringDict, Options } from '../../src/util';
 import { testErrors, testGenerate } from '../testUtil';
 import { Interpreter } from "../../src/interpreter";
 import { TextDevEnvironment } from "../../src/textInterface";
+import { DEFAULT_MAX_RECURSION, DEFAULT_MAX_CHARS } from "../../src/utils/constants";
+import { SILENT } from "../../src/utils/logging";
 
 const TEST_DIR = dirname(module.filename);
 
@@ -24,18 +26,13 @@ export function Warning(row: number, col: number) {
     return { row: row, col: col, severity: "warning" };
 }
 
-export interface ProjectTest {
+export interface ProjectTest extends Options {
     id: string,
     filename: string,
     dir: string,
     results: StringDict[],
     errors: ProjectError[],
     symbol: string
-    verbose: number,
-    directionLTR: boolean,
-    optimizeAtomicity: boolean,
-    maxRecursion: number,
-    maxChars: number,
 }
 
 export function testProject({

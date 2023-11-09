@@ -19,7 +19,7 @@ import {
     UnaryHeader, FromHeader, 
     ToHeader, RuleContextHeader 
 } from "../headers";
-import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
+import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../utils/constants";
 import { exhaustive } from "../components";
 
 

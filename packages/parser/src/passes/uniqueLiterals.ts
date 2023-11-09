@@ -1,8 +1,9 @@
-import { flatten, DUMMY_REGEX_TAPE } from "../util";
+import { flatten } from "../util";
 import { 
     Grammar, LiteralGrammar, 
     RenameGrammar, SingleTapeGrammar 
 } from "../grammars";
+import { DUMMY_REGEX_TAPE } from "../utils/constants";
 
 export function uniqueLiterals(
     g: Grammar

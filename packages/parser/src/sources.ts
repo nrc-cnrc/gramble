@@ -1,5 +1,5 @@
 import { Component } from "./components";
-import { DEFAULT_SYMBOL_NAME } from "./util";
+import { DEFAULT_SYMBOL_NAME } from "./utils/constants";
 
 export type Source = Workbook
                    | Worksheet

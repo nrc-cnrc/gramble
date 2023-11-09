@@ -1,5 +1,4 @@
-import { PLAIN_PARAM } from "./util";
-
+import { PLAIN_PARAM } from "./constants";
 
 export const RESERVED_SYMBOLS = new Set([ 
     "(", ")", "%", "/", "<", ">", 

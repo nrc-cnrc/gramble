@@ -10,7 +10,7 @@ import {
     paramsMustBePerfect, 
     requiredParams 
 } from "../ops";
-import { PLAIN_PARAM } from "../util";
+import { PLAIN_PARAM } from "../utils/constants";
 
 /**
  * This pass checks whether named parameters in headers

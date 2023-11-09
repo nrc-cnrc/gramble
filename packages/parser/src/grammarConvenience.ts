@@ -13,7 +13,8 @@ import {
     SingleTapeGrammar, 
     StartsGrammar 
 } from "./grammars";
-import { DUMMY_REGEX_TAPE, Dict, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, StringDict } from "./util";
+import { Dict, StringDict } from "./util";
+import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, DUMMY_REGEX_TAPE } from "./utils/constants";
 
 export function SingleTape(
     tapeName: string,

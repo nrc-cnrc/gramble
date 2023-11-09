@@ -11,7 +11,7 @@ import {
     RenameGrammar, 
     SingleTapeGrammar
 } from "../grammars";
-import { DUMMY_REGEX_TAPE } from "../util";
+import { DUMMY_REGEX_TAPE } from "../utils/constants";
 
 /**
  * Some environments require the grammar inside to only reveal 

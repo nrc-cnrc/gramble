@@ -1,4 +1,5 @@
-import { DevEnvironment, parseCSV } from "./util";
+import { DevEnvironment } from "./util";
+import { parseCSV } from "./utils/strings";
 
 
 export function posToStr(sheet: string, row: number, col: number) {

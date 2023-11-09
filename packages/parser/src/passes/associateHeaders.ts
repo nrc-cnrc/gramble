@@ -10,7 +10,7 @@ import {
 import { Pass, PassEnv } from "../passes";
 import { ContentMsg, Msgs, Result, Warn } from "../msgs";
 import { backgroundColor, fontColor, paramName } from "../headers";
-import { PLAIN_PARAM } from "../util";
+import { PLAIN_PARAM } from "../utils/constants";
 
 /**
  * Before this, headers and their associated content cells aren't

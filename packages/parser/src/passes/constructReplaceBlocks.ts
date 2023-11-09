@@ -6,7 +6,7 @@ import {
     RenameGrammar,
 } from "../grammars";
 
-import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../util";
+import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../utils/constants";
 import { PassEnv } from "../passes";
 import { PostPass } from "./ancestorPasses";
 

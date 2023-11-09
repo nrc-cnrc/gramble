@@ -28,8 +28,8 @@ import {
     RESERVED_FOR_REGEX, 
     RESERVED_FOR_SYMBOL, 
     RESERVED_WORDS 
-} from "./reserved";
-import { DUMMY_REGEX_TAPE } from "./util";
+} from "./utils/reserved";
+import { DUMMY_REGEX_TAPE } from "./utils/constants";
 
 export type RegexParser = MPParser<Grammar>;
 

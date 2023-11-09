@@ -14,9 +14,9 @@ import {
 } from '../testUtil';
 
 import {
-    DUMMY_REGEX_TAPE,
-    SILENT, VERBOSE_DEBUG, VERBOSE_STATES
-} from "../../src/util";
+    DUMMY_REGEX_TAPE
+} from "../../src/utils/constants";
+import { SILENT, VERBOSE_STATES } from "../../src/utils/logging";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;

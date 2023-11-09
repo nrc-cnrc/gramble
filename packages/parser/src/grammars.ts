@@ -14,23 +14,19 @@ import { Pass, PassEnv } from "./passes";
 
 import {
     CellPos,
-    DEFAULT_SYMBOL_NAME,
     Dict,
-    DUMMY_REGEX_TAPE,
     flatten,
-    HIDDEN_PREFIX,
     listIntersection,
     listUnique,
-    REPLACE_INPUT_TAPE,
-    REPLACE_OUTPUT_TAPE,
     setUnion,
     StringSet,
-    tokenizeUnicode,
     ValueSet
 } from "./util";
 
 import { Component, getChildren } from "./components";
 import { determineAtomicity } from "./passes/determineAtomicity";
+import { DEFAULT_SYMBOL_NAME, DUMMY_REGEX_TAPE, HIDDEN_PREFIX, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "./utils/constants";
+import { tokenizeUnicode } from "./utils/strings";
 
 export { CounterStack, Expr };
 
