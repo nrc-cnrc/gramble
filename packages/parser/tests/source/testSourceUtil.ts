@@ -2,7 +2,7 @@ import { dirname, basename } from "path";
 import { existsSync } from "fs";
 import { expect } from 'chai';
 
-import { StringDict } from '../../src/util';
+import { StringDict } from '../../src/utils/func';
 import { testErrors, testGenerate } from '../testUtil';
 import { Interpreter } from "../../src/interpreter";
 import { TextDevEnvironment } from "../../src/textInterface";

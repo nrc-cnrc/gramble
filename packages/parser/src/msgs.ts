@@ -1,4 +1,4 @@
-import { Dict } from "./util";
+import { Dict, Func } from "./utils/func";
 import { Pos } from "./utils/cell";
 
 type MsgType = "error" | "warning" | "info" | 
@@ -112,8 +112,8 @@ export function Success(longMsg: string): Msg {
     return new Msg("info", "success", longMsg);
 }
 
-type MsgCallback = (m: Msg) => void; 
-export type Func<T1,T2> = (input: T1) => (T2|Result<T2>);
+type MsgCallback = Func<Msg, void>;
+export type ResultFunc<T1,T2> = Func<T1,T2|Result<T2>>;
 
 export class Result<T> {
 
@@ -126,7 +126,7 @@ export class Result<T> {
         return [this.item, this.msgs];
     }
 
-    public bind<T2>(f: Func<T,T2>): Result<T2> {
+    public bind<T2>(f: ResultFunc<T,T2>): Result<T2> {
         let result = f(this.item);
         if (!(result instanceof Result)) {
             result = new Result(result);
@@ -198,7 +198,7 @@ export class ResultList<T> extends Result<T[]> {
         super(items, msgs);
     }
 
-    public map<T2>(f: Func<T,T2>): ResultList<T2> {
+    public map<T2>(f: ResultFunc<T,T2>): ResultList<T2> {
         const items: T2[] = [];
         const msgs: Msgs = [];
         for (const item of this.item) {
@@ -223,7 +223,7 @@ export class ResultDict<T> extends Result<Dict<T>> {
         super(items, msgs);
     }
 
-    public map<T2>(f: Func<T,T2>): ResultDict<T2> {
+    public map<T2>(f: ResultFunc<T,T2>): ResultDict<T2> {
         const items: Dict<T2> = {};
         const msgs: Msgs = [];
         for (const [k,v] of Object.entries(this.item)) {

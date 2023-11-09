@@ -20,3 +20,15 @@ export const DEFAULT_OPTIONS: Options = {
 export function Options(opt: Partial<Options> = {}): Options {
     return {...DEFAULT_OPTIONS, ...opt};
 }
+
+export class Env {
+
+    public opt: Options;
+
+    constructor(
+        opt: Partial<Options> = {}
+    ) { 
+        this.opt = Options(opt);
+    }
+
+}

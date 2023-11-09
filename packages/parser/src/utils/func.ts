@@ -1,17 +1,5 @@
-import { Options } from './utils/options';
 
-export class Env {
-
-    public opt: Options;
-
-    constructor(
-        opt: Partial<Options> = {}
-    ) { 
-        this.opt = Options(opt);
-    }
-
-}
-
+export type Func<T1,T2> = (i: T1) => T2;
 export type Gen<T> = Generator<T, void, undefined>;
 export type Dict<T> = {[k:string]:T};
 export type StringDict = Dict<string>;

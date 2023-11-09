@@ -12,7 +12,7 @@ import {
     Gen,
     iterTake,
     StringDict
-} from "./util";
+} from "./utils/func";
 import { msToTime } from "./utils/logging";
 import { Options } from "./utils/options";
 

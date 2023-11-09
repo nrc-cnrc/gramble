@@ -1,4 +1,4 @@
-import { Dict, StringDict } from "../util";
+import { Dict, StringDict } from "../utils/func";
 import { constructCollection, CounterStack, Expr } from "../exprs";
 import { Msgs, Err, Success } from "../msgs";
 import { 

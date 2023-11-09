@@ -6,9 +6,9 @@ import {
     outputProduct,
     flatten,
     iterUnit,
-    Env,
     update,
-} from "./util";
+    Func,
+} from "./utils/func";
 import { 
     Tape, TapeNamespace, 
     renameTape
@@ -16,7 +16,7 @@ import {
 import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "./utils/constants";
 import { VERBOSE_DEBUG, logDebug, logStates, logTime } from "./utils/logging";
 import { Namespace } from "./utils/namespace";
-import { Options } from "./utils/options";
+import { Env, Options } from "./utils/options";
 
 export type Query = TokenExpr | DotExpr;
 
@@ -32,7 +32,7 @@ export class Deriv {
         public next: Expr
     ) { }
 
-    public wrap(f: (e: Expr) => Expr) {
+    public wrap(f: Func<Expr,Expr>) {
         return new Deriv(this.result, f(this.next));
     }
 }

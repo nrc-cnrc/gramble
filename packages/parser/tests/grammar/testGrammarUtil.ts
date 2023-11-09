@@ -15,7 +15,7 @@ import {
 
 import {
     StringDict
-} from "../../src/util";
+} from "../../src/utils/func";
 import { DEFAULT_MAX_CHARS, DEFAULT_MAX_RECURSION } from "../../src/utils/constants";
 import { SILENT } from "../../src/utils/logging";
 import { Options } from "../../src/utils/options";

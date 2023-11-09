@@ -16,7 +16,7 @@ import {
 
 import {
     StringDict
-} from "../../src/util";
+} from "../../src/utils/func";
 import { SILENT, VERBOSE_DEBUG } from "../../src/utils/logging";
 
 // File level control over verbose output

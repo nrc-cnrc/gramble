@@ -1,4 +1,4 @@
-import { flatten } from "../util";
+import { flatten } from "../utils/func";
 import { 
     Grammar, LiteralGrammar, 
     RenameGrammar, SingleTapeGrammar 

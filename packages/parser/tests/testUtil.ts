@@ -7,7 +7,7 @@ import { Grammar } from "../src/grammars";
 import { Tape } from "../src/tapes";
 import {
     StringDict
-} from "../src/util";
+} from "../src/utils/func";
 import { HIDDEN_PREFIX } from "../src/utils/constants";
 import { SILENT, VERBOSE_DEBUG, logDebug, timeIt } from "../src/utils/logging";
 import { Options } from "../src/utils/options";

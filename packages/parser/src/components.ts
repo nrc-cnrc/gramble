@@ -6,7 +6,7 @@ import {
 } from "./msgs";
 import { Pass, PassEnv } from "./passes";
 import { toStr } from "./passes/toStr";
-import { Dict } from "./util";
+import { Dict } from "./utils/func";
 import { Pos } from "./utils/cell";
 
 export function exhaustive(h: never): never { return h };

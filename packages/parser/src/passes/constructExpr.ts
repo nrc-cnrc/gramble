@@ -7,7 +7,7 @@ import {
     NegationGrammar, PreTapeGrammar, RenameGrammar, RepeatGrammar,
     ReplaceGrammar, SequenceGrammar, ShortGrammar,
 } from "../grammars";
-import { Dict, Env } from "../util";
+import { Dict } from "../utils/func";
 import { 
     CollectionExpr, EPSILON, EpsilonExpr, 
     NULL, constructAlternation, constructCollection, 
@@ -19,6 +19,7 @@ import {
     constructSequence, constructShort 
 } from "../exprs";
 import { REPLACE_INPUT_TAPE } from "../utils/constants";
+import { Env } from "../utils/options";
 
 export function constructExpr(
     env: PassEnv,

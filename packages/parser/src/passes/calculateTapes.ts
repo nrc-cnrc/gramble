@@ -4,7 +4,7 @@ import {
     CollectionGrammar,
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { flatten, listUnique } from "../util";
+import { flatten, listUnique } from "../utils/func";
 
 /**
  * Goes through the tree and 

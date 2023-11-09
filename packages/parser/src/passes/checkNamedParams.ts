@@ -3,7 +3,7 @@ import {
     TstOp, TstHeadedGrid, TST 
 } from "../tsts";
 import { Pass, PassEnv } from "../passes";
-import { Err, Func, Msgs, Result, Warn } from "../msgs";
+import { Err, ResultFunc, Msgs, Result, Warn } from "../msgs";
 import { UniqueHeader, paramName } from "../headers";
 import {
     allowedParams, 
@@ -141,6 +141,6 @@ export class CheckNamedParams extends Pass<TST,TST> {
             return new TstEmpty().err("Invalid parameter",
                 `The operator to the left does not expect ${param}`)
                 .localize(h.pos);
-        }) as Func<TstHeader,TST>);
+        }) as ResultFunc<TstHeader,TST>);
     }
 }

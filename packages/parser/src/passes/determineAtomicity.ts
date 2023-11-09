@@ -7,7 +7,7 @@ import {
     ReplaceGrammar, SequenceGrammar, ShortGrammar, 
     StringPairSet 
 } from "../grammars";
-import { ValueSet, listIntersection } from "../util";
+import { ValueSet, listIntersection } from "../utils/func";
 import { renameTape } from "../tapes";
 
 type AtomicityClass = {

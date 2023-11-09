@@ -14,7 +14,7 @@ import {
     Gen, iterTake, 
     StringDict,
     Dict,
-} from "./util";
+} from "./utils/func";
 import { Worksheet, Workbook } from "./sources";
 import { backgroundColor, parseHeaderCell } from "./headers";
 import { TapeNamespace } from "./tapes";

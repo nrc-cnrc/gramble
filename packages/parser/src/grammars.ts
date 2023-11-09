@@ -20,7 +20,7 @@ import {
     setUnion,
     StringSet,
     ValueSet
-} from "./util";
+} from "./utils/func";
 
 import { Component, getChildren } from "./components";
 import { determineAtomicity } from "./passes/determineAtomicity";
