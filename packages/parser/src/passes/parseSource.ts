@@ -12,6 +12,7 @@ import { Worksheet, Workbook, Source } from "../sources";
 import { Cell, Pos } from "../utils/cell";
 import { CollectionOp, parseOp } from "../ops";
 import { RESERVED_WORDS } from "../utils/reserved";
+import { exhaustive } from "../utils/func";
 
 /**
  * This takes grids of cells (Worksheets) and collections of them

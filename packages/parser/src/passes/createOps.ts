@@ -1,4 +1,4 @@
-import { exhaustive } from "../util";
+import { exhaustive } from "../utils/func";
 import { 
     ReplaceOp,
     SymbolOp, 

@@ -20,7 +20,7 @@ import {
     ToHeader, RuleContextHeader 
 } from "../headers";
 import { INPUT_TAPE, OUTPUT_TAPE } from "../utils/constants";
-import { exhaustive } from "../components";
+import { exhaustive } from "../utils/func";
 
 
 export class HeaderToGrammar extends Pass<Header, Grammar> {

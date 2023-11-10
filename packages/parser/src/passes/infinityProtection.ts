@@ -14,7 +14,7 @@ import { AlternationGrammar,
 } from "../grammars";
 import { renameTape } from "../tapes";
 import { Count } from "../grammarConvenience";
-import { exhaustive } from "../util";
+import { exhaustive } from "../utils/func";
 
 export function infinityProtection(
     grammar: Grammar,

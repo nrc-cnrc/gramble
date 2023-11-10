@@ -1,10 +1,16 @@
-import { Result } from "../utils/msgs";
+import { Msgs, Result } from "../utils/msgs";
 import { 
     Grammar,
     CollectionGrammar,
+    EmbedGrammar,
+    HideGrammar,
+    MatchGrammar,
+    RenameGrammar,
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { flatten, listUnique } from "../utils/func";
+import { Dict, update } from "../utils/func";
+import { TapeID, TapeSet, TapeLit, TapeRef, hasTape, TapeRename, resolveTapes } from "../tapes";
+import { HIDDEN_PREFIX } from "../utils/constants";
 
 /**
  * Goes through the tree and 

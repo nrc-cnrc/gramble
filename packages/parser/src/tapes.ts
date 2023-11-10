@@ -1,3 +1,4 @@
+import { ValueSet, exhaustive, flatten, setMap } from "./utils/func";
 import { 
     Namespace
 } from "./utils/namespace";
