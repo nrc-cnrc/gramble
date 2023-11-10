@@ -14,7 +14,7 @@ import {
     StartsGrammar 
 } from "./grammars";
 import { Dict, StringDict } from "./utils/func";
-import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, DUMMY_REGEX_TAPE } from "./utils/constants";
+import { INPUT_TAPE, OUTPUT_TAPE, DEFAULT_TAPE } from "./utils/constants";
 
 export function SingleTape(
     tapeName: string,
@@ -59,10 +59,10 @@ export function Replace(
         beginsWith = true;
     if (typeof postContext === 'string' && postContext.endsWith("#"))
         endsWith = true;
-    fromGrammar = SingleTape(REPLACE_INPUT_TAPE, fromGrammar);
-    toGrammar = SingleTape(REPLACE_OUTPUT_TAPE, toGrammar);
-    preContext = SingleTape(REPLACE_INPUT_TAPE, preContext);
-    postContext = SingleTape(REPLACE_INPUT_TAPE, postContext);
+    fromGrammar = SingleTape(INPUT_TAPE, fromGrammar);
+    toGrammar = SingleTape(OUTPUT_TAPE, toGrammar);
+    preContext = SingleTape(INPUT_TAPE, preContext);
+    postContext = SingleTape(INPUT_TAPE, postContext);
     otherContext = makeGrammar(otherContext);
     return new ReplaceGrammar(fromGrammar, toGrammar, 
         preContext, postContext, otherContext, beginsWith, endsWith, 
@@ -98,10 +98,10 @@ export function ReplaceBlock(
 
 export function Correspond(
     child: Grammar | string,
-    tape1: string = REPLACE_INPUT_TAPE,
-    tape2: string = REPLACE_OUTPUT_TAPE,
+    tape1: string = INPUT_TAPE,
+    tape2: string = OUTPUT_TAPE,
 ): CorrespondGrammar {
-    child = makeGrammar(child, REPLACE_INPUT_TAPE);
+    child = makeGrammar(child, INPUT_TAPE);
     return new CorrespondGrammar(child, tape1, tape2);
 }
 
@@ -165,7 +165,7 @@ export function Lit(tape: string, text: string): LiteralGrammar {
 }
 
 export function Any(
-    tape: string = DUMMY_REGEX_TAPE
+    tape: string = DEFAULT_TAPE
 ): DotGrammar {
     return new DotGrammar(tape);
 }
@@ -335,7 +335,7 @@ export function Cursor(
 
 function makeGrammar(
     g: Grammar | string, 
-    tapeName: string = DUMMY_REGEX_TAPE
+    tapeName: string = DEFAULT_TAPE
 ): Grammar {
     if (typeof(g) === 'string')
         return Lit(tapeName, g);

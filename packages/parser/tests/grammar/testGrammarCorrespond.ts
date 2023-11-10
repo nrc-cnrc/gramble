@@ -14,7 +14,7 @@ import {
 import {
     logTestSuite, VERBOSE_TEST_L2,
 } from "../testUtil";
-import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../../src/utils/constants";
+import { INPUT_TAPE, OUTPUT_TAPE } from "../../src/utils/constants";
 import { Grammar } from "../../src/grammars";
 
 // File level control over verbose output
@@ -27,11 +27,11 @@ function test(params: Partial<GrammarTestAux>): () => void {
 }
 
 function i(s: string): Grammar {
-    return Lit(REPLACE_INPUT_TAPE, s);
+    return Lit(INPUT_TAPE, s);
 }
 
 function o(s: string): Grammar {
-    return Lit(REPLACE_OUTPUT_TAPE, s);
+    return Lit(OUTPUT_TAPE, s);
 }
 
 describe(`${grammarTestSuiteName(module)}`, function() {

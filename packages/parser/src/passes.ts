@@ -1,5 +1,5 @@
 import { Grammar } from "./grammars";
-import { Msgs, Result, result } from "./msgs";
+import { Msgs, Result, result } from "./utils/msgs";
 import { 
     Dict
 } from "./utils/func";

@@ -1,5 +1,5 @@
 import { PassEnv, Pass } from "../passes";
-import { CommandMsg, CommentMsg, Err, Msgs, Result } from "../msgs";
+import { CommandMsg, CommentMsg, Err, Msgs, Result } from "../utils/msgs";
 import { 
     TstAssignment,
     TstEnclosure, 

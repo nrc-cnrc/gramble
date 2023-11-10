@@ -18,7 +18,7 @@ import {
     constructPrecede, constructRename, constructRepeat, 
     constructSequence, constructShort 
 } from "../exprs";
-import { REPLACE_INPUT_TAPE } from "../utils/constants";
+import { INPUT_TAPE } from "../utils/constants";
 import { Env } from "../utils/options";
 
 export function constructExpr(
@@ -234,11 +234,11 @@ function constructExprReplace(
         if( that.optional ||
                 (that.beginsWith && !replaceNone) ||
                 (that.endsWith && !replaceNone)) {
-            return constructMatch(env, constructDotStar(REPLACE_INPUT_TAPE));
+            return constructMatch(env, constructDotStar(INPUT_TAPE));
         }
         const fromInstance: Expr[] = [preContextExpr, fromExpr, postContextExpr];
 
-        let notExpr: Expr = constructNotContains(env, REPLACE_INPUT_TAPE, fromInstance,
+        let notExpr: Expr = constructNotContains(env, INPUT_TAPE, fromInstance,
             that.beginsWith && replaceNone, that.endsWith && replaceNone);
         return constructMatch(env, notExpr);
     }
@@ -267,7 +267,7 @@ function constructExprReplace(
             let negatedOtherContext: Expr = 
                 constructNegation(env, otherContextExpr, new Set(g.otherContext.tapes));
             const matchDotStar: Expr =
-                constructMatch(env, constructDotStar(REPLACE_INPUT_TAPE));
+                constructMatch(env, constructDotStar(INPUT_TAPE));
             copyExpr = constructAlternation(env, constructSequence(env, matchAnythingElse(true), otherContextExpr),
                                             constructSequence(env, matchDotStar, negatedOtherContext));
         }

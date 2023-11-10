@@ -6,7 +6,7 @@ import {
     RenameGrammar,
 } from "../grammars";
 
-import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "../utils/constants";
+import { INPUT_TAPE, OUTPUT_TAPE } from "../utils/constants";
 import { PassEnv } from "../passes";
 import { PostPass } from "./ancestorPasses";
 
@@ -46,18 +46,18 @@ export class ConstructReplaceBlocks extends PostPass<Grammar> {
         let newG = g.child;
         for (const rule of g.rules) {
             // first, rename the relevant tape of the child to ".input"
-            newG = new RenameGrammar(newG, relevantTape, REPLACE_INPUT_TAPE);
+            newG = new RenameGrammar(newG, relevantTape, INPUT_TAPE);
             // now the relevant tape is "output"
-            relevantTape = REPLACE_OUTPUT_TAPE;
+            relevantTape = OUTPUT_TAPE;
             // join it with the rule
             newG = new JoinGrammar(newG, rule);
             // hide the input tape
-            newG = new HideGrammar(newG, REPLACE_INPUT_TAPE, rule.hiddenTapeName);
+            newG = new HideGrammar(newG, INPUT_TAPE, rule.hiddenTapeName);
             // set priority
-            newG = new PreTapeGrammar(rule.hiddenTapeName, REPLACE_OUTPUT_TAPE, newG);
+            newG = new PreTapeGrammar(rule.hiddenTapeName, OUTPUT_TAPE, newG);
         }
 
-        return new RenameGrammar(newG, REPLACE_OUTPUT_TAPE, g.inputTape);
+        return new RenameGrammar(newG, OUTPUT_TAPE, g.inputTape);
     }
 
 }

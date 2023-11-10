@@ -3,7 +3,7 @@ import {
 } from "./exprs";
 import { 
     Result,
-} from "./msgs";
+} from "./utils/msgs";
 
 import {
     renameTape,
@@ -24,7 +24,7 @@ import {
 
 import { Component, getChildren } from "./components";
 import { determineAtomicity } from "./passes/determineAtomicity";
-import { DEFAULT_SYMBOL_NAME, DUMMY_REGEX_TAPE, HIDDEN_PREFIX, REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE } from "./utils/constants";
+import { DEFAULT_SYMBOL_NAME, DEFAULT_TAPE, HIDDEN_PREFIX, INPUT_TAPE, OUTPUT_TAPE } from "./utils/constants";
 import { tokenizeUnicode } from "./utils/strings";
 import { Pos } from "./utils/cell";
 
@@ -448,7 +448,7 @@ export class SingleTapeGrammar extends UnaryGrammar {
             // this as a genuine tape outside of this scope, outside of this
             // scope that will be tapeName.  
             for (const tapeName of this.child.calculateTapes(stack, env)) {
-                if (tapeName == DUMMY_REGEX_TAPE) {
+                if (tapeName == DEFAULT_TAPE) {
                     this._tapes.push(this.tapeName);
                 } else {
                     this._tapes.push(tapeName);
@@ -887,8 +887,8 @@ export class CorrespondGrammar extends UnaryGrammar {
     
     constructor(
         child: Grammar,
-        public tape1: string = REPLACE_INPUT_TAPE,
-        public tape2: string = REPLACE_OUTPUT_TAPE
+        public tape1: string = INPUT_TAPE,
+        public tape2: string = OUTPUT_TAPE
     ) {
         super(child);
     }
@@ -934,8 +934,8 @@ export class ReplaceGrammar extends AbstractGrammar {
         env: PassEnv
     ): StringPairSet {
         const results = super.getVocabCopyEdges(tapeName, tapeNS, symbolsVisited, env);
-        const fromTapeGlobalName = tapeNS.get(REPLACE_INPUT_TAPE).globalName;
-        const toTapeGlobalName = tapeNS.get(REPLACE_OUTPUT_TAPE).globalName;
+        const fromTapeGlobalName = tapeNS.get(INPUT_TAPE).globalName;
+        const toTapeGlobalName = tapeNS.get(OUTPUT_TAPE).globalName;
         results.add([fromTapeGlobalName, toTapeGlobalName]);
         return results;
     }
@@ -950,7 +950,7 @@ export class ReplaceGrammar extends AbstractGrammar {
         let vocab = super.collectVocab(tapeName, atomic, symbolsVisited, env);
 
         // however, we also need to collect vocab from the contexts as if it were on a toTape
-        let newTapeName = renameTape(tapeName, REPLACE_OUTPUT_TAPE, REPLACE_INPUT_TAPE);
+        let newTapeName = renameTape(tapeName, OUTPUT_TAPE, INPUT_TAPE);
         vocab = setUnion(vocab, this.fromGrammar.collectVocab(newTapeName, atomic, symbolsVisited, env));
         vocab = setUnion(vocab, this.preContext.collectVocab(newTapeName, atomic, symbolsVisited, env));
         vocab = setUnion(vocab, this.postContext.collectVocab(newTapeName, atomic, symbolsVisited, env));

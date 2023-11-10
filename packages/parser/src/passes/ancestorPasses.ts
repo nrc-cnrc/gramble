@@ -1,6 +1,6 @@
 import { Pass, PassEnv } from "../passes";
 import { Component } from "../components";
-import { Result, result } from "../msgs";
+import { Result, result } from "../utils/msgs";
 
 export abstract class CatchingPass<T1 extends Component, 
                 T2 extends Component> extends Pass<T1,T2> {

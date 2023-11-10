@@ -7,7 +7,7 @@ import {
 } from "../tsts";
 import { Component } from "../components";
 import { CatchingPass } from "./ancestorPasses";
-import { Result } from "../msgs";
+import { Result } from "../utils/msgs";
 
 /**
  * Make sure that collections are reasonably placed

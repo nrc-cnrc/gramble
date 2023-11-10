@@ -3,7 +3,7 @@ import {
     Msg, Msgs, 
     result, Result, 
     ResultVoid
-} from "./msgs";
+} from "./utils/msgs";
 import { Pass, PassEnv } from "./passes";
 import { toStr } from "./passes/toStr";
 import { Dict } from "./utils/func";

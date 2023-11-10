@@ -16,7 +16,7 @@ import {
     StartsHeader
 } from "../headers";
 
-import { Err, Msgs } from "../msgs";
+import { Err, Msgs } from "../utils/msgs";
 import { PassEnv } from "../passes";
 import { PostPass } from "./ancestorPasses";
 

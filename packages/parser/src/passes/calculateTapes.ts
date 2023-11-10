@@ -1,4 +1,4 @@
-import { Result } from "../msgs";
+import { Result } from "../utils/msgs";
 import { 
     Grammar,
     CollectionGrammar,

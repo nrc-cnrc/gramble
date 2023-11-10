@@ -21,7 +21,7 @@ import { TapeNamespace } from "./tapes";
 import { Expr, CollectionExpr } from "./exprs";
 import { DevEnvironment, SimpleDevEnvironment } from "./devEnv";
 import { generate } from "./generator";
-import { MissingSymbolError, Msg, result } from "./msgs";
+import { MissingSymbolError, Msg, result } from "./utils/msgs";
 import { PassEnv } from "./passes";
 import { 
     NAME_PASSES, 
@@ -35,7 +35,7 @@ import { infinityProtection } from "./passes/infinityProtection";
 import { prioritizeTapes } from "./passes/prioritizeTapes";
 import { constructExpr } from "./passes/constructExpr";
 import { toStr } from "./passes/toStr";
-import { DEFAULT_SYMBOL_NAME, HIDDEN_PREFIX } from "./utils/constants";
+import { DEFAULT_PROJECT_NAME, DEFAULT_SYMBOL_NAME, HIDDEN_PREFIX } from "./utils/constants";
 import { VERBOSE_GRAMMAR, VERBOSE_TIME, logTime, msToTime, timeIt } from "./utils/logging";
 import { Options } from "./utils/options";
 
@@ -118,8 +118,8 @@ export class Interpreter {
         opt: Partial<Options> = {}
     ): Interpreter {
         const devEnv = new SimpleDevEnvironment();
-        devEnv.addSourceAsText("", csv);
-        return Interpreter.fromSheet(devEnv, "", opt);
+        devEnv.addSourceAsText(DEFAULT_PROJECT_NAME, csv);
+        return Interpreter.fromSheet(devEnv, DEFAULT_PROJECT_NAME, opt);
     }
 
     public static fromSheet(

@@ -13,7 +13,7 @@ import {
 import { 
     Msgs, Warn, 
     ResultVoid, unit, Result
-} from "./msgs";
+} from "./utils/msgs";
 import { Op } from "./ops";
 import { Component } from "./components";
 import { Pass, PassEnv } from "./passes";

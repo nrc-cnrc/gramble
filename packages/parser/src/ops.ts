@@ -4,7 +4,7 @@ import {
     MPAlt, MPParser, 
     MPSequence, MPUnreserved 
 } from "./miniParser";
-import { Result } from "./msgs";
+import { Result } from "./utils/msgs";
 import { 
     REPLACE_PARAMS, REQUIRED_REPLACE_PARAMS, 
     ALL_RESERVED, RESERVED_SYMBOLS, 

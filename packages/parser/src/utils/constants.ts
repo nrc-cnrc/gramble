@@ -1,10 +1,10 @@
 export const HIDDEN_PREFIX = ".";
 export const INTERNAL_PREFIX = "$";
-export const REPLACE_INPUT_TAPE = INTERNAL_PREFIX + "i";
-export const REPLACE_OUTPUT_TAPE = INTERNAL_PREFIX + "o";
-export const DUMMY_REGEX_TAPE = INTERNAL_PREFIX + "T";
+export const INPUT_TAPE = INTERNAL_PREFIX + "i";
+export const OUTPUT_TAPE = INTERNAL_PREFIX + "o";
+export const DEFAULT_TAPE = INTERNAL_PREFIX + "T";
 
-export const PLAIN_PARAM: string = INTERNAL_PREFIX + "plain";
+export const DEFAULT_PARAM: string = INTERNAL_PREFIX + "plain";
 
 export const DEFAULT_PROJECT_NAME = "";
 export const DEFAULT_SYMBOL_NAME = "Default";

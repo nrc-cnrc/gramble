@@ -29,7 +29,7 @@ import {
     RESERVED_FOR_SYMBOL, 
     RESERVED_WORDS 
 } from "./utils/reserved";
-import { DUMMY_REGEX_TAPE } from "./utils/constants";
+import { DEFAULT_TAPE } from "./utils/constants";
 
 export type RegexParser = MPParser<Grammar>;
 
@@ -40,7 +40,7 @@ export type RegexParser = MPParser<Grammar>;
  */
 
 const CELL_EMPTY = MPEmpty(
-    () => new LiteralGrammar(DUMMY_REGEX_TAPE, "")
+    () => new LiteralGrammar(DEFAULT_TAPE, "")
 );
 
 /***********************/
@@ -120,7 +120,7 @@ const REGEX_SUBSEQ: RegexParser = MPDelay(() => MPRepetition(
         REGEX_UNIT
     ),
     (cs) => {
-        if (cs.length == 0) return new LiteralGrammar(DUMMY_REGEX_TAPE, "");
+        if (cs.length == 0) return new LiteralGrammar(DEFAULT_TAPE, "");
         if (cs.length == 1) return cs[0];
         return new SequenceGrammar(cs);
     },
@@ -135,7 +135,7 @@ const REGEX_UNIT: RegexParser = MPDelay(() => MPAlt(
 ));
 
 const REGEX_UNRESERVED = MPUnreservedChar<Grammar>(
-    s => new LiteralGrammar(DUMMY_REGEX_TAPE, s)
+    s => new LiteralGrammar(DEFAULT_TAPE, s)
 );
 
 const REGEX_TOPLEVEL = MPAlt(
@@ -145,7 +145,7 @@ const REGEX_TOPLEVEL = MPAlt(
 
 const REGEX_DOT = MPSequence<Grammar>(
     [ "." ],
-    () => new DotGrammar(DUMMY_REGEX_TAPE)
+    () => new DotGrammar(DEFAULT_TAPE)
 )
 
 const REGEX_STAR = MPSequence(
@@ -194,13 +194,13 @@ const PLAINTEXT_EXPR: MPParser<Grammar> = MPDelay(() => MPAlt(
 ));
 
 const PLAINTEXT_UNRESERVED = MPUnreserved<Grammar>(
-    s => new LiteralGrammar(DUMMY_REGEX_TAPE, s)
+    s => new LiteralGrammar(DEFAULT_TAPE, s)
 );
 
 const PLAINTEXT_SUBSEQ = MPRepetition(
     PLAINTEXT_UNRESERVED,
     (cs) => {
-        if (cs.length == 0) return new LiteralGrammar(DUMMY_REGEX_TAPE, "");
+        if (cs.length == 0) return new LiteralGrammar(DEFAULT_TAPE, "");
         if (cs.length == 1) return cs[0];
         return new SequenceGrammar(cs);
     },
@@ -277,7 +277,7 @@ const parseParams = {
     }
 }
 
-export function parseCell(
+export function parseContent(
     parseClass: ParseClass,
     text: string
 ): GrammarResult {

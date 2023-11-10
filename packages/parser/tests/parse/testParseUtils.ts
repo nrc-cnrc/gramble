@@ -1,11 +1,11 @@
 import { expect } from "chai";
-import { parseCell } from "../../src/cell";
+import { parseContent } from "../../src/content";
 import { ParseClass, parseHeaderCell } from "../../src/headers";
 import { parseOp, autoID as opID } from "../../src/ops";
 import { PassEnv } from "../../src/passes";
 import { CombineLiterals } from "../../src/passes/combineLiterals";
 import { Grammar } from "../../src/grammars";
-import { Msgs } from "../../src/msgs";
+import { Msgs } from "../../src/utils/msgs";
 import { toStr } from "../../src/passes/toStr";
 import { tokenizeUnicode } from "../../src/utils/strings";
 //import { autoID } from "../../src/components";
@@ -81,7 +81,7 @@ function testCellID(
     expectedID: string,
     numErrorsExpected: number = 0
 ): void {
-    const parseResult = parseCell(parseClass, text);
+    const parseResult = parseContent(parseClass, text);
     const env = new PassEnv();
     const [result, msgs] = new CombineLiterals()
                                 .go(parseResult, env)

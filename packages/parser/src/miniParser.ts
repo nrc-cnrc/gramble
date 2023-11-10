@@ -1,4 +1,4 @@
-import { Msgs, Result, result, resultList } from "./msgs";
+import { Msgs, Result, result, resultList } from "./utils/msgs";
 import { Gen } from "./utils/func";
 
 /**

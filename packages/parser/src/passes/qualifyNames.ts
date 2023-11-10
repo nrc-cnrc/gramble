@@ -1,4 +1,4 @@
-import { MissingSymbolError, Msgs } from "../msgs";
+import { MissingSymbolError, Msgs } from "../utils/msgs";
 import { 
     EmbedGrammar,
     EpsilonGrammar,

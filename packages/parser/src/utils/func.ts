@@ -131,13 +131,11 @@ export function outputProduct(ds1: StringDict[], ds2: StringDict[]): StringDict[
 
 export function foldLeft<T>(
     arr: T[], 
-    f: (t1: T, t2: T) => T
+    f: (t1: T, t2: T) => T,
+    start: T,
 ): T {
-    if (arr.length == 0) {
-        throw new Error(`foldLeft must have >0 arguments`);
-    }
-    let result = arr[0];
-    for (let i = 1; i < arr.length; i++) {
+    let result = start;
+    for (let i = 0; i < arr.length; i++) {
         result = f(result, arr[i]);
     }
     return result;
@@ -145,13 +143,11 @@ export function foldLeft<T>(
 
 export function foldRight<T>(
     arr: T[],
-    f: (t1: T, t2: T) => T
+    f: (t1: T, t2: T) => T,
+    start: T
 ): T {
-    if (arr.length == 0) {
-        throw new Error(`foldRight must have >0 arguments`);
-    }
-    let result = arr[arr.length-1];
-    for (let i = arr.length-2; i >= 0; i--) {
+    let result = start
+    for (let i = arr.length-1; i >= 0; i--) {
         result = f(arr[i], result);
     }
     return result;

@@ -15,7 +15,7 @@ import {
     t1, t2
 } from "./testUtil";
 
-import { Msgs } from '../src/msgs';
+import { Msgs } from '../src/utils/msgs';
 import { PassEnv } from '../src/passes';
 import { NAME_PASSES } from '../src/passes/allPasses';
 import { lengthRange } from '../src/passes/infinityProtection';

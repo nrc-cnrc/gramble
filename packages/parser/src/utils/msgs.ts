@@ -1,5 +1,5 @@
-import { Dict, Func } from "./utils/func";
-import { Pos } from "./utils/cell";
+import { Dict, Func } from "./func";
+import { Pos } from "./cell";
 
 type MsgType = "error" | "warning" | "info" | 
                 "command" | "header" | "comment" | "content";

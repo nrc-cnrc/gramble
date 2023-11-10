@@ -4,11 +4,11 @@ import {
     MPSequence, MPUnreserved 
 } from "./miniParser";
 
-import { Result } from "./msgs";
+import { Result } from "./utils/msgs";
 
 import { ALL_RESERVED, isValidSymbolName, RESERVED_SYMBOLS } from "./utils/reserved";
 import { Component, exhaustive } from "./components";
-import { PLAIN_PARAM } from "./utils/constants";
+import { DEFAULT_PARAM } from "./utils/constants";
 import { colorFromText } from "./utils/colors";
 
 export const DEFAULT_SATURATION = 0.05;
@@ -429,7 +429,7 @@ export function paramName(h: Header): string {
         case "hide":  
         case "rename":  
         case "error":   
-        case "embed":    return PLAIN_PARAM;
+        case "embed":    return DEFAULT_PARAM;
         // optional depends on its child
         case "optional": return paramName(h.child);
         // from/to/context/unique contribute their tag

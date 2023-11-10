@@ -1,5 +1,5 @@
 import { Pass, PassEnv } from "../passes";
-import { Msgs, Result, Warn } from "../msgs";
+import { Msgs, Result, Warn } from "../utils/msgs";
 import { 
     TstCollection, 
     TstOp, TstEmpty,

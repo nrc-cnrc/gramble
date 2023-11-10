@@ -295,11 +295,6 @@ function printUsage() {
     console.log(usage);
 }
 
-function resultToCSV(labels: string[], entry: StringDict): string {
-    const replacer = (key: string, value:string | null) => value === null ? '' : value;
-    return labels.map(label => JSON.stringify(entry[label], replacer)).join(',');
-}
-
 type Gen<T> = Generator<T, void, undefined>;
 
 function generateToCSV(

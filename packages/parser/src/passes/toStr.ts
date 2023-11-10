@@ -4,7 +4,7 @@ import {
     LiteralGrammar, RepeatGrammar 
 } from "../grammars";
 import { Component } from "../components";
-import { DUMMY_REGEX_TAPE } from "../utils/constants";
+import { DEFAULT_TAPE } from "../utils/constants";
 
 export function toStr(
     x: any,
@@ -52,13 +52,13 @@ function setToStr<T>(
 }
 
 export function litToStr(x: LiteralGrammar): string {
-    if (x.tapeName == DUMMY_REGEX_TAPE && x.text == "") return "ε"
-    if (x.tapeName == DUMMY_REGEX_TAPE) return x.text;
+    if (x.tapeName == DEFAULT_TAPE && x.text == "") return "ε"
+    if (x.tapeName == DEFAULT_TAPE) return x.text;
     return `${x.tapeName}:${x.text}`;
 }
 
 export function dotToStr(x: DotGrammar): string {
-    if (x.tapeName == DUMMY_REGEX_TAPE) return ".";
+    if (x.tapeName == DEFAULT_TAPE) return ".";
     return `${x.tapeName}:.`;
 }
 
