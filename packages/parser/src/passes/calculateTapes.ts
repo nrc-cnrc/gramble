@@ -8,8 +8,8 @@ import {
     RenameGrammar,
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { Dict, update } from "../utils/func";
-import { TapeID, TapeSet, TapeLit, TapeRef, hasTape, TapeRename, resolveTapes } from "../tapes";
+import { Dict, setMap, update } from "../utils/func";
+import { TapeID, TapeSet, TapeLit, TapeRef, hasTape, TapeRename, tapeToRefs, tapeToStr } from "../tapes";
 import { HIDDEN_PREFIX } from "../utils/constants";
 
 /**
@@ -155,7 +155,15 @@ function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar>
 
     // now resolve the references and renames until you're
     // left with only sets of literals
-    const keys = Object.keys(tapeIDs);
+    for (const [k1,v1] of Object.entries(tapeIDs)) {
+        const neededResolutions = tapeToRefs(v1);
+        for (const k2 of neededResolutions) {
+            const v2 = tapeIDs[k2];
+            tapeIDs[k1] = resolveTapes(v1, k2, v2, new Set(k1));
+        }
+    }
+
+    /*
     for (let i = 0; i < keys.length; i++) {
         const k1 = keys[i];
         const v1 = tapeIDs[k1];
@@ -164,7 +172,7 @@ function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar>
             const v2 = resolveTapes(tapeIDs[k2], k1, v1, new Set(k2));
             tapeIDs[k2] = v2;
         }
-    }
+    } */
 
     // now feed those back into the structure so that every
     // grammar node has only literal tapes
@@ -184,4 +192,41 @@ function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar>
     }
     return updateTapes(g, selectedSymbol.tapeSet).msg(msgs);
 
+}
+
+
+
+// Resolving tapes is the process of replacing TapeRefs
+// inside TapeIDs into their corresponding TapeLits and sets thereof
+
+function resolveTapes(
+    t: TapeID, 
+    key:string, 
+    val:TapeID,
+    visited: Set<string>
+): TapeID {
+    console.log(`resolving ${key} in ${tapeToStr(t)}`);
+    switch (t.tag) {
+        case "tapeUnknown": return TapeSet();
+        case "tapeLit": return t;
+        case "tapeRef": return resolveTapeRefs(t, key, val, visited);
+        case "tapeRename": 
+            return TapeRename(resolveTapes(t.child, key, val, visited), 
+                                t.fromTape, t.toTape);
+        case "tapeSet": 
+            return TapeSet(...setMap(t.children, c => 
+                resolveTapes(c, key, val, visited)));
+    }
+}
+
+function resolveTapeRefs(    
+    t: TapeRef, 
+    key:string, 
+    val:TapeID,
+    visited: Set<string>
+): TapeID {
+    if (key !== t.symbol) return t;
+    if (visited.has(key)) return TapeSet();
+    const newVisited = new Set([...visited, key]);
+    return resolveTapes(val, key, val, newVisited);
 }

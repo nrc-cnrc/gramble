@@ -1,4 +1,4 @@
-import { ValueSet, exhaustive, flatten, setMap } from "./utils/func";
+import { ValueSet, exhaustive, flatten, setMap, setUnion } from "./utils/func";
 import { 
     Namespace
 } from "./utils/namespace";
@@ -28,7 +28,6 @@ export class Tape {
             this.vocab.add(char);
         }
     }
-    
 }
 
 export class TapeNamespace extends Namespace<Tape> { }
@@ -40,6 +39,8 @@ export function renameTape(
 ): string {
     return (tapeName == fromTape) ? toTape : tapeName;
 }
+
+// New tape structures
 
 export type TapeID 
     = TapeLit
@@ -58,9 +59,9 @@ export function TapeLit(s: string): TapeID {
     return { tag: "tapeLit", text: s }
 };
 
-export type TapeRef = { tag: "tapeRef", text: string };
+export type TapeRef = { tag: "tapeRef", symbol: string };
 export function TapeRef(s: string): TapeID {
-    return { tag: "tapeRef", text: s }
+    return { tag: "tapeRef", symbol: s }
 };
 
 export type TapeRename =  { 
@@ -106,47 +107,34 @@ export function TapeSet(
     return { tag: "tapeSet", children: newChildren }
 };
 
-export function resolveTapes(
-    t: TapeID, 
-    key:string, 
-    val:TapeID,
-    visited: Set<string>
-): TapeID {
-    switch (t.tag) {
-        case "tapeUnknown": return TapeSet();
-        case "tapeLit": return t;
-        case "tapeRef": return resolveTapeRefs(t, key, val, visited);
-        case "tapeRename": 
-            return TapeRename(resolveTapes(t.child, key, val, visited), 
-                                t.fromTape, t.toTape);
-        case "tapeSet": 
-            return TapeSet(...setMap(t.children, c => 
-                resolveTapes(c, key, val, visited)));
-    }
-}
-
-function resolveTapeRefs(    
-    t: TapeRef, 
-    key:string, 
-    val:TapeID,
-    visited: Set<string>
-): TapeID {
-    if (key !== t.text) return t;
-    if (visited.has(key)) return TapeSet();
-    const newVisited = new Set([...visited, key]);
-    return resolveTapes(val, key, val, newVisited);
-}
+// Turning a TapeID to a string
 
 export function tapeToStr(t: TapeID): string {
     switch (t.tag) {
         case "tapeUnknown": return "?";
         case "tapeLit": return t.text;
-        case "tapeRef": return "${" + t.text + "}";
+        case "tapeRef": return "${" + t.symbol + "}";
         case "tapeRename": return `${t.fromTape}>${t.toTape}(${tapeToStr(t.child)})`;
         case "tapeSet": return "[" + [...setMap(t.children, c => tapeToStr(c))].join(",") + "]";
         default: exhaustive(t);
     }
 }
+
+// Getting the literals from a tape set.  If anything in it isn't
+// a literal or a set, that's an error
+
+export function tapeToRefs(t: TapeID): string[] {
+    switch (t.tag) {
+        case "tapeLit": return [];
+        case "tapeRef": return [t.symbol];
+        case "tapeSet": return flatten(setMap(t.children, c => tapeToRefs(c)));
+        case "tapeRename": return tapeToRefs(t.child);
+        case "tapeUnknown": return [];
+    }
+}
+
+// Getting the literals from a tape set.  If anything in it isn't
+// a literal or a set, that's an error
 
 export function tapeToLits(t: TapeID): string[] {
     switch (t.tag) {
@@ -179,4 +167,35 @@ function tapeInSet(t: TapeSet, query: string): Trivalent {
         if (result === "unknown") found = "unknown";
     }
     return found;
+}
+
+export type VocabSet = {
+    tokens: Set<string>,
+    wildcard: boolean,
+}
+
+export function VocabSet(tokens: Iterable<string>, wildcard: boolean = false): VocabSet {
+    return {
+        tokens: new Set(tokens), 
+        wildcard
+    }
+}
+
+export function vocabUnion(v1: VocabSet, v2: VocabSet) {
+    return {
+        wildcard: v1.wildcard || v2.wildcard,
+        tokens: setUnion(v1.tokens, v2.tokens)
+    };
+}
+
+export function vocabIntersection(v1: VocabSet, v2: VocabSet): VocabSet {
+    const wildcard = v1.wildcard && v2.wildcard;
+    let tokens: Set<string> = new Set();
+    if (v1.wildcard) tokens = new Set(v2.tokens);
+    for (const t1 of v1.tokens) {
+        if (v2.wildcard || v2.tokens.has(t1)) {
+            tokens.add(t1);
+        }
+    }
+    return { wildcard, tokens };
 }

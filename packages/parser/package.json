@@ -38,6 +38,7 @@
     "testGenerate": "mocha -r ts-node/register tests/*.ts",
     "testProperty": "mocha -r ts-node/register tests/property/testProperty.ts",
     "testLength": "mocha -r ts-node/register tests/testLength.ts",
+    "testVocab": "mocha -r ts-node/register tests/testVocab.ts",
     
     "testGrammar": "mocha -r ts-node/register tests/grammar/*.ts",
     "testGrammarBasic": "mocha -r ts-node/register tests/grammar/testGrammarBasic.ts",
