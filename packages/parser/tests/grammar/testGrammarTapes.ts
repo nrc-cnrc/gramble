@@ -250,4 +250,135 @@ describe(`GrammarIDs`, function() {
         tapes: ["t1", "t2"]
     });
 
+    testGrammarTapes({
+        testnum: "13a",
+        grammar: Collection({
+            a: t1("hi"),
+            b: Seq(t2("world"), Embed("a")),
+            c: Seq(t3("!"), Embed("b")),
+        }),
+        tapes: ["t1", "t2", "t3"],
+        symbol: "c"
+    });
+    
+    testGrammarTapes({
+        testnum: "13b",
+        grammar: Collection({
+            a: t1("hi"),
+            c: Seq(t3("!"), Embed("b")),
+            b: Seq(t2("world"), Embed("a")),
+        }),
+        tapes: ["t1", "t2", "t3"],
+        symbol: "c"
+    });
+    
+    testGrammarTapes({
+        testnum: "13c",
+        grammar: Collection({
+            b: Seq(t2("world"), Embed("a")),
+            a: t1("hi"),
+            c: Seq(t3("!"), Embed("b")),
+        }),
+        tapes: ["t1", "t2", "t3"],
+        symbol: "c"
+    });
+    
+    testGrammarTapes({
+        testnum: "13d",
+        grammar: Collection({
+            b: Seq(t2("world"), Embed("a")),
+            c: Seq(t3("!"), Embed("b")),
+            a: t1("hi"),
+        }),
+        tapes: ["t1", "t2", "t3"],
+        symbol: "c"
+    });
+
+    testGrammarTapes({
+        testnum: "13e",
+        grammar: Collection({
+            c: Seq(t3("!"), Embed("b")),
+            a: t1("hi"),
+            b: Seq(t2("world"), Embed("a")),
+        }),
+        tapes: ["t1", "t2", "t3"],
+        symbol: "c"
+    });
+    
+    testGrammarTapes({
+        testnum: "13f",
+        grammar: Collection({
+            c: Seq(t3("!"), Embed("b")),
+            b: Seq(t2("world"), Embed("a")),
+            a: t1("hi"),
+        }),
+        tapes: ["t1", "t2", "t3"],
+        symbol: "c"
+    });
+    
+    testGrammarTapes({
+        testnum: "14a",
+        grammar: Collection({
+            a: Seq(t1("hi"), Embed("c")),
+            b: Seq(t2("world"), Embed("a")),
+            c: Seq(t3("!"), Embed("b")),
+        }),
+        tapes: ["t1", "t2", "t3"],
+        symbol: "c"
+    });
+    
+    testGrammarTapes({
+        testnum: "14b",
+        grammar: Collection({
+            a: Seq(t1("hi"), Embed("c")),
+            c: Seq(t3("!"), Embed("b")),
+            b: Seq(t2("world"), Embed("a")),
+        }),
+        tapes: ["t1", "t2", "t3"],
+        symbol: "c"
+    });
+    
+    testGrammarTapes({
+        testnum: "14c",
+        grammar: Collection({
+            b: Seq(t2("world"), Embed("a")),
+            a: Seq(t1("hi"), Embed("c")),
+            c: Seq(t3("!"), Embed("b")),
+        }),
+        tapes: ["t1", "t2", "t3"],
+        symbol: "c"
+    });
+    
+    testGrammarTapes({
+        testnum: "14d",
+        grammar: Collection({
+            b: Seq(t2("world"), Embed("a")),
+            c: Seq(t3("!"), Embed("b")),
+            a: Seq(t1("hi"), Embed("c")),
+        }),
+        tapes: ["t1", "t2", "t3"],
+        symbol: "c"
+    });
+
+    testGrammarTapes({
+        testnum: "14e",
+        grammar: Collection({
+            c: Seq(t3("!"), Embed("b")),
+            a: Seq(t1("hi"), Embed("c")),
+            b: Seq(t2("world"), Embed("a")),
+        }),
+        tapes: ["t1", "t2", "t3"],
+        symbol: "c"
+    });
+    
+    testGrammarTapes({
+        testnum: "14f",
+        grammar: Collection({
+            c: Seq(t3("!"), Embed("b")),
+            b: Seq(t2("world"), Embed("a")),
+            a: Seq(t1("hi"), Embed("c")),
+        }),
+        tapes: ["t1", "t2", "t3"],
+        symbol: "c"
+    });
 });
