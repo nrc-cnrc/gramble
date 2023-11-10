@@ -1,15 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "strict": true, 
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "strictPropertyInitialization": true,
-    "noImplicitThis": true,
-    "alwaysStrict": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
     "rootDir": "./src",
     "outDir": "./dist",
     "baseUrl": "./",
@@ -17,13 +9,13 @@
         "*": [ "src/@types/*"]
     },
     "sourceMap": true,
+    "composite": true,
     "tsBuildInfoFile": "../../.build-cache/parser.tsbuildinfo",
     "types": [
       "chai",
       "mocha",
       "node"
-    ],
-    "target": "es6"
+    ]
   },
   "include": [
     "src"

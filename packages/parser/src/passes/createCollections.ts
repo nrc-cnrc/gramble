@@ -1,12 +1,12 @@
 import { Pass, PassEnv } from "../passes";
-import { Msgs, Result, Warn } from "../msgs";
+import { Msgs, Result, Warn } from "../utils/msgs";
 import { 
     TstCollection, 
     TstOp, TstEmpty,
     TST
 } from "../tsts";
 import { CollectionOp, SymbolOp, siblingRequired } from "../ops";
-import { AUTO_SYMBOL_NAME, DEFAULT_SYMBOL_NAME } from "../util";
+import { AUTO_SYMBOL_NAME, DEFAULT_SYMBOL_NAME } from "../utils/constants";
 
 /**
  * Collections work somewhat differently from other operators,

@@ -1,5 +1,5 @@
-import { Msgs, Result, result, resultList } from "./msgs";
-import { Gen } from "./util";
+import { Msgs, Result, result, resultList } from "./utils/msgs";
+import { Gen } from "./utils/func";
 
 /**
  * This is a simple parser-combinator engine that underlies various small parsing tasks, 

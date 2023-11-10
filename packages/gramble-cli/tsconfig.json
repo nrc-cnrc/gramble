@@ -1,15 +1,6 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "strict": true, 
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "strictPropertyInitialization": true,
-    "noImplicitThis": true,
-    "alwaysStrict": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
     "rootDir": "./src",
     "outDir": "./dist",
     "baseUrl": "./",
@@ -17,15 +8,13 @@
         "*": [ "src/@types/*"]
     },
     "sourceMap": true,
+    "composite": true,
     "tsBuildInfoFile": "../../.build-cache/gramble-cli.tsbuildinfo",
     "types": [
-      "chai",
-      "mocha",
       "node",
       "command-line-args",
       "command-line-usage"
-    ],
-    "target": "es6"
+    ]
   },
   "include": [
     "src"

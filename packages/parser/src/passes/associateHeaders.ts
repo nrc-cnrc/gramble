@@ -8,9 +8,9 @@ import {
     TST, 
 } from "../tsts";
 import { Pass, PassEnv } from "../passes";
-import { ContentMsg, Msgs, Result, Warn } from "../msgs";
+import { ContentMsg, Msgs, Result, Warn } from "../utils/msgs";
 import { backgroundColor, fontColor, paramName } from "../headers";
-import { PLAIN_PARAM } from "../util";
+import { DEFAULT_PARAM } from "../utils/constants";
 
 /**
  * Before this, headers and their associated content cells aren't
@@ -53,7 +53,7 @@ export class AssociateHeaders extends Pass<TST,TST> {
                     ).localize(content.pos).msgTo(msgs);
 
                     const param = paramName(header.header);
-                    if (param != PLAIN_PARAM && param != "unique") {
+                    if (param != DEFAULT_PARAM && param != "unique") {
                         if (param in newRow.params) {
                             Warn("Named parameters can only occur once; " +
                                 "this cell will be ignored.")

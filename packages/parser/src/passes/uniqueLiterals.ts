@@ -1,8 +1,9 @@
-import { flatten, DUMMY_REGEX_TAPE } from "../util";
+import { flatten } from "../utils/func";
 import { 
     Grammar, LiteralGrammar, 
     RenameGrammar, SingleTapeGrammar 
 } from "../grammars";
+import { DEFAULT_TAPE } from "../utils/constants";
 
 export function uniqueLiterals(
     g: Grammar
@@ -32,7 +33,7 @@ function uniqueLiteralsSingleTape(
     g: SingleTapeGrammar
 ): LiteralGrammar[] {
     return uniqueLiterals(g.child).map(c => {
-        if (c.tapeName != DUMMY_REGEX_TAPE) return c;
+        if (c.tapeName != DEFAULT_TAPE) return c;
         return new LiteralGrammar(g.tapeName, c.text);
     });
 }

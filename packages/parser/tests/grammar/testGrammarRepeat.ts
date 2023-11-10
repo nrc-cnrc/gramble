@@ -16,7 +16,7 @@ import {
 
 import {
     SILENT, VERBOSE_DEBUG, VERBOSE_STATES
-} from "../../src/util";
+} from "../../src/utils/logging";
 import { Grammar } from "../../src/grammars";
 
 function withCountGuard1(maxChars: number, grammar: Grammar) {

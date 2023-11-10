@@ -15,8 +15,9 @@ import {
 } from '../testUtil';
 
 import {
-    StringDict, SILENT, VERBOSE_DEBUG,
-} from "../../src/util";
+    StringDict
+} from "../../src/utils/func";
+import { SILENT, VERBOSE_DEBUG } from "../../src/utils/logging";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;

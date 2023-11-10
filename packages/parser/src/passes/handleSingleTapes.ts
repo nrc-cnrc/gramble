@@ -10,7 +10,7 @@ import {
     RenameGrammar, 
     SingleTapeGrammar
 } from "../grammars";
-import { DUMMY_REGEX_TAPE } from "../util";
+import { DEFAULT_TAPE } from "../utils/constants";
 
 /**
  * Some environments require the grammar inside to only reveal 
@@ -79,14 +79,14 @@ export class HandleSingleTapes extends GrammarPass {
     }
 
     private handleDot(g: DotGrammar, env: PassEnv): GrammarResult {
-        if (g.tapeName == DUMMY_REGEX_TAPE && this.tapeName != undefined) {
+        if (g.tapeName == DEFAULT_TAPE && this.tapeName != undefined) {
             return new DotGrammar(this.tapeName).msg();
         }
         return g.msg();
     }
 
     private handleLiteral(g: LiteralGrammar, env: PassEnv): GrammarResult {
-        if (g.tapeName == DUMMY_REGEX_TAPE && this.tapeName != undefined) {
+        if (g.tapeName == DEFAULT_TAPE && this.tapeName != undefined) {
             return new LiteralGrammar(this.tapeName, g.text).msg();
         }
         return g.msg();

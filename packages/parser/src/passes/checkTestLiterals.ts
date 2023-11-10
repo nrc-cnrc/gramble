@@ -3,7 +3,7 @@ import {
     TstOp, TstHeadedGrid, TST 
 } from "../tsts";
 import { Pass, PassEnv } from "../passes";
-import { Err, Msgs, Result } from "../msgs";
+import { Err, Msgs, Result } from "../utils/msgs";
 import { Header, UniqueHeader, TapeHeader } from "../headers";
 import { paramsMustBeLiteral } from "../ops";
 import { PostPass } from "./ancestorPasses";

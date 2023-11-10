@@ -15,7 +15,7 @@ import {
     generateOutputs,
     prepareInterpreter,
 } from '../testUtil';
-import { Options, SILENT, VERBOSE_DEBUG } from "../../src/util";
+import { Options } from "../../src/utils/options";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;

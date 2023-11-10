@@ -4,7 +4,7 @@ import {
     TstHeader, TstGrid, TST
 } from "../tsts";
 import { Pass, PassEnv } from "../passes";
-import { HeaderMsg, Msgs, Result } from "../msgs";
+import { HeaderMsg, Msgs, Result } from "../utils/msgs";
 import { 
     DEFAULT_VALUE, ErrorHeader, 
     backgroundColor, parseHeaderCell 

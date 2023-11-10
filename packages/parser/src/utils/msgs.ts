@@ -1,11 +1,8 @@
-import { CellPos, Dict } from "./util";
+import { Dict, Func } from "./func";
+import { Pos } from "./cell";
 
 type MsgType = "error" | "warning" | "info" | 
-                "command" | "header" | "comment" | "content"
-
-function isPositioned(p: any): p is { pos: CellPos } {
-    return p !== undefined && p.pos !== undefined;
-}
+                "command" | "header" | "comment" | "content";
 
 /**
  * Msg ("message") is a communication between the compiler and 
@@ -24,7 +21,7 @@ export class Msg {
         public type: MsgType,
         public shortMsg: string,
         public longMsg: string,
-        public pos: CellPos | undefined = undefined
+        public pos: Pos | undefined = undefined
     ) {}
 
     public get sheet(): string | undefined {
@@ -39,7 +36,7 @@ export class Msg {
         return this.pos?.col;
     }
 
-    public localize(pos?: CellPos): Msg {
+    public localize(pos?: Pos): Msg {
         if (this.pos != undefined) {
             return this;
         }
@@ -52,7 +49,7 @@ export class Msg {
      * and only consider the item, by providing a callback that
      * handles them as a side effect.
      */
-     public msgTo(f: Msgs | MsgCallback, pos?: CellPos): void {
+     public msgTo(f: Msgs | MsgCallback, pos?: Pos): void {
         const msg = this.localize(pos);
         if (Array.isArray(f)) {
             f.push(msg);
@@ -115,8 +112,8 @@ export function Success(longMsg: string): Msg {
     return new Msg("info", "success", longMsg);
 }
 
-type MsgCallback = (m: Msg) => void; 
-export type Func<T1,T2> = (input: T1) => (T2|Result<T2>);
+type MsgCallback = Func<Msg, void>;
+export type ResultFunc<T1,T2> = Func<T1,T2|Result<T2>>;
 
 export class Result<T> {
 
@@ -129,7 +126,7 @@ export class Result<T> {
         return [this.item, this.msgs];
     }
 
-    public bind<T2>(f: Func<T,T2>): Result<T2> {
+    public bind<T2>(f: ResultFunc<T,T2>): Result<T2> {
         let result = f(this.item);
         if (!(result instanceof Result)) {
             result = new Result(result);
@@ -167,7 +164,7 @@ export class Result<T> {
         return this;
     }
 
-    public localize(pos: CellPos | undefined): Result<T> {
+    public localize(pos: Pos | undefined): Result<T> {
         const [item, msgs] = this.destructure();
         const newMsgs = msgs.map(m => m.localize(pos));
         return new Result(item, newMsgs);
@@ -201,7 +198,7 @@ export class ResultList<T> extends Result<T[]> {
         super(items, msgs);
     }
 
-    public map<T2>(f: Func<T,T2>): ResultList<T2> {
+    public map<T2>(f: ResultFunc<T,T2>): ResultList<T2> {
         const items: T2[] = [];
         const msgs: Msgs = [];
         for (const item of this.item) {
@@ -226,7 +223,7 @@ export class ResultDict<T> extends Result<Dict<T>> {
         super(items, msgs);
     }
 
-    public map<T2>(f: Func<T,T2>): ResultDict<T2> {
+    public map<T2>(f: ResultFunc<T,T2>): ResultDict<T2> {
         const items: Dict<T2> = {};
         const msgs: Msgs = [];
         for (const [k,v] of Object.entries(this.item)) {

@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "outDir": "./dist",
+    "baseUrl": "../parser/",
+    "paths": {
+      "*": [ "src/@types/*"]
+    },
+    "types": [
+      ],
+    "lib": [
+      "es2017",
+      "dom",
+      "es6"
+    ]
+  },
+  "include": [
+    "src"
+  ]
+}

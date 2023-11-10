@@ -11,23 +11,17 @@ import {
 } from "./grammarConvenience";
 
 import { 
-    DevEnvironment, Gen, iterTake, 
-    msToTime, StringDict, timeIt, 
-    stripHiddenTapes, Options,
-    VERBOSE_TIME,
-    logTime,
+    Gen, iterTake, 
+    StringDict,
     Dict,
-    HIDDEN_PREFIX,
-    DEFAULT_SYMBOL_NAME,
-    VERBOSE_GRAMMAR
-} from "./util";
+} from "./utils/func";
 import { Worksheet, Workbook } from "./sources";
 import { backgroundColor, parseHeaderCell } from "./headers";
 import { TapeNamespace } from "./tapes";
 import { Expr, CollectionExpr } from "./exprs";
-import { SimpleDevEnvironment } from "./devEnv";
+import { DevEnvironment, SimpleDevEnvironment } from "./devEnv";
 import { generate } from "./generator";
-import { MissingSymbolError, Msg, Msgs, result } from "./msgs";
+import { MissingSymbolError, Msg, result } from "./utils/msgs";
 import { PassEnv } from "./passes";
 import { 
     NAME_PASSES, 
@@ -41,7 +35,9 @@ import { infinityProtection } from "./passes/infinityProtection";
 import { prioritizeTapes } from "./passes/prioritizeTapes";
 import { constructExpr } from "./passes/constructExpr";
 import { toStr } from "./passes/toStr";
-import { CalculateTapes } from "./passes/calculateTapes";
+import { DEFAULT_PROJECT_NAME, DEFAULT_SYMBOL_NAME, HIDDEN_PREFIX } from "./utils/constants";
+import { VERBOSE_GRAMMAR, VERBOSE_TIME, logTime, msToTime, timeIt } from "./utils/logging";
+import { Options } from "./utils/options";
 
 /**
  * An interpreter object is responsible for applying the passes in between sheets
@@ -122,8 +118,8 @@ export class Interpreter {
         opt: Partial<Options> = {}
     ): Interpreter {
         const devEnv = new SimpleDevEnvironment();
-        devEnv.addSourceAsText("", csv);
-        return Interpreter.fromSheet(devEnv, "", opt);
+        devEnv.addSourceAsText(DEFAULT_PROJECT_NAME, csv);
+        return Interpreter.fromSheet(devEnv, DEFAULT_PROJECT_NAME, opt);
     }
 
     public static fromSheet(
@@ -374,8 +370,21 @@ function addSheet(
     return;
 }
 
-export function logGrammar(verbose: number, g: Grammar): void {
+function logGrammar(verbose: number, g: Grammar): void {
     if ((verbose & VERBOSE_GRAMMAR) == VERBOSE_GRAMMAR) {
         console.log(toStr(g));
+    }
+}
+
+function* stripHiddenTapes(gen: Gen<StringDict>): Gen<StringDict> {
+    for (const sd of gen) {
+        const result: StringDict = {};
+        for (const tapeName in sd) {
+            if (tapeName.startsWith(HIDDEN_PREFIX)) {
+                continue;
+            }
+            result[tapeName] = sd[tapeName];
+        }
+        yield result;
     }
 }

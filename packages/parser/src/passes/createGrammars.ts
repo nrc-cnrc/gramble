@@ -24,10 +24,10 @@ import {
     FilterGrammar
 } from "../grammars";
 import { Header, parseClass, TapeHeader } from "../headers";
-import { Err, Msgs, resultList } from "../msgs";
+import { Err, Msgs, resultList } from "../utils/msgs";
 import { HeaderToGrammar } from "./headerToGrammar";
-import { parseCell } from "../cell";
-import { PLAIN_PARAM } from "../util";
+import { parseContent } from "../content";
+import { DEFAULT_PARAM } from "../utils/constants";
 import { uniqueLiterals } from "./uniqueLiterals";
 
 /**
@@ -67,7 +67,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
 
     public handleHeaderPair(t: TstHeaderPair, env: PassEnv): GrammarResult {
         const pc = parseClass(t.header.header);
-        return parseCell(pc, t.cell.text)
+        return parseContent(pc, t.cell.text)
                 .bind(g => new HeaderToGrammar(g))
                 .bind(h => h.transform(t.header.header, env))
                 .localize(t.cell.pos)
@@ -100,7 +100,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
                                             .destructure();
 
         const pc = parseClass(t.header.header);
-        const [grammar, msgs] = parseCell(pc, t.cell.text)
+        const [grammar, msgs] = parseContent(pc, t.cell.text)
                 .bind(g => new HeaderToGrammar(g))
                 .bind(h => h.transform(t.header.header, env))
                 .localize(t.cell.pos)
@@ -118,7 +118,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
 
     public handleTable(t: TstTable, env: PassEnv): GrammarResult {
         return resultList(t.child.rows)
-                  .map(r => r.getParam(PLAIN_PARAM))
+                  .map(r => r.getParam(DEFAULT_PARAM))
                   .map(r => this.transform(r, env))
                   .bind(cs => new AlternationGrammar(cs))
                   .bind(c => new LocatorGrammar(t.cell.pos, c))
@@ -192,7 +192,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
 
         const msgs: Msgs = [];
         for (const params of t.child.rows) {
-            const testInputs = this.transform(params.getParam(PLAIN_PARAM), env).msgTo(msgs);
+            const testInputs = this.transform(params.getParam(DEFAULT_PARAM), env).msgTo(msgs);
             const unique = this.transform(params.getParam("unique"), env).msgTo(msgs);
             const uniqueLits = uniqueLiterals(unique);
             result = result.bind(c => new TestGrammar(c, testInputs, uniqueLits))
@@ -208,7 +208,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
 
         const msgs: Msgs = [];
         for (const params of t.child.rows) {
-            const testInputs = this.transform(params.getParam(PLAIN_PARAM), env).msgTo(msgs);
+            const testInputs = this.transform(params.getParam(DEFAULT_PARAM), env).msgTo(msgs);
             result = result.bind(c => new TestNotGrammar(c, testInputs))
                            .bind(c => new LocatorGrammar(params.pos, c));
         }

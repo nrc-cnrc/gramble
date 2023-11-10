@@ -1,7 +1,7 @@
 import { SyntaxError, SimpleDevEnvironment } from "./devEnv";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
-import { parseCSV } from "./util";
+import { parseCSV } from "./utils/strings";
 
 export class TextDevEnvironment extends SimpleDevEnvironment {
 

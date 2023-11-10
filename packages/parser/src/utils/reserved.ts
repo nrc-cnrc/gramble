@@ -1,5 +1,4 @@
-import { PLAIN_PARAM } from "./util";
-
+import { DEFAULT_PARAM } from "./constants";
 
 export const RESERVED_SYMBOLS = new Set([ 
     "(", ")", "%", "/", "<", ">", 
@@ -20,8 +19,8 @@ export const TEST_PARAMS = new Set([
     "unique",
 ]);
 
-export const BLANK_PARAM_SET = new Set([PLAIN_PARAM]);
-export const TEST_PARAM_SET = new Set([PLAIN_PARAM, ...TEST_PARAMS]);
+export const BLANK_PARAM_SET = new Set([DEFAULT_PARAM]);
+export const TEST_PARAM_SET = new Set([DEFAULT_PARAM, ...TEST_PARAMS]);
 
 export const RESERVED_HEADERS = new Set([
     "embed", 

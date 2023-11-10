@@ -4,11 +4,13 @@ import {
     MPAlt, MPParser, 
     MPSequence, MPUnreserved 
 } from "./miniParser";
-import { Result } from "./msgs";
+import { exhaustive } from "./util";
+import { Result } from "./utils/msgs";
 import { 
     REPLACE_PARAMS, REQUIRED_REPLACE_PARAMS, 
     ALL_RESERVED, RESERVED_SYMBOLS, 
     isValidSymbolName, BLANK_PARAM_SET, TEST_PARAM_SET 
+} from "./utils/reserved";
 } from "./reserved";
 import { exhaustive } from "./util";
 

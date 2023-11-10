@@ -1,6 +1,6 @@
 import { 
-    Namespace, ValueSet, exhaustive, flatten, setMap, setUnion
-} from "./util";
+    Namespace
+} from "./utils/namespace";
 
 /**
  * Tape
@@ -18,19 +18,6 @@ export class Tape {
         public atomic: boolean,
         public vocab: Set<string> = new Set()
     ) { }
-
-    /*
-    public expandStrings(token: TokenExpr | DotExpr): Set<string> {
-        if (token == ANY_CHAR_STR) {
-            return this.vocab;
-        }
-
-        // it's a specific string, not any char, make sure it's in the vocab
-        if (!this.vocab.has(token)) {
-            return new Set();
-        }
-        return new Set([token]);
-    } */
 
     public registerTokens(chars: string[]): void {
         for (const char of chars) {

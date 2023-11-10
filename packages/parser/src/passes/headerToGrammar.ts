@@ -8,7 +8,7 @@ import {
     RuleContextGrammar, 
     SequenceGrammar, SingleTapeGrammar, StartsGrammar 
 } from "../grammars";
-import { result, resultList } from "../msgs";
+import { result, resultList } from "../utils/msgs";
 import { 
     CommentHeader, ContainsHeader, 
     EmbedHeader, EndsHeader, 
@@ -19,7 +19,9 @@ import {
     UnaryHeader, FromHeader, 
     ToHeader, RuleContextHeader 
 } from "../headers";
-import { REPLACE_INPUT_TAPE, REPLACE_OUTPUT_TAPE, exhaustive } from "../util";
+import { INPUT_TAPE, OUTPUT_TAPE } from "../utils/constants";
+import { exhaustive } from "../components";
+
 
 export class HeaderToGrammar extends Pass<Header, Grammar> {
     
@@ -73,19 +75,19 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
     }
 
     public handleFrom(h: FromHeader, env: PassEnv): GrammarResult {
-        return new SingleTapeGrammar(REPLACE_INPUT_TAPE, this.cellGrammar).msg();
+        return new SingleTapeGrammar(INPUT_TAPE, this.cellGrammar).msg();
     }
 
     public handleTo(h: ToHeader, env: PassEnv): GrammarResult {
-        return new SingleTapeGrammar(REPLACE_OUTPUT_TAPE, this.cellGrammar).msg();
+        return new SingleTapeGrammar(OUTPUT_TAPE, this.cellGrammar).msg();
     }
 
     public handleRuleContext(h: RuleContextHeader, env: PassEnv): GrammarResult {
         if (!(this.cellGrammar instanceof RuleContextGrammar)) {
             return this.cellGrammar.msg();
         }
-        const newPre = new SingleTapeGrammar(REPLACE_INPUT_TAPE, this.cellGrammar.preContext);
-        const newPost = new SingleTapeGrammar(REPLACE_INPUT_TAPE, this.cellGrammar.postContext);
+        const newPre = new SingleTapeGrammar(INPUT_TAPE, this.cellGrammar.preContext);
+        const newPost = new SingleTapeGrammar(INPUT_TAPE, this.cellGrammar.postContext);
         return new RuleContextGrammar(newPre, newPost, 
             this.cellGrammar.begins, this.cellGrammar.ends).msg();
     }

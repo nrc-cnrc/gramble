@@ -1,22 +1,21 @@
-import { Msgs, Result } from "../msgs";
+import { Result } from "../utils/msgs";
 import { 
     Grammar,
     CollectionGrammar,
-    MatchGrammar,
-    RenameGrammar,
-    HideGrammar,
-    GrammarResult,
-    EmbedGrammar
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { Dict, HIDDEN_PREFIX, exhaustive, update } from "../util";
-import { TapeID, TapeLit, TapeRef, TapeRename, TapeSet, hasTape, resolveTapes, tapeToStr } from "../tapes";
-import { toStr } from "./toStr";
+import { flatten, listUnique } from "../utils/func";
 
 /**
- * Calculates tapes for each grammar and adds them to the .tapeSet member
+ * Goes through the tree and 
+ * 
+ * (1) flattens the collection structure, replacing the 
+ * potentially complex tree of collections with a single 
+ * one at the root
+ * 
+ * (2) replaces unqualified symbol references (like "VERB") to 
+ * fully-qualified names (like "MainSheet.VERB")
  */
-
 export class CalculateTapes extends Pass<Grammar,Grammar> {
 
     constructor(

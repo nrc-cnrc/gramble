@@ -3,14 +3,14 @@ import {
     TstOp, TstHeadedGrid, TST 
 } from "../tsts";
 import { Pass, PassEnv } from "../passes";
-import { Err, Func, Msgs, Result, Warn } from "../msgs";
+import { Err, ResultFunc, Msgs, Result, Warn } from "../utils/msgs";
 import { UniqueHeader, paramName } from "../headers";
 import {
     allowedParams, 
     paramsMustBePerfect, 
     requiredParams 
 } from "../ops";
-import { PLAIN_PARAM } from "../util";
+import { DEFAULT_PARAM } from "../utils/constants";
 
 /**
  * This pass checks whether named parameters in headers
@@ -25,7 +25,7 @@ import { PLAIN_PARAM } from "../util";
 export class CheckNamedParams extends Pass<TST,TST> {
 
     constructor(
-        public permissibleParams: Set<string> = new Set([PLAIN_PARAM])
+        public permissibleParams: Set<string> = new Set([DEFAULT_PARAM])
     ) { 
         super();
     }
@@ -85,7 +85,7 @@ export class CheckNamedParams extends Pass<TST,TST> {
         if (t.child instanceof TstHeadedGrid) {
             for (const param of requiredParams(t.op)) {
                 if (t.child.headers.length > 0 && !t.child.providesParam(param)) {
-                    const paramDesc = param == PLAIN_PARAM 
+                    const paramDesc = param == DEFAULT_PARAM 
                                     ? "a plain header (e.g. not 'from', not 'to', not 'unique')"
                                     : `a ${param} header`;
                     Err("Missing named param",
@@ -99,7 +99,7 @@ export class CheckNamedParams extends Pass<TST,TST> {
             // the unnamed parameter `__`, so loop through the required
             // params and complain if they're not `__`.
             for (const param of requiredParams(t.op)) {
-                if (param != PLAIN_PARAM) {
+                if (param != DEFAULT_PARAM) {
                     Err("Missing named param",
                         `This operator requires a ${param} header, but ` +
                         "the content to the right doesn't have one.")
@@ -125,11 +125,11 @@ export class CheckNamedParams extends Pass<TST,TST> {
                 return h.msg(); // we're good
             }
             // it's an unexpected header
-            const param = (tag == PLAIN_PARAM) ?
+            const param = (tag == DEFAULT_PARAM) ?
                               "an unnamed parameter" :
                               `a parameter named ${tag}`;
 
-            if (h.header instanceof UniqueHeader && this.permissibleParams.has(PLAIN_PARAM)) {
+            if (h.header instanceof UniqueHeader && this.permissibleParams.has(DEFAULT_PARAM)) {
                 // if we can easily remove the tag, try that
                 const newHeader = new TstHeader(h.cell, h.header.child);
                 return newHeader.err("Invalid parameter",
@@ -141,6 +141,6 @@ export class CheckNamedParams extends Pass<TST,TST> {
             return new TstEmpty().err("Invalid parameter",
                 `The operator to the left does not expect ${param}`)
                 .localize(h.pos);
-        }) as Func<TstHeader,TST>);
+        }) as ResultFunc<TstHeader,TST>);
     }
 }

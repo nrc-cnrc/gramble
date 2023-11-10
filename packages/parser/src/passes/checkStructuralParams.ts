@@ -4,7 +4,7 @@ import {
     childMustBeGrid,
     siblingRequired,
 } from "../ops";
-import { Err, Msgs, Result, Warn } from "../msgs";
+import { Err, Msgs, Result, Warn } from "../utils/msgs";
 import { PassEnv } from "../passes";
 import { 
     TstOp, 

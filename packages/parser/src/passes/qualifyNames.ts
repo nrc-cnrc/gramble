@@ -1,4 +1,4 @@
-import { MissingSymbolError, Msgs } from "../msgs";
+import { MissingSymbolError, Msgs } from "../utils/msgs";
 import { 
     EmbedGrammar,
     EpsilonGrammar,
@@ -8,7 +8,7 @@ import {
     LocatorGrammar
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { DEFAULT_SYMBOL_NAME } from "../util";
+import { DEFAULT_SYMBOL_NAME } from "../utils/constants";
 
 /**
  * Goes through the tree and 

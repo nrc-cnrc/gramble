@@ -1,23 +1,22 @@
 import {
-    Gen, Options, 
-    logDebug, logTime, logStates, 
+    Gen,
     setDifference, foldRight, foldLeft,
-    VERBOSE_DEBUG,
     Dict,
-    Namespace,
     StringDict,
     outputProduct,
     flatten,
     iterUnit,
-    REPLACE_INPUT_TAPE,
-    REPLACE_OUTPUT_TAPE,
-    Env,
     update,
-} from "./util";
+    Func,
+} from "./utils/func";
 import { 
     Tape, TapeNamespace, 
     renameTape
 } from "./tapes";
+import { INPUT_TAPE, OUTPUT_TAPE } from "./utils/constants";
+import { VERBOSE_DEBUG, logDebug, logStates, logTime } from "./utils/logging";
+import { Namespace } from "./utils/namespace";
+import { Env, Options } from "./utils/options";
 
 export type Query = TokenExpr | DotExpr;
 
@@ -33,7 +32,7 @@ export class Deriv {
         public next: Expr
     ) { }
 
-    public wrap(f: (e: Expr) => Expr) {
+    public wrap(f: Func<Expr,Expr>) {
         return new Deriv(this.result, f(this.next));
     }
 }
@@ -1928,8 +1927,8 @@ export class CorrespondExpr extends UnaryExpr {
 export function constructCorrespond(
     env: Env,
     child: Expr,
-    fromTape: string = REPLACE_INPUT_TAPE,
-    toTape: string = REPLACE_OUTPUT_TAPE
+    fromTape: string = INPUT_TAPE,
+    toTape: string = OUTPUT_TAPE
 ): Expr {
     return new CorrespondExpr(child, fromTape, toTape).simplify(env);
 }
@@ -2019,8 +2018,8 @@ export class MatchExpr extends UnaryExpr {
 export function constructMatch(
     env: Env,
     child: Expr,
-    fromTape: string = REPLACE_INPUT_TAPE,
-    toTape: string = REPLACE_OUTPUT_TAPE
+    fromTape: string = INPUT_TAPE,
+    toTape: string = OUTPUT_TAPE
 ): Expr {
     return new MatchExpr(child, fromTape, toTape).simplify(env);
 }
@@ -2084,9 +2083,9 @@ export function constructSequence(
     
     const folder = (c1:Expr,c2:Expr) => constructConcat(env, c1, c2);
     if (env.opt.directionLTR) {
-        return foldRight(children, folder);
+        return foldRight(children, folder, EPSILON);
     } else {
-        return foldLeft(children, folder);
+        return foldLeft(children, folder, EPSILON);
     }
 }
 

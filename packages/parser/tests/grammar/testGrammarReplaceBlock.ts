@@ -14,9 +14,9 @@ import {
 } from '../testUtil';
 
 import {
-    DUMMY_REGEX_TAPE,
-    SILENT, VERBOSE_DEBUG, VERBOSE_STATES
-} from "../../src/util";
+    DEFAULT_TAPE
+} from "../../src/utils/constants";
+import { SILENT, VERBOSE_STATES } from "../../src/utils/logging";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -600,7 +600,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '15. Replacement of ε ⨝ e -> a',
-        grammar: ReplaceBlock(DUMMY_REGEX_TAPE,
+        grammar: ReplaceBlock(DEFAULT_TAPE,
                               Epsilon(),
                               Replace("e", "a")),
         results: [
@@ -610,7 +610,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '16a. Replacement of alternation: hello|hell ⨝ e -> a',
-        grammar: ReplaceBlock(DUMMY_REGEX_TAPE, 
+        grammar: ReplaceBlock(DEFAULT_TAPE, 
                               Uni("hello", "hell"),
                               Replace("e", "a")),
         results: [
@@ -621,7 +621,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     
     testGrammar({
         desc: '16b. Replacement of alternation: h|hi ⨝ e -> a',
-        grammar: ReplaceBlock(DUMMY_REGEX_TAPE, 
+        grammar: ReplaceBlock(DEFAULT_TAPE, 
                               Uni("h", "hi"),
                               Replace("e", "a")),
         results: [
@@ -632,7 +632,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '16c. Replacement of alternation: hello|hell|ε ⨝ e -> a',
-        grammar: ReplaceBlock(DUMMY_REGEX_TAPE, 
+        grammar: ReplaceBlock(DEFAULT_TAPE, 
                               Uni("hello", "hell", Epsilon()),
                               Replace("e", "a")),
         results: [
@@ -644,8 +644,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '17a. Replacement of repetition: hello* ⨝ e -> a',
-        grammar: Count({[DUMMY_REGEX_TAPE]:10}, 
-                    ReplaceBlock(DUMMY_REGEX_TAPE, 
+        grammar: Count({[DEFAULT_TAPE]:10}, 
+                    ReplaceBlock(DEFAULT_TAPE, 
                                  Rep("hello"),
                                  Replace("e", "a"))),
         results: [
@@ -657,8 +657,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '17b. Replacement of repetition: (hello|hi)* ⨝ e -> a',
-        grammar: Count({[DUMMY_REGEX_TAPE]:6}, 
-                    ReplaceBlock(DUMMY_REGEX_TAPE, 
+        grammar: Count({[DEFAULT_TAPE]:6}, 
+                    ReplaceBlock(DEFAULT_TAPE, 
                                  Rep(Uni("hello", "hi")),
                                  Replace("e", "a"))),
         results: [
@@ -672,8 +672,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     
     testGrammar({
         desc: '17c. Replacement of repetition: (hello|hi|ε)* ⨝ e -> a',
-        grammar: Count({[DUMMY_REGEX_TAPE]:6}, 
-                    ReplaceBlock(DUMMY_REGEX_TAPE, 
+        grammar: Count({[DEFAULT_TAPE]:6}, 
+                    ReplaceBlock(DEFAULT_TAPE, 
                                  Rep(Uni("hello", "hi", Epsilon())),
                                  Replace("e", "a"))),
         results: [
@@ -687,7 +687,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '18. Replacement of null ⨝ e -> a',
-        grammar: ReplaceBlock(DUMMY_REGEX_TAPE, 
+        grammar: ReplaceBlock(DEFAULT_TAPE, 
                     Null(), Replace("e","a")),
         results: []
     });

@@ -3,14 +3,15 @@ import {
     Msg, Msgs, 
     result, Result, 
     ResultVoid
-} from "./msgs";
+} from "./utils/msgs";
 import { Pass, PassEnv } from "./passes";
-import { CellPos, Dict } from "./util";
+import { Dict } from "./utils/func";
+import { Pos } from "./utils/cell";
 
 export abstract class Component {
     public abstract readonly tag: string;
 
-    public get pos(): CellPos | undefined {
+    public get pos(): Pos | undefined {
         return undefined;
     } 
 
