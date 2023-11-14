@@ -6,7 +6,8 @@ import {
     Collection,
     Embed,
     Epsilon,
-    Seq, 
+    Seq,
+    Uni, 
 } from "../../src/grammarConvenience";
 
 import {
@@ -95,6 +96,23 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         tapes: ["t1"],
         results: [
             {t1: 'hello'},
+        ],
+    }));
+    
+    describe('4a. Single_t1(T:hello+T:world))', test({
+        grammar: SingleTape("t1", Seq(T("hello"), T("world"))),
+        tapes: ["t1"],
+        results: [
+            {t1: 'helloworld'},
+        ],
+    }));
+
+    describe('4b. Single_t1(T:hello|T:world))', test({
+        grammar: SingleTape("t1", Uni(T("hello"), T("world"))),
+        tapes: ["t1"],
+        results: [
+            {t1: 'hello'},
+            {t1: 'world'},
         ],
     }));
     

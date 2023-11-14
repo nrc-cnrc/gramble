@@ -11,6 +11,7 @@ import {
     SingleTapeGrammar
 } from "../grammars";
 import { DEFAULT_TAPE } from "../utils/constants";
+import { TapeUnknown } from "../tapes";
 
 /**
  * Some environments require the grammar inside to only reveal 
@@ -48,7 +49,12 @@ export class HandleSingleTapes extends GrammarPass {
 
     handleDefault(g: Grammar, env: PassEnv): GrammarResult {
 
-        if (this.tapeName !== undefined && g.tapes.length > 1) {
+        
+        if (this.tapeName === undefined) {
+            return g.mapChildren(this, env);
+        }
+
+        if (g.tapes.length > 1) {
             // shouldn't be possible in real source grammars
             return g.err("Multiple fields not allowed in this context",
                 `Only grammars with one field (e.g. just "text" but not any other fields) ` +
@@ -56,7 +62,9 @@ export class HandleSingleTapes extends GrammarPass {
                 .bind(_ => new EpsilonGrammar().tapify(env));
         }
 
-        return g.mapChildren(this, env);
+        const [result, msgs] = g.mapChildren(this, env).destructure();
+        result.tapeSet = TapeUnknown();
+        return result.tapify(env).msg(msgs);
     }
 
     handleEmbed(g: EmbedGrammar, env: PassEnv): GrammarResult {

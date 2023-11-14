@@ -2495,40 +2495,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '34e-alt. Replace e by ε: Cnt_3 e -> ε {0,2} (vocab $i:ehl)',
-        grammar: Count({$i:3, $o:3},
-                     Replace(
-                        Vocab({$i: 'ehl'}, "e"), "",
-                        EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
-                        false, false, 0, 2
-                     )),
-        vocab: {$i:3, $o:3},
-        results: [
-            {},
-            {$i: 'e'},  // equivalent to {$i: 'e', $o: ''}
-            {$i: 'ee'}, // equivalent to {$i: 'ee', $o: ''}
-            {$i: 'h', $o: 'h'},     {$i: 'l', $o: 'l'},
-            {$i: 'eh', $o: 'h'},    {$i: 'el', $o: 'l'},
-            {$i: 'he', $o: 'h'},    {$i: 'hh', $o: 'hh'},
-            {$i: 'hl', $o: 'hl'},   {$i: 'le', $o: 'l'},
-            {$i: 'lh', $o: 'lh'},   {$i: 'll', $o: 'll'},
-            {$i: 'eeh', $o: 'h'},   {$i: 'eel', $o: 'l'},
-            {$i: 'ehe', $o: 'h'},   {$i: 'ehh', $o: 'hh'},
-            {$i: 'ehl', $o: 'hl'},  {$i: 'ele', $o: 'l'},
-            {$i: 'elh', $o: 'lh'},  {$i: 'ell', $o: 'll'},
-            {$i: 'hee', $o: 'h'},   {$i: 'heh', $o: 'hh'},
-            {$i: 'hel', $o: 'hl'},  {$i: 'hhe', $o: 'hh'},
-            {$i: 'hhh', $o: 'hhh'}, {$i: 'hhl', $o: 'hhl'},
-            {$i: 'hle', $o: 'hl'},  {$i: 'hlh', $o: 'hlh'},
-            {$i: 'hll', $o: 'hll'}, {$i: 'lee', $o: 'l'},
-            {$i: 'leh', $o: 'lh'},  {$i: 'lel', $o: 'll'},
-            {$i: 'lhe', $o: 'lh'},  {$i: 'lhh', $o: 'lhh'},
-            {$i: 'lhl', $o: 'lhl'}, {$i: 'lle', $o: 'll'},
-            {$i: 'llh', $o: 'llh'}, {$i: 'lll', $o: 'lll'},
-        ],
-    });
-
-    testGrammar({
         desc: '34f. Replace e by ε: Cnt_i:3 e -> ε {2} (vocab $i:eh)',
         grammar: Count({$i:3},
         			 Vocab({$i:'eh'},

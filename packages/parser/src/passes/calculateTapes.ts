@@ -8,6 +8,7 @@ import {
     RenameGrammar,
     FilterGrammar,
     JoinGrammar,
+    ReplaceGrammar,
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
 import { Dict, setMap, update } from "../utils/func";
@@ -63,6 +64,7 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
                 case "correspond":
                 case "context":
                 case "cursor":
+                case "replace":
                 case "locator": return getTapesDefault(g);
                 
                 // union of children's tapes, plus additional tapes

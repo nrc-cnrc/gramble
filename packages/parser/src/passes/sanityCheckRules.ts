@@ -69,15 +69,15 @@ export class SanityCheckRules extends PostPass<Grammar> {
         g.calculateTapes(stack, env);
 
         // first handle the "from" material (i.e. pre/from/post)
-        const fromMaterial = new SequenceGrammar([g.preContext, g.fromGrammar, g.postContext]);
-        fromMaterial.calculateTapes(stack, env);
+        const fromMaterial = new SequenceGrammar([g.preContext, g.fromGrammar, g.postContext]).tapify(env);
         if (fromMaterial.tapes.length != 1) {
             // I don't think this is actually possible with 
             // new-style rules, but just in case
-            throw new EpsilonGrammar().err( 
-                        "Multitape rule", 
-                        "This rule has the wrong number of tapes " +
-                            ` in "pre/from/post": ${fromMaterial.tapes}`);
+            throw new EpsilonGrammar()
+                        .tapify(env)
+                        .err( "Multitape rule", 
+                            "This rule has the wrong number of tapes " +
+                              ` in "pre/from/post": ${fromMaterial.tapes}`);
         }
         const fromTape = fromMaterial.tapes[0];
         const fromLength = lengthRange(fromMaterial, fromTape, stack, env);
@@ -93,19 +93,21 @@ export class SanityCheckRules extends PostPass<Grammar> {
         if (g.toGrammar.tapes.length != 1) {
             // I don't think this is actually possible with 
             // new-style rules, but just in case
-            throw new EpsilonGrammar().err(
-                            "Multitape rule",
+            throw new EpsilonGrammar()
+                        .tapify(env)
+                        .err("Multitape rule",
                             "This rule has the wrong number of tapes " + 
-                                    `in "to": ${g.toGrammar.tapes}`);
+                                `in "to": ${g.toGrammar.tapes}`);
         }
         const toTape = g.toGrammar.tapes[0];
         const toLength = lengthRange(g.toGrammar, toTape, stack, env);
         if (toLength.null == false && toLength.max == Infinity) {
             // this shouldn't be syntactically possible to express in sheets, but if
             // it does happen, it's bad news because it's infinite generation.
-            throw new EpsilonGrammar().err(
-                        "Infinite 'to'",
-                        "This rule will generate infinitely.");
+            throw new EpsilonGrammar()
+                        .tapify(env)
+                        .err("Infinite 'to'",
+                            "This rule will generate infinitely.");
         }
         return g;
     }
