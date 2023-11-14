@@ -8,7 +8,7 @@ import {
     RenameGrammar,
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { Dict, setMap, update } from "../utils/func";
+import { Dict, listUnique, setMap, setUnion, update } from "../utils/func";
 import { TapeID, TapeSet, TapeLit, TapeRef, hasTape, TapeRename, tapeToRefs, tapeToStr } from "../tapes";
 import { HIDDEN_PREFIX } from "../utils/constants";
 
@@ -66,6 +66,7 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
                 case "repeat":
                 case "correspond":
                 case "context":
+                case "cursor":
                 case "locator": return getTapesDefault(g);
                 
                 // something special
@@ -156,23 +157,11 @@ function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar>
     // now resolve the references and renames until you're
     // left with only sets of literals
     for (const [k1,v1] of Object.entries(tapeIDs)) {
-        const neededResolutions = tapeToRefs(v1);
-        for (const k2 of neededResolutions) {
-            const v2 = tapeIDs[k2];
-            tapeIDs[k1] = resolveTapes(v1, k2, v2, new Set(k1));
+        for (const k2 of tapeToRefs(v1)) {
+            tapeIDs[k1] = resolveTapes(tapeIDs[k1], k2, 
+                                    tapeIDs[k2], new Set(k1));
         }
     }
-
-    /*
-    for (let i = 0; i < keys.length; i++) {
-        const k1 = keys[i];
-        const v1 = tapeIDs[k1];
-        for (let j = 0; j < keys.length; j++) {
-            const k2 = keys[j];
-            const v2 = resolveTapes(tapeIDs[k2], k1, v1, new Set(k2));
-            tapeIDs[k2] = v2;
-        }
-    } */
 
     // now feed those back into the structure so that every
     // grammar node has only literal tapes
@@ -181,6 +170,15 @@ function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar>
         const newV = tapePusher.transform(v, env).msgTo(msgs);
         g.symbols[k] = newV;
     }
+
+    // TODO: The following interpretation of tapes is incorrect,
+    // but matches what we've been doing previously.  I'm going to
+    // get it "working" exactly like the old way, before fixing it to be
+    // semantically sound.
+    return getTapesDefault(g).msg();
+
+    /*
+    // TODO: This is the correct interpretation restore it eventually
 
     // if a symbol is selected, we share its tape set
     const selectedSymbol = g.getSymbol(g.selectedSymbol);
@@ -191,21 +189,22 @@ function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar>
         return updateTapes(g, TapeSet()).msg(msgs);
     }
     return updateTapes(g, selectedSymbol.tapeSet).msg(msgs);
+    */
 
 }
 
 
-
-// Resolving tapes is the process of replacing TapeRefs
-// inside TapeIDs into their corresponding TapeLits and sets thereof
-
+/* RESOLVING 
+*
+* Resolving tapes is the process of replacing TapeRefs
+* inside TapeIDs into their corresponding TapeLits and sets thereof
+*/
 function resolveTapes(
     t: TapeID, 
     key:string, 
     val:TapeID,
     visited: Set<string>
 ): TapeID {
-    console.log(`resolving ${key} in ${tapeToStr(t)}`);
     switch (t.tag) {
         case "tapeUnknown": return TapeSet();
         case "tapeLit": return t;

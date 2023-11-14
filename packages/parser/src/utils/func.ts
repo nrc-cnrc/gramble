@@ -93,7 +93,7 @@ export function listIntersection<T>(s1: T[], s2: T[]): T[] {
     return s1.filter(i => set2.has(i));
 }
 
-export function setUnion<T>(s1: Set<T>, s2: Set<T>): Set<T> {
+export function setUnion<T>(s1: Iterable<T>, s2: Iterable<T>): Set<T> {
     return new Set([...s1, ...s2]);
 }
 

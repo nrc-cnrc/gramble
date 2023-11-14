@@ -104,11 +104,11 @@ export class Interpreter {
                         .msgTo(m => sendMsg(this.devEnv, m)) as CollectionGrammar
 
         // Next we collect the vocabulary on all tapes
-        /* timeIt(() => {
+        timeIt(() => {
             // collect vocabulary
             this.tapeNS = new TapeNamespace();
             this.grammar.collectAllVocab(this.tapeNS, env);
-        }, timeVerbose, "Collected vocab"); */
+        }, timeVerbose, "Collected vocab");
 
         logGrammar(this.opt.verbose, this.grammar);
     }

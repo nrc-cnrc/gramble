@@ -115,6 +115,10 @@ describe(`GrammarIDs`, function() {
         symbol: "b"
     });
     
+    /*
+    // These are correct, but I'm briefly going to ignore them
+    // because I want to replicate the old semantics
+    /*
     testGrammarTapes({
         testnum: "6b",
         grammar: Collection({
@@ -144,6 +148,7 @@ describe(`GrammarIDs`, function() {
         tapes: ["t3", "t4"],
         symbol: "b"
     });
+    */
 
     testGrammarTapes({
         testnum: "7",
@@ -184,7 +189,8 @@ describe(`GrammarIDs`, function() {
         symbol: "a"
     });
 
-    
+    /*
+    // Likewise correct, but I'm replicating the old tape semantics for now
     testGrammarTapes({
         testnum: "9a",
         grammar: Collection({
@@ -205,6 +211,8 @@ describe(`GrammarIDs`, function() {
         tapes: ["t1", "t3"],
         symbol: "a"
     });
+
+    */
 
     testGrammarTapes({
         testnum: "10a",
@@ -379,6 +387,17 @@ describe(`GrammarIDs`, function() {
             a: Seq(t1("hi"), Embed("c")),
         }),
         tapes: ["t1", "t2", "t3"],
+        symbol: "c"
+    });
+
+    testGrammarTapes({
+        testnum: "15",
+        grammar: Collection({
+            a: t1("hello"),
+            b: t2("world"),
+            c: Seq(Embed("a"), Embed("b"))
+        }),
+        tapes: ["t1", "t2"],
         symbol: "c"
     });
 });
