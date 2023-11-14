@@ -9,9 +9,10 @@ import {
     FilterGrammar,
     JoinGrammar,
     ReplaceGrammar,
+    ReplaceBlockGrammar,
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { Dict, setMap, update } from "../utils/func";
+import { Dict, exhaustive, setMap, update } from "../utils/func";
 import { TapeID, TapeSet, TapeLit, TapeRef, hasTape, TapeRename, tapeToRefs, tapeToStr } from "../tapes";
 import { HIDDEN_PREFIX } from "../utils/constants";
 
@@ -64,6 +65,7 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
                 case "correspond":
                 case "context":
                 case "cursor":
+                case "pretape":
                 case "replace":
                 case "locator": return getTapesDefault(g);
                 
@@ -80,9 +82,10 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
                 case "rename":     return getTapesRename(g);
                 case "hide":       return getTapesHide(g);
                 case "filter":     return getTapesFilter(g);
+                case "replaceblock": return getTapesReplaceBlock(g);
 
-                //default: exhaustive(g.tag);
-                default: throw new Error(`unhandled grammar in getTapes: ${g.tag}`);
+                default: exhaustive(g);
+                //default: throw new Error(`unhandled grammar in getTapes: ${g.tag}`);
             }
         });
     }
@@ -180,6 +183,13 @@ function getTapesFilter(g: FilterGrammar): Result<Grammar> {
     }
     const result = new JoinGrammar(g.child1, g.child2);
     return getTapesDefault(result).msg();
+}
+
+function getTapesReplaceBlock(g: ReplaceBlockGrammar): Grammar {
+    const hiddenTapes = g.rules.map(r => r.hiddenTapeName)
+                                   .map(t => TapeLit(t));
+    const newTapes = TapeSet(g.child.tapeSet, ...hiddenTapes);
+    return updateTapes(g, newTapes);
 }
 
 function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar> {

@@ -31,7 +31,7 @@ export class ConstructReplaceBlocks extends PostPass<Grammar> {
 
     public handleReplaceBlock(g: ReplaceBlockGrammar, env: PassEnv): Grammar {
 
-        g.child.calculateTapes(new CounterStack(2), env);
+        //g.child.calculateTapes(new CounterStack(2), env);
         if (g.child.tapes.indexOf(g.inputTape) == -1) {
             // trying to replace on a tape that doesn't exist in the grammar
             // leads to infinite generation.  This is correct but not what anyone
@@ -57,7 +57,7 @@ export class ConstructReplaceBlocks extends PostPass<Grammar> {
             newG = new PreTapeGrammar(rule.hiddenTapeName, OUTPUT_TAPE, newG);
         }
 
-        return new RenameGrammar(newG, OUTPUT_TAPE, g.inputTape);
+        return new RenameGrammar(newG, OUTPUT_TAPE, g.inputTape).tapify(env);
     }
 
 }

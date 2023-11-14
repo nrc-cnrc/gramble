@@ -2,7 +2,7 @@ import { CollectionGrammar, CounterStack, Grammar } from "../../src/grammars";
 import { toStr } from "../../src/passes/toStr";
 import { assert, expect } from "chai";
 import { t1, t2, t3 } from "../testUtil";
-import { Any, Collection, Embed, Epsilon, Hide, Join, Match, Null, Rename, Seq, Uni } from "../../src/grammarConvenience";
+import { Any, Collection, Embed, Epsilon, Hide, Join, Match, Null, Rename, Replace, Seq, Uni } from "../../src/grammarConvenience";
 import { CalculateTapes } from "../../src/passes/calculateTapes";
 import { PassEnv } from "../../src/passes";
 
@@ -406,4 +406,11 @@ describe(`GrammarIDs`, function() {
         tapes: ["t1", "t2"],
         symbol: "c"
     });
+
+    testGrammarTapes({
+        testnum: "16",
+        grammar: Replace("e", "a", "h", "llo"),
+        tapes: ["$i", "$o"],
+    });
+
 });
