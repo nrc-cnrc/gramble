@@ -45,9 +45,9 @@ export class ConstructReplaceBlocks extends PostPass<Grammar> {
         let relevantTape = g.inputTape;
         let newG = g.child;
         for (const rule of g.rules) {
-            // first, rename the relevant tape of the child to ".input"
+            // first, rename the relevant tape of the child to "$i"
             newG = new RenameGrammar(newG, relevantTape, INPUT_TAPE);
-            // now the relevant tape is "output"
+            // now the relevant tape is "$o"
             relevantTape = OUTPUT_TAPE;
             // join it with the rule
             newG = new JoinGrammar(newG, rule);

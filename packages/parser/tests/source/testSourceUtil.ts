@@ -61,7 +61,7 @@ export function testProject({
     const projectName = filename || `${dir}${id}`;
     const path = `${dir}/csvs/${projectName}.csv`;
     const abspath = `${TEST_DIR}/${path}`;
-    const interpreter = sheetFromFile(abspath, verbose);
+    const interpreter = sheetFromFile(abspath, opt);
     if (interpreter === undefined)
         return;
     const qualifiedName = [ projectName, symbol ]
@@ -79,7 +79,7 @@ export function testProject({
 
 export function sheetFromFile(
     path: string,
-    verbose: number = SILENT
+    opt: Partial<Options> = {}
 ): Interpreter | undefined {
     const fileExists = existsSync(path);
     if (!fileExists){
@@ -91,5 +91,5 @@ export function sheetFromFile(
     const dir = dirname(path);
     const sheetName = basename(path, ".csv");
     const devEnv = new TextDevEnvironment(dir);
-    return Interpreter.fromSheet(devEnv, sheetName, {verbose:verbose});
+    return Interpreter.fromSheet(devEnv, sheetName, opt);
 }

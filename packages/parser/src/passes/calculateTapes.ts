@@ -10,7 +10,7 @@ import {
     JoinGrammar,
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { Dict, listUnique, setMap, setUnion, update } from "../utils/func";
+import { Dict, setMap, update } from "../utils/func";
 import { TapeID, TapeSet, TapeLit, TapeRef, hasTape, TapeRename, tapeToRefs, tapeToStr } from "../tapes";
 import { HIDDEN_PREFIX } from "../utils/constants";
 
@@ -48,8 +48,6 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
                 case "lit": return updateTapes(g, TapeLit(g.tapeName));
                 case "dot": return updateTapes(g, TapeLit(g.tapeName));
 
-                // embeds get a special ad-hoc tape with their name
-                case "embed": return getTapesEmbed(g, this.knownTapes);
                 // tapes are just the union of children's tapes
                 
                 case "seq": 
@@ -71,11 +69,12 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
                 case "starts":
                 case "ends":
                 case "contains": return getTapesDefault(g, g.extraTapes);
+                case "match":    return getTapesDefault(g, [g.fromTape, g.toTape]);
 
                 // something special
+                case "embed":      return getTapesEmbed(g, this.knownTapes);
                 case "collection": return getTapesCollection(g, env);
                 case "singletape": return updateTapes(g, TapeLit(g.tapeName));
-                case "match":      return getTapesMatch(g);
                 case "rename":     return getTapesRename(g);
                 case "hide":       return getTapesHide(g);
                 case "filter":     return getTapesFilter(g);
@@ -114,12 +113,6 @@ function getTapesEmbed(
 ): Grammar {
     if (!(g.name in knownTapes)) return updateTapes(g, TapeRef(g.name));
     return updateTapes(g, knownTapes[g.name]);
-}
-
-function getTapesMatch(g: MatchGrammar): Grammar {
-    const tapes = TapeSet(getChildTapes(g), 
-            TapeLit(g.fromTape), TapeLit(g.toTape));
-    return updateTapes(g, tapes);
 }
 
 function getTapesRename(g: RenameGrammar): Result<Grammar> {
@@ -217,10 +210,10 @@ function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar>
     // but matches what we've been doing previously.  I'm going to
     // get it "working" exactly like the old way, before fixing it to be
     // semantically sound.
-    return getTapesDefault(g).msg();
+    return getTapesDefault(g).msg(msgs);
 
     /*
-    // TODO: This is the correct interpretation restore it eventually
+    // TODO: This is the correct interpretation, restore it eventually
 
     // if a symbol is selected, we share its tape set
     const selectedSymbol = g.getSymbol(g.selectedSymbol);

@@ -78,6 +78,12 @@ describe(`GrammarIDs`, function() {
     });
 
     testGrammarTapes({
+        testnum: "3c",
+        grammar: Hide(Seq(t1("hello"), t2("world")), "t1", "HIDDEN"),
+        tapes: ["t2", ".HIDDEN"]
+    });
+
+    testGrammarTapes({
         testnum: "4a",
         grammar: Collection({a: t1("hi"), b: Embed("a")}),
         tapes: ["t1"],
