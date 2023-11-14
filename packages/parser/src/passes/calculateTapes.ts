@@ -6,6 +6,8 @@ import {
     HideGrammar,
     MatchGrammar,
     RenameGrammar,
+    FilterGrammar,
+    JoinGrammar,
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
 import { Dict, listUnique, setMap, setUnion, update } from "../utils/func";
@@ -53,13 +55,9 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
                 case "seq": 
                 case "alt": 
                 case "intersect": 
-                case "join": 
-                case "contains":
-                case "starts": 
-                case "ends":
+                case "join":
                 case "short": 
                 case "count": 
-                case "filter":
                 case "not":
                 case "test":
                 case "testnot":
@@ -69,12 +67,18 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
                 case "cursor":
                 case "locator": return getTapesDefault(g);
                 
+                // union of children's tapes, plus additional tapes
+                case "starts":
+                case "ends":
+                case "contains": return getTapesDefault(g, g.extraTapes);
+
                 // something special
                 case "collection": return getTapesCollection(g, env);
                 case "singletape": return updateTapes(g, TapeLit(g.tapeName));
                 case "match":      return getTapesMatch(g);
                 case "rename":     return getTapesRename(g);
                 case "hide":       return getTapesHide(g);
+                case "filter":     return getTapesFilter(g);
 
                 //default: exhaustive(g.tag);
                 default: throw new Error(`unhandled grammar in getTapes: ${g.tag}`);
@@ -87,9 +91,16 @@ function updateTapes(g: Grammar, tapes: TapeID): Grammar {
     return update(g, { tapeSet: tapes });
 }
 
-function getTapesDefault(g: Grammar): Grammar {
-    const childTapes = getChildTapes(g);
-    return updateTapes(g, getChildTapes(g));
+function getTapesDefault(
+    g: Grammar, 
+    extras: Iterable<string> | undefined = undefined
+): Grammar {
+    if (extras === undefined) {
+        return updateTapes(g, getChildTapes(g));
+    }
+    const lits = [...extras].map(s => TapeLit(s));
+    const allTapes = TapeSet(getChildTapes(g), ...lits);
+    return updateTapes(g, allTapes);
 }
 
 function getChildTapes(g: Grammar): TapeID {
@@ -143,6 +154,37 @@ function getTapesHide(g: HideGrammar): Result<Grammar> {
 
     const tapes = TapeRename(g.child.tapeSet, g.tapeName, g.toTape);
     return updateTapes(g, tapes).msg();
+}
+
+/**
+ * FilterGrammars are just a kind of join with a single-tape requirement.
+ * Here we check that requirement.  We could do this with SingleTapeGrammars
+ * too but handling it specially lets us return a clearer error message. 
+ * 
+ * If it succeeds, we just return a join.
+ * If we fail, we return the left child and an error message.
+ */
+function getTapesFilter(g: FilterGrammar): Result<Grammar> {
+
+    const conditionTapes = g.child2.tapes;
+    if (conditionTapes.length === 0) {
+        // it's an epsilon or failure but it's caught elsewhere,
+        //don't complain here
+        return g.child1.msg(); 
+    }
+
+    if (conditionTapes.length > 1) {
+        return g.child1.err("Filters must be single-tape", 
+        `A filter like equals, starts, etc. should only reference a single tape.`);
+    }
+
+    const childTapes = new Set(g.child1.tapes);
+    if (!(childTapes.has(conditionTapes[0]))) {
+        return g.child1.err("Filtering non-existent tape", 
+        `This filter references a tape ${conditionTapes[0]} that does not exist`);
+    }
+    const result = new JoinGrammar(g.child1, g.child2);
+    return getTapesDefault(result).msg();
 }
 
 function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar> {

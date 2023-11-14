@@ -1,6 +1,6 @@
 import { CreateCollections } from "./createCollections";
 import { QualifyNames } from "./qualifyNames";
-import { AdjustConditions } from "./adjustConditions";
+import { AdjustFilters } from "./adjustFilters";
 import { CheckNamedParams } from "./checkNamedParams";
 import { RescopeLeftBinders } from "./rescopeLeftBinders";
 import { CreateOps } from "./createOps";
@@ -17,7 +17,6 @@ import { AssignDefaults } from "./assignDefaults";
 import { HandleSingleTapes } from "./handleSingleTapes";
 import { SanityCheckRules } from "./sanityCheckRules";
 import { CombineLiterals } from "./combineLiterals";
-import { ProcessFilters } from "./processFilters";
 import { CalculateTapes } from "./calculateTapes";
 
 export const SHEET_PASSES = 
@@ -98,13 +97,6 @@ export const POST_NAME_PASSES =
     // handles some local tape renaming for plaintext/regex
     new HandleSingleTapes().compose(
 
-    new ProcessFilters().compose(
-
-    // if the programmer has specified an invalid renaming/hiding
-    // structure that would cause problems during evaluation, fix
-    // it so it doesn't
-    //new RenameFix().compose(
-
     // do some sanity checking of rules
     new SanityCheckRules().compose(
     
@@ -115,7 +107,7 @@ export const POST_NAME_PASSES =
     // some conditions (like `starts re text: ~k`) have counterintuitive
     // results, rescope them as necessary to try to have the 
     // semantics that the programmer anticipates 
-    new AdjustConditions()))))));
+    new AdjustFilters())))));
 
 export const GRAMMAR_PASSES = 
 
