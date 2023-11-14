@@ -39,19 +39,15 @@ export class AdjustFilters extends PostPass<Grammar> {
     }
 
     public preTransform(g: Grammar, env: PassEnv): Grammar {
-        let result: Grammar;
         switch (g.tag) {
-            case "starts":   result = this.transformStarts(g, env);
-                             break;
-            case "ends":     result = this.transformEnds(g, env);
-                             break;
-            case "contains": result = this.transformContains(g, env);
-                             break;
-            default:         result = g;
-                             break;
+            case "starts":   return this.transformStarts(g, env)
+                                        .tapify(env);
+            case "ends":     return this.transformEnds(g, env)
+                                        .tapify(env);
+            case "contains": return this.transformContains(g, env)
+                                        .tapify(env);
+            default:         return g;
         }
-        //result.calculateTapes(new CounterStack(2), env);
-        return result;
     }
 
     public transformStarts(g: StartsGrammar, env: PassEnv): Grammar {
@@ -59,8 +55,7 @@ export class AdjustFilters extends PostPass<Grammar> {
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
             const newCond = new StartsGrammar(g.child.child, g.tapes);
-            const newNegation = new NegationGrammar(newCond);
-            return newNegation.tapify(env);
+            return new NegationGrammar(newCond);
         }
 
         if (g.child instanceof SequenceGrammar && g.child.children.length > 0) {
@@ -69,35 +64,30 @@ export class AdjustFilters extends PostPass<Grammar> {
             const newLastChild = new StartsGrammar(
                 newChildren[newChildren.length-1], g.tapes);
             newChildren[newChildren.length-1] = newLastChild;
-            const newSequence = new SequenceGrammar(newChildren);
-            return newSequence.tapify(env);
+            return new SequenceGrammar(newChildren);
         }
         
         if (g.child instanceof AlternationGrammar) {
             // this(x|y) -> this(x)|this(y)
             const newChildren = g.child.children.map(c => new StartsGrammar(c, g.tapes));
-            const newAlternation = new AlternationGrammar(newChildren);
-            return newAlternation.tapify(env);
+            return new AlternationGrammar(newChildren);
         }
 
         if (g.child instanceof IntersectionGrammar) {
             // this(x&y) -> this(x)&this(y)
             const newCond1 = new StartsGrammar(g.child.child1, g.tapes);
             const newCond2 = new StartsGrammar(g.child.child2, g.tapes);
-            const newIntersection = new IntersectionGrammar(newCond1, newCond2);
-            return newIntersection.tapify(env);
+            return new IntersectionGrammar(newCond1, newCond2);
         }
 
         if (g.child instanceof LocatorGrammar) {
             const newCond = new StartsGrammar(g.child.child, g.tapes);
-            const newLocation = new LocatorGrammar(g.child.position, newCond);
-            return newLocation.tapify(env);
+            return new LocatorGrammar(g.child.position, newCond);
         }
 
         if (g.child instanceof RenameGrammar) {
             const newCond = new StartsGrammar(g.child.child, g.child.child.tapes);
-            const newRename = new RenameGrammar(newCond, g.child.fromTape, g.child.toTape);
-            return newRename.tapify(env);
+            return new RenameGrammar(newCond, g.child.fromTape, g.child.toTape);
         }
 
         // construct the condition
@@ -109,7 +99,7 @@ export class AdjustFilters extends PostPass<Grammar> {
             const dotStar = new RepeatGrammar(dot);
             dotStars.push(dotStar);
         }
-        return new SequenceGrammar([g.child, ...dotStars ]).tapify(env);
+        return new SequenceGrammar([g.child, ...dotStars ]);
     }
     
     public transformEnds(g: EndsGrammar, env: PassEnv): Grammar {
@@ -117,8 +107,7 @@ export class AdjustFilters extends PostPass<Grammar> {
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
             const newCond = new EndsGrammar(g.child.child, g.tapes);
-            const newNegation = new NegationGrammar(newCond);
-            return newNegation.tapify(env);
+            return new NegationGrammar(newCond);
         }
 
         if (g.child instanceof SequenceGrammar && g.child.children.length > 0) {
@@ -126,35 +115,30 @@ export class AdjustFilters extends PostPass<Grammar> {
             const newChildren = [...g.child.children]; // clone the children
             const newFirstChild = new EndsGrammar(newChildren[0], g.tapes);
             newChildren[0] = newFirstChild;
-            const newSequence = new SequenceGrammar(newChildren);
-            return newSequence.tapify(env);
+            return new SequenceGrammar(newChildren);
         }
         
         if (g.child instanceof AlternationGrammar) {
             // this(x|y) -> this(x)|this(y)
             const newChildren = g.child.children.map(c => new EndsGrammar(c, g.tapes));
-            const newAlternation = new AlternationGrammar(newChildren);
-            return newAlternation.tapify(env);
+            return new AlternationGrammar(newChildren);
         }
 
         if (g.child instanceof IntersectionGrammar) {
             // this(x&y) -> this(x)&this(y)
             const newCond1 = new EndsGrammar(g.child.child1, g.tapes);
             const newCond2 = new EndsGrammar(g.child.child2, g.tapes);
-            const newIntersection = new IntersectionGrammar(newCond1, newCond2);
-            return newIntersection.tapify(env);
+            return new IntersectionGrammar(newCond1, newCond2);
         }
         
         if (g.child instanceof LocatorGrammar) {
             const newCond = new EndsGrammar(g.child.child, g.tapes);
-            const newLocation = new LocatorGrammar(g.child.position, newCond);
-            return newLocation.tapify(env);
+            return new LocatorGrammar(g.child.position, newCond);
         }
         
         if (g.child instanceof RenameGrammar) {
             const newCond = new EndsGrammar(g.child.child, g.child.child.tapes);
-            const newRename = new RenameGrammar(newCond, g.child.fromTape, g.child.toTape);
-            return newRename.tapify(env);
+            return new RenameGrammar(newCond, g.child.fromTape, g.child.toTape);
         }
 
         // create the condition
@@ -165,7 +149,7 @@ export class AdjustFilters extends PostPass<Grammar> {
             const dotStar = new RepeatGrammar(dot);
             dotStars.push(dotStar);
         }
-        return new SequenceGrammar([ ...dotStars, g.child ]).tapify(env);
+        return new SequenceGrammar([ ...dotStars, g.child ]);
         
     }
     
@@ -174,8 +158,7 @@ export class AdjustFilters extends PostPass<Grammar> {
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
             const newCond = new ContainsGrammar(g.child.child, g.tapes);
-            const newNegation = new NegationGrammar(newCond);
-            return newNegation.tapify(env);
+            return new NegationGrammar(newCond);
         }
 
         if (g.child instanceof SequenceGrammar && g.child.children.length > 0) {
@@ -185,35 +168,30 @@ export class AdjustFilters extends PostPass<Grammar> {
             newChildren[0] = newFirstChild;
             const newLastChild = new StartsGrammar(newChildren[newChildren.length-1], g.tapes);
             newChildren[newChildren.length-1] = newLastChild;
-            const newSequence = new SequenceGrammar(newChildren);
-            return newSequence.tapify(env);
+            return new SequenceGrammar(newChildren);
         }
         
         if (g.child instanceof AlternationGrammar) {
             // this(x|y) -> this(x)|this(y)
             const newChildren = g.child.children.map(c => new ContainsGrammar(c, g.tapes));
-            const newAlternation = new AlternationGrammar(newChildren);
-            return newAlternation.tapify(env);
+            return new AlternationGrammar(newChildren);
         }
 
         if (g.child instanceof IntersectionGrammar) {
             // this(x&y) -> this(x)&this(y)
             const newCond1 = new ContainsGrammar(g.child.child1, g.tapes);
             const newCond2 = new ContainsGrammar(g.child.child2, g.tapes);
-            const newIntersection = new IntersectionGrammar(newCond1, newCond2);
-            return newIntersection.tapify(env);
+            return new IntersectionGrammar(newCond1, newCond2);
         }
 
         if (g.child instanceof LocatorGrammar) {
             const newCond = new ContainsGrammar(g.child.child, g.tapes);
-            const newLocation = new LocatorGrammar(g.child.position, newCond);
-            return newLocation.tapify(env);
+            return new LocatorGrammar(g.child.position, newCond);
         }
         
         if (g.child instanceof RenameGrammar) {
             const newCond = new ContainsGrammar(g.child.child, g.child.child.tapes);
-            const newRename = new RenameGrammar(newCond, g.child.fromTape, g.child.toTape);
-            return newRename.tapify(env);
+            return new RenameGrammar(newCond, g.child.fromTape, g.child.toTape);
         }
 
         const dotStars: Grammar[] = [];
@@ -223,6 +201,6 @@ export class AdjustFilters extends PostPass<Grammar> {
             const dotStar = new RepeatGrammar(dot);
             dotStars.push(dotStar);
         }
-        return new SequenceGrammar([...dotStars, g.child, ...dotStars]).tapify(env);
+        return new SequenceGrammar([...dotStars, g.child, ...dotStars]);
     }
 }
