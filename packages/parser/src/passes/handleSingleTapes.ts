@@ -42,37 +42,48 @@ export class HandleSingleTapes extends GrammarPass {
             case "lit":        return this.handleLiteral(g, env);
             case "dot":        return this.handleDot(g, env);
             case "embed":      return this.handleEmbed(g, env);
-            default:           return g.mapChildren(this, env);
+            default:           return this.handleDefault(g, env);
         }
+    }
+
+    handleDefault(g: Grammar, env: PassEnv): GrammarResult {
+
+        if (this.tapeName !== undefined && g.tapes.length > 1) {
+            // shouldn't be possible in real source grammars
+            return g.err("Multiple fields not allowed in this context",
+                `Only grammars with one field (e.g. just "text" but not any other fields) ` +
+                `can be embedded into a regex or rule context.`)
+                .bind(_ => new EpsilonGrammar().tapify(env));
+        }
+
+        return g.mapChildren(this, env);
     }
 
     handleEmbed(g: EmbedGrammar, env: PassEnv): GrammarResult {
         
-        if (this.tapeName == undefined) {
+        if (this.tapeName === undefined) {
             // we're not in singleTape env
             return g.mapChildren(this, env);
         }
 
-        if (g.tapes.length != 1) {
+        if (g.tapes.length == 0) {
+            return g.err("Embedding zero-field symbol",
+                `This embedded symbol has no fields (e.g. "text"), it should have exactly one.`)
+                .bind(_ => new EpsilonGrammar().tapify(env));
+        }
+
+        if (g.tapes.length > 1) {
             return g.err("Embedding multi-field symbol",
                 `Only grammars with one field (e.g. just "text" but not any other fields) ` +
                 `can be embedded into a regex or rule context.`)
-                .bind(_ => new EpsilonGrammar());
+                .bind(_ => new EpsilonGrammar().tapify(env));
         }
 
-        /*
-        let result: Grammar = g;
-        for (const tape of g.tapes) {
-            if (tape == this.tapeName) continue;
-            if (tape.startsWith(HIDDEN_TAPE_PREFIX)) continue;
-            const hiddenTapeName = `${HIDDEN_TAPE_PREFIX}H${this.replaceIndex++}`;
-            //console.log(`hiding ${g.name}.${tape} as ${hiddenTapeName}`);
-            result = new HideGrammar(result, tape, hiddenTapeName);
-        }
-        */
-        const gTapeName = g.tapes[0];
-        if (this.tapeName != gTapeName) {
-            return new RenameGrammar(g, gTapeName, this.tapeName).msg();
+        const embedTapeName = g.tapes[0];
+        if (this.tapeName != embedTapeName) {
+            return new RenameGrammar(g, embedTapeName, this.tapeName)
+                        .tapify(env)
+                        .msg();
         }
 
         return g.msg();
@@ -80,14 +91,18 @@ export class HandleSingleTapes extends GrammarPass {
 
     private handleDot(g: DotGrammar, env: PassEnv): GrammarResult {
         if (g.tapeName == DEFAULT_TAPE && this.tapeName != undefined) {
-            return new DotGrammar(this.tapeName).msg();
+            return new DotGrammar(this.tapeName)
+                        .tapify(env)
+                        .msg();
         }
         return g.msg();
     }
 
     private handleLiteral(g: LiteralGrammar, env: PassEnv): GrammarResult {
         if (g.tapeName == DEFAULT_TAPE && this.tapeName != undefined) {
-            return new LiteralGrammar(this.tapeName, g.text).msg();
+            return new LiteralGrammar(this.tapeName, g.text)
+                        .tapify(env)
+                        .msg();
         }
         return g.msg();
     }

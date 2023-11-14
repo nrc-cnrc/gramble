@@ -58,8 +58,9 @@
     "testGrammarRename": "mocha -r ts-node/register tests/grammar/testGrammarRename.ts",
     "testGrammarRepeat": "mocha -r ts-node/register tests/grammar/testGrammarRepeat.ts",
     "testGrammarReplace": "mocha -r ts-node/register tests/grammar/testGrammarReplace.ts",
-    "testGrammarShort": "mocha -r ts-node/register tests/grammar/testGrammarShort.ts",
     "testGrammarRecursion": "mocha -r ts-node/register tests/grammar/testGrammarRecursion.ts",
+    "testGrammarShort": "mocha -r ts-node/register tests/grammar/testGrammarShort.ts",
+    "testGrammarSingleTape": "mocha -r ts-node/register tests/grammar/testGrammarSingleTape.ts",
 
     "testGrammarID": "mocha -r ts-node/register tests/grammar/testGrammarID.ts",
     "testGrammarTapes": "mocha -r ts-node/register tests/grammar/testGrammarTapes.ts",
