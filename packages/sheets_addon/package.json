@@ -29,7 +29,7 @@
     "url": "git+https://github.com/nrc-cnrc/gramble.git"
   },
   "scripts": {
-    "build": "tsc --build --verbose",
+    "build": ":",
     "prepare": "npm run build",
     "test": "./deploy.sh --help",
     "clasp": "clasp",
@@ -39,12 +39,11 @@
     "url": "https://github.com/nrc-cnrc/gramble/issues"
   },
   "devDependencies": {
-    "typescript": "^5.2.2"
-  },
-  "dependencies": {
     "@google/clasp": "^2.4.2",
     "browserify": "^17.0.0",
     "tsify": "^5.0.4",
     "unicode-properties": "^1.4.1"
+  },
+  "dependencies": {
   }
 }
