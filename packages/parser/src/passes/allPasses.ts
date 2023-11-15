@@ -1,7 +1,6 @@
 import { CreateCollections } from "./createCollections";
 import { QualifyNames } from "./qualifyNames";
-import { RenameFix } from "./renameFix";
-import { AdjustConditions } from "./adjustConditions";
+import { CreateFilters } from "./createFilters";
 import { CheckNamedParams } from "./checkNamedParams";
 import { RescopeLeftBinders } from "./rescopeLeftBinders";
 import { CreateOps } from "./createOps";
@@ -16,9 +15,8 @@ import { CheckCollections } from "./checkCollections";
 import { ConstructReplaceBlocks } from "./constructReplaceBlocks";
 import { AssignDefaults } from "./assignDefaults";
 import { HandleSingleTapes } from "./handleSingleTapes";
-import { SanityCheckRules } from "./sanityCheckRules";
 import { CombineLiterals } from "./combineLiterals";
-import { ProcessFilters } from "./processFilters";
+import { CalculateTapes } from "./calculateTapes";
 
 export const SHEET_PASSES = 
 
@@ -68,9 +66,12 @@ export const SHEET_PASSES =
     new RescopeLeftBinders().compose(
 
     // create grammar objects
-    new CreateGrammars()
+    new CreateGrammars().compose(
     
-    )))))))))));
+    // Joins sequences of single-character literals into multi-
+    // char literals for effeciency.
+    new CombineLiterals()
+    ))))))))))));
 
 
 export const PRE_NAME_PASSES = 
@@ -89,31 +90,21 @@ export const NAME_PASSES =
 
 export const POST_NAME_PASSES =
 
-    // Joins sequences of single-character literals into multi-
-    // char literals for effeciency.
-    new CombineLiterals().compose(
+    new CalculateTapes().compose(
 
     // handles some local tape renaming for plaintext/regex
     new HandleSingleTapes().compose(
 
-    new ProcessFilters().compose(
-
-    // if the programmer has specified an invalid renaming/hiding
-    // structure that would cause problems during evaluation, fix
-    // it so it doesn't
-    new RenameFix().compose(
-
-    // do some sanity checking of rules
-    new SanityCheckRules().compose(
-    
-    // turn replacement blocks into the appropriate
-    // structures
-    new ConstructReplaceBlocks().compose(
-
     // some conditions (like `starts re text: ~k`) have counterintuitive
     // results, rescope them as necessary to try to have the 
     // semantics that the programmer anticipates 
-    new AdjustConditions()))))));
+    new CreateFilters().compose(
+    
+    // turn replacement blocks into the appropriate
+    // structures
+    new ConstructReplaceBlocks()
+
+    )));
 
 export const GRAMMAR_PASSES = 
 

@@ -33,6 +33,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '1. hello ⨝ e -> a',
         grammar: ReplaceBlock("t1", "hello", 
                               Replace("e", "a")),
+        tapes: ["t1"],
         results: [
             {t1: 'hallo'},
         ],
@@ -605,7 +606,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                               Replace("e", "a")),
         results: [
             {},
-        ]
+        ],
+        numErrors: 1
     });
 
     testGrammar({
@@ -689,7 +691,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '18. Replacement of null ⨝ e -> a',
         grammar: ReplaceBlock(DEFAULT_TAPE, 
                     Null(), Replace("e","a")),
-        results: []
+        results: [],
+        numErrors: 1
     });
-
 });

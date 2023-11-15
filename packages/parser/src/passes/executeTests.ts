@@ -1,8 +1,8 @@
 import { Dict, StringDict } from "../utils/func";
-import { constructCollection, CounterStack, Expr } from "../exprs";
+import { constructCollection, Expr } from "../exprs";
 import { Msgs, Err, Success } from "../utils/msgs";
 import { 
-    Grammar, GrammarPass, 
+    Grammar, 
     GrammarResult, TestNotGrammar, 
     TestGrammar, 
     AbstractTestGrammar,
@@ -11,13 +11,13 @@ import {
 
 import { TapeNamespace} from "../tapes";
 import { generate } from "../generator";
-import { PassEnv } from "../passes";
+import { Pass, PassEnv } from "../passes";
 import { infinityProtection } from "./infinityProtection";
 import { Cursor } from "../grammarConvenience";
 import { prioritizeTapes } from "./prioritizeTapes";
 import { constructExpr } from "./constructExpr";
 
-export class ExecuteTests extends GrammarPass {
+export class ExecuteTests extends Pass<Grammar,Grammar> {
 
     constructor(
         public tapeNS: TapeNamespace,
@@ -44,8 +44,6 @@ export class ExecuteTests extends GrammarPass {
 
     public handleTest(g: TestGrammar, env: PassEnv): GrammarResult {
         const msgs: Msgs = [];
-
-        g.calculateTapes(new CounterStack(2), env);
 
         const childTapes = new Set(g.child.tapes);
         for (const testTape of g.test.tapes) {
@@ -89,8 +87,6 @@ export class ExecuteTests extends GrammarPass {
     public handleNegativeTest(g: TestNotGrammar, env: PassEnv): GrammarResult {
         const msgs: Msgs = [];
 
-        g.calculateTapes(new CounterStack(2), env);
-
         const childTapes = new Set(g.child.tapes);
         for (const testTape of g.test.tapes) {
             if (childTapes.has(testTape)) continue;
@@ -117,7 +113,7 @@ export class ExecuteTests extends GrammarPass {
     ): StringDict[] {
 
         // create a filter for each test
-        let targetGrammar: Grammar = new JoinGrammar(test.child, test.test);
+        let targetGrammar: Grammar = new JoinGrammar(test.child, test.test).tapify(env);
 
         // there won't be any new vocabulary here, but it's possible (indeed, frequent)
         // that the Equals we made above has a different join/concat tape structure

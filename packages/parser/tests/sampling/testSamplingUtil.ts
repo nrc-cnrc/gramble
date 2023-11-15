@@ -4,70 +4,79 @@ import {
 } from "../../src/grammars";
 
 import { Interpreter } from "../../src/interpreter";
-import { SILENT, StringDict } from "../../src/util";
 
 import {
-    DEFAULT_MAX_RECURSION,
     testMatchOutputs,
-    generateOutputsFromGrammar,
     prepareInterpreter,
-    DEBUG_MAX_RECURSION,
+    generateOutputs,
 } from "../testUtil";
+import { DEFAULT_MAX_CHARS, DEFAULT_MAX_RECURSION } from "../../src/utils/constants";
+import { Options } from "../../src/utils/options";
+import { SILENT } from "../../src/utils/logging";
+import { StringDict } from "../../src/utils/func";
 
-export type SampleTest = {
+export interface SampleTest extends Partial<Options> {
     // required parameters
     desc: string,
-    grammar: Grammar | Interpreter,
-} & Partial<{
-    // optional parameters
-    verbose: number,
-    numSamples: number,
-    symbolName: string,
-    maxRecursion: number,
-    stripHidden: boolean
-}>;
+    grammar: Grammar,
+    symbol?: string,
+    numSamples?: number
+};
 
 export function testSample({
-    desc,
+    desc, 
     grammar,
-    verbose = SILENT,
+    symbol = "",
     numSamples = 100,
-    symbolName = "",
+    // General options
+    verbose = SILENT,
+    directionLTR = true,
+    optimizeAtomicity = true,
     maxRecursion = DEFAULT_MAX_RECURSION,
-    stripHidden = true
+    maxChars = DEFAULT_MAX_CHARS,
 }: SampleTest): void {
+
+    const opt = Options({
+        verbose: verbose,
+        directionLTR: directionLTR,
+        optimizeAtomicity: optimizeAtomicity,
+        maxRecursion: maxRecursion,
+        maxChars: maxChars
+    });
+    
     describe(desc, function() {
-        const generatedOutputs: StringDict[] =
-            generateOutputsFromGrammar(grammar, verbose, symbolName, {},
-                                    maxRecursion, stripHidden);
-        const samples: StringDict[] =
-            sampleOutputsFromGrammar(grammar, verbose, numSamples, 
-                            symbolName, maxRecursion, stripHidden);
-        testMatchOutputs(samples, generatedOutputs, symbolName);
+
+        const interpreter = prepareInterpreter(grammar, opt);
+        
+        try {
+            const outputs1 = generateOutputs(interpreter, symbol, {}, true, false);
+            const outputs2 = sampleOutputs(interpreter, numSamples, symbol, true, false);
+            testMatchOutputs(outputs1, outputs2, symbol);
+        } catch (e) {
+            it("Unexpected Exception", function() {
+                console.log("");
+                console.log(`[${this.test?.fullTitle()}]`);
+                console.log(e);
+                assert.fail(JSON.stringify(e));
+            });
+        }
     });
 }
 
-export function sampleOutputsFromGrammar(
-    grammar: Grammar | Interpreter,
-    verbose: number = SILENT,
+export function sampleOutputs(
+    interpreter: Interpreter,
     numSamples: number = 100,
     symbolName: string = "",
-    maxRecursion: number = DEFAULT_MAX_RECURSION,
     stripHidden: boolean = true,
-    throwError: boolean = false // in case a test wants to catch errors itself
+    rethrow: boolean = false, // in case a test wants to catch errors itself
 ): StringDict[] {
-    const interpreter = prepareInterpreter(grammar, verbose, symbolName, maxRecursion, throwError);
-                          
     let outputs: StringDict[] = [];
-
-    maxRecursion = Math.min(maxRecursion, DEBUG_MAX_RECURSION);
-
     try {
         outputs = [
             ...interpreter.sample(symbolName, numSamples, {}, stripHidden)
         ];
     } catch (e) {
-        if (throwError) throw e;
+        if (rethrow) throw e;
         it("Unexpected Exception", function() {
             console.log("");
             console.log(`[${this.test?.fullTitle()}]`);

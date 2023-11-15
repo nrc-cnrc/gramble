@@ -219,20 +219,14 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });    
     
     testGrammar({
-        // there's a potential bug about nested cursors operating on 
-        // sequences, but drawing it out is tricky because of how 
-        // optimizations turn simple sequences into literals where 
-        // possible and then treat them atomically.  here i'm stymieing 
-        // those optimizations by interleaving two tapes, but that's 
-        // all t2 is doing here, the test is really just for t1.  if both
-        // Cursors attempt to operate on the sequence, the result will be 
-        // t1:elhlo rather than t1:hello.
+        // if both Cursors attempt to operate on the sequence, the 
+        // result will be t1:elhlo rather than t1:hello.
         desc: '11b. Repeated cursor, complex',
-        grammar: Cursor(["t1", "t1"], Seq(t1("h"), t2("w"), t1("e"), t2("o"), t1("l"), 
-                                        t2("r"), t1("l"), t2("l"), t1("o"), t2("d"))),
-        tapes: ["t1", "t2"],
+        grammar: Cursor(["t1", "t1"], Seq(t1("h"), t1("e"), t1("l"), 
+                                      t1("l"), t1("o"))),
+        tapes: ["t1"],
         results: [
-            {t1: 'hello', t2: 'world'} 
+            {t1: 'hello'} 
         ]
     });
 

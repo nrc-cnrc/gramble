@@ -7,9 +7,10 @@ import {
 import { Result } from "./utils/msgs";
 
 import { ALL_RESERVED, isValidSymbolName, RESERVED_SYMBOLS } from "./utils/reserved";
-import { Component, exhaustive } from "./components";
+import { Component } from "./components";
 import { DEFAULT_PARAM } from "./utils/constants";
 import { colorFromText } from "./utils/colors";
+import { exhaustive } from "./utils/func";
 
 export const DEFAULT_SATURATION = 0.05;
 export const DEFAULT_VALUE = 1.0;

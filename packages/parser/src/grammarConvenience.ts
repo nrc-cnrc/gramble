@@ -2,7 +2,7 @@ import {
     AlternationGrammar, CollectionGrammar, 
     ContainsGrammar, CorrespondGrammar, 
     CountGrammar, CursorGrammar, DotGrammar, 
-    EmbedGrammar, EndsGrammar, EpsilonGrammar, Grammar, 
+    EmbedGrammar, EndsGrammar, EpsilonGrammar, FilterGrammar, Grammar, 
     HideGrammar, IntersectionGrammar, 
     JoinGrammar, LiteralGrammar, 
     MatchGrammar, NegationGrammar, 
@@ -198,31 +198,31 @@ export function Short(
 export function Starts(
     child1: Grammar | string, 
     child2: Grammar | string
-): JoinGrammar {
+): FilterGrammar {
     child1 = makeGrammar(child1);
     child2 = makeGrammar(child2);
     const filter = new StartsGrammar(child2);
-    return new JoinGrammar(child1, filter);
+    return new FilterGrammar(child1, filter);
 }
 
 export function Ends(
     child1: Grammar | string, 
     child2: Grammar | string
-): JoinGrammar {
+): FilterGrammar {
     child1 = makeGrammar(child1);
     child2 = makeGrammar(child2);
     const filter = new EndsGrammar(child2);
-    return new JoinGrammar(child1, filter);
+    return new FilterGrammar(child1, filter);
 }
 
 export function Contains(
     child1: Grammar | string, 
     child2: Grammar | string
-): JoinGrammar {
+): FilterGrammar {
     child1 = makeGrammar(child1);
     child2 = makeGrammar(child2);
     const filter = new ContainsGrammar(child2);
-    return new JoinGrammar(child1, filter);
+    return new FilterGrammar(child1, filter);
 }
 
 export function Rep(

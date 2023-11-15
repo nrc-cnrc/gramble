@@ -6,16 +6,20 @@ import {
     NegationGrammar, RepeatGrammar, 
     SequenceGrammar, StartsGrammar, 
     RenameGrammar,
-    CounterStack
+    FilterGrammar,
+    JoinGrammar
 } from "../grammars";
 import { HIDDEN_PREFIX } from "../utils/constants";
 import { PostPass } from "./ancestorPasses";
 
 /**
- * There's a semantic gotcha in starts/ends/contains that could throw programmers for a 
- * loop: If we filter a string to say that it starts with not(X), then the filter will
+ * This pass creates Joins out of filters and handles a semantic 
+ * gotcha in starts/ends/contains.
+ * 
+ * If we filter a string to say that it starts with not(X), then the filter will
  * let everything through, because the empty string is a member of not(X), and every string
- * starts with the empty string.
+ * starts with the empty string.  This is correct but probably not what the programmer
+ * means to say!
  * 
  * What the programmer really means to say here isn't "it starts with not X" but "it doesn't
  * start with X".  (Note the scope difference.)  This isn't the scope that the actual program 
@@ -32,26 +36,28 @@ import { PostPass } from "./ancestorPasses";
  * they really want the string to match (i.e. putting the .* exactly where they intend it to
  * be) and wrap that in an equals rather than using starts/ends/contains.
  */
-export class AdjustConditions extends PostPass<Grammar> {
+export class CreateFilters extends PostPass<Grammar> {
     
     public get desc(): string {
-        return "Adjusting condition scope";
+        return "Adjusting filter scope";
     }
 
     public preTransform(g: Grammar, env: PassEnv): Grammar {
-        let result: Grammar;
         switch (g.tag) {
-            case "starts":   result = this.transformStarts(g, env);
-                             break;
-            case "ends":     result = this.transformEnds(g, env);
-                             break;
-            case "contains": result = this.transformContains(g, env);
-                             break;
-            default:         result = g;
-                             break;
+            case "filter":   return this.transformFilter(g, env)
+                                        .tapify(env);
+            case "starts":   return this.transformStarts(g, env)
+                                        .tapify(env);
+            case "ends":     return this.transformEnds(g, env)
+                                        .tapify(env);
+            case "contains": return this.transformContains(g, env)
+                                        .tapify(env);
+            default:         return g;
         }
-        result.calculateTapes(new CounterStack(2), env);
-        return result;
+    }
+
+    transformFilter(g: FilterGrammar, env: PassEnv): Grammar {
+        return new JoinGrammar(g.child1, g.child2);
     }
 
     public transformStarts(g: StartsGrammar, env: PassEnv): Grammar {
@@ -59,8 +65,7 @@ export class AdjustConditions extends PostPass<Grammar> {
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
             const newCond = new StartsGrammar(g.child.child, g.tapes);
-            const newNegation = new NegationGrammar(newCond);
-            return newNegation;
+            return new NegationGrammar(newCond);
         }
 
         if (g.child instanceof SequenceGrammar && g.child.children.length > 0) {
@@ -69,47 +74,41 @@ export class AdjustConditions extends PostPass<Grammar> {
             const newLastChild = new StartsGrammar(
                 newChildren[newChildren.length-1], g.tapes);
             newChildren[newChildren.length-1] = newLastChild;
-            const newSequence = new SequenceGrammar(newChildren);
-            return newSequence;
+            return new SequenceGrammar(newChildren);
         }
         
         if (g.child instanceof AlternationGrammar) {
             // this(x|y) -> this(x)|this(y)
             const newChildren = g.child.children.map(c => new StartsGrammar(c, g.tapes));
-            const newAlternation = new AlternationGrammar(newChildren);
-            return newAlternation;
+            return new AlternationGrammar(newChildren);
         }
 
         if (g.child instanceof IntersectionGrammar) {
             // this(x&y) -> this(x)&this(y)
             const newCond1 = new StartsGrammar(g.child.child1, g.tapes);
             const newCond2 = new StartsGrammar(g.child.child2, g.tapes);
-            const newIntersection = new IntersectionGrammar(newCond1, newCond2);
-            return newIntersection;
+            return new IntersectionGrammar(newCond1, newCond2);
         }
 
         if (g.child instanceof LocatorGrammar) {
             const newCond = new StartsGrammar(g.child.child, g.tapes);
-            const newLocation = new LocatorGrammar(g.child.position, newCond);
-            return newLocation;
+            return new LocatorGrammar(g.child.position, newCond);
         }
 
         if (g.child instanceof RenameGrammar) {
             const newCond = new StartsGrammar(g.child.child, g.child.child.tapes);
-            const newRename = new RenameGrammar(newCond, g.child.fromTape, g.child.toTape);
-            return newRename;
+            return new RenameGrammar(newCond, g.child.fromTape, g.child.toTape);
         }
 
         // construct the condition
-        //const newG = this.transform(g.child, env);
-            const dotStars: Grammar[] = [];
-            for (const tape of g.tapes) {
-                if (tape.startsWith(HIDDEN_PREFIX)) continue;
-                const dot = new DotGrammar(tape);
-                const dotStar = new RepeatGrammar(dot);
-                dotStars.push(dotStar);
-            }
-            return new SequenceGrammar([g.child, ...dotStars ]);
+        const dotStars: Grammar[] = [];
+        for (const tape of g.tapes) {
+            if (tape.startsWith(HIDDEN_PREFIX)) continue;
+            const dot = new DotGrammar(tape);
+            const dotStar = new RepeatGrammar(dot);
+            dotStars.push(dotStar);
+        }
+        return new SequenceGrammar([g.child, ...dotStars ]);
     }
     
     public transformEnds(g: EndsGrammar, env: PassEnv): Grammar {
@@ -117,8 +116,7 @@ export class AdjustConditions extends PostPass<Grammar> {
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
             const newCond = new EndsGrammar(g.child.child, g.tapes);
-            const newNegation = new NegationGrammar(newCond);
-            return newNegation;
+            return new NegationGrammar(newCond);
         }
 
         if (g.child instanceof SequenceGrammar && g.child.children.length > 0) {
@@ -126,35 +124,30 @@ export class AdjustConditions extends PostPass<Grammar> {
             const newChildren = [...g.child.children]; // clone the children
             const newFirstChild = new EndsGrammar(newChildren[0], g.tapes);
             newChildren[0] = newFirstChild;
-            const newSequence = new SequenceGrammar(newChildren);
-            return newSequence;
+            return new SequenceGrammar(newChildren);
         }
         
         if (g.child instanceof AlternationGrammar) {
             // this(x|y) -> this(x)|this(y)
             const newChildren = g.child.children.map(c => new EndsGrammar(c, g.tapes));
-            const newAlternation = new AlternationGrammar(newChildren);
-            return newAlternation;
+            return new AlternationGrammar(newChildren);
         }
 
         if (g.child instanceof IntersectionGrammar) {
             // this(x&y) -> this(x)&this(y)
             const newCond1 = new EndsGrammar(g.child.child1, g.tapes);
             const newCond2 = new EndsGrammar(g.child.child2, g.tapes);
-            const newIntersection = new IntersectionGrammar(newCond1, newCond2);
-            return newIntersection;
+            return new IntersectionGrammar(newCond1, newCond2);
         }
         
         if (g.child instanceof LocatorGrammar) {
             const newCond = new EndsGrammar(g.child.child, g.tapes);
-            const newLocation = new LocatorGrammar(g.child.position, newCond);
-            return newLocation;
+            return new LocatorGrammar(g.child.position, newCond);
         }
         
         if (g.child instanceof RenameGrammar) {
             const newCond = new EndsGrammar(g.child.child, g.child.child.tapes);
-            const newRename = new RenameGrammar(newCond, g.child.fromTape, g.child.toTape);
-            return newRename;
+            return new RenameGrammar(newCond, g.child.fromTape, g.child.toTape);
         }
 
         // create the condition
@@ -174,8 +167,7 @@ export class AdjustConditions extends PostPass<Grammar> {
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
             const newCond = new ContainsGrammar(g.child.child, g.tapes);
-            const newNegation = new NegationGrammar(newCond);
-            return newNegation;
+            return new NegationGrammar(newCond);
         }
 
         if (g.child instanceof SequenceGrammar && g.child.children.length > 0) {
@@ -185,35 +177,30 @@ export class AdjustConditions extends PostPass<Grammar> {
             newChildren[0] = newFirstChild;
             const newLastChild = new StartsGrammar(newChildren[newChildren.length-1], g.tapes);
             newChildren[newChildren.length-1] = newLastChild;
-            const newSequence = new SequenceGrammar(newChildren);
-            return newSequence;
+            return new SequenceGrammar(newChildren);
         }
         
         if (g.child instanceof AlternationGrammar) {
             // this(x|y) -> this(x)|this(y)
             const newChildren = g.child.children.map(c => new ContainsGrammar(c, g.tapes));
-            const newAlternation = new AlternationGrammar(newChildren);
-            return newAlternation;
+            return new AlternationGrammar(newChildren);
         }
 
         if (g.child instanceof IntersectionGrammar) {
             // this(x&y) -> this(x)&this(y)
             const newCond1 = new ContainsGrammar(g.child.child1, g.tapes);
             const newCond2 = new ContainsGrammar(g.child.child2, g.tapes);
-            const newIntersection = new IntersectionGrammar(newCond1, newCond2);
-            return newIntersection;
+            return new IntersectionGrammar(newCond1, newCond2);
         }
 
         if (g.child instanceof LocatorGrammar) {
             const newCond = new ContainsGrammar(g.child.child, g.tapes);
-            const newLocation = new LocatorGrammar(g.child.position, newCond);
-            return newLocation;
+            return new LocatorGrammar(g.child.position, newCond);
         }
         
         if (g.child instanceof RenameGrammar) {
             const newCond = new ContainsGrammar(g.child.child, g.child.child.tapes);
-            const newRename = new RenameGrammar(newCond, g.child.fromTape, g.child.toTape);
-            return newRename;
+            return new RenameGrammar(newCond, g.child.fromTape, g.child.toTape);
         }
 
         const dotStars: Grammar[] = [];

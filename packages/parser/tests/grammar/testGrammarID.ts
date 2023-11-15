@@ -2,7 +2,12 @@ import { Grammar } from "../../src/grammars";
 import { toStr } from "../../src/passes/toStr";
 import { expect } from "chai";
 import { t1, t2 } from "../testUtil";
-import { Any, Collection, Embed, Epsilon, Hide, Null, Rename, Seq, Uni } from "../../src/grammarConvenience";
+import { 
+    Any, Collection, 
+    Embed, Epsilon, 
+    Null, Rename, 
+    Seq, Uni 
+} from "../../src/grammarConvenience";
 
 type GrammarIDTest = {
     testnum: string,
@@ -36,7 +41,6 @@ describe(`GrammarIDs`, function() {
         grammar: Any("t1"),
         id: "t1:."
     });
-
 
     testGrammarID({
         testnum: "3",

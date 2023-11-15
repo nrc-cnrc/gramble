@@ -131,7 +131,7 @@ function tryConstr<T1,T2>(
         return [result(constr(args)).msg(msgs), remainder];
     } catch (e) {
         if (!(e instanceof Result)) {
-            console.log(`non-result thrown: ${JSON.stringify(e)}`);
+            //console.log(`non-result thrown: ${JSON.stringify(e)}`);
             throw e;
         }
         return [e.msg(msgs), remainder];

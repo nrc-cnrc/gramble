@@ -21,21 +21,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     logTestSuite(this.title);
 
-    /*
-    // I think negation relativized to no tapes can be semantically well-defined
-    // but I'm iffy about letting grammars actually do that, because I think the 
-    // results are counter-intuitive.
-    describe('Negation of empty set: ~∅', function() {
-        const grammar = Not(Null());
-        testGenerate(grammar, [{}]);
-    });
-
-    describe('Negation of epsilon: ~ε', function() {
-        const grammar = Not(Epsilon());
-        testGenerate(grammar, []);
-    });
-    */
-
     testGrammar({
         desc: '1. Join t1:foo ⨝ ~t1:hello',
         grammar: Join(t1("foo"),

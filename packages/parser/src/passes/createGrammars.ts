@@ -23,7 +23,7 @@ import {
     RuleContextGrammar,
     FilterGrammar
 } from "../grammars";
-import { Header, parseClass, TapeHeader } from "../headers";
+import { parseClass, TapeHeader } from "../headers";
 import { Err, Msgs, resultList } from "../utils/msgs";
 import { HeaderToGrammar } from "./headerToGrammar";
 import { parseContent } from "../content";
@@ -255,16 +255,5 @@ export class CreateGrammars extends Pass<TST,Grammar> {
 
         return newColl.msg(msgs)
                       .bind(c => new LocatorGrammar(t.pos, c));
-    }
-}
-
-function getFilterTape(h: Header): string | undefined {
-    switch (h.tag) {
-        case "tape": return h.text;
-        case "equals":
-        case "starts":
-        case "ends":
-        case "contains": return getFilterTape(h.child);
-        default: return undefined;
     }
 }

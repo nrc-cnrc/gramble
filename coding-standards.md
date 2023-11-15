@@ -30,7 +30,7 @@ Other things to keep in mind:
 
    - When constructing grammars for tests, there's a set of convenience functions for that: Seq, Uni, Rep, etc.  These let you not worry about how the grammars relate to cells and such.  But don't use these when constructing grammars from TSTs (precisely because that's when it's important to relate grammars to cells and such).
 
-   - Try to express changes to the core as GrammarPasses, rather than (say) adding a new function to each Grammar/Expr.  Passes represent stateless tree-to-tree transformations of the grammar, and have proven easier to maintain and less buggy.
+   - Try to express changes to the core as Pass<T1,T2>, rather than (say) adding a new function to each Grammar/Expr.  Passes represent stateless tree-to-tree transformations of the grammar, and have proven easier to maintain and less buggy.
 
 Things we don't have standards for... maybe we should, but currently we're all over the place:
 

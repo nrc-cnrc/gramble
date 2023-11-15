@@ -34,18 +34,8 @@ export abstract class Pass<T1,T2> {
         }
 
         const verbose = (env.opt.verbose & VERBOSE_TIME) != 0;
-        return timeIt(() => this.transformRoot(t as T1, env).msg(msgs), 
+        return timeIt(() => this.transform(t as T1, env).msg(msgs), 
                verbose, this.desc);
-    }
-    
-    /**
-     * A wrapper method in case a subclass has special
-     * setup/teardown before and after processing the root;
-     * override this one rather than go() so you don't have
-     * to redo the logging boilerplate.
-     */
-    public transformRoot(t: T1, env: PassEnv): Result<T2> {
-        return this.transform(t, env);
     }
 
     public get desc(): string { 

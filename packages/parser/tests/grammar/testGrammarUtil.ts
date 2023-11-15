@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { assert, expect } from "chai";
 
 import {
     Grammar
@@ -10,7 +10,13 @@ import {
 
 import {
     testSuiteName, verbose,
-    testHasTapes, testHasVocab, testGenerate
+    testHasTapes, testHasVocab, 
+    testGenerate, 
+    generateOutputs, testNumOutputs, 
+    testMatchOutputs,
+    prepareInterpreter,
+    testErrors,
+    testNumErrors
 } from '../testUtil';
 
 import {
@@ -40,25 +46,32 @@ export interface GrammarTestAux extends Options {
     stripHidden: boolean,
     allowDuplicateOutputs: boolean,
     skipGeneration: boolean,
-    shortDesc: string
+    shortDesc: string,
+    numErrors: number,   // in plain grammar tests, errors aren't
+                         // located anywhere, so it really only makes
+                         // sense to count them
 };
 
 export function testGrammarAux({
+    // Specific to testing a grammar
     grammar,
     tapes,
     vocab,
     results,
-    verbose = SILENT,
-    directionLTR = true,
-    optimizeAtomicity = true,
-    maxRecursion = DEFAULT_MAX_RECURSION,
-    maxChars = DEFAULT_MAX_CHARS,
     symbol = "",
     restriction = {},
     stripHidden = true,
     allowDuplicateOutputs = false,
     skipGeneration = false,
     shortDesc = "",
+    numErrors = 0,
+
+    // General options
+    verbose = SILENT,
+    directionLTR = true,
+    optimizeAtomicity = true,
+    maxRecursion = DEFAULT_MAX_RECURSION,
+    maxChars = DEFAULT_MAX_CHARS,
 }: Partial<GrammarTestAux>): void {
 
     const opt = Options({
@@ -81,8 +94,12 @@ export function testGrammarAux({
     if (vocab !== undefined) {
         testHasVocab(grammar, vocab);
     }
+
+    const interpreter = prepareInterpreter(grammar, opt, symbol, false);
+    testNumErrors(interpreter, numErrors);
+
     if (!skipGeneration && results !== undefined) {
-        testGenerate(grammar, results, opt, symbol, restriction,
+        testGenerate(interpreter, results, symbol, restriction,
             stripHidden, allowDuplicateOutputs, shortDesc);
     } else {
         it("skipping generation", function() {
@@ -133,4 +150,40 @@ export function testGrammar(params: Partial<GrammarTest>): void {
     params['test'] = undefined;
 
     describe(params['desc'], test(params));
+}
+
+interface GrammarEqualTest {
+    desc: string,
+    grammar: Grammar,
+    grammar2?: Grammar,
+    opt?: Partial<Options>,
+    opt2?: Partial<Options>
+    symbol?: string,
+    restriction?: StringDict,
+    stripHidden?: boolean,
+    allowDuplicateOutputs?: boolean,
+};
+
+export function testGrammarEqual({
+    desc, 
+    grammar,
+    grammar2 = grammar,
+    opt = {},
+    opt2 = opt,
+    symbol = "",
+    restriction = {},
+    stripHidden = true,
+    allowDuplicateOutputs = false,
+}: GrammarEqualTest): void {
+    describe(desc, function() {
+        const interpreter1 = prepareInterpreter(grammar, opt, symbol);
+        const interpreter2 = prepareInterpreter(grammar2, opt2, symbol);
+        const outputs1 = generateOutputs(interpreter1, symbol, 
+                                restriction, stripHidden, false);
+        const outputs2 = generateOutputs(interpreter2, symbol, 
+                                restriction, stripHidden, false);
+        testNumOutputs(outputs1, outputs2.length,
+                       allowDuplicateOutputs, symbol);
+        testMatchOutputs(outputs1, outputs2, symbol);
+    });
 }

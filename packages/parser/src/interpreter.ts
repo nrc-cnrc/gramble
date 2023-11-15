@@ -21,7 +21,7 @@ import { TapeNamespace } from "./tapes";
 import { Expr, CollectionExpr } from "./exprs";
 import { DevEnvironment, SimpleDevEnvironment } from "./devEnv";
 import { generate } from "./generator";
-import { MissingSymbolError, Msg, result } from "./utils/msgs";
+import { MissingSymbolError, Msg, THROWER, result } from "./utils/msgs";
 import { PassEnv } from "./passes";
 import { 
     NAME_PASSES, 
@@ -38,6 +38,7 @@ import { toStr } from "./passes/toStr";
 import { DEFAULT_PROJECT_NAME, DEFAULT_SYMBOL_NAME, HIDDEN_PREFIX } from "./utils/constants";
 import { VERBOSE_GRAMMAR, VERBOSE_TIME, logTime, msToTime, timeIt } from "./utils/logging";
 import { Options } from "./utils/options";
+import { SelectSymbol } from "./passes/selectSymbol";
 
 /**
  * An interpreter object is responsible for applying the passes in between sheets
@@ -279,21 +280,21 @@ export class Interpreter {
         symbolName: string = "",
         query: StringDict[] | StringDict = {}
     ): Expr {
-        const env = new PassEnv(this.opt).pushSymbols(this.grammar.symbols);
-        const qualifiedName = this.resolveName(symbolName);
-        
-        let targetGrammar: Grammar = this.grammar.selectSymbol(qualifiedName);
-        if (targetGrammar == undefined) {
-            const allSymbols = this.grammar.allSymbols();
-            throw new Error(`Missing symbol: ${symbolName}; choices are [${allSymbols}]`);
-        }
+        const env = new PassEnv(this.opt);
 
+        // qualify the name and select the symbol
+        const qualifiedName = this.resolveName(symbolName);
+        const selectSymbol = new SelectSymbol(qualifiedName);
+        let targetGrammar: Grammar = selectSymbol.go(this.grammar, env).msgTo(THROWER);
+        
         if (Object.keys(query).length > 0) {
             const querySeq = Query(query);
-            targetGrammar = new JoinGrammar(targetGrammar, querySeq);
+            targetGrammar = new JoinGrammar(targetGrammar, querySeq).tapify(env);
             // there might be new chars in the query
-            targetGrammar.collectAllVocab(this.tapeNS, env);
+            //targetGrammar.collectAllVocab(this.tapeNS, env);
         }
+
+        targetGrammar.collectAllVocab(this.tapeNS, env);
         
         let tapePriority = prioritizeTapes(targetGrammar, this.tapeNS, env);
         targetGrammar = infinityProtection(targetGrammar, tapePriority, env);
@@ -311,15 +312,11 @@ export class Interpreter {
         const pass = new ExecuteTests(this.tapeNS, symbols);
         
         pass.transform(this.grammar, env)
-            .msgTo(m => sendMsg(this.devEnv, m));
+            .msgTo(m => this.devEnv.message(m));
     }
 }
 
 function sendMsg(devEnv: DevEnvironment, msg: Msg): void {
-    if (msg.pos == undefined) {
-        // if it's got no location we have nowhere to display it
-        return;
-    }
     devEnv.message(msg);
 }
 

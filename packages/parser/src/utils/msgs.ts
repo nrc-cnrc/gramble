@@ -273,3 +273,7 @@ export function resultDict<T>(items: Dict<T>): ResultDict<T> {
 }
 
 export const unit = new ResultVoid();
+
+export function THROWER(m: Msg): void {
+    throw m;
+}

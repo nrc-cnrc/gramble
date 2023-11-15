@@ -1,9 +1,10 @@
-import { Component, exhaustive } from "./components";
+import { Component } from "./components";
 import { 
     miniParse, MiniParseEnv, 
     MPAlt, MPParser, 
     MPSequence, MPUnreserved 
 } from "./miniParser";
+import { exhaustive } from "./utils/func";
 import { Result } from "./utils/msgs";
 import { 
     REPLACE_PARAMS, REQUIRED_REPLACE_PARAMS, 

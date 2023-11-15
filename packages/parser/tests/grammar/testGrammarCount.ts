@@ -12,9 +12,9 @@ import {
 
 import { 
     logTestSuite, VERBOSE_TEST_L2,
-    generateOutputsFromGrammar,
+    generateOutputs,
+    prepareInterpreter,
 } from '../testUtil';
-import { Options } from "../../src/utils/options";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -319,10 +319,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         const grammar = Count({t1:3},
                               Rep(Uni(Epsilon(), t1("h")), 0, 5),
                               false, true);
+        const int = prepareInterpreter(grammar);
         it('Caught "Count exceeded" Error', function() {
             expect(
-                () => generateOutputsFromGrammar(grammar, Options(), "", {},
-                                                 false, true)
+                () => generateOutputs(int, "", {}, false, true)
             ).to.throw(Error, "Count exceeded on t1");
         });
     });

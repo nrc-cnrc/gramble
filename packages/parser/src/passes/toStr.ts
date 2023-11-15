@@ -76,15 +76,15 @@ export function repeatToStr(g: RepeatGrammar): string {
 }
 
 export function componentToStr(c: Component): string {
-
-    // otherwise your id is an s-expr created automatically
-    // from your tag and children
+    // by default, components' string representation is an
+    // s-expr on the model of (tag toStr(child) toStr(child).
     const elements = [ c.tag ];
 
     const kvPairs = Object.entries(c)
                           .filter(([k,_]) =>
                              c.hasOwnProperty(k) &&
                              k != "tag" &&
+                             k != "tapeSet" &&
                              !k.startsWith("_"));
     for (let i = 0; i < kvPairs.length; i++) {
         const [_,v] = kvPairs[i];
@@ -94,7 +94,6 @@ export function componentToStr(c: Component): string {
     }
 
     return enclose(elements);
-
 }
 
 export function grammarToStr(g: Grammar): string {

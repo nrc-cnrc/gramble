@@ -19,16 +19,17 @@ export class ValueSet<T> {
     private items: Set<T> = new Set();
 
     constructor(
-        items: Set<T> = new Set()
+        items: Iterable<T> = new Set(),
+        public hasher: (t: T) => string = t => JSON.stringify(t)
     ) { 
         this.add(...items);
     }
 
     public add(...items: T[]): void {
         for (const item of items) {
-            const key = JSON.stringify(item);
+            const key = this.hasher(item);
             if (this.keys.has(key)) {
-                return;
+                continue;
             }
             this.items.add(item);
             this.keys.add(key);
@@ -36,7 +37,7 @@ export class ValueSet<T> {
     }
 
     public has(item: T): boolean {
-        const key = JSON.stringify(item);
+        const key = this.hasher(item);
         return this.keys.has(key);
     }
 
@@ -92,12 +93,20 @@ export function listIntersection<T>(s1: T[], s2: T[]): T[] {
     return s1.filter(i => set2.has(i));
 }
 
-export function setUnion<T>(s1: Set<T>, s2: Set<T>): Set<T> {
+export function setUnion<T>(s1: Iterable<T>, s2: Iterable<T>): Set<T> {
     return new Set([...s1, ...s2]);
 }
 
 export function setDifference<T>(s1: Set<T>, s2: Set<T>): Set<T> {
     return new Set([...s1].filter(x => !s2.has(x)));
+}
+
+export function setMap<T1,T2>(ss: Iterable<T1>, f: (s: T1) => T2): Set<T2> {
+    const result: Set<T2> = new Set();
+    for (const s of ss) {
+        result.add(f(s));
+    }
+    return result;
 }
 
 export function isSubset<T>(s1: Set<T>, s2: Set<T>): boolean {
@@ -151,4 +160,8 @@ export function foldRight<T>(
         result = f(arr[i], result);
     }
     return result;
+}
+
+export function exhaustive(n: never): never {
+    return n;
 }

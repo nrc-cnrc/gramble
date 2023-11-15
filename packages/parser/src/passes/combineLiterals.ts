@@ -53,5 +53,6 @@ export class CombineLiterals extends PostPass<Grammar> {
         if (results.length == 0) return new EpsilonGrammar();
         if (results.length == 1) return results[0];
         return new SequenceGrammar(results);
+        
     }
 }

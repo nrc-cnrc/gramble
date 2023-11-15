@@ -1,3 +1,4 @@
+import { exhaustive } from "../utils/func";
 import { 
     ReplaceOp,
     SymbolOp, 
@@ -9,7 +10,6 @@ import {
     TstTable, TstTestNot, TstReplace, 
     TstOr, TstAssignment, TstParamList, TstJoin, TST
 } from "../tsts";
-import { Component, exhaustive } from "../components";
 import { PostPass } from "./ancestorPasses";
 
  export class CreateOps extends PostPass<TST> {

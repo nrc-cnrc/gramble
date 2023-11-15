@@ -12,9 +12,6 @@ import { HIDDEN_PREFIX } from "../src/utils/constants";
 import { SILENT, VERBOSE_DEBUG, logDebug, timeIt } from "../src/utils/logging";
 import { Options } from "../src/utils/options";
 
-// DEBUG_MAX_RECURSION is a forced upper bound for maxRecursion.
-export const DEBUG_MAX_RECURSION: number = 4;      // 4
-
 // Permit global control over verbose output in tests.
 // To limit verbose output to a specific test file, set VERBOSE_TEST_L2
 // to false here, then re-define VERBOSE in the test file.
@@ -150,22 +147,19 @@ export function testMatchOutputs(
 
 export function prepareInterpreter(
     grammar: Grammar | Interpreter,
-    opt: Options,
+    opt: Partial<Options> = {},
     symbolName: string = "",
-    throwError: boolean = false, // in case a test wants to catch errors itself
+    rethrow: boolean = false, // in case a test wants to catch errors itself
 ): Interpreter {
-
+    opt = Options(opt);
     const interpreter = (grammar instanceof Interpreter) ?
                         grammar :
                         Interpreter.fromGrammar(grammar, opt);
-    
-    // In case there are any tests, we want to run them so their errors accumulate
-    interpreter.runTests();
 
     try {
         interpreter.resolveName(symbolName);
     } catch(e) {
-        if (throwError) throw e;
+        if (rethrow) throw e;
         it(`symbol "${symbolName} should exist`, function() {
             console.log("");
             console.log(`[${this.test?.fullTitle()}]`);
@@ -173,37 +167,24 @@ export function prepareInterpreter(
             assert.fail(JSON.stringify(e));
         });
     }
-    
-    // In case there are any tests, we want to run them so their errors accumulate
-    interpreter.runTests();
 
     return interpreter;
 }
 
-export function generateOutputsFromGrammar(
-    grammar: Grammar | Interpreter,
-    opt: Partial<Options> = {},
+export function generateOutputs(
+    interpreter: Interpreter,
     symbolName: string = "",
     restriction: StringDict[] | StringDict = {},
     stripHidden: boolean = true,
-    throwError: boolean = false, // in case a test wants to catch errors itself
+    rethrow: boolean = false, // in case a test wants to catch errors itself
 ): StringDict[] {
-    
-    const opts = Options(opt);
-
-    opts.maxRecursion = Math.min(opts.maxRecursion, DEBUG_MAX_RECURSION);
-    const interpreter = prepareInterpreter(grammar, opts, 
-        symbolName, throwError);
-                          
     let outputs: StringDict[] = [];
-
-
     try {
         outputs = [
             ...interpreter.generate(symbolName, restriction, Infinity, stripHidden)
         ];
     } catch (e) {
-        if (throwError) throw e;
+        if (rethrow) throw e;
         it("Unexpected Exception", function() {
             console.log("");
             console.log(`[${this.test?.fullTitle()}]`);
@@ -215,60 +196,51 @@ export function generateOutputsFromGrammar(
 }
 
 export function testGenerate(
-    grammar: Grammar | Interpreter,
+    interpreter: Interpreter,
     expectedResults: StringDict[],
-    opt: Options,
-    symbolName: string = "",
+    symbol: string = "",
     restriction: StringDict[] | StringDict = {},
     stripHidden: boolean = true,
     allowDuplicateOutputs: boolean = false,
-    shortDesc: string = ""
+    shortDesc: string = "",
 ): void {
     timeIt(() => {
+        //testNumErrors(interpreter, numErrors);
+
         const outputs: StringDict[] =
-            generateOutputsFromGrammar(grammar, opt, symbolName,
+            generateOutputs(interpreter, symbol,
                                 restriction, stripHidden, false);
         testNumOutputs(outputs, expectedResults.length,
-                       allowDuplicateOutputs, symbolName);
-        testMatchOutputs(outputs, expectedResults, symbolName);
+                       allowDuplicateOutputs, symbol);
+        testMatchOutputs(outputs, expectedResults, symbol);
     }, VERBOSE_TEST_L2, `${shortDesc} testGenerate`);
 }
 
 export function testHasTapes(
     grammar: Grammar | Interpreter,
     expectedTapes: string[],
-    symbolName: string = "",
+    symbol: string = "",
     stripHidden: boolean = true
 ): void {
-    const interpreter = (grammar instanceof Interpreter) ?
-                        grammar :
-                        Interpreter.fromGrammar(grammar);
-    
-    try {
-        interpreter.resolveName(symbolName);
-    } catch(e) {
-        it(`symbol "${symbolName} should have tapes`, function() {
-            assert.fail(JSON.stringify(e));
-        });
-        return;
-    }
+    const interpreter = prepareInterpreter(grammar, {}, symbol);
 
-    let referent = interpreter.getSymbol(symbolName);
+    let referent = interpreter.getSymbol(symbol);
     
     const bSet = new Set(expectedTapes);
-    const testName: string = `${symbolName} should have tapes [${[...bSet]}]`;
+    const testName: string = `${symbol} should have tapes [${[...bSet]}]`;
     it(`${testName}`, function() {
         expect(referent).to.not.be.undefined;
         if (referent == undefined) {
             return;
         }
-        let tapes = referent.tapes;
-        if (stripHidden) {
-            // for the purpose of this comparison, leave out any internal-only
-            // tapes, like those created by a Hide().
-            tapes = referent.tapes.filter(t => !t.startsWith(HIDDEN_PREFIX));
-        }
+        let tapes: string[] = [];
         try {
+            tapes = referent.tapes;
+            if (stripHidden) {
+                // for the purpose of this comparison, leave out any internal-only
+                // tapes, like those created by a Hide().
+                tapes = referent.tapes.filter(t => !t.startsWith(HIDDEN_PREFIX));
+            }
             expect(tapes.length).to.equal(bSet.size);
             for (const a of tapes) {
                 expect(bSet).to.contain(a);
@@ -286,9 +258,7 @@ export function testHasVocab(
     grammar: Grammar | Interpreter,
     expectedVocab: {[tape: string]: number}
 ): void {
-    const interpreter = (grammar instanceof Interpreter) ?
-                        grammar :
-                        Interpreter.fromGrammar(grammar);
+    const interpreter = prepareInterpreter(grammar, {optimizeAtomicity: false});
 
     for (const tapeName in expectedVocab) {
         let tape: Tape;
@@ -311,48 +281,12 @@ export function testHasVocab(
     }
 }
 
-export function testHasSymbols(
-    grammar: Grammar,
-    expectedSymbols: string[]
-): void {
-    const interpreter = Interpreter.fromGrammar(grammar);
-    const symbols = interpreter.allSymbols();
-    it(`should have symbols [${expectedSymbols}]`, function() {
-        for (const s of expectedSymbols) {
-            expect(symbols).to.include(s);
-        }
-    });
-} 
-
-export function testDoesNotHaveSymbols(
-    grammar: Grammar,
-    expectedSymbols: string[]
-): void {
-    const interpreter = Interpreter.fromGrammar(grammar);
-    const symbols = interpreter.allSymbols();
-    it(`should not have symbols [${expectedSymbols}]`, function() {
-        for (const s of expectedSymbols) {
-            expect(symbols).to.not.include(s);
-        }
-    });
-}
-
 export function testErrors(
     interpreter: Interpreter,
     expectedErrors: [string, number, number, string][]
-) {
-    //interpreter.runChecks();
+): void {
+    testNumErrors(interpreter, expectedErrors.length);
     const devEnv = interpreter.devEnv;
-    it(`should have ${expectedErrors.length} errors/warnings`, function() {
-        try {
-            expect(devEnv.numErrors("any")).to.equal(expectedErrors.length);
-        } catch (e) {
-            console.log(`[${this.test?.fullTitle()}]`);
-            console.log(`outputs: ${JSON.stringify(devEnv.getErrorMessages())}`);
-            throw e;
-        }
-    });
-
     for (const [sheet, row, col, level] of expectedErrors) {
         const levelMsg = (level == "warning") ? `a ${level}` : `an ${level}`;
         it(`should have ${levelMsg} at ${sheet}:${row}:${col}`, function() {
@@ -367,39 +301,22 @@ export function testErrors(
     }
 }
 
-export type InputResultsPair = [StringDict, StringDict[]];
-
-export function testParseMultiple(
-    grammar: Grammar, 
-    inputResultsPairs: InputResultsPair[],
-    verbose: number = SILENT,
-    maxRecursion: number = 4
+export function testNumErrors(
+    interpreter: Interpreter,
+    numErrors: number
 ): void {
-    maxRecursion = Math.min(maxRecursion, DEBUG_MAX_RECURSION);
-    timeIt(() => {
-        for (const [inputs, expectedResults] of inputResultsPairs) {
-            describe(`testing parse ${JSON.stringify(inputs)} ` + 
-                     `against ${JSON.stringify(expectedResults)}.`, function() {
-                let outputs: StringDict[] = [];
-                try {    
-                    //grammar = grammar.compile(2, maxRecursion);
-                    const interpreter = Interpreter.fromGrammar(grammar, {verbose: verbose});
-                    if (Object.keys(inputs).length == 0) {
-                        throw new Error("no input in pair " +
-                            `${JSON.stringify(inputs)}, ${JSON.stringify(expectedResults)}`);
-                    }
-                    outputs = [...interpreter.generate("", inputs, Infinity)];
-                } catch (e) {
-                    it("Unexpected Exception", function() {
-                        console.log("");
-                        console.log(`[${this.test?.fullTitle()}]`);
-                        console.log(e);
-                        assert.fail(JSON.stringify(e));
-                    });
-                }
-                testNumOutputs(outputs, expectedResults.length);
-                testMatchOutputs(outputs, expectedResults);    
-            });
+
+    // In case there are any tests, we want to run them so their errors accumulate
+    interpreter.runTests();
+
+    const devEnv = interpreter.devEnv;
+    it(`should have ${numErrors} errors/warnings`, function() {
+        try {
+            expect(devEnv.numErrors("any")).to.equal(numErrors);
+        } catch (e) {
+            console.log(`[${this.test?.fullTitle()}]`);
+            console.log(`outputs: ${JSON.stringify(devEnv.getErrorMessages())}`);
+            throw e;
         }
-    }, VERBOSE_TEST_L2, `testParseMultiple ${inputResultsPairs.length}`);
+    });
 }
