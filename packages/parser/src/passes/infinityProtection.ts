@@ -1,5 +1,6 @@
 import { PassEnv } from "../passes";
 import { AlternationGrammar, 
+    CollectionGrammar, 
     CountGrammar, CounterStack, 
     EmbedGrammar, 
     Grammar, HideGrammar, 
@@ -30,7 +31,7 @@ export function infinityProtection(
         const len = lengthRange(grammar, tape, stack, env);
         if (len.null == true) continue;
         if (len.max == Infinity && env.opt.maxChars != Infinity) {
-            maxCharsDict[tape] = env.opt.maxChars-1;
+            maxCharsDict[tape] = env.opt.maxChars;
             foundInfinite = true;
         }
     }
@@ -81,8 +82,6 @@ export function lengthRange(
             if (tapeName !== g.inputTape) 
                 return lengthRange(g.child, tapeName, stack, env);
             return { null: false, min: 0, max: Infinity };
-        case "collection":
-            return { null: false, min: 0, max: 0 };
 
         // ones where the length is just the child's length
         case "short": 
@@ -107,6 +106,8 @@ export function lengthRange(
         case "hide": return lengthHide(g, tapeName, stack, env);
         case "repeat": return lengthRepeat(g, tapeName, stack, env);
         case "not": return lengthNot(g, tapeName, stack, env);
+        case "collection":
+            return lengthCollection(g, tapeName, stack, env);
 
         // ones where it's not implemented
         case "context": 
@@ -238,4 +239,20 @@ function lengthNot(g: NegationGrammar, tapeName: string, stack: CounterStack, en
     if (childTapes.has(tapeName)) 
         return { null: false, min: 0, max: Infinity };
     return lengthRange(g.child, tapeName, stack, env);
+}
+
+function lengthCollection(
+    g: CollectionGrammar, 
+    tapeName: string, 
+    stack: CounterStack, 
+    env: PassEnv
+): LengthRange {
+    const newEnv = env.pushSymbols(g.symbols);
+    const referent = g.getSymbol(g.selectedSymbol);
+    if (referent === undefined) { 
+        // without a valid symbol, collections are epsilon,
+        // but now is not the time to complain
+        return { null: false, min: 0, max: 0 };
+    }
+    return lengthRange(referent, tapeName, stack, newEnv);
 }
