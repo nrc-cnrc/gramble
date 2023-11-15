@@ -8,6 +8,8 @@ import {
 } from "../../src/grammarConvenience";
 import { CalculateTapes } from "../../src/passes/calculateTapes";
 import { PassEnv } from "../../src/passes";
+import { THROWER } from "../../src/utils/msgs";
+import { SelectSymbol } from "../../src/passes/selectSymbol";
 
 type GrammarIDTest = {
     testnum: string,
@@ -24,10 +26,11 @@ export function testGrammarTapes({
 }: GrammarIDTest): void {
     const pass = new CalculateTapes();
     const env = new PassEnv();
-    let [newGrammar, _] = pass.go(grammar, env).destructure();
+    let newGrammar = pass.go(grammar, env).msgTo(THROWER);
     
-    if (symbol && newGrammar instanceof CollectionGrammar) {
-        newGrammar = newGrammar.selectSymbol(symbol).tapify(env);
+    if (symbol) {
+        const selectSymbol = new SelectSymbol(symbol);
+        newGrammar = selectSymbol.go(newGrammar, env).msgTo(THROWER); 
     }
 
     let resultTapes: Set<string> = new Set();

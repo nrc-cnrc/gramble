@@ -9,6 +9,7 @@ import {
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
 import { DEFAULT_SYMBOL_NAME } from "../utils/constants";
+import { toStr } from "./toStr";
 
 /**
  * Goes through the tree and 
@@ -27,12 +28,6 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
         public collectionStack: CollectionGrammar[] = []
     ) {
         super();
-    }
-
-    public transformRoot(g: Grammar, env: PassEnv): GrammarResult {
-        return this.transform(g, env).bind(_ => 
-            new CollectionGrammar(env.symbolNS.entries));
-
     }
 
     public transform(g: Grammar, env: PassEnv): GrammarResult {
@@ -59,6 +54,8 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
 
             if (v instanceof CollectionGrammar || 
                     v instanceof LocatorGrammar && v.child instanceof CollectionGrammar) {
+                // if it's a nested CollectionGrammar, just discard it, we don't need it 
+                // for anything.  its symbols are in env.
                 continue;
             }
 
@@ -66,7 +63,7 @@ export class QualifyNames extends Pass<Grammar,Grammar> {
             env.symbolNS.set(newName, newV);
         }
 
-        return new CollectionGrammar().msg(msgs);
+        return new CollectionGrammar(env.symbolNS.entries).msg(msgs);
     }
 
     public transformEmbed(g: EmbedGrammar, env: PassEnv): GrammarResult {

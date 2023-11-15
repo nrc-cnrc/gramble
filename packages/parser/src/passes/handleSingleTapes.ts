@@ -1,10 +1,9 @@
-import { PassEnv } from "../passes";
+import { Pass, PassEnv } from "../passes";
 import { 
     DotGrammar,
     EmbedGrammar,
     EpsilonGrammar,
     Grammar,
-    GrammarPass,
     GrammarResult, 
     LiteralGrammar, 
     RenameGrammar, 
@@ -24,7 +23,7 @@ import { TapeUnknown } from "../tapes";
  * and issuing an error.
  */
 
-export class HandleSingleTapes extends GrammarPass {
+export class HandleSingleTapes extends Pass<Grammar,Grammar> {
 
     constructor(
         public tapeName: string | undefined = undefined

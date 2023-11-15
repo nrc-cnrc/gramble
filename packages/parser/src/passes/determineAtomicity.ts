@@ -203,6 +203,12 @@ function getAtomicityClassCollection(
     env: PassEnv
 ): AtomicityClass {
     const newEnv = env.pushSymbols(g.symbols);
+    const referent = g.getSymbol(g.selectedSymbol);
+    if (referent === undefined) { 
+        // without a valid symbol, collections are epsilon,
+        // but now is not the time to complain
+        return { joinable: false, concatenable: false };
+    }
     return getAtomicityClassDefault(g, tape, symbolsVisited, newEnv);
 }
 

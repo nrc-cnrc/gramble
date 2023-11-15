@@ -1,8 +1,8 @@
 import { Dict, StringDict } from "../utils/func";
-import { constructCollection, CounterStack, Expr } from "../exprs";
+import { constructCollection, Expr } from "../exprs";
 import { Msgs, Err, Success } from "../utils/msgs";
 import { 
-    Grammar, GrammarPass, 
+    Grammar, 
     GrammarResult, TestNotGrammar, 
     TestGrammar, 
     AbstractTestGrammar,
@@ -11,13 +11,13 @@ import {
 
 import { TapeNamespace} from "../tapes";
 import { generate } from "../generator";
-import { PassEnv } from "../passes";
+import { Pass, PassEnv } from "../passes";
 import { infinityProtection } from "./infinityProtection";
 import { Cursor } from "../grammarConvenience";
 import { prioritizeTapes } from "./prioritizeTapes";
 import { constructExpr } from "./constructExpr";
 
-export class ExecuteTests extends GrammarPass {
+export class ExecuteTests extends Pass<Grammar,Grammar> {
 
     constructor(
         public tapeNS: TapeNamespace,

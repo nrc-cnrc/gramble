@@ -36,13 +36,6 @@ export class StringPairSet extends ValueSet<StringPair> { }
 
 export class GrammarResult extends Result<Grammar> { }
 
-export abstract class GrammarPass extends Pass<Grammar,Grammar> { 
-
-    public transformRoot(g: Grammar, env: PassEnv): GrammarResult {
-        return this.transform(g, env);
-    }
-}
-
 export type LengthRange = {
     null: boolean,
     min: number,
@@ -128,7 +121,7 @@ export type Grammar = EpsilonGrammar
 
 export abstract class AbstractGrammar extends Component {
 
-    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
+    public mapChildren(f: Pass<Grammar,Grammar>, env: PassEnv): GrammarResult {
         return super.mapChildren(f, env) as GrammarResult;
     }
 
@@ -569,17 +562,9 @@ export class CollectionGrammar extends AbstractGrammar {
         super();
     }
     
-    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
+    public mapChildren(f: Pass<Grammar,Grammar>, env: PassEnv): GrammarResult {
         const newEnv = env.pushSymbols(this.symbols);
         return super.mapChildren(f, newEnv);
-    }
-
-    public selectSymbol(symbolName: string): CollectionGrammar {
-        const referent = this.getSymbol(symbolName);
-        if (referent == undefined) {
-            throw new Error(`cannot find symbol ${symbolName}, candidates are ${Object.keys(this.symbols)}`);
-        }
-        return new CollectionGrammar(this.symbols, symbolName);
     }
 
     public allSymbols(): string[] {
@@ -677,7 +662,7 @@ export class LocatorGrammar extends UnaryGrammar {
         super(child);
     }
     
-    public mapChildren(f: GrammarPass, env: PassEnv): GrammarResult {
+    public mapChildren(f: Pass<Grammar,Grammar>, env: PassEnv): GrammarResult {
         return super.mapChildren(f, env)
                     .localize(this.pos);
     }

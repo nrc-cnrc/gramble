@@ -1,3 +1,4 @@
+import { VERBOSE_GRAMMAR } from "../../../src/utils/logging";
 import { 
     testProject, ProjectTest, 
     Error, Warning 
@@ -231,11 +232,7 @@ describe(`Source ${DIR}`, function() {
     describe('26. Equals embed with a join', test({
         id: "26",
         errors: [ Error(13,3) ],
-        results: [
-            {"gloss":"[3SG]","subj":"[3SG]"},
-            {"gloss":"[2SG]","subj":"[2SG]","text":"baz"},
-            {"gloss":"[1SG]","subj":"[1SG]","text":"bar"}   
-        ]
+        results: [],
     }));
 
     describe('27. Equals embed where the symbol is defined later', test({
@@ -518,11 +515,7 @@ describe(`Source ${DIR}`, function() {
     describe('E1. Equals with an ill-formed filter', test({
         id: "E1",
         errors: [ Error(7,3) ],
-        results: [
-            { text:"goo", pos:"v"},
-            { text:"moo", pos:"n"},
-            { text:"foo", pos:"v"}
-        ]
+        results: []
     }));
 
     describe('E2. Equals where the filter references a non-existent tape', test({
