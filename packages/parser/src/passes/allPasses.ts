@@ -1,6 +1,6 @@
 import { CreateCollections } from "./createCollections";
 import { QualifyNames } from "./qualifyNames";
-import { AdjustFilters } from "./adjustFilters";
+import { CreateFilters } from "./createFilters";
 import { CheckNamedParams } from "./checkNamedParams";
 import { RescopeLeftBinders } from "./rescopeLeftBinders";
 import { CreateOps } from "./createOps";
@@ -97,17 +97,19 @@ export const POST_NAME_PASSES =
     // handles some local tape renaming for plaintext/regex
     new HandleSingleTapes().compose(
 
+        // some conditions (like `starts re text: ~k`) have counterintuitive
+    // results, rescope them as necessary to try to have the 
+    // semantics that the programmer anticipates 
+    new CreateFilters().compose(
+
     // do some sanity checking of rules
     new SanityCheckRules().compose(
     
     // turn replacement blocks into the appropriate
     // structures
-    new ConstructReplaceBlocks().compose(
+    new ConstructReplaceBlocks()
 
-    // some conditions (like `starts re text: ~k`) have counterintuitive
-    // results, rescope them as necessary to try to have the 
-    // semantics that the programmer anticipates 
-    new AdjustFilters())))));
+    )))));
 
 export const GRAMMAR_PASSES = 
 

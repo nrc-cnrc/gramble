@@ -14,7 +14,9 @@ import {
     testGenerate, 
     generateOutputs, testNumOutputs, 
     testMatchOutputs,
-    prepareInterpreter
+    prepareInterpreter,
+    testErrors,
+    testNumErrors
 } from '../testUtil';
 
 import {
@@ -92,9 +94,13 @@ export function testGrammarAux({
     if (vocab !== undefined) {
         testHasVocab(grammar, vocab);
     }
+
+    const interpreter = prepareInterpreter(grammar, opt, symbol, false);
+    testNumErrors(interpreter, numErrors);
+
     if (!skipGeneration && results !== undefined) {
-        testGenerate(grammar, results, opt, symbol, restriction,
-            stripHidden, allowDuplicateOutputs, shortDesc, numErrors);
+        testGenerate(interpreter, results, symbol, restriction,
+            stripHidden, allowDuplicateOutputs, shortDesc);
     } else {
         it("skipping generation", function() {
             expect(skipGeneration).to.be.true;

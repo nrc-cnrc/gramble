@@ -73,7 +73,7 @@ export function testProject({
     });
     testErrors(interpreter, expectedErrors);
     if (results !== undefined) {
-        testGenerate(interpreter, results, opt, qualifiedName);
+        testGenerate(interpreter, results, qualifiedName);
     }
 }
 

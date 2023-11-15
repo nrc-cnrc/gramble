@@ -497,6 +497,84 @@ describe(`Source ${DIR}`, function() {
         ]
     }));
 
+    describe('56. Contains with not value', test({
+        id: "56",
+        results: [
+            { text: "foobaz", gloss: "run[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
+            { text: "moobaz", gloss: "jump[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
+            { text: "foo", gloss: "run[3SG.SUBJ]", subj: "[3SG.SUBJ]" },
+            { text: "moo", gloss: "jump[3SG.SUBJ]", subj: "[3SG.SUBJ]" }
+        ]
+    }));
+
+    describe('57. Contains with not embed', test({
+        id: "57",
+        results: [
+            { text: "foobar", gloss: "run[1SG.SUBJ]", subj: "[1SG.SUBJ]" },
+            { text: "moobar", gloss: "jump[1SG.SUBJ]", subj: "[1SG.SUBJ]" },
+        ]
+    }));
+    
+    describe('E1. Equals with an ill-formed filter', test({
+        id: "E1",
+        errors: [ Error(7,3) ],
+        results: [
+            { text:"goo", pos:"v"},
+            { text:"moo", pos:"n"},
+            { text:"foo", pos:"v"}
+        ]
+    }));
+
+    describe('E2. Equals where the filter references a non-existent tape', test({
+        id: "E2",
+        errors: [ Error(7,3) ],
+        results: [
+            { text:"goo"},
+            { text:"moo"},
+            { text:"foo"}
+        ]
+    }));
+    
+    describe('E3. Starts with an ill-formed filter', test({
+        id: "E3",
+        errors: [ Error(7,3) ],
+        results: [
+            { text:"goo", pos:"verb"},
+            { text:"moo", pos:"noun"},
+            { text:"foo", pos:"verb"}
+        ]
+    }));
+    
+    describe('E4. Starts where the filter references a non-existent tape', test({
+        id: "E4",
+        errors: [ Error(7,3) ],
+        results: [
+            { text:"goo"},
+            { text:"moo"},
+            { text:"foo"}
+        ]
+    }));
+
+    describe('E5. Ends with an ill-formed filter', test({
+        id: "E5",
+        errors: [ Error(7,3) ],
+        results: [
+            { text:"goo", pos:"verb"},
+            { text:"moo", pos:"noun"},
+            { text:"foo", pos:"verb"}
+        ]
+    }));
+    
+    describe('E6. Ends where the filter references a non-existent tape', test({
+        id: "E6",
+        errors: [ Error(7,3) ],
+        results: [
+            { text:"goo"},
+            { text:"moo"},
+            { text:"foo"}
+        ]
+    }));
+   
     /*
     describe('HighVowel tests 1', test({
         id: "11",
@@ -631,84 +709,6 @@ describe(`Source ${DIR}`, function() {
         ]);
     }); 
 */
-
-    describe('56. Contains with not value', test({
-        id: "56",
-        results: [
-            { text: "foobaz", gloss: "run[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
-            { text: "moobaz", gloss: "jump[2SG.SUBJ]", subj: "[2SG.SUBJ]" },
-            { text: "foo", gloss: "run[3SG.SUBJ]", subj: "[3SG.SUBJ]" },
-            { text: "moo", gloss: "jump[3SG.SUBJ]", subj: "[3SG.SUBJ]" }
-        ]
-    }));
-
-    describe('57. Contains with not embed', test({
-        id: "57",
-        results: [
-            { text: "foobar", gloss: "run[1SG.SUBJ]", subj: "[1SG.SUBJ]" },
-            { text: "moobar", gloss: "jump[1SG.SUBJ]", subj: "[1SG.SUBJ]" },
-        ]
-    }));
-    
-    describe('E1. Equals with an ill-formed filter', test({
-        id: "E1",
-        errors: [ Error(7,3) ],
-        results: [
-            { text:"goo", pos:"v"},
-            { text:"moo", pos:"n"},
-            { text:"foo", pos:"v"}
-        ]
-    }));
-    
-    describe('E2. Equals where the filter references a non-existent tape', test({
-        id: "E2",
-        errors: [ Error(7,3) ],
-        results: [
-            { text:"goo"},
-            { text:"moo"},
-            { text:"foo"}
-        ]
-    }));
-    
-    describe('E3. Starts with an ill-formed filter', test({
-        id: "E3",
-        errors: [ Error(7,3) ],
-        results: [
-            { text:"goo", pos:"verb"},
-            { text:"moo", pos:"noun"},
-            { text:"foo", pos:"verb"}
-        ]
-    }));
-    
-    describe('E4. Starts where the filter references a non-existent tape', test({
-        id: "E4",
-        errors: [ Error(7,3) ],
-        results: [
-            { text:"goo"},
-            { text:"moo"},
-            { text:"foo"}
-        ]
-    }));
-
-    describe('E5. Ends with an ill-formed filter', test({
-        id: "E5",
-        errors: [ Error(7,3) ],
-        results: [
-            { text:"goo", pos:"verb"},
-            { text:"moo", pos:"noun"},
-            { text:"foo", pos:"verb"}
-        ]
-    }));
-    
-    describe('E6. Ends where the filter references a non-existent tape', test({
-        id: "E6",
-        errors: [ Error(7,3) ],
-        results: [
-            { text:"goo"},
-            { text:"moo"},
-            { text:"foo"}
-        ]
-    }));
 });
 
 

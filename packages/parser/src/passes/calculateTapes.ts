@@ -13,7 +13,7 @@ import {
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
 import { Dict, exhaustive, setMap, update } from "../utils/func";
-import { TapeID, TapeSet, TapeLit, TapeRef, hasTape, TapeRename, tapeToRefs, tapeToStr } from "../tapes";
+import { TapeID, TapeSet, TapeLit, TapeRef, hasTape, TapeRename, tapeToRefs, tapeToStr, tapeLength } from "../tapes";
 import { HIDDEN_PREFIX } from "../utils/constants";
 
 /**
@@ -164,25 +164,31 @@ function getTapesHide(g: HideGrammar): Result<Grammar> {
  */
 function getTapesFilter(g: FilterGrammar): Result<Grammar> {
 
-    const conditionTapes = g.child2.tapes;
-    if (conditionTapes.length === 0) {
-        // it's an epsilon or failure but it's caught elsewhere,
-        //don't complain here
-        return g.child1.msg(); 
+    const lenTapes1 = tapeLength(g.child1.tapeSet);
+    const lenTapes2 = tapeLength(g.child2.tapeSet);
+    if (lenTapes1 === "unknown" || lenTapes2 === "unknown") {
+        // there's nothing more to do right now
+        return getTapesDefault(g).msg();
     }
 
-    if (conditionTapes.length > 1) {
+    if (lenTapes2 === 0) {
+        // it's an epsilon or failure but it's caught elsewhere,
+        //don't complain here
+        return getTapesDefault(g).msg();
+    }
+
+    if (lenTapes2 > 1) {
         return g.child1.err("Filters must be single-tape", 
         `A filter like equals, starts, etc. should only reference a single tape.`);
     }
 
-    const childTapes = new Set(g.child1.tapes);
-    if (!(childTapes.has(conditionTapes[0]))) {
+    const tapes2 = g.child2.tapes[0];
+    if (hasTape(g.child1.tapeSet, tapes2) === false) {
         return g.child1.err("Filtering non-existent tape", 
-        `This filter references a tape ${conditionTapes[0]} that does not exist`);
+        `This filter references a tape ${tapes2} that does not exist`);
     }
-    const result = new JoinGrammar(g.child1, g.child2);
-    return getTapesDefault(result).msg();
+
+    return getTapesDefault(g).msg();
 }
 
 function getTapesReplaceBlock(g: ReplaceBlockGrammar): Grammar {

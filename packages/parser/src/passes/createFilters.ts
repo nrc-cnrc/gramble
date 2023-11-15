@@ -6,16 +6,20 @@ import {
     NegationGrammar, RepeatGrammar, 
     SequenceGrammar, StartsGrammar, 
     RenameGrammar,
-    CounterStack
+    FilterGrammar,
+    JoinGrammar
 } from "../grammars";
 import { HIDDEN_PREFIX } from "../utils/constants";
 import { PostPass } from "./ancestorPasses";
 
 /**
- * There's a semantic gotcha in starts/ends/contains that could throw programmers for a 
- * loop: If we filter a string to say that it starts with not(X), then the filter will
+ * This pass creates Joins out of filters and handles a semantic 
+ * gotcha in starts/ends/contains.
+ * 
+ * If we filter a string to say that it starts with not(X), then the filter will
  * let everything through, because the empty string is a member of not(X), and every string
- * starts with the empty string.
+ * starts with the empty string.  This is correct but probably not what the programmer
+ * means to say!
  * 
  * What the programmer really means to say here isn't "it starts with not X" but "it doesn't
  * start with X".  (Note the scope difference.)  This isn't the scope that the actual program 
@@ -32,7 +36,7 @@ import { PostPass } from "./ancestorPasses";
  * they really want the string to match (i.e. putting the .* exactly where they intend it to
  * be) and wrap that in an equals rather than using starts/ends/contains.
  */
-export class AdjustFilters extends PostPass<Grammar> {
+export class CreateFilters extends PostPass<Grammar> {
     
     public get desc(): string {
         return "Adjusting filter scope";
@@ -40,6 +44,8 @@ export class AdjustFilters extends PostPass<Grammar> {
 
     public preTransform(g: Grammar, env: PassEnv): Grammar {
         switch (g.tag) {
+            case "filter":   return this.transformFilter(g, env)
+                                        .tapify(env);
             case "starts":   return this.transformStarts(g, env)
                                         .tapify(env);
             case "ends":     return this.transformEnds(g, env)
@@ -48,6 +54,10 @@ export class AdjustFilters extends PostPass<Grammar> {
                                         .tapify(env);
             default:         return g;
         }
+    }
+
+    transformFilter(g: FilterGrammar, env: PassEnv): Grammar {
+        return new JoinGrammar(g.child1, g.child2);
     }
 
     public transformStarts(g: StartsGrammar, env: PassEnv): Grammar {
@@ -91,7 +101,6 @@ export class AdjustFilters extends PostPass<Grammar> {
         }
 
         // construct the condition
-        //const newG = this.transform(g.child, env);
         const dotStars: Grammar[] = [];
         for (const tape of g.tapes) {
             if (tape.startsWith(HIDDEN_PREFIX)) continue;

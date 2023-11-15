@@ -169,6 +169,27 @@ function tapeInSet(t: TapeSet, query: string): Trivalent {
     return found;
 }
 
+export type TapeLength = number | "unknown";
+export function tapeLength(t: TapeID): TapeLength {
+    switch (t.tag) {
+        case "tapeUnknown": return "unknown";
+        case "tapeRef":     return "unknown";
+        case "tapeLit":     return 1;
+        case "tapeRename":  return tapeLength(t.child);
+        case "tapeSet":     return tapeLengthSet(t);
+    }
+}
+
+function tapeLengthSet(t: TapeSet): TapeLength {
+    let result: number = 0;
+    for (const c of t.children) {
+        const len = tapeLength(c);
+        if (len === "unknown") return "unknown";
+        result += len;
+    }
+    return result;
+}
+
 export type VocabSet = {
     tokens: Set<string>,
     wildcard: boolean,

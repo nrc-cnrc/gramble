@@ -77,6 +77,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hello', t2: 'world'},
         ],
+        numErrors: 1
     });
 
     testGrammar({
@@ -286,6 +287,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hello', t2: 'world'},
         ],
+        numErrors: 1
     });
 
     testGrammar({
@@ -485,6 +487,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hello', t2: 'world'},
         ],
+        numErrors: 1
     });
 
     testGrammar({

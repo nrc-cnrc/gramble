@@ -196,20 +196,16 @@ export function generateOutputs(
 }
 
 export function testGenerate(
-    grammar: Grammar | Interpreter,
+    interpreter: Interpreter,
     expectedResults: StringDict[],
-    opt: Partial<Options> = {},
     symbol: string = "",
     restriction: StringDict[] | StringDict = {},
     stripHidden: boolean = true,
     allowDuplicateOutputs: boolean = false,
     shortDesc: string = "",
-    numErrors: number = 0,
 ): void {
     timeIt(() => {
-        const interpreter = prepareInterpreter(grammar, opt, symbol, false);
-
-        testNumErrors(interpreter, numErrors);
+        //testNumErrors(interpreter, numErrors);
 
         const outputs: StringDict[] =
             generateOutputs(interpreter, symbol,
