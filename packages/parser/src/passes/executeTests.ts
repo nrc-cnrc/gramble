@@ -117,7 +117,7 @@ export class ExecuteTests extends GrammarPass {
     ): StringDict[] {
 
         // create a filter for each test
-        let targetGrammar: Grammar = new JoinGrammar(test.child, test.test);
+        let targetGrammar: Grammar = new JoinGrammar(test.child, test.test).tapify(env);
 
         // there won't be any new vocabulary here, but it's possible (indeed, frequent)
         // that the Equals we made above has a different join/concat tape structure

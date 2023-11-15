@@ -46,8 +46,7 @@ function testLength(
     expectedLength: [number, number] | null,
 ): void {
     const env: PassEnv = new PassEnv();
-
-    grammar.calculateTapes(new CounterStack(), env);
+    grammar = grammar.tapify(env);
     const length = lengthRange(grammar, tape, new CounterStack(2), env);
     
     if (expectedLength === null) {

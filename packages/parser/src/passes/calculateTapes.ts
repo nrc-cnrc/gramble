@@ -12,7 +12,7 @@ import {
     ReplaceBlockGrammar,
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { Dict, exhaustive, setMap, update } from "../utils/func";
+import { Dict, exhaustive, listUnique, setMap, update } from "../utils/func";
 import { TapeID, TapeSet, TapeLit, TapeRef, hasTape, TapeRename, tapeToRefs, tapeToStr, tapeLength } from "../tapes";
 import { HIDDEN_PREFIX } from "../utils/constants";
 
@@ -158,8 +158,6 @@ function getTapesHide(g: HideGrammar): Result<Grammar> {
  * FilterGrammars are just a kind of join with a single-tape requirement.
  * Here we check that requirement.  We could do this with SingleTapeGrammars
  * too but handling it specially lets us return a clearer error message. 
- * 
- * If it succeeds, we just return a join.
  * If we fail, we return the left child and an error message.
  */
 function getTapesFilter(g: FilterGrammar): Result<Grammar> {
@@ -172,8 +170,7 @@ function getTapesFilter(g: FilterGrammar): Result<Grammar> {
     }
 
     if (lenTapes2 === 0) {
-        // it's an epsilon or failure but it's caught elsewhere,
-        //don't complain here
+        // it's an epsilon or failure caught elsewhere
         return getTapesDefault(g).msg();
     }
 
@@ -182,10 +179,10 @@ function getTapesFilter(g: FilterGrammar): Result<Grammar> {
         `A filter like equals, starts, etc. should only reference a single tape.`);
     }
 
-    const tapes2 = g.child2.tapes[0];
-    if (hasTape(g.child1.tapeSet, tapes2) === false) {
+    const t2 = g.child2.tapes[0];
+    if (hasTape(g.child1.tapeSet, t2) === false) {
         return g.child1.err("Filtering non-existent tape", 
-        `This filter references a tape ${tapes2} that does not exist`);
+        `This filter references a tape ${t2} that does not exist`);
     }
 
     return getTapesDefault(g).msg();
@@ -206,13 +203,17 @@ function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar>
     for (const [k,v] of Object.entries(g.symbols)) {
         tapeIDs[k] = v.tapeSet;
     }
-
+    
     // now resolve the references and renames until you're
     // left with only sets of literals
     for (const [k1,v1] of Object.entries(tapeIDs)) {
-        for (const k2 of tapeToRefs(v1)) {
-            tapeIDs[k1] = resolveTapes(tapeIDs[k1], k2, 
-                                    tapeIDs[k2], new Set(k1));
+        let refs = tapeToRefs(v1);
+        for (let i = 0; i < refs.length; i++) {
+            const k2 = refs[i];
+            const newV1 = resolveTapes(tapeIDs[k1], k2, 
+                tapeIDs[k2], new Set(k1));
+            refs = listUnique([...refs, ...tapeToRefs(newV1)]);
+            tapeIDs[k1] = newV1;
         }
     }
 
