@@ -45,8 +45,6 @@ export class ExecuteTests extends GrammarPass {
     public handleTest(g: TestGrammar, env: PassEnv): GrammarResult {
         const msgs: Msgs = [];
 
-        g.calculateTapes(new CounterStack(2), env);
-
         const childTapes = new Set(g.child.tapes);
         for (const testTape of g.test.tapes) {
             if (childTapes.has(testTape)) continue;
@@ -88,8 +86,6 @@ export class ExecuteTests extends GrammarPass {
 
     public handleNegativeTest(g: TestNotGrammar, env: PassEnv): GrammarResult {
         const msgs: Msgs = [];
-
-        g.calculateTapes(new CounterStack(2), env);
 
         const childTapes = new Set(g.child.tapes);
         for (const testTape of g.test.tapes) {

@@ -1,8 +1,11 @@
-import { CollectionGrammar, CounterStack, Grammar } from "../../src/grammars";
-import { toStr } from "../../src/passes/toStr";
+import { CollectionGrammar, Grammar } from "../../src/grammars";
 import { assert, expect } from "chai";
 import { t1, t2, t3 } from "../testUtil";
-import { Any, Collection, Embed, Epsilon, Hide, Join, Match, Null, Rename, Replace, Seq, Uni } from "../../src/grammarConvenience";
+import { 
+    Collection, Embed, 
+    Hide, Join, Match, 
+    Rename, Replace, Seq
+} from "../../src/grammarConvenience";
 import { CalculateTapes } from "../../src/passes/calculateTapes";
 import { PassEnv } from "../../src/passes";
 
@@ -30,8 +33,7 @@ export function testGrammarTapes({
     let resultTapes: Set<string> = new Set();
 
     try {
-        const ts = newGrammar.calculateTapes(new CounterStack(2), env);
-        resultTapes = new Set(ts);
+        resultTapes = new Set(newGrammar.tapes);
     } catch (e) {
         it(`${testnum} has unresolved tape structure`, function() {
             assert.fail(`${e}`);
@@ -412,5 +414,4 @@ describe(`GrammarIDs`, function() {
         grammar: Replace("e", "a", "h", "llo"),
         tapes: ["$i", "$o"],
     });
-
 });

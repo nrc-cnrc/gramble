@@ -15,7 +15,6 @@ import { CheckCollections } from "./checkCollections";
 import { ConstructReplaceBlocks } from "./constructReplaceBlocks";
 import { AssignDefaults } from "./assignDefaults";
 import { HandleSingleTapes } from "./handleSingleTapes";
-import { SanityCheckRules } from "./sanityCheckRules";
 import { CombineLiterals } from "./combineLiterals";
 import { CalculateTapes } from "./calculateTapes";
 
@@ -67,9 +66,12 @@ export const SHEET_PASSES =
     new RescopeLeftBinders().compose(
 
     // create grammar objects
-    new CreateGrammars()
+    new CreateGrammars().compose(
     
-    )))))))))));
+    // Joins sequences of single-character literals into multi-
+    // char literals for effeciency.
+    new CombineLiterals()
+    ))))))))))));
 
 
 export const PRE_NAME_PASSES = 
@@ -90,26 +92,19 @@ export const POST_NAME_PASSES =
 
     new CalculateTapes().compose(
 
-    // Joins sequences of single-character literals into multi-
-    // char literals for effeciency.
-    new CombineLiterals().compose(
-
     // handles some local tape renaming for plaintext/regex
     new HandleSingleTapes().compose(
 
-        // some conditions (like `starts re text: ~k`) have counterintuitive
+    // some conditions (like `starts re text: ~k`) have counterintuitive
     // results, rescope them as necessary to try to have the 
     // semantics that the programmer anticipates 
     new CreateFilters().compose(
-
-    // do some sanity checking of rules
-    new SanityCheckRules().compose(
     
     // turn replacement blocks into the appropriate
     // structures
     new ConstructReplaceBlocks()
 
-    )))));
+    )));
 
 export const GRAMMAR_PASSES = 
 

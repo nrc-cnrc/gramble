@@ -2,7 +2,6 @@ import {
     CounterStack, Expr
 } from "./exprs";
 import { 
-    Msgs,
     Result,
 } from "./utils/msgs";
 
@@ -11,9 +10,7 @@ import {
     Tape, 
     TapeID, 
     TapeNamespace,
-    TapeSet,
     tapeToLits,
-    tapeToStr,
     TapeUnknown
 } from "./tapes";
 import { Pass, PassEnv } from "./passes";
@@ -30,7 +27,6 @@ import { determineAtomicity } from "./passes/determineAtomicity";
 import { DEFAULT_SYMBOL_NAME,  HIDDEN_PREFIX, INPUT_TAPE, OUTPUT_TAPE } from "./utils/constants";
 import { tokenizeUnicode } from "./utils/strings";
 import { Pos } from "./utils/cell";
-import { toStr } from "./passes/toStr";
 import { CalculateTapes } from "./passes/calculateTapes";
 
 export { CounterStack, Expr };
@@ -43,7 +39,6 @@ export class GrammarResult extends Result<Grammar> { }
 export abstract class GrammarPass extends Pass<Grammar,Grammar> { 
 
     public transformRoot(g: Grammar, env: PassEnv): GrammarResult {
-        g.calculateTapes(new CounterStack(2), env);
         return this.transform(g, env);
     }
 }
@@ -149,14 +144,6 @@ export abstract class AbstractGrammar extends Component {
         return getChildren(this as Grammar);
     }
 
-    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
-        try {
-            return tapeToLits(this.tapeSet);
-        } catch (e) {
-            throw new Error(`Error in ${toStr(this)}: ${e}`);
-        }
-    }
-
     /**
      * A convenience method to make sure that results have their tapes calculated, for
      * use in other Passes.  (NOT for calculating the tapes of grammars built from Gramble
@@ -170,7 +157,7 @@ export abstract class AbstractGrammar extends Component {
      */
     public tapify(env: PassEnv): Grammar {
         const pass = new CalculateTapes();
-        const [result, msgs] = pass.go(this as Grammar, env).destructure();
+        const [result, msgs] = pass.transform(this as Grammar, env).destructure();
         if (msgs.length > 0) throw new Error(JSON.stringify(msgs));
         return result;
     }
@@ -182,8 +169,7 @@ export abstract class AbstractGrammar extends Component {
         tapeNS: TapeNamespace,
         env: PassEnv
     ): void {
-        const tapeNames = this.calculateTapes(new CounterStack(2), env);
-        for (const tapeName of tapeNames) {
+        for (const tapeName of this.tapes) {
             const atomic = determineAtomicity(this as Grammar, tapeName, env);
             let tape = tapeNS.attemptGet(tapeName);
             if (tape == undefined) {
@@ -198,7 +184,7 @@ export abstract class AbstractGrammar extends Component {
         }
 
         const vocabCopyEdges = new StringPairSet();
-        for (const tapeName of tapeNames) {
+        for (const tapeName of this.tapes) {
             const edges = this.getVocabCopyEdges(tapeName, 
                 tapeNS, new StringPairSet(), env);
             vocabCopyEdges.add(...edges);
@@ -257,8 +243,6 @@ abstract class AtomicGrammar extends AbstractGrammar { }
 export class EpsilonGrammar extends AtomicGrammar {
     public readonly tag = "epsilon";
 }
-
-const EPSILON_GRAMMAR = new EpsilonGrammar();
 
 export class NullGrammar extends AtomicGrammar {
     public readonly tag = "null";
@@ -421,26 +405,6 @@ export class SingleTapeGrammar extends UnaryGrammar {
     ) {
         super(child);
     }
-
-    /*
-    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
-        if (this._tapes == undefined) {
-            this._tapes = [];
-            // in the scope of a SingleTapeGrammar, there are often
-            // grammars with the dummy tape .T.  We don't want to consider
-            // this as a genuine tape outside of this scope, outside of this
-            // scope that will be tapeName.  
-            for (const tapeName of this.child.calculateTapes(stack, env)) {
-                if (tapeName == DEFAULT_TAPE) {
-                    this._tapes.push(this.tapeName);
-                } else {
-                    this._tapes.push(tapeName);
-                }
-            }
-            this._tapes = listUnique(this._tapes);
-        }
-        return this._tapes;
-    } */
 
 }
 
@@ -634,20 +598,6 @@ export class CollectionGrammar extends AbstractGrammar {
         return undefined;
     }
 
-    /*
-    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
-        if (this._tapes == undefined) {
-            this._tapes = [];
-            for (const referent of Object.values(this.symbols)) {
-                const newEnv = env.pushSymbols(this.symbols);
-                const tapes = referent.calculateTapes(stack, newEnv);
-                this._tapes.push(...tapes);
-            }
-            this._tapes = listUnique(this._tapes);
-        }
-        return this._tapes;
-    } */
-
     public collectVocab(
         tapeName: string,
         atomic: boolean,
@@ -682,23 +632,6 @@ export class EmbedGrammar extends AtomicGrammar {
     ) {
         super();
     }
-
-    /*
-    public calculateTapes(stack: CounterStack, env: PassEnv): string[] {
-        if (this._tapes == undefined) {
-            if (stack.exceedsMax(this.name)) {
-                this._tapes = [];
-            } else {
-                const newStack = stack.add(this.name);
-                let referent = env.symbolNS.get(this.name);
-                this._tapes = referent.calculateTapes(newStack, env);
-                if (this._tapes == undefined) {
-                    throw new Error(`undefined tapes in referent ${this.name}`);
-                }
-            }
-        }
-        return this._tapes;
-    } */
 
     public collectVocab(
         tapeName: string,

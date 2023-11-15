@@ -26,8 +26,6 @@ export function infinityProtection(
     const maxCharsDict: {[tape: string]: number} = {};
     const stack = new CounterStack(2);
 
-    grammar.calculateTapes(stack, env);
-
     for (const tape of tapes) {
         const len = lengthRange(grammar, tape, stack, env);
         if (len.null == true) continue;

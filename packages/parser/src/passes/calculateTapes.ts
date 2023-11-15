@@ -1,4 +1,4 @@
-import { Msgs, Result } from "../utils/msgs";
+import { Err, Msgs, Result } from "../utils/msgs";
 import { 
     Grammar,
     CollectionGrammar,
@@ -10,6 +10,8 @@ import {
     JoinGrammar,
     ReplaceGrammar,
     ReplaceBlockGrammar,
+    SequenceGrammar,
+    EpsilonGrammar,
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
 import { Dict, exhaustive, listUnique, setMap, update } from "../utils/func";
@@ -47,11 +49,11 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
                 case "epsilon":
                 case "null": return updateTapes(g, TapeSet())
 
+                // have their own tape name as tapes
                 case "lit": return updateTapes(g, TapeLit(g.tapeName));
                 case "dot": return updateTapes(g, TapeLit(g.tapeName));
 
-                // tapes are just the union of children's tapes
-                
+                // just the union of children's tapes
                 case "seq": 
                 case "alt": 
                 case "intersect": 
@@ -66,7 +68,6 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
                 case "context":
                 case "cursor":
                 case "pretape":
-                case "replace":
                 case "locator": return getTapesDefault(g);
                 
                 // union of children's tapes, plus additional tapes
@@ -82,6 +83,7 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
                 case "rename":     return getTapesRename(g);
                 case "hide":       return getTapesHide(g);
                 case "filter":     return getTapesFilter(g);
+                case "replace":    return getTapesReplace(g, env);
                 case "replaceblock": return getTapesReplaceBlock(g);
 
                 default: exhaustive(g);
@@ -188,11 +190,58 @@ function getTapesFilter(g: FilterGrammar): Result<Grammar> {
     return getTapesDefault(g).msg();
 }
 
-function getTapesReplaceBlock(g: ReplaceBlockGrammar): Grammar {
+
+function getTapesReplace(g: ReplaceGrammar, env: PassEnv): Result<Grammar> {
+
+    // during normal construction it shouldn't be possible to construct
+    // multitape rules, but just in case...
+    const childrenToCheck: [string, Grammar][] = [
+        ["from", g.fromGrammar],
+        ["to", g.toGrammar],
+        ["pre", g.preContext],
+        ["post", g.postContext]
+    ];
+
+    const msgs: Msgs = [];
+    for (const [childName, child] of childrenToCheck) {
+        const len = tapeLength(child.tapeSet);
+        if (len === "unknown" || len <= 1) continue;
+        msgs.push(Err( "Multitape rule", 
+                    "This rule has the wrong number of tapes " +
+                    ` in ${childName}: ${tapeToStr(child.tapeSet)}`));
+    }
+
+    if (msgs.length > 0)
+        return new EpsilonGrammar().tapify(env).msg(msgs);
+
+    return getTapesDefault(g).msg();
+
+}
+                
+function getTapesReplaceBlock(g: ReplaceBlockGrammar): Result<Grammar> {
+    // make sure the tape we're replacing exists, otherwise
+    // we generate infinitely
+    if (hasTape(g.child.tapeSet, g.inputTape) === false) {
+        return g.child.err("Replacing non-existent tape",
+                    `The grammar above does not have a tape ` +
+                    `${g.inputTape} to replace on`);
+    }
+
+    // filter out any non-rules caused by children disappearing
+    const isReplace = (r: Grammar): r is ReplaceGrammar => 
+                        r instanceof ReplaceGrammar;
+    g.rules = g.rules.filter(isReplace);
+
+    if (g.rules.length == 0) {
+        return g.child.warn("This replace has no valid rules");
+    }
+
+    // the block's tapes are its child's tapes plus the 
+    // hidden tapes of its rules
     const hiddenTapes = g.rules.map(r => r.hiddenTapeName)
                                    .map(t => TapeLit(t));
     const newTapes = TapeSet(g.child.tapeSet, ...hiddenTapes);
-    return updateTapes(g, newTapes);
+    return updateTapes(g, newTapes).msg();
 }
 
 function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar> {
@@ -214,6 +263,14 @@ function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar>
                 tapeIDs[k2], new Set(k1));
             refs = listUnique([...refs, ...tapeToRefs(newV1)]);
             tapeIDs[k1] = newV1;
+        }
+    }
+
+    // check for unresolved content, and throw an exception immediately.
+    // otherwise we have to puzzle it out from exceptions elsewhere.
+    for (const [k,v] of Object.entries(tapeIDs)) {
+        if (tapeLength(v) === "unknown") { 
+            throw new Error(`Unresolved tape structure in ${k}: ${tapeToStr(v)}`);
         }
     }
 

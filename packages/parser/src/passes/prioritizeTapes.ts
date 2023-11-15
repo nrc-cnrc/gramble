@@ -15,8 +15,7 @@ export function prioritizeTapes(
     tapeNS: TapeNamespace,
     env: PassEnv
 ): string[] {
-    const tapeNames = g.calculateTapes(new CounterStack(2), env);
-    const priorities: [string, number][] = tapeNames.map(t => {
+    const priorities: [string, number][] = g.tapes.map(t => {
         const joinWeight = getTapePriority(g, t, new StringPairSet(), env);
         
         /* TODO: temporarily removing vocab size from
