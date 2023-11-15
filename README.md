@@ -23,36 +23,44 @@ To install from source
 
 Most users will not need to install from source unless you (a) want to run Gramble from the command line, (b) want to deploy your own Gramble add-on rather than use the one on Google Marketplace, or (c) if you are developing/maintaining Gramble itself.
 
-Gramble is written in TypeScript, because ultimately it's made to execute in the browser so it's necessary that it transpiles smoothly to JavaScript.  For the command-line interface and to develop/test, we use [Node].  To install the multiple, interdependent packages in this repo we use npm with [Lerna].
+Gramble is written in TypeScript, because ultimately it's made to execute in the browser so it's necessary that it transpiles smoothly to JavaScript.  For the command-line interface and to develop/test, we use [Node].  To install the multiple, interdependent packages in this repo we use npm.
 
 [Node]: https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
-[Lerna]: https://lerna.js.org/
+
 
 ### Building and installing
 
-First make sure Node and npm are installed according to the instructions above.  Then, make sure Lerna is installed as well: 
+First, make sure Node and npm are installed according to the instructions above.
 
-    npm install lerna -g
-
-Then:
+Then, run the following command to install all dependencies and build the Gramble packages:
 
     npm install
 
-At this point you should consider adding the path to `node_modules/.bin` to your system `PATH`.
+Note: Users in a managed Windows environment may have trouble installing the `gramble` command because it requires a symbolic link.  If you run into this, run `npm install` as an adminstrator.
 
-After the initial install of all dependencies, you can recompile the gramble parser and/or gramble-cli by running:
+After the initial install of all dependencies, you can recompile the Gramble parser and/or gramble-cli at any time by running:
 
     npm run build
 
 ### Running from the command line
 
+At this point you should consider adding the path to `node_modules/.bin` to your system `PATH`.
+
 For help info, try:
 
     gramble help
 
-If you did not add `node_modules/.bin` to your `PATH`, you can instead run gramble as:
+Alternatively, if you did not add `node_modules/.bin` to your `PATH`, you can instead run gramble as:
 
     ./node_modules/.bin/gramble help
+
+or:
+
+    npm run gramble help
+
+or even (if, on Windows, you lack administrator privileges to install the `gramble` command):
+
+    node packages/gramble-cli/bin/index.js help
 
 Try generating from a sample file:
 
@@ -66,24 +74,14 @@ If your grammar is large, generating can be correspondingly slow, so if you just
 
     gramble sample examples/helloworld.csv -n 10
 
-Note: Users in a managed Windows environment may have trouble installing the `gramble` command because it requires a symbolic link.  If you run into this, run `npm install` as an adminstrator.
-
-If you do not have administrator privileges, you can get the same result by running:
-
-    node packages/gramble-cli/bin/index.js generate examples/helloworld.csv
-
-### Testing
+### Running the Gramble tests
 
     npm test
-
-### Adding new dependencies
-
-    npx lerna add <package> path/to/subpackage
 
 Copyright
 ---------
 
-All files in this repository are **Copyright (C) 2020 National Research Council Canada.**
+All files in this repository are **Copyright © 2020 National Research Council Canada.**
 
 License
 -------

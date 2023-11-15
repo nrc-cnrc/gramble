@@ -32,7 +32,7 @@
     "build": "tsc --build --verbose",
     "prepare": "npm run build",
     "test": "./deploy.sh --help",
-    "clasp": "../../node_modules/.bin/clasp",
+    "clasp": "clasp",
     "deploy": "./deploy.sh"
   },
   "bugs": {

@@ -4,11 +4,12 @@
   "description": "Typescript interpreter for the Gramble language",
   "private": true,
   "scripts": {
-    "build": "lerna run build",
-    "test": "lerna exec npm test",
+    "build": "npm run build --workspaces",
+    "test": "npm test --workspaces",
     "postinstall": "node ./libexec/postinstall.js",
-    "clasp": "./node_modules/.bin/clasp",
-    "deploy": "./packages/sheets_addon/deploy.sh"
+    "clasp": "clasp",
+    "deploy": "npm run deploy --workspace packages/sheets_addon",
+    "gramble": "gramble"
   },
   "workspaces": [
     "packages/*"
