@@ -160,14 +160,14 @@ export function prepareInterpreter(
 export function generateOutputs(
     interpreter: Interpreter,
     symbol: string = "",
-    restriction: StringDict[] | StringDict = {},
+    query: StringDict[] | StringDict = {},
     stripHidden: boolean = true,
     rethrow: boolean = false, // in case a test wants to catch errors itself
 ): StringDict[] {
     let outputs: StringDict[] = [];
     try {
         outputs = [
-            ...interpreter.generate(symbol, restriction, Infinity, stripHidden)
+            ...interpreter.generate(symbol, query, Infinity, stripHidden)
         ];
     } catch (e) {
         if (rethrow) throw e;
@@ -185,7 +185,7 @@ export function testGenerate(
     interpreter: Interpreter,
     expectedResults: StringDict[],
     symbol: string = "",
-    restriction: StringDict[] | StringDict = {},
+    query: StringDict[] | StringDict = {},
     stripHidden: boolean = true,
     allowDuplicateOutputs: boolean = false,
     shortDesc: string = "",
@@ -195,7 +195,7 @@ export function testGenerate(
 
         const outputs: StringDict[] =
             generateOutputs(interpreter, symbol,
-                                restriction, stripHidden, false);
+                                query, stripHidden, false);
         testNumOutputs(outputs, expectedResults.length,
                        allowDuplicateOutputs, symbol);
         testMatchOutputs(outputs, expectedResults, symbol);

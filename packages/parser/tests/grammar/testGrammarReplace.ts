@@ -143,7 +143,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      Replace("e", "a", "h", "l", 
                         EMPTY_CONTEXT, false, true)),
         vocab: {$i:3, $o:4},
-        restriction: inputs(io_3),
+        query: inputs(io_3),
         results: outputs(io_3),
     });
 
@@ -197,7 +197,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({$i:5, $o:5},
                      Replace("e", "a", "h", "l", 
                         EMPTY_CONTEXT, true, false)),
-        restriction: inputs(io_5),
+        query: inputs(io_5),
         results: outputs(io_5),
     });
 
@@ -327,7 +327,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({$i:9, $o:9},
                      Replace("e", "a", "h", "l", 
                         EMPTY_CONTEXT, false, false, 1, 1)),
-        restriction: inputs(io_7b),
+        query: inputs(io_7b),
         results: outputs(io_7b),
     });
 
@@ -401,7 +401,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          false, false, 1
                      )),
         vocab: {$i:3, $o:4},
-        restriction: inputs(io_8b),
+        query: inputs(io_8b),
         results: outputs(io_8b),
     });
 
@@ -451,7 +451,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          false, false, 0, 2
                      )),
         vocab: {$i:3, $o:4},
-        restriction: inputs(io_9),
+        query: inputs(io_9),
         results: outputs(io_9),
     });
 
@@ -494,7 +494,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          false, false, 0, 3
                      )),
         vocab: {$i:3, $o:4},
-        restriction: inputs(io_10),
+        query: inputs(io_10),
         results: outputs(io_10),
     });
 
@@ -575,7 +575,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          false, false, 0, 2
                      )),
         vocab: {$i:2, $o:3},
-        restriction: inputs(io_11b),
+        query: inputs(io_11b),
         results: outputs(io_11b),
     });
 
@@ -625,7 +625,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          false, false, 0, 2
                      )),
         vocab: {$i:2, $o:3},
-        restriction: inputs(io_12),
+        query: inputs(io_12),
         results: outputs(io_12),
     });
 
@@ -707,7 +707,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          false, false, 0, 2
                      )),
         vocab: {$i:2, $o:3},
-        restriction: inputs(io_13b),
+        query: inputs(io_13b),
         results: outputs(io_13b),
     });
 
@@ -798,7 +798,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              false, false, 0, 3
                      	 ))),
         vocab: {$i:3, $o:4},
-        restriction: inputs(io_15),
+        query: inputs(io_15),
         results: outputs(io_15),
     });
 
@@ -851,7 +851,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          false, false, 0, 2
                      )),
         vocab: {$i:3, $o:3},
-        restriction: inputs(io_16),
+        query: inputs(io_16),
         results: outputs(io_16),
     });
 
@@ -924,7 +924,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          true, false, 0
                      )),
         vocab: {$i:3, $o:3},
-        restriction: inputs(io_18),
+        query: inputs(io_18),
         results: outputs(io_18),
     });
 
@@ -998,7 +998,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          false, true, 0
                      )),
         vocab: {$i:3, $o:3},
-        restriction: inputs(io_20),
+        query: inputs(io_20),
         results: outputs(io_20),
     });
 
@@ -1079,7 +1079,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          EMPTY_CONTEXT, false, false, 0, 2
                      )),
         vocab: {$i:2, $o:2},
-        restriction: inputs(io_21b),
+        query: inputs(io_21b),
         results: outputs(io_21b),
     });
 
@@ -1154,7 +1154,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          false, false, 0, 2
                      )),
         vocab: {$i:2, $o:2},
-        restriction: inputs(io_22b),
+        query: inputs(io_22b),
         results: outputs(io_22b),
     });
 
@@ -1243,7 +1243,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          false, false, 0, 2
                      )),
         vocab: {$i:3, $o:3},
-        restriction: inputs(io_24),
+        query: inputs(io_24),
         results: outputs(io_24),
     });
 
@@ -1331,7 +1331,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          false, false, 0, 2
                      )),
         vocab: {$i:2, $o:2},
-        restriction: inputs(io_25b),
+        query: inputs(io_25b),
         results: outputs(io_25b),
     });
 
@@ -1419,7 +1419,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          false, false, 0, 2
                      )),
         vocab: {$i:2, $o:2},
-        restriction: inputs(io_26b),
+        query: inputs(io_26b),
         results: outputs(io_26b),
     });
 
@@ -1538,7 +1538,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          false, false, 0, 2
                      )),
         vocab: {$i:2, $o:3},
-        restriction: inputs(io_28b),
+        query: inputs(io_28b),
         results: outputs(io_28b),
     });
 
@@ -1611,7 +1611,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          false, false, 0, 2
                      )),
         vocab: {$i:3, $o:3},
-        restriction: inputs(io_29b),
+        query: inputs(io_29b),
         results: outputs(io_29b),
     });
 
@@ -1642,7 +1642,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          false, false, 0, 2
                      )),
         vocab: {$i:4, $o:5},
-        restriction: inputs(io_30a),
+        query: inputs(io_30a),
         results: outputs(io_30a),
     });
 
@@ -1673,7 +1673,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          false, false, 0, 2
                      )),
         vocab: {$i:4, $o:5},
-        restriction: inputs(io_30b),
+        query: inputs(io_30b),
         results: outputs(io_30b),
     });
 
@@ -1709,7 +1709,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              false, false, 0, 2
                      	 ))),
         vocab: {$i:4, $o:5},
-        restriction: inputs(io_30c),
+        query: inputs(io_30c),
         results: outputs(io_30c),
     });
 
@@ -1745,7 +1745,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              false, false, 0, 2
                      	 ))),
         vocab: {$i:4, $o:5},
-        restriction: inputs(io_30d),
+        query: inputs(io_30d),
         results: outputs(io_30d),
     });
 
@@ -1776,7 +1776,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          false, false, 0, 2
                      )),
         vocab: {$i:4, $o:5},
-        restriction: inputs(io_31a),
+        query: inputs(io_31a),
         results: outputs(io_31a),
     });
 
@@ -1847,7 +1847,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          false, false, 0, 1
                      )),
         vocab: {$i:3, $o:5},
-        restriction: inputs(io_31c),
+        query: inputs(io_31c),
         results: outputs(io_31c),
     });
 
@@ -1907,7 +1907,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          false, false, 0, 3
                      )),
         vocab: {$i:3, $o:4, t3:5},
-        restriction: inputs(io_32),
+        query: inputs(io_32),
         results: outputs(io_32),
     });
 
@@ -2606,7 +2606,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          false, false, 1, 3
                      )),
         vocab: {$i:2, $o:3},
-        restriction: inputs(io_36b),
+        query: inputs(io_36b),
         results: outputs(io_36b),
     });
 

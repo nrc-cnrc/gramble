@@ -170,7 +170,7 @@ export class Interpreter {
         value: number = 1.0
     ): string {
         if (!(tapeName in this.tapeColors)) {
-            const [header, msgs] = parseHeaderCell(tapeName).destructure();
+            const header = parseHeaderCell(tapeName).msgTo(THROWER);
             this.tapeColors[tapeName] = backgroundColor(header, saturation, value);
         }
         return this.tapeColors[tapeName];
@@ -178,21 +178,21 @@ export class Interpreter {
 
     public generate(
         symbol: string = "",
-        restriction: StringDict[] | StringDict = {},
+        query: StringDict[] | StringDict = {},
         maxResults: number = Infinity,
         stripHidden: boolean = true
     ): StringDict[] {
-        const gen = this.generateStream(symbol, restriction, stripHidden);
+        const gen = this.generateStream(symbol, query, stripHidden);
         const [results, _] = iterTake(gen, maxResults);
         return results;
     }
     
     public *generateStream(
         symbol: string = "",
-        restriction: StringDict[] | StringDict = {},
+        query: StringDict[] | StringDict = {},
         stripHidden: boolean = true
     ): Gen<StringDict> {
-        const expr = this.prepareExpr(symbol, restriction);
+        const expr = this.prepareExpr(symbol, query);
 
         if (stripHidden) {
             yield* stripHiddenTapes(generate(expr, this.tapeNS, false, this.opt));
@@ -205,21 +205,21 @@ export class Interpreter {
     public sample(
         symbol: string = "",
         numSamples: number = 1,
-        restriction: StringDict | undefined = undefined,
+        query: StringDict | undefined = undefined,
         stripHidden: boolean = true
     ): StringDict[] {
         return [...this.sampleStream(symbol, 
-            numSamples, restriction, stripHidden)];
+            numSamples, query, stripHidden)];
     } 
 
     public *sampleStream(
         symbol: string = "",
         numSamples: number = 1,
-        restriction: StringDict | undefined = undefined,
+        query: StringDict | undefined = undefined,
         stripHidden: boolean = true
     ): Gen<StringDict> {
 
-        const expr = this.prepareExpr(symbol, restriction);
+        const expr = this.prepareExpr(symbol, query);
         for (let i = 0; i < numSamples; i++) {
             let gen = generate(expr, this.tapeNS, true, this.opt);
             if (stripHidden) {

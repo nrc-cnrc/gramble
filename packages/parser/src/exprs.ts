@@ -55,7 +55,7 @@ export class DerivEnv extends Env {
     constructor(
         opt: Options,
         public tapeNS: TapeNamespace,
-        public symbolNS: Namespace<Expr>,
+        public symbols: Dict<Expr>,
         public stack: CounterStack,
         public random: boolean,
         public stats: DerivStats
@@ -78,17 +78,16 @@ export class DerivEnv extends Env {
     }
 
     public getSymbol(symbol: string): Expr {
-        return this.symbolNS.get(symbol);
+        return this.symbols[symbol];
     }
     
-    public pushSymbols(symbols: Dict<Expr>): DerivEnv {
-        const newSymbolNS = new ExprNamespace(symbols, this.symbolNS);
-        return new DerivEnv(this.opt, this.tapeNS, newSymbolNS, this.stack, this.random, this.stats);
+    public setSymbols(symbols: Dict<Expr>): DerivEnv {
+        return new DerivEnv(this.opt, this.tapeNS, symbols, this.stack, this.random, this.stats);
     }
 
     public addSymbol(symbol: string): DerivEnv {
         const newStack = this.stack.add(symbol);
-        return new DerivEnv(this.opt, this.tapeNS, this.symbolNS, newStack, this.random, this.stats);
+        return new DerivEnv(this.opt, this.tapeNS, this.symbols, newStack, this.random, this.stats);
     }
 
     public incrStates(): void {
@@ -1200,7 +1199,7 @@ export class CollectionExpr extends UnaryExpr {
         tapeName: string,
         env: DerivEnv
     ): Expr {
-        const newEnv = env.pushSymbols(this.symbols);
+        const newEnv = env.setSymbols(this.symbols);
         const newChild = this.child.delta(tapeName, newEnv);
         return constructCollection(env, newChild, this.symbols);
     }
@@ -1209,7 +1208,7 @@ export class CollectionExpr extends UnaryExpr {
         query: Query,
         env: DerivEnv
     ): Derivs {
-        const newEnv = env.pushSymbols(this.symbols);
+        const newEnv = env.setSymbols(this.symbols);
         for (const d of 
                 this.child.deriv(query, newEnv)) {
             yield d.wrap(c => constructCollection(env, c, this.symbols));
@@ -1217,7 +1216,7 @@ export class CollectionExpr extends UnaryExpr {
     }
 
     public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
-        const newEnv = env.pushSymbols(this.symbols);
+        const newEnv = env.setSymbols(this.symbols);
         for (const [cHandled, cNext] of this.child.forward(newEnv)) {
             const wrapped = constructCollection(env, cNext, this.symbols);
             yield [cHandled, wrapped];

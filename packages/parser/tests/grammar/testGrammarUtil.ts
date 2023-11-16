@@ -42,7 +42,7 @@ export interface GrammarTestAux extends Options {
     vocab: {[tape: string]: number},
     results: StringDict[],
     symbol: string,
-    restriction: StringDict[] | StringDict,
+    query: StringDict | StringDict[],
     stripHidden: boolean,
     allowDuplicateOutputs: boolean,
     skipGeneration: boolean,
@@ -59,7 +59,7 @@ export function testGrammarAux({
     vocab,
     results,
     symbol = "",
-    restriction = {},
+    query = {},
     stripHidden = true,
     allowDuplicateOutputs = false,
     skipGeneration = false,
@@ -99,7 +99,7 @@ export function testGrammarAux({
     testNumErrors(interpreter, numErrors);
 
     if (!skipGeneration && results !== undefined) {
-        testGenerate(interpreter, results, symbol, restriction,
+        testGenerate(interpreter, results, symbol, query,
             stripHidden, allowDuplicateOutputs, shortDesc);
     } else {
         it("skipping generation", function() {
@@ -159,7 +159,7 @@ interface GrammarEqualTest {
     opt?: Partial<Options>,
     opt2?: Partial<Options>
     symbol?: string,
-    restriction?: StringDict,
+    query?: StringDict,
     stripHidden?: boolean,
     allowDuplicateOutputs?: boolean,
 };
@@ -171,7 +171,7 @@ export function testGrammarEqual({
     opt = {},
     opt2 = opt,
     symbol = "",
-    restriction = {},
+    query = {},
     stripHidden = true,
     allowDuplicateOutputs = false,
 }: GrammarEqualTest): void {
@@ -179,9 +179,9 @@ export function testGrammarEqual({
         const interpreter1 = prepareInterpreter(grammar, opt);
         const interpreter2 = prepareInterpreter(grammar2, opt2);
         const outputs1 = generateOutputs(interpreter1, symbol, 
-                                restriction, stripHidden, false);
+                                query, stripHidden, false);
         const outputs2 = generateOutputs(interpreter2, symbol, 
-                                restriction, stripHidden, false);
+                                query, stripHidden, false);
         testNumOutputs(outputs1, outputs2.length,
                        allowDuplicateOutputs, symbol);
         testMatchOutputs(outputs1, outputs2, symbol);
