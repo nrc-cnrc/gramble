@@ -129,11 +129,11 @@ function getTapePriorityEmbed(
     symbolsVisited: StringPairSet,
     env: PassEnv
 ): number {
-    if (symbolsVisited.has([g.name, tape])) { 
+    if (symbolsVisited.has([g.symbol, tape])) { 
         return 0;
     }
-    symbolsVisited.add([g.name, tape]);
-    const referent = env.symbolNS.get(g.name);
+    symbolsVisited.add([g.symbol, tape]);
+    const referent = env.symbolNS.get(g.symbol);
     return getTapePriority(referent, tape, symbolsVisited, env);
 }
 

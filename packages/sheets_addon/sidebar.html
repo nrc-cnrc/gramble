@@ -312,9 +312,9 @@
                 let resultsTable  = document.getElementById("resultsTable"); 
                 resultsTable.innerHTML = "";
 
-                let symbolName = document.getElementById("selectSymbol").value;
+                let symbol = document.getElementById("selectSymbol").value;
 
-                if (symbolName == "" || symbolName == undefined) {
+                if (symbol == "" || symbol == undefined) {
                     return;
                 }
 
@@ -329,7 +329,7 @@
                 }
 
                 let results = gramble.timeIt(() => 
-                    project.sample(symbolName, 1, CURRENT_INPUTS),
+                    project.sample(symbol, 1, CURRENT_INPUTS),
                     true, "Sampling complete", "Started sampling");
                 
                 if (results.length == 0) {
@@ -407,17 +407,17 @@
                 return results;
             }
 
-            function getCurrentSymbolName() {
+            function getCurrentSymbol() {
 
                 // determine what symbol to generate from
                 const symbolSelect = document.getElementById("selectSymbol"); 
-                let symbolName = symbolSelect.value;
+                let symbol = symbolSelect.value;
 
-                if (symbolName == "" || symbolName == undefined) {
+                if (symbol == "" || symbol == undefined) {
                     return;
                 }
 
-                return symbolName;
+                return symbol;
 
             }
 
@@ -440,17 +440,17 @@
 
             function downloadResults() {
 
-                const symbolName = getCurrentSymbolName();
+                const symbol = getCurrentSymbol();
 
                 // determine what tape names are relevant to this symbol
-                const tapeNames = project.getTapeNames(symbolName);
+                const tapeNames = project.getTapeNames(symbol);
 
                 const inputs = getCurrentInputs();
                 
                 let results = [];
                 
                 gramble.timeIt(() => {
-                    for (const result of project.generateStream(symbolName, inputs)) {
+                    for (const result of project.generateStream(symbol, inputs)) {
                         results.push(result);
                     }
                 }, true, "Generation complete", "Started generating");
@@ -467,10 +467,10 @@
                 let filename, text;
                 // convert the results to the appropriate format
                 if (downloadFormat == "json") {
-                    filename = `${symbolName}_output.json`;
+                    filename = `${symbol}_output.json`;
                     text = JSON.stringify(results, null, 2);
                 } else if (downloadFormat == "csv") {
-                    filename = `${symbolName}_output.csv`;
+                    filename = `${symbol}_output.csv`;
                     text = resultsToCSV(tapeNames, results);
                 }
 
@@ -487,12 +487,12 @@
 
             async function generateToNewSheet() {
                 
-                const symbolName = getCurrentSymbolName();
+                const symbol = getCurrentSymbol();
 
                 const inputs = getCurrentInputs();
 
                 let results = gramble.timeIt(() => 
-                    project.generate(symbolName, inputs),
+                    project.generate(symbol, inputs),
                     true, "Generation complete", "Started generating"
                 );
 
@@ -502,21 +502,21 @@
                 }
                 
                 // determine what tape names are relevant to this symbol
-                const tapeNames = project.getTapeNames(symbolName);
+                const tapeNames = project.getTapeNames(symbol);
 
                 const resultsTable = resultsToTable(tapeNames, results)
-                const sheetName = symbolName.replace(".", "_") + "_generated";
-                await scriptRunPromise().makeNewSheet(symbolName, sheetName, resultsTable);
+                const sheetName = symbol.replace(".", "_") + "_generated";
+                await scriptRunPromise().makeNewSheet(symbol, sheetName, resultsTable);
             }
             
             async function sampleToNewSheet() {
                 
-                const symbolName = getCurrentSymbolName();
+                const symbol = getCurrentSymbol();
 
                 const inputs = getCurrentInputs();
 
                 let results = gramble.timeIt(() =>
-                    project.sample(symbolName, 50, inputs),
+                    project.sample(symbol, 50, inputs),
                     true, "Sampling complete", "Started sampling"
                 );
 
@@ -526,11 +526,11 @@
                 }
                 
                 // determine what tape names are relevant to this symbol
-                const tapeNames = project.getTapeNames(symbolName);
+                const tapeNames = project.getTapeNames(symbol);
 
                 const resultsTable = resultsToTable(tapeNames, results)
-                const sheetName = symbolName.replace(".", "_") + "_sampled";
-                await scriptRunPromise().makeNewSheet(symbolName, sheetName, resultsTable);
+                const sheetName = symbol.replace(".", "_") + "_sampled";
+                await scriptRunPromise().makeNewSheet(symbol, sheetName, resultsTable);
             }
 
             window.onload = async function() {

@@ -1,5 +1,5 @@
 import { Component } from "./components";
-import { DEFAULT_SYMBOL_NAME } from "./utils/constants";
+import { DEFAULT_SYMBOL } from "./utils/constants";
 
 export type Source = Workbook
                    | Worksheet
@@ -28,7 +28,7 @@ export class Workbook extends Component {
             results.push([]);  // add an extra line just to make it a little more readable
         }
 
-        results.push([DEFAULT_SYMBOL_NAME, "embed"]);
+        results.push([DEFAULT_SYMBOL, "embed"]);
         results.push([""                 , this.mainSheetName]);
         return results;
     }

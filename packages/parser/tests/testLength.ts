@@ -22,22 +22,6 @@ import { Grammar } from '../src/grammars';
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
 
-/*
-function selectSymbol(
-    ns: CollectionGrammar,
-    symbolName: string
-): [Grammar, PassEnv] {
-    const env = new PassEnv();
-    const selection = NAME_PASSES.go(ns, env) 
-            .msgTo([]) as CollectionGrammar;
-    env.symbolNS.entries = selection.symbols;
-    const resultGrammar = selection.symbols[symbolName]
-    if (resultGrammar == undefined) {
-        throw new Error(`Cannot find symbol ${symbolName}`);
-    }
-    return [resultGrammar, env];
-} */
-
 function testLength(
     grammar: Grammar, 
     tape: string, 

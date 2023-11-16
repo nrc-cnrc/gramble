@@ -238,8 +238,8 @@ export function Null(): NullGrammar {
     return new NullGrammar();
 }
 
-export function Embed(name: string): EmbedGrammar {
-    return new EmbedGrammar(name);
+export function Embed(symbol: string): EmbedGrammar {
+    return new EmbedGrammar(symbol);
 }
 
 export function Dot(...tapes: string[]): SequenceGrammar {

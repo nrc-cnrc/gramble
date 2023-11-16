@@ -38,7 +38,7 @@ export function constructExpr(
         case "null":       return NULL;
         case "lit":        return constructLiteral(env, g.tapeName, g.text, g.tokens);
         case "dot":        return constructDot(g.tapeName);
-        case "embed":      return constructEmbed(env, g.name, undefined);
+        case "embed":      return constructEmbed(env, g.symbol, undefined);
     
         // everything else has children
         case "seq":        return constructExprSeq(env, g);

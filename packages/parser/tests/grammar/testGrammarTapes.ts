@@ -10,7 +10,7 @@ import { CalculateTapes } from "../../src/passes/calculateTapes";
 import { PassEnv } from "../../src/passes";
 import { THROWER } from "../../src/utils/msgs";
 import { SelectSymbol } from "../../src/passes/selectSymbol";
-import { QualifyNames } from "../../src/passes/qualifyNames";
+import { FlattenCollections } from "../../src/passes/flattenCollections";
 
 type GrammarIDTest = {
     testnum: string,
@@ -25,7 +25,7 @@ export function testGrammarTapes({
     tapes,
     symbol = ""
 }: GrammarIDTest): void {
-    const pass = new QualifyNames().compose(new CalculateTapes());
+    const pass = new FlattenCollections().compose(new CalculateTapes());
     const env = new PassEnv();
     let newGrammar = pass.go(grammar, env).msgTo(THROWER);
     

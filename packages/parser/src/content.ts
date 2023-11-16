@@ -22,7 +22,7 @@ import {
 } from "./miniParser";
 
 import { 
-    isValidSymbolName,
+    isValidSymbol,
     RESERVED_FOR_CONTEXT, 
     RESERVED_FOR_PLAINTEXT, 
     RESERVED_FOR_REGEX, 
@@ -62,7 +62,7 @@ const SYMBOL_BRACKETED = MPSequence(
 
 const SYMBOL_UNRESERVED = MPUnreserved<Grammar>(
     (s) => {
-        if (isValidSymbolName(s)) {
+        if (isValidSymbol(s)) {
             return new EmbedGrammar(s)
         } else {
             throw new EpsilonGrammar().err(
@@ -80,7 +80,7 @@ const SYMBOL_CHAIN: RegexParser = MPDelay(() => MPSequence(
         if (!(c1 instanceof EmbedGrammar) || !(c2 instanceof EmbedGrammar)) {
             return new EpsilonGrammar();
         }
-        return new EmbedGrammar(c1.name + "." + c2.name);
+        return new EmbedGrammar(c1.symbol + "." + c2.symbol);
     }
 ));
 

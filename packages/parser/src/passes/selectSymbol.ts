@@ -4,7 +4,7 @@ import {
     CollectionGrammar,
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { resolveNameAux } from "./resolveNames";
+import { qualifySymbol, qualifySymbolAux } from "./qualifySymbols";
 
 /**
  * CollectionGrammars have a "selectedSymbol" member that determines
@@ -34,21 +34,20 @@ export class SelectSymbol extends Pass<Grammar,Grammar> {
 
     public selectSymbol(g: CollectionGrammar, env: PassEnv): Result<Grammar> {
 
-        const namePieces = this.symbol.split(".").filter(s => s.length > 0);
-        const resolution = resolveNameAux(g.resolver, namePieces);
+        const resolution = qualifySymbol(g, this.symbol);
         if (resolution == undefined) {
             return g.err("Cannot resolve symbol", 
                 `Cannot find symbol ${this.symbol} in grammar, candidates: ${Object.keys(g.symbols)}.`);
         }
 
-        const referent = g.symbols[resolution];
+        const referent = g.symbols[resolution[0]];
         if (referent == undefined) {
             // a resolved symbol should always exist
             throw new Error(
                 `Cannot find symbol ${this.symbol} in grammar, candidates: ${Object.keys(g.symbols)}.`);
         }
 
-        const result = new CollectionGrammar(g.symbols, resolution, g.resolver);
+        const result = new CollectionGrammar(g.symbols, resolution[0], g.qualifier);
         result.tapeSet = referent.tapeSet;
         return result.msg();
     }

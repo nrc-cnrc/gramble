@@ -1,20 +1,19 @@
 import { Grammar } from "../grammars";
-import { DEFAULT_SYMBOL_NAME } from "../utils/constants";
+import { DEFAULT_SYMBOL } from "../utils/constants";
 import { Dict, mapValues } from "../utils/func";
 
-export type NameResolver = { symbols: Dict<NameResolver> } | "leaf";
+export type SymbolQualifier = { symbols: Dict<SymbolQualifier> } | "leaf";
 
-
-export function resolveName(
+export function qualifySymbol(
     g: Grammar, 
     symbol: string
 ): [string, Grammar] | undefined {
     switch (g.tag) {
         case "locator": 
-            return resolveName(g.child, symbol);
+            return qualifySymbol(g.child, symbol);
         case "collection":
-            const namePieces = symbol.split(".").filter(s => s.length > 0);
-            const result = resolveNameAux(g.resolver, namePieces);
+            const symbolPieces = symbol.split(".").filter(s => s.length > 0);
+            const result = qualifySymbolAux(g.qualifier, symbolPieces);
             if (result === undefined) return undefined;
             return [result, g.symbols[result]];
         default:
@@ -22,18 +21,18 @@ export function resolveName(
     }
 }
 
-export function resolveNameAux(
-    g: NameResolver,
-    namePieces: string[], 
+export function qualifySymbolAux(
+    g: SymbolQualifier,
+    symbolPieces: string[], 
     nsStack: string[] = []
 ): string | undefined {
 
-    if (namePieces.length == 0) {
+    if (symbolPieces.length == 0) {
         // if we're at a leaf, we found it
         if (g === "leaf") return nsStack.join(".");
 
         // if we're not, try searching for Default
-        return resolveNameAux(g, [ DEFAULT_SYMBOL_NAME ], nsStack);
+        return qualifySymbolAux(g, [ DEFAULT_SYMBOL ], nsStack);
     }
 
     
@@ -41,26 +40,26 @@ export function resolveNameAux(
     if (g === "leaf") return undefined;
 
     // try to find the first name piece locally
-    const child = resolveNameLocal(g.symbols, namePieces[0]);
+    const child = qualifySymbolLocal(g.symbols, symbolPieces[0]);
 
     // if we didn't find it locally, we didn't find it
     if (child == undefined) return undefined;
 
     // we found it locally, recurse there
     const [localName, referent] = child;
-    const remnant = namePieces.slice(1);
+    const remnant = symbolPieces.slice(1);
     const newStack = [ ...nsStack, localName ];
-    return resolveNameAux(referent, remnant, newStack);
+    return qualifySymbolAux(referent, remnant, newStack);
 }
 
-function resolveNameLocal(
-    coll: Dict<NameResolver>,
-    namePiece: string
-): [string, NameResolver] | undefined {
-    for (const symbolName of Object.keys(coll)) {
-        if (namePiece.toLowerCase() == symbolName.toLowerCase()) {
-            const referent = coll[symbolName];
-            return [symbolName, referent];
+function qualifySymbolLocal(
+    coll: Dict<SymbolQualifier>,
+    symbol: string
+): [string, SymbolQualifier] | undefined {
+    for (const key of Object.keys(coll)) {
+        if (symbol.toLowerCase() == key.toLowerCase()) {
+            const referent = coll[key];
+            return [key, referent];
         }
     }
     return undefined;
@@ -70,12 +69,12 @@ function resolveNameLocal(
  * Creates a minimal representation of the original name structure
  * of the grammar, sufficient to qualify names.
  */
-export function grammarToResolver(g: Grammar): NameResolver {
+export function grammarToQualifier(g: Grammar): SymbolQualifier {
     switch (g.tag) {
         case "locator": 
-            return grammarToResolver(g.child);
+            return grammarToQualifier(g.child);
         case "collection": 
-            const symbols = mapValues(g.symbols, grammarToResolver)
+            const symbols = mapValues(g.symbols, grammarToQualifier)
             return { symbols };
         default:
             return "leaf";

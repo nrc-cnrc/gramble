@@ -420,17 +420,17 @@ function makeSampleSheet() {
     return { "success": true };
 }
 
-function makeNewSheet(symbolName, sheetName, data) {
+function makeNewSheet(symbol, sheetName, data) {
 
-    let newSymbolName = sheetName + "_1";
+    let newSymbol = sheetName + "_1";
 
     let activeSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
 
-    let newSheet = activeSpreadsheet.getSheetByName(newSymbolName);
+    let newSheet = activeSpreadsheet.getSheetByName(newSymbol);
     
     while (newSheet != null) {
         // Keep incrementing the sheet name until you find an unused one 
-        let sheetNameParts = newSymbolName.split("_");
+        let sheetNameParts = newSymbol.split("_");
         let lastPart = sheetNameParts[sheetNameParts.length-1];
         let num = 0;
         if (/^\d+$/.test(lastPart)) {
@@ -439,13 +439,13 @@ function makeNewSheet(symbolName, sheetName, data) {
         }
         let numAsStr = (num+1).toString();
         sheetNameParts.push(numAsStr);
-        newSymbolName = sheetNameParts.join("_");
-        newSheet = activeSpreadsheet.getSheetByName(newSymbolName);
+        newSymbol = sheetNameParts.join("_");
+        newSheet = activeSpreadsheet.getSheetByName(newSymbol);
     }
 
     // make the new sheet with the given data
     newSheet = activeSpreadsheet.insertSheet();
-    newSheet.setName(newSymbolName);
+    newSheet.setName(newSymbol);
     setDataInSheet(newSheet, 1, 1, data);
 
     highlight();

@@ -184,15 +184,15 @@ function getAtomicityClassEmbed(
     symbolsVisited: StringPairSet,
     env: PassEnv
 ): AtomicityClass {
-    if (symbolsVisited.has([g.name, tape])) { 
+    if (symbolsVisited.has([g.symbol, tape])) { 
         // we're recursing to a symbol we've already visited.  
         // these might be true or false, but we can just return 
         // false here because if it's true in other contexts 
         // it'll end up true in the end
         return { joinable: false, concatenable: false };
     }
-    symbolsVisited.add([g.name, tape]);
-    const referent = env.symbolNS.get(g.name);
+    symbolsVisited.add([g.symbol, tape]);
+    const referent = env.symbolNS.get(g.symbol);
     return getAtomicityClass(referent, tape, symbolsVisited, env);
 }
 

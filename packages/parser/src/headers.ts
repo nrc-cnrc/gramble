@@ -6,7 +6,7 @@ import {
 
 import { Result } from "./utils/msgs";
 
-import { ALL_RESERVED, isValidSymbolName, RESERVED_SYMBOLS } from "./utils/reserved";
+import { ALL_RESERVED, isValidSymbol, RESERVED_SYMBOLS } from "./utils/reserved";
 import { Component } from "./components";
 import { DEFAULT_PARAM } from "./utils/constants";
 import { colorFromText } from "./utils/colors";
@@ -223,7 +223,7 @@ const HP_COMMENT = MPComment<Header>(
 
 const HP_UNRESERVED = MPUnreserved<Header>(
     (s) => {
-        if (isValidSymbolName(s)) {
+        if (isValidSymbol(s)) {
             return new TapeHeader(s)
         } else {
             throw new ErrorHeader().err(

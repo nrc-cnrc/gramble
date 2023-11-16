@@ -1,5 +1,5 @@
 import { CreateCollections } from "./createCollections";
-import { QualifyNames } from "./qualifyNames";
+import { FlattenCollections } from "./flattenCollections";
 import { CreateFilters } from "./createFilters";
 import { CheckNamedParams } from "./checkNamedParams";
 import { RescopeLeftBinders } from "./rescopeLeftBinders";
@@ -74,21 +74,21 @@ export const SHEET_PASSES =
     ))))))))))));
 
 
-export const PRE_NAME_PASSES = 
+export const PRE_SYMBOL_PASSES = 
 
     // Assign default symbols to collections that don't already
     // have a default defined.
     new AssignDefaults();
 
-export const NAME_PASSES = 
+export const SYMBOL_PASSES = 
 
     // qualify symbol names (e.g. turn `VERB` in sheet Sheet1 
-    // into `Sheet1.VERB`) and attempt to resolve references to them
+    // into `Sheet1.VERB`) and attempt to qualify references to them
     // (e.g. figure out whether VERB refers to Sheet1.VERB or 
     // something else)
-    new QualifyNames();
+    new FlattenCollections();
 
-export const POST_NAME_PASSES =
+export const POST_SYMBOL_PASSES =
 
     new CalculateTapes().compose(
 
@@ -108,11 +108,11 @@ export const POST_NAME_PASSES =
 
 export const GRAMMAR_PASSES = 
 
-    PRE_NAME_PASSES.compose(
+    PRE_SYMBOL_PASSES.compose(
 
-    NAME_PASSES.compose(
+    SYMBOL_PASSES.compose(
         
-    POST_NAME_PASSES));
+    POST_SYMBOL_PASSES));
 
 export const ALL_PASSES = SHEET_PASSES.compose(GRAMMAR_PASSES);
 

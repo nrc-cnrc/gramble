@@ -122,10 +122,10 @@ export function lengthRange(
 }
 
 function lengthEmbed(g: EmbedGrammar, tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
-    if (stack.get(g.name) >= 1)
+    if (stack.get(g.symbol) >= 1)
         return { null: false, min: 0, max: Infinity };
-    const newStack = stack.add(g.name);
-    const referent = env.symbolNS.get(g.name);
+    const newStack = stack.add(g.symbol);
+    const referent = env.symbolNS.get(g.symbol);
     return lengthRange(referent, tapeName, newStack, env);
 }
 

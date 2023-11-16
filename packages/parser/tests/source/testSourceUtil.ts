@@ -64,7 +64,7 @@ export function testProject({
     const interpreter = sheetFromFile(abspath, opt);
     if (interpreter === undefined)
         return;
-    const qualifiedName = [ projectName, symbol ]
+    const qualifiedSymbol = [ projectName, symbol ]
                             .filter(s => s !== undefined && s.length > 0)
                             .join(".");
     const expectedErrors: [string, number, number, string][] = errors.map(e => {
@@ -73,7 +73,7 @@ export function testProject({
     });
     testErrors(interpreter, expectedErrors);
     if (results !== undefined) {
-        testGenerate(interpreter, results, qualifiedName);
+        testGenerate(interpreter, results, qualifiedSymbol);
     }
 }
 

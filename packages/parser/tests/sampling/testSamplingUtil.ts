@@ -66,14 +66,14 @@ export function testSample({
 export function sampleOutputs(
     interpreter: Interpreter,
     numSamples: number = 100,
-    symbolName: string = "",
+    symbol: string = "",
     stripHidden: boolean = true,
     rethrow: boolean = false, // in case a test wants to catch errors itself
 ): StringDict[] {
     let outputs: StringDict[] = [];
     try {
         outputs = [
-            ...interpreter.sample(symbolName, numSamples, {}, stripHidden)
+            ...interpreter.sample(symbol, numSamples, {}, stripHidden)
         ];
     } catch (e) {
         if (rethrow) throw e;

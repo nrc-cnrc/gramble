@@ -24,9 +24,9 @@ import { generate } from "./generator";
 import { MissingSymbolError, Msg, THROWER, result } from "./utils/msgs";
 import { PassEnv } from "./passes";
 import { 
-    NAME_PASSES, 
-    POST_NAME_PASSES, 
-    PRE_NAME_PASSES, 
+    SYMBOL_PASSES, 
+    POST_SYMBOL_PASSES, 
+    PRE_SYMBOL_PASSES, 
     SHEET_PASSES 
 } from "./passes/allPasses";
 import { ExecuteTests } from "./passes/executeTests";
@@ -34,12 +34,12 @@ import { infinityProtection } from "./passes/infinityProtection";
 import { prioritizeTapes } from "./passes/prioritizeTapes";
 import { constructExpr } from "./passes/constructExpr";
 import { toStr } from "./passes/toStr";
-import { DEFAULT_PROJECT_NAME, DEFAULT_SYMBOL_NAME, HIDDEN_PREFIX } from "./utils/constants";
+import { DEFAULT_PROJECT_NAME, DEFAULT_SYMBOL, HIDDEN_PREFIX } from "./utils/constants";
 import { VERBOSE_GRAMMAR, VERBOSE_TIME, logTime, msToTime, timeIt } from "./utils/logging";
 import { Options } from "./utils/options";
 import { SelectSymbol } from "./passes/selectSymbol";
 import { getAllSymbols } from "./passes/getAllSymbols";
-import { resolveName } from "./passes/resolveNames";
+import { qualifySymbol } from "./passes/qualifySymbols";
 
 /**
  * An interpreter object is responsible for applying the passes in between sheets
@@ -85,9 +85,9 @@ export class Interpreter {
         const env = new PassEnv(this.opt);
                             
         this.grammar = result(g)
-                        .bind(g => PRE_NAME_PASSES.go(g, env))
-                        .bind(g => NAME_PASSES.go(g, env))
-                        .bind(g => POST_NAME_PASSES.go(g, env))
+                        .bind(g => PRE_SYMBOL_PASSES.go(g, env))
+                        .bind(g => SYMBOL_PASSES.go(g, env))
+                        .bind(g => POST_SYMBOL_PASSES.go(g, env))
                         .msgTo(m => sendMsg(this.devEnv, m));
 
         // Next we collect the vocabulary on all tapes
@@ -141,7 +141,7 @@ export class Interpreter {
 
         if (!(grammar instanceof CollectionGrammar)) {
             const coll = new CollectionGrammar();
-            coll.symbols[DEFAULT_SYMBOL_NAME] = grammar;
+            coll.symbols[DEFAULT_SYMBOL] = grammar;
             grammar = coll;
         }
 
@@ -153,10 +153,10 @@ export class Interpreter {
     }
 
     /*
-     * Resolves `name` and gets the associated symbol (if it exists)
+     * Qualifies `symbol` and gets the grammar it refers to (if it exists)
      */ 
     public getSymbol(symbol: string): Grammar | undefined {
-        const result = resolveName(this.grammar, symbol);
+        const result = qualifySymbol(this.grammar, symbol);
         if (result === undefined) return undefined;
         return result[1];
     }
@@ -188,22 +188,22 @@ export class Interpreter {
     }
 
     public generate(
-        symbolName: string = "",
+        symbol: string = "",
         restriction: StringDict[] | StringDict = {},
         maxResults: number = Infinity,
         stripHidden: boolean = true
     ): StringDict[] {
-        const gen = this.generateStream(symbolName, restriction, stripHidden);
+        const gen = this.generateStream(symbol, restriction, stripHidden);
         const [results, _] = iterTake(gen, maxResults);
         return results;
     }
     
     public *generateStream(
-        symbolName: string = "",
+        symbol: string = "",
         restriction: StringDict[] | StringDict = {},
         stripHidden: boolean = true
     ): Gen<StringDict> {
-        const expr = this.prepareExpr(symbolName, restriction);
+        const expr = this.prepareExpr(symbol, restriction);
 
         if (stripHidden) {
             yield* stripHiddenTapes(generate(expr, this.tapeNS, false, this.opt));
@@ -214,23 +214,23 @@ export class Interpreter {
     }
     
     public sample(
-        symbolName: string = "",
+        symbol: string = "",
         numSamples: number = 1,
         restriction: StringDict | undefined = undefined,
         stripHidden: boolean = true
     ): StringDict[] {
-        return [...this.sampleStream(symbolName, 
+        return [...this.sampleStream(symbol, 
             numSamples, restriction, stripHidden)];
     } 
 
     public *sampleStream(
-        symbolName: string = "",
+        symbol: string = "",
         numSamples: number = 1,
         restriction: StringDict | undefined = undefined,
         stripHidden: boolean = true
     ): Gen<StringDict> {
 
-        const expr = this.prepareExpr(symbolName, restriction);
+        const expr = this.prepareExpr(symbol, restriction);
         for (let i = 0; i < numSamples; i++) {
             let gen = generate(expr, this.tapeNS, true, this.opt);
             if (stripHidden) {
@@ -250,13 +250,13 @@ export class Interpreter {
     }
     
     public prepareExpr(
-        symbolName: string = "",
+        symbol: string = "",
         query: StringDict[] | StringDict = {}
     ): Expr {
         const env = new PassEnv(this.opt);
 
         // qualify the name and select the symbol
-        const selectSymbol = new SelectSymbol(symbolName);
+        const selectSymbol = new SelectSymbol(symbol);
         let targetGrammar: Grammar = selectSymbol.go(this.grammar, env).msgTo(THROWER);
         
         if (Object.keys(query).length > 0) {
@@ -320,20 +320,20 @@ function addSheet(
     const transEnv = new PassEnv(opt);
     const grammar = SHEET_PASSES.go(project, transEnv)
                                      .msgTo((_) => {});
-    // check to see if any names didn't get resolved
-    const [_, nameMsgs] = NAME_PASSES.go(grammar, transEnv)
+    // check to see if any names didn't get qualified
+    const [_, nameMsgs] = SYMBOL_PASSES.go(grammar, transEnv)
                                      .destructure();
 
-    const unresolvedNames: Set<string> = new Set(); 
+    const unqualifiedSymbols: Set<string> = new Set(); 
     for (const msg of nameMsgs) {
         if (!(msg instanceof MissingSymbolError)) { 
             continue;
         }
         const firstPart = msg.symbol.split(".")[0];
-        unresolvedNames.add(firstPart);
+        unqualifiedSymbols.add(firstPart);
     }
 
-    for (const possibleSheetName of unresolvedNames) {
+    for (const possibleSheetName of unqualifiedSymbols) {
         addSheet(project, possibleSheetName, devEnv, opt);
     } 
 

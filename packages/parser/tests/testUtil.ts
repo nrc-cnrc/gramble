@@ -54,10 +54,10 @@ export function testNumOutputs(
     outputs: StringDict[],
     expectedNum: number,
     warningOnly: boolean = false,
-    symbolName: string = "",
+    symbol: string = "",
 ): void {
-    if (symbolName !== "") symbolName = symbolName + " ";
-    const testName: string = `${symbolName}should have ${expectedNum} result(s)`;
+    if (symbol !== "") symbol = symbol + " ";
+    const testName: string = `${symbol}should have ${expectedNum} result(s)`;
     it(`${testName}`, function() {
         try {
             expect(outputs.length).to.equal(expectedNum);
@@ -93,7 +93,7 @@ export function removeHiddenFields(outputs: StringDict[]): StringDict[] {
 export function testMatchOutputs(
     outputs: StringDict[],
     expected_outputs: StringDict[],
-    symbolName: string = ""
+    symbol: string = ""
 ): void {
     // Check that the output dictionaries of Interpreter.generate() match
     // the expected outputs.
@@ -127,8 +127,8 @@ export function testMatchOutputs(
         const expected_outputs_str = 
                     JSON.stringify(expected_outputs.slice(start, Math.min(end_expected, start+20))) + 
                     (end_expected > start+20 ? "..." : "");
-        if (symbolName !== "") symbolName = symbolName + " ";
-        const testName = `${symbolName}should match items ${start}-${end_expected-1}: ` +
+        if (symbol !== "") symbol = symbol + " ";
+        const testName = `${symbol}should match items ${start}-${end_expected-1}: ` +
                          `${expected_outputs_str}`;
         it(`${testName}`, function() {
             this.timeout(10000);
@@ -159,7 +159,7 @@ export function prepareInterpreter(
 
 export function generateOutputs(
     interpreter: Interpreter,
-    symbolName: string = "",
+    symbol: string = "",
     restriction: StringDict[] | StringDict = {},
     stripHidden: boolean = true,
     rethrow: boolean = false, // in case a test wants to catch errors itself
@@ -167,7 +167,7 @@ export function generateOutputs(
     let outputs: StringDict[] = [];
     try {
         outputs = [
-            ...interpreter.generate(symbolName, restriction, Infinity, stripHidden)
+            ...interpreter.generate(symbol, restriction, Infinity, stripHidden)
         ];
     } catch (e) {
         if (rethrow) throw e;

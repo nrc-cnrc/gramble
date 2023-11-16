@@ -9,7 +9,7 @@ import { Result } from "./utils/msgs";
 import { 
     REPLACE_PARAMS, REQUIRED_REPLACE_PARAMS, 
     ALL_RESERVED, RESERVED_SYMBOLS, 
-    isValidSymbolName, BLANK_PARAM_SET, TEST_PARAM_SET 
+    isValidSymbol, BLANK_PARAM_SET, TEST_PARAM_SET 
 } from "./utils/reserved";
 
 export type Requirement = "required" | "forbidden";
@@ -101,7 +101,7 @@ const OP_TESTNOT = MPSequence<Op>(
 
 const OP_UNRESERVED = MPUnreserved<Op>(
     (s) => {
-        if (isValidSymbolName(s)) {
+        if (isValidSymbol(s)) {
             return new SymbolOp(s)
         } else {
             throw new ErrorOp().err(

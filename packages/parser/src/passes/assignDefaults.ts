@@ -6,7 +6,7 @@ import {
     LocatorGrammar
 } from "../grammars";
 import { PassEnv } from "../passes";
-import { ALL_SYMBOL_NAME } from "../utils/constants";
+import { ALL_SYMBOL } from "../utils/constants";
 import { PostPass } from "./ancestorPasses";
 
 /**
@@ -30,18 +30,18 @@ export class AssignDefaults extends PostPass<Grammar> {
         
         const entries = Object.entries(g.symbols);
         
-        if (g.getSymbol(ALL_SYMBOL_NAME) == undefined) {
+        if (g.getSymbol(ALL_SYMBOL) == undefined) {
             const embeds = entries.map(([k,v]) => {
                 if (v instanceof CollectionGrammar || 
                     v instanceof LocatorGrammar && 
                     v.child instanceof CollectionGrammar) {
-                    return new EmbedGrammar(`${k}.${ALL_SYMBOL_NAME}`);
+                    return new EmbedGrammar(`${k}.${ALL_SYMBOL}`);
                 } else {
                     return new EmbedGrammar(k);
                 }
             });
             const alt = new AlternationGrammar(embeds);
-            g.symbols[ALL_SYMBOL_NAME] = alt;
+            g.symbols[ALL_SYMBOL] = alt;
         }
         return g;
     }

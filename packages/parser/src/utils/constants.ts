@@ -7,9 +7,9 @@ export const DEFAULT_TAPE = INTERNAL_PREFIX + "T";
 export const DEFAULT_PARAM: string = INTERNAL_PREFIX + "plain";
 
 export const DEFAULT_PROJECT_NAME = "";
-export const DEFAULT_SYMBOL_NAME = "Default";
-export const ALL_SYMBOL_NAME = "All"
-export const AUTO_SYMBOL_NAME = INTERNAL_PREFIX + "Auto"
+export const DEFAULT_SYMBOL = "Default";
+export const ALL_SYMBOL = "All"
+export const AUTO_SYMBOL = INTERNAL_PREFIX + "Auto"
 
 export const DEFAULT_MAX_CHARS = 100;
 export const DEFAULT_MAX_RECURSION = 4;

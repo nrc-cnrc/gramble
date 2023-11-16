@@ -77,8 +77,8 @@ export class DerivEnv extends Env {
         return this.tapeNS.get(tapeName);
     }
 
-    public getSymbol(symbolName: string): Expr {
-        return this.symbolNS.get(symbolName);
+    public getSymbol(symbol: string): Expr {
+        return this.symbolNS.get(symbol);
     }
     
     public pushSymbols(symbols: Dict<Expr>): DerivEnv {
@@ -86,8 +86,8 @@ export class DerivEnv extends Env {
         return new DerivEnv(this.opt, this.tapeNS, newSymbolNS, this.stack, this.random, this.stats);
     }
 
-    public addSymbol(symbolName: string): DerivEnv {
-        const newStack = this.stack.add(symbolName);
+    public addSymbol(symbol: string): DerivEnv {
+        const newStack = this.stack.add(symbol);
         return new DerivEnv(this.opt, this.tapeNS, this.symbolNS, newStack, this.random, this.stats);
     }
 
@@ -1080,19 +1080,19 @@ class JoinExpr extends BinaryExpr {
  class EmbedExpr extends Expr {
 
     constructor(
-        public symbolName: string,
+        public symbol: string,
         public child: Expr | undefined = undefined
     ) { 
         super();
     }
 
     public get id(): string {
-        return `\$${this.symbolName}`;
+        return `\$${this.symbol}`;
     }
 
     public getChild(env: DerivEnv): Expr {
         if (this.child == undefined) {
-            let child = env.getSymbol(this.symbolName);
+            let child = env.getSymbol(this.symbol);
             if (child == undefined) {
                 // this is an error, due to the programmer referring to an undefined
                 // symbol, but now is not the time to complain. 
@@ -1104,15 +1104,15 @@ class JoinExpr extends BinaryExpr {
     }
 
     public *forward(env: DerivEnv): Gen<[boolean,Expr]> {
-        if (env.stack.exceedsMax(this.symbolName)) {
+        if (env.stack.exceedsMax(this.symbol)) {
             return;
         }
 
-        const newEnv = env.addSymbol(this.symbolName);
+        const newEnv = env.addSymbol(this.symbol);
         let child = this.getChild(env);
 
         for (const [cHandled, cNext] of child.forward(newEnv)) {
-            const wrapped = constructEmbed(env, this.symbolName, cNext);
+            const wrapped = constructEmbed(env, this.symbol, cNext);
             yield [cHandled, wrapped];
         }
     }
@@ -1121,12 +1121,12 @@ class JoinExpr extends BinaryExpr {
         tapeName: string,
         env: DerivEnv
     ): Expr {
-        if (env.stack.exceedsMax(this.symbolName)) {
+        if (env.stack.exceedsMax(this.symbol)) {
             return NULL;
         }
-        const newEnv = env.addSymbol(this.symbolName);
+        const newEnv = env.addSymbol(this.symbol);
         const cNext = this.getChild(env).delta(tapeName, newEnv);
-        return constructEmbed(env, this.symbolName, cNext);
+        return constructEmbed(env, this.symbol, cNext);
     }
 
     public *deriv(
@@ -1134,15 +1134,15 @@ class JoinExpr extends BinaryExpr {
         env: DerivEnv
     ): Derivs {
 
-        if (env.stack.exceedsMax(this.symbolName)) {
+        if (env.stack.exceedsMax(this.symbol)) {
             return;
         }
 
-        const newEnv = env.addSymbol(this.symbolName);
+        const newEnv = env.addSymbol(this.symbol);
         let child = this.getChild(env);
 
         for (const d of child.deriv(query, newEnv)) {
-            yield d.wrap(c => constructEmbed(env, this.symbolName, c));
+            yield d.wrap(c => constructEmbed(env, this.symbol, c));
         }
     }
     
@@ -1157,10 +1157,10 @@ class JoinExpr extends BinaryExpr {
 
 export function constructEmbed(
     env: Env,
-    symbolName: string, 
+    symbol: string, 
     child: Expr | undefined = undefined
 ): Expr {
-    return new EmbedExpr(symbolName, child).simplify(env);
+    return new EmbedExpr(symbol, child).simplify(env);
 }
 
 /**

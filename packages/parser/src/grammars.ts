@@ -24,11 +24,11 @@ import {
 
 import { Component, getChildren } from "./components";
 import { determineAtomicity } from "./passes/determineAtomicity";
-import { DEFAULT_SYMBOL_NAME,  HIDDEN_PREFIX, INPUT_TAPE, OUTPUT_TAPE } from "./utils/constants";
+import { DEFAULT_SYMBOL,  HIDDEN_PREFIX, INPUT_TAPE, OUTPUT_TAPE } from "./utils/constants";
 import { tokenizeUnicode } from "./utils/strings";
 import { Pos } from "./utils/cell";
 import { CalculateTapes } from "./passes/calculateTapes";
-import { NameResolver } from "./passes/resolveNames";
+import { SymbolQualifier } from "./passes/qualifySymbols";
 
 export { CounterStack, Expr };
 
@@ -554,8 +554,8 @@ export class CollectionGrammar extends AbstractGrammar {
 
     constructor(
         public symbols: Dict<Grammar> = {},
-        public selectedSymbol: string = DEFAULT_SYMBOL_NAME,
-        public resolver: NameResolver = "leaf"
+        public selectedSymbol: string = DEFAULT_SYMBOL,
+        public qualifier: SymbolQualifier = "leaf"
     ) {
         super();
     }
@@ -568,10 +568,10 @@ export class CollectionGrammar extends AbstractGrammar {
     /**
      * Looks up a symbol name and returns the referent (if any) 
      */
-    public getSymbol(name: string): Grammar | undefined {
-        for (const symbolName of Object.keys(this.symbols)) {
-            if (name.toLowerCase() == symbolName.toLowerCase()) {
-                return this.symbols[symbolName];
+    public getSymbol(symbol: string): Grammar | undefined {
+        for (const key of Object.keys(this.symbols)) {
+            if (symbol.toLowerCase() == key.toLowerCase()) {
+                return this.symbols[key];
             }
         }
         return undefined;
@@ -607,7 +607,7 @@ export class EmbedGrammar extends AtomicGrammar {
     public readonly tag = "embed";
 
     constructor(
-        public name: string
+        public symbol: string
     ) {
         super();
     }
@@ -618,11 +618,11 @@ export class EmbedGrammar extends AtomicGrammar {
         symbolsVisited: StringPairSet,
         env: PassEnv
     ): StringSet { 
-        if (symbolsVisited.has([this.name, tapeName])) {
+        if (symbolsVisited.has([this.symbol, tapeName])) {
             return new Set();
         }
-        symbolsVisited.add([this.name, tapeName]);
-        const referent = env.symbolNS.get(this.name);
+        symbolsVisited.add([this.symbol, tapeName]);
+        const referent = env.symbolNS.get(this.symbol);
         return referent.collectVocab(tapeName, atomic, symbolsVisited, env);
     }
     
@@ -632,11 +632,11 @@ export class EmbedGrammar extends AtomicGrammar {
         symbolsVisited: StringPairSet,
         env: PassEnv
     ): StringPairSet {
-        if (symbolsVisited.has([this.name, tapeName])) {
+        if (symbolsVisited.has([this.symbol, tapeName])) {
             return new StringPairSet();
         }
-        symbolsVisited.add([this.name, tapeName]);
-        const referent = env.symbolNS.get(this.name);
+        symbolsVisited.add([this.symbol, tapeName]);
+        const referent = env.symbolNS.get(this.symbol);
         return referent.getVocabCopyEdges(tapeName, tapeNS, symbolsVisited, env);
     }
 

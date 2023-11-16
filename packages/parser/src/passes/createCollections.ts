@@ -6,7 +6,7 @@ import {
     TST
 } from "../tsts";
 import { CollectionOp, SymbolOp, siblingRequired } from "../ops";
-import { AUTO_SYMBOL_NAME, DEFAULT_SYMBOL_NAME } from "../utils/constants";
+import { AUTO_SYMBOL, DEFAULT_SYMBOL } from "../utils/constants";
 
 /**
  * Collections work somewhat differently from other operators,
@@ -126,13 +126,13 @@ export class CreateCollections extends Pass<TST,TST> {
                 // it's not an assignment, but there aren't multiple
                 // children, so go ahead and name this to the default symbol
                 // name
-                const op = new SymbolOp(DEFAULT_SYMBOL_NAME);
+                const op = new SymbolOp(DEFAULT_SYMBOL);
                 return new TstOp(c.cell, op, new TstEmpty(), c);
             }
 
             // it's not an assignment and there are multiple children.
             // assign this to a dummy variable
-            const newName = `${AUTO_SYMBOL_NAME}${c.pos.row+1}`;
+            const newName = `${AUTO_SYMBOL}${c.pos.row+1}`;
             Warn("When there are multiple items in a " +
                 "sheet/collection, each of them should be named. " +
                 `We've temporarily named this ${newName}.`)

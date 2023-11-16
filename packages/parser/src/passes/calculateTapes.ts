@@ -118,8 +118,8 @@ function getTapesEmbed(
     g: EmbedGrammar, 
     knownTapes:Dict<TapeID>
 ): Grammar {
-    if (!(g.name in knownTapes)) return updateTapes(g, TapeRef(g.name));
-    return updateTapes(g, knownTapes[g.name]);
+    if (!(g.symbol in knownTapes)) return updateTapes(g, TapeRef(g.symbol));
+    return updateTapes(g, knownTapes[g.symbol]);
 }
 
 function getTapesRename(g: RenameGrammar): Result<Grammar> {
