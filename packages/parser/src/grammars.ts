@@ -17,7 +17,7 @@ import { Pass, PassEnv } from "./passes";
 
 import {
     Dict,
-    setUnion,
+    union,
     StringSet,
     ValueSet
 } from "./utils/func";
@@ -28,6 +28,7 @@ import { DEFAULT_SYMBOL_NAME,  HIDDEN_PREFIX, INPUT_TAPE, OUTPUT_TAPE } from "./
 import { tokenizeUnicode } from "./utils/strings";
 import { Pos } from "./utils/cell";
 import { CalculateTapes } from "./passes/calculateTapes";
+import { NameResolver } from "./passes/resolveNames";
 
 export { CounterStack, Expr };
 
@@ -208,7 +209,7 @@ export abstract class AbstractGrammar extends Component {
         let vocab: StringSet = new Set();
         for (const child of this.getChildren()) {
             const childVocab = child.collectVocab(tapeName, atomic, symbolsVisited, env);
-            vocab = setUnion(vocab, childVocab);
+            vocab = union(vocab, childVocab);
         }
         return vocab;
     }
@@ -224,10 +225,6 @@ export abstract class AbstractGrammar extends Component {
             results.add(...child.getVocabCopyEdges(tapeName, tapeNS, symbolsVisited, env));
         }
         return results;
-    }
-
-    public allSymbols(): string[] {
-        return [];
     }
 }
 
@@ -544,7 +541,7 @@ export class MatchGrammar extends UnaryGrammar {
             // also collect as a rename
             let newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
             const renameVocab = this.child.collectVocab(newTapeName, atomic, symbolsVisited, env);
-            childVocab = setUnion(childVocab, renameVocab);
+            childVocab = union(childVocab, renameVocab);
         }
 
         return childVocab;
@@ -557,7 +554,8 @@ export class CollectionGrammar extends AbstractGrammar {
 
     constructor(
         public symbols: Dict<Grammar> = {},
-        public selectedSymbol: string = DEFAULT_SYMBOL_NAME
+        public selectedSymbol: string = DEFAULT_SYMBOL_NAME,
+        public resolver: NameResolver = "leaf"
     ) {
         super();
     }
@@ -565,10 +563,6 @@ export class CollectionGrammar extends AbstractGrammar {
     public mapChildren(f: Pass<Grammar,Grammar>, env: PassEnv): GrammarResult {
         const newEnv = env.pushSymbols(this.symbols);
         return super.mapChildren(f, newEnv);
-    }
-
-    public allSymbols(): string[] {
-        return Object.keys(this.symbols);
     }
 
     /**
@@ -593,7 +587,7 @@ export class CollectionGrammar extends AbstractGrammar {
         const newEnv = env.pushSymbols(this.symbols);
         for (const child of Object.values(this.symbols)) {
             const childVocab = child.collectVocab(tapeName, atomic, symbolsVisited, newEnv);
-            vocab = setUnion(vocab, childVocab);
+            vocab = union(vocab, childVocab);
         }
         return vocab;
     }
@@ -691,7 +685,7 @@ export abstract class AbstractTestGrammar extends UnaryGrammar {
     ): StringSet { 
         const childVocab = this.child.collectVocab(tapeName, atomic, symbolsVisited, env);
         const testVocab = this.test.collectVocab(tapeName, atomic, symbolsVisited, env);
-        return setUnion(childVocab, testVocab);
+        return union(childVocab, testVocab);
     }
 
 }
@@ -778,10 +772,10 @@ export class ReplaceGrammar extends AbstractGrammar {
 
         // however, we also need to collect vocab from the contexts as if it were on a toTape
         let newTapeName = renameTape(tapeName, OUTPUT_TAPE, INPUT_TAPE);
-        vocab = setUnion(vocab, this.fromGrammar.collectVocab(newTapeName, atomic, symbolsVisited, env));
-        vocab = setUnion(vocab, this.preContext.collectVocab(newTapeName, atomic, symbolsVisited, env));
-        vocab = setUnion(vocab, this.postContext.collectVocab(newTapeName, atomic, symbolsVisited, env));
-        vocab = setUnion(vocab, this.otherContext.collectVocab(newTapeName, atomic, symbolsVisited, env));
+        vocab = union(vocab, this.fromGrammar.collectVocab(newTapeName, atomic, symbolsVisited, env));
+        vocab = union(vocab, this.preContext.collectVocab(newTapeName, atomic, symbolsVisited, env));
+        vocab = union(vocab, this.postContext.collectVocab(newTapeName, atomic, symbolsVisited, env));
+        vocab = union(vocab, this.otherContext.collectVocab(newTapeName, atomic, symbolsVisited, env));
         
         return vocab;
     }

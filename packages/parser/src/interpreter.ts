@@ -30,7 +30,6 @@ import {
     SHEET_PASSES 
 } from "./passes/allPasses";
 import { ExecuteTests } from "./passes/executeTests";
-import { resolveName } from "./passes/qualifyNames";
 import { infinityProtection } from "./passes/infinityProtection";
 import { prioritizeTapes } from "./passes/prioritizeTapes";
 import { constructExpr } from "./passes/constructExpr";
@@ -39,6 +38,8 @@ import { DEFAULT_PROJECT_NAME, DEFAULT_SYMBOL_NAME, HIDDEN_PREFIX } from "./util
 import { VERBOSE_GRAMMAR, VERBOSE_TIME, logTime, msToTime, timeIt } from "./utils/logging";
 import { Options } from "./utils/options";
 import { SelectSymbol } from "./passes/selectSymbol";
+import { getAllSymbols } from "./passes/getAllSymbols";
+import { resolveName } from "./passes/resolveNames";
 
 /**
  * An interpreter object is responsible for applying the passes in between sheets
@@ -55,13 +56,10 @@ export class Interpreter {
     // we only need this for constructing single-source projects in the GSuite interface.
     public workbook: Workbook | undefined = undefined;
 
-    // an intermediate grammar that we keep around in order to 
-    // resolve symbol names for user queries.
-    public nameGrammar: CollectionGrammar;
-
-    // the grammar of the project; this variable will be replaced
-    // as compilation towards an Expr progresses.
-    public grammar: CollectionGrammar;
+    // the grammar of the project.  at the point this is assigned,
+    // it's gone through everything including the POST_NAME_PASSES,
+    // but hasn't undergone SelectSymbol.
+    public grammar: Grammar;
 
     public opt: Options;
 
@@ -85,24 +83,12 @@ export class Interpreter {
         // scope problems adjusted, etc.
         
         const env = new PassEnv(this.opt);
-
-        const nameGrammar = result(g)
-                            .bind(g => PRE_NAME_PASSES.go(g, env))
-                            .msgTo(m => sendMsg(this.devEnv, m));
-
-
-        if (nameGrammar instanceof CollectionGrammar) {
-            this.nameGrammar = nameGrammar;
-        } else if (nameGrammar instanceof LocatorGrammar && nameGrammar.child instanceof CollectionGrammar) {
-            this.nameGrammar = nameGrammar.child;
-        } else {
-            throw new Error("name grammar is not a collection!");
-        }
-
-        this.grammar = result(nameGrammar)
+                            
+        this.grammar = result(g)
+                        .bind(g => PRE_NAME_PASSES.go(g, env))
                         .bind(g => NAME_PASSES.go(g, env))
                         .bind(g => POST_NAME_PASSES.go(g, env))
-                        .msgTo(m => sendMsg(this.devEnv, m)) as CollectionGrammar
+                        .msgTo(m => sendMsg(this.devEnv, m));
 
         // Next we collect the vocabulary on all tapes
         timeIt(() => {
@@ -163,38 +149,25 @@ export class Interpreter {
     }
 
     public allSymbols(): string[] {
-        return this.grammar.allSymbols();
-    }
-
-    public resolveName(name: string): string {
-        const namePieces = name.split(".").filter(s => s.length > 0);
-        const resolution = resolveName(this.nameGrammar, namePieces);
-        if (resolution.name == undefined) {
-            throw new Error(`Cannot resolve symbol ${name}`);
-        }
-        if (resolution.error.length > 0) {
-            throw new Error(resolution.error);
-        }
-        return resolution.name;
+        return getAllSymbols(this.grammar);
     }
 
     /*
      * Resolves `name` and gets the associated symbol (if it exists)
      */ 
-    public getSymbol(name: string): Grammar | undefined {
-        const qualifiedName = this.resolveName(name);
-        return this.grammar.getSymbol(qualifiedName);
+    public getSymbol(symbol: string): Grammar | undefined {
+        const result = resolveName(this.grammar, symbol);
+        if (result === undefined) return undefined;
+        return result[1];
     }
 
     public getTapeNames(
-        symbolName: string,
+        symbol: string,
         stripHidden: boolean = true
     ): string[] {
-        const qualifiedName = this.resolveName(symbolName);
-        const referent = this.getSymbol(qualifiedName);
+        const referent = this.getSymbol(symbol);
         if (referent == undefined) {
-            throw new Error(`Internal error: symbol ${symbolName} resolves, but ${qualifiedName} ` +
-                    ` does not exist`);
+            throw new Error(`Cannot find symbol ${symbol}`);
         }
         if (stripHidden) {
             return referent.tapes.filter(t => !t.startsWith(HIDDEN_PREFIX));
@@ -283,8 +256,7 @@ export class Interpreter {
         const env = new PassEnv(this.opt);
 
         // qualify the name and select the symbol
-        const qualifiedName = this.resolveName(symbolName);
-        const selectSymbol = new SelectSymbol(qualifiedName);
+        const selectSymbol = new SelectSymbol(symbolName);
         let targetGrammar: Grammar = selectSymbol.go(this.grammar, env).msgTo(THROWER);
         
         if (Object.keys(query).length > 0) {

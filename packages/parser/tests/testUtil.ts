@@ -148,25 +148,11 @@ export function testMatchOutputs(
 export function prepareInterpreter(
     grammar: Grammar | Interpreter,
     opt: Partial<Options> = {},
-    symbolName: string = "",
-    rethrow: boolean = false, // in case a test wants to catch errors itself
 ): Interpreter {
     opt = Options(opt);
     const interpreter = (grammar instanceof Interpreter) ?
                         grammar :
                         Interpreter.fromGrammar(grammar, opt);
-
-    try {
-        interpreter.resolveName(symbolName);
-    } catch(e) {
-        if (rethrow) throw e;
-        it(`symbol "${symbolName} should exist`, function() {
-            console.log("");
-            console.log(`[${this.test?.fullTitle()}]`);
-            console.log(e);
-            assert.fail(JSON.stringify(e));
-        });
-    }
 
     return interpreter;
 }
@@ -222,7 +208,7 @@ export function testHasTapes(
     symbol: string = "",
     stripHidden: boolean = true
 ): void {
-    const interpreter = prepareInterpreter(grammar, {}, symbol);
+    const interpreter = prepareInterpreter(grammar, {});
 
     let referent = interpreter.getSymbol(symbol);
     

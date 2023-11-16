@@ -95,7 +95,7 @@ export function testGrammarAux({
         testHasVocab(grammar, vocab);
     }
 
-    const interpreter = prepareInterpreter(grammar, opt, symbol, false);
+    const interpreter = prepareInterpreter(grammar, opt);
     testNumErrors(interpreter, numErrors);
 
     if (!skipGeneration && results !== undefined) {
@@ -176,8 +176,8 @@ export function testGrammarEqual({
     allowDuplicateOutputs = false,
 }: GrammarEqualTest): void {
     describe(desc, function() {
-        const interpreter1 = prepareInterpreter(grammar, opt, symbol);
-        const interpreter2 = prepareInterpreter(grammar2, opt2, symbol);
+        const interpreter1 = prepareInterpreter(grammar, opt);
+        const interpreter2 = prepareInterpreter(grammar2, opt2);
         const outputs1 = generateOutputs(interpreter1, symbol, 
                                 restriction, stripHidden, false);
         const outputs2 = generateOutputs(interpreter2, symbol, 

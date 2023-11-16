@@ -1,6 +1,6 @@
 import {
     Gen,
-    setDifference, foldRight, foldLeft,
+    difference, foldRight, foldLeft,
     Dict,
     StringDict,
     outputProduct,
@@ -1806,7 +1806,7 @@ class NegationExpr extends UnaryExpr {
         env: DerivEnv
     ): Expr {
         const cNext = this.child.delta(tapeName, env);
-        const remainingTapes = setDifference(this.tapes, new Set([tapeName]));
+        const remainingTapes = difference(this.tapes, new Set([tapeName]));
         if (cNext instanceof NullExpr) return constructNegation(env, cNext, remainingTapes);
         if (remainingTapes.size == 0) return NULL;
         return constructNegation(env, cNext, remainingTapes);

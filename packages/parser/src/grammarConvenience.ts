@@ -276,11 +276,7 @@ export function Not(child: Grammar | string): NegationGrammar {
 export function Collection(
     symbols: Dict<Grammar> = {}
 ): CollectionGrammar {
-    const result = new CollectionGrammar();
-    for (const [symbolName, component] of Object.entries(symbols)) {
-        result.symbols[symbolName] = component;
-    }
-    return result;
+    return new CollectionGrammar(symbols);
 }
 
 export function Hide(

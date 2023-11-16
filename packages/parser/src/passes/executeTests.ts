@@ -1,4 +1,4 @@
-import { Dict, StringDict } from "../utils/func";
+import { Dict, StringDict, mapDict } from "../utils/func";
 import { constructCollection, Expr } from "../exprs";
 import { Msgs, Err, Success } from "../utils/msgs";
 import { 
@@ -67,9 +67,10 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
         uniqueLoop: for (const unique of g.uniques) {
             resultLoop: for (const result of results) {
                 if (!(unique.tapeName in result)) {
+                    const resultStr = mapDict(result, (k,v) => `${k}:${v}`);
                     Err("Failed unit test",
                         `An output on this line does not contain a ${unique.tapeName} field: ` +
-                        `${Object.entries(result).map(([k,v]) => `${k}:${v}`)}`).msgTo(msgs);
+                        `${resultStr}`).msgTo(msgs);
                     break uniqueLoop;
                 }
                 if (result[unique.tapeName] != unique.text) {

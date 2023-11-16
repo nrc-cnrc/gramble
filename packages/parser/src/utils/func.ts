@@ -84,27 +84,42 @@ export function flatten<T>(ss: Iterable<Iterable<T>>): T[] {
     return results;
 }
 
-export function listUnique<T>(lst: T[]): T[] {
-    return [... new Set(lst)];
-}
-
 export function listIntersection<T>(s1: T[], s2: T[]): T[] {
     const set2 = new Set(s2);
     return s1.filter(i => set2.has(i));
 }
 
-export function setUnion<T>(s1: Iterable<T>, s2: Iterable<T>): Set<T> {
+export function union<T>(s1: Iterable<T>, s2: Iterable<T>): Set<T> {
     return new Set([...s1, ...s2]);
 }
 
-export function setDifference<T>(s1: Set<T>, s2: Set<T>): Set<T> {
+export function difference<T>(s1: Set<T>, s2: Set<T>): Set<T> {
     return new Set([...s1].filter(x => !s2.has(x)));
 }
 
-export function setMap<T1,T2>(ss: Iterable<T1>, f: (s: T1) => T2): Set<T2> {
+export function mapSet<T1,T2>(ss: Iterable<T1>, f: Func<T1,T2>): Set<T2> {
     const result: Set<T2> = new Set();
     for (const s of ss) {
         result.add(f(s));
+    }
+    return result;
+}
+
+export function mapValues<T1,T2>(d: Dict<T1>, f: Func<T1,T2>): Dict<T2> {
+    const result: Dict<T2> = {};
+    for (const [k,v] of Object.entries(d)) {
+        result[k] = f(v);
+    }
+    return result;
+}
+
+export function mapDict<T1,T2>(
+    d: Dict<T1>, 
+    f: (k: string, value: T1) => T2
+): Dict<T2> {
+    const result: Dict<T2> = {};
+    for (const [k,v] of Object.entries(d)) {
+        result[k] = f(k,v);
     }
     return result;
 }

@@ -1,4 +1,4 @@
-import { ValueSet, exhaustive, flatten, setMap, setUnion } from "./utils/func";
+import { ValueSet, exhaustive, flatten, mapSet, union } from "./utils/func";
 import { 
     Namespace
 } from "./utils/namespace";
@@ -82,7 +82,7 @@ export function TapeRename(
     }
 
     if (child.tag === "tapeSet") {
-        const children = setMap(child.children, 
+        const children = mapSet(child.children, 
                 c => TapeRename(c, fromTape, toTape));
         return TapeSet(...children);
     }
@@ -115,7 +115,7 @@ export function tapeToStr(t: TapeID): string {
         case "tapeLit": return t.text;
         case "tapeRef": return "${" + t.symbol + "}";
         case "tapeRename": return `${t.fromTape}>${t.toTape}(${tapeToStr(t.child)})`;
-        case "tapeSet": return "[" + [...setMap(t.children, c => tapeToStr(c))].join(",") + "]";
+        case "tapeSet": return "[" + [...mapSet(t.children, c => tapeToStr(c))].join(",") + "]";
         default: exhaustive(t);
     }
 }
@@ -127,7 +127,7 @@ export function tapeToRefs(t: TapeID): string[] {
     switch (t.tag) {
         case "tapeLit": return [];
         case "tapeRef": return [t.symbol];
-        case "tapeSet": return flatten(setMap(t.children, c => tapeToRefs(c)));
+        case "tapeSet": return flatten(mapSet(t.children, c => tapeToRefs(c)));
         case "tapeRename": return tapeToRefs(t.child);
         case "tapeUnknown": return [];
     }
@@ -139,7 +139,7 @@ export function tapeToRefs(t: TapeID): string[] {
 export function tapeToLits(t: TapeID): string[] {
     switch (t.tag) {
         case "tapeLit": return [t.text];
-        case "tapeSet": return flatten(setMap(t.children, c => tapeToLits(c)));
+        case "tapeSet": return flatten(mapSet(t.children, c => tapeToLits(c)));
         default: throw new Error(`unresolved tape structure: ${tapeToStr(t)}`)
     }
 }
@@ -205,7 +205,7 @@ export function VocabSet(tokens: Iterable<string>, wildcard: boolean = false): V
 export function vocabUnion(v1: VocabSet, v2: VocabSet) {
     return {
         wildcard: v1.wildcard || v2.wildcard,
-        tokens: setUnion(v1.tokens, v2.tokens)
+        tokens: union(v1.tokens, v2.tokens)
     };
 }
 

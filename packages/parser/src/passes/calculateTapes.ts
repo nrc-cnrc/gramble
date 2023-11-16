@@ -14,7 +14,7 @@ import {
     EpsilonGrammar,
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { Dict, exhaustive, listUnique, setMap, update } from "../utils/func";
+import { Dict, mapValues, exhaustive, mapSet, update } from "../utils/func";
 import { TapeID, TapeSet, TapeLit, TapeRef, hasTape, TapeRename, tapeToRefs, tapeToStr, tapeLength } from "../tapes";
 import { HIDDEN_PREFIX } from "../utils/constants";
 
@@ -248,10 +248,7 @@ function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar>
     const msgs: Msgs = [];
     
     // first get the initial tapes for each symbol
-    const tapeIDs: Dict<TapeID> = {};
-    for (const [k,v] of Object.entries(g.symbols)) {
-        tapeIDs[k] = v.tapeSet;
-    }
+    const tapeIDs: Dict<TapeID> = mapValues(g.symbols, v => v.tapeSet);
     
     // now resolve the references and renames until you're
     // left with only sets of literals
@@ -261,7 +258,7 @@ function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar>
             const k2 = refs[i];
             const newV1 = resolveTapes(tapeIDs[k1], k2, 
                 tapeIDs[k2], new Set(k1));
-            refs = listUnique([...refs, ...tapeToRefs(newV1)]);
+            refs = [...new Set([...refs, ...tapeToRefs(newV1)])];
             tapeIDs[k1] = newV1;
         }
     }
@@ -277,10 +274,8 @@ function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar>
     // now feed those back into the structure so that every
     // grammar node has only literal tapes
     const tapePusher = new CalculateTapes(true, tapeIDs);
-    for (const [k,v] of Object.entries(g.symbols)) {
-        const newV = tapePusher.transform(v, env).msgTo(msgs);
-        g.symbols[k] = newV;
-    }
+    g.symbols = mapValues(g.symbols, v => 
+            tapePusher.transform(v, env).msgTo(msgs));
 
     // TODO: The following interpretation of tapes is incorrect,
     // but matches what we've been doing previously.  I'm going to
@@ -324,7 +319,7 @@ function resolveTapes(
             return TapeRename(resolveTapes(t.child, key, val, visited), 
                                 t.fromTape, t.toTape);
         case "tapeSet": 
-            return TapeSet(...setMap(t.children, c => 
+            return TapeSet(...mapSet(t.children, c => 
                 resolveTapes(c, key, val, visited)));
     }
 }
