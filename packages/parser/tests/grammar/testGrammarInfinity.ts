@@ -1,7 +1,6 @@
 import { 
-    Any, Count, Cursor, Epsilon, 
-    Intersect, Join, Match, Rep, 
-    Seq, Uni, Vocab,
+    Count,
+    Rep, Seq
 } from "../../src/grammarConvenience";
 
 import {
@@ -15,16 +14,8 @@ import {
 } from '../testUtil';
 
 import {
-    SILENT, VERBOSE_DEBUG, VERBOSE_STATES
+    SILENT
 } from "../../src/utils/logging";
-import { Grammar } from "../../src/grammars";
-
-function withCountGuard1(maxChars: number, grammar: Grammar) {
-    return Count({t1: maxChars}, grammar, true, true);
-}
-function withCountGuard2(maxChars: number, grammar: Grammar) {
-    return Count({t1: maxChars, t2: maxChars}, grammar, true, true);
-}
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -33,13 +24,10 @@ function vb(verbosity: number): number {
     return VERBOSE ? verbosity : SILENT;
 }
 
-// Note: tests involving * repeats ({0,Inf}) are denoted with * in the number.
-
 describe(`${grammarTestSuiteName(module)}`, function() {
 
     logTestSuite(this.title);
 
-    
     testGrammar({
         desc: '1. hello',
         grammar: t1("hello"),
@@ -51,7 +39,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2. Repeat 0-3 Os: t1:o{0,3}',
+        desc: '2. t1:o*',
         grammar: Rep(t1("o")),
         tapes: ["t1"],
         results: [
@@ -64,7 +52,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '3. Repeat 0-3 Os: Count_t1:3 t1:o*',
+        desc: '3. Count_t1:4 t1:o*',
         grammar: Count({t1: 4},
                        Rep(t1("o"))),
         results: [
@@ -75,5 +63,36 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'oooo'},
         ],
         maxChars: 3
+    }); 
+
+    testGrammar({
+        desc: '4. t1:o* + t2:world',
+        grammar: Seq(Rep(t1("o")), t2("world")),
+        tapes: ["t1", "t2"],
+        results: [
+            {t2: "world"},
+            {t1: 'o', t2: "world"},
+            {t1: 'oo', t2: "world"},
+            {t1: 'ooo', t2: "world"},
+        ],
+        maxChars: 3
+    });
+
+    testGrammar({
+        desc: '5. t1:o* + t2:o*',
+        grammar: Seq(Rep(t1("o")), Rep(t2("o"))),
+        tapes: ["t1", "t2"],
+        results: [
+            {"t2":"oo","t1":"oo"},
+            {"t2":"o","t1":"oo"},
+            {"t2":"oo","t1":"o"},
+            {"t2":"o","t1":"o"},
+            {"t1":"oo"},
+            {"t1":"o"},
+            {"t2":"oo"},
+            {"t2":"o"},
+            {}
+        ],
+        maxChars: 2
     });
 });

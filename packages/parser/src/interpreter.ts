@@ -1,14 +1,7 @@
 import { 
     Grammar, 
     CollectionGrammar,
-    LocatorGrammar,
-    JoinGrammar,
 } from "./grammars";
-
-import { 
-    Query,
-    Cursor,
-} from "./grammarConvenience";
 
 import { 
     Gen, iterTake, 
@@ -28,8 +21,7 @@ import {
     GRAMMAR_PASSES
 } from "./passes/allPasses";
 import { ExecuteTests } from "./passes/executeTests";
-import { infinityProtection } from "./passes/infinityProtection";
-import { prioritizeTapes } from "./passes/prioritizeTapes";
+import { CreateCursors } from "./passes/createCursors";
 import { constructExpr } from "./passes/constructExpr";
 import { toStr } from "./passes/toStr";
 import { DEFAULT_PROJECT_NAME, DEFAULT_SYMBOL, HIDDEN_PREFIX } from "./utils/constants";
@@ -40,6 +32,7 @@ import { getAllSymbols } from "./passes/getAllSymbols";
 import { qualifySymbol } from "./passes/qualifySymbols";
 import { FlattenCollections } from "./passes/flattenCollections";
 import { CreateQuery } from "./passes/createQuery";
+import { InfinityProtection, infinityProtection } from "./passes/infinityProtection";
 
 /**
  * An interpreter object is responsible for applying the passes in between sheets
@@ -259,9 +252,13 @@ export class Interpreter {
         targetGrammar = createQuery.go(targetGrammar, env).msgTo(THROWER);
         targetGrammar.collectAllVocab(this.tapeNS, env);
         
-        let tapePriority = prioritizeTapes(targetGrammar, this.tapeNS, env);
-        targetGrammar = infinityProtection(targetGrammar, tapePriority, env);
-        targetGrammar = Cursor(tapePriority, targetGrammar);
+        //let tapePriority = prioritizeTapes(targetGrammar, this.tapeNS, env);
+        //targetGrammar = infinityProtection(targetGrammar, tapePriority, env);
+        const createCursors = new CreateCursors();
+        targetGrammar = createCursors.go(targetGrammar, env).msgTo(THROWER);
+        
+        const infinityProtection = new InfinityProtection();
+        targetGrammar = infinityProtection.go(targetGrammar, env).msgTo(THROWER);
         
         return constructExpr(env, targetGrammar);  
     }

@@ -1,7 +1,7 @@
-import { PassEnv } from "../passes";
+import { Pass, PassEnv } from "../passes";
 import { 
     CollectionGrammar,
-    CounterStack, CursorGrammar, DotGrammar, 
+    CursorGrammar, DotGrammar, 
     EmbedGrammar, Grammar, HideGrammar, 
     IntersectionGrammar, JoinGrammar, 
     LiteralGrammar, 
@@ -9,11 +9,21 @@ import {
     RenameGrammar, 
     StringPairSet 
 } from "../grammars";
-import { TapeNamespace, renameTape } from "../tapes";
+import { renameTape } from "../tapes";
+import { Cursor } from "../grammarConvenience";
+import { Result } from "../utils/msgs";
+
+export class CreateCursors extends Pass<Grammar,Grammar> {
+
+    public transform(g: Grammar, env: PassEnv): Result<Grammar> {
+        const priorities = prioritizeTapes(g, env);
+        return Cursor(priorities, g).msg();
+    }
+}
 
 export function prioritizeTapes(
     g: Grammar,
-    tapeNS: TapeNamespace,
+    //tapeNS: TapeNamespace,
     env: PassEnv
 ): string[] {
     const priorities: [string, number][] = g.tapes.map(t => {

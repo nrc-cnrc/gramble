@@ -1,7 +1,8 @@
-import { PassEnv } from "../passes";
+import { Pass, PassEnv } from "../passes";
 import { AlternationGrammar, 
     CollectionGrammar, 
     CountGrammar, CounterStack, 
+    CursorGrammar, 
     EmbedGrammar, 
     Grammar, HideGrammar, 
     IntersectionGrammar, 
@@ -16,6 +17,37 @@ import { AlternationGrammar,
 import { renameTape } from "../tapes";
 import { Count } from "../grammarConvenience";
 import { exhaustive } from "../utils/func";
+import { Result } from "../utils/msgs";
+import { toStr } from "./toStr";
+
+export class InfinityProtection extends Pass<Grammar,Grammar> {
+
+    public transform(g: Grammar, env: PassEnv): Result<Grammar> {
+
+        if (env.opt.maxChars == Infinity) return g.msg();
+
+        const mapped = g.mapChildren(this, env);
+        return mapped.bind(g => {
+            switch (g.tag) {
+                case "cursor": return this.transformCursor(g, env);
+                default: return g;
+            }
+        });
+    }
+
+    public transformCursor(g: CursorGrammar, env: PassEnv): Grammar {
+        const stack = new CounterStack(2);
+        const len = lengthRange(g.child, g.tape, stack, env);
+
+        // if it's not potentially infinite, we don't do anything
+        if (len.null == true) return g;
+        if (len.max !== Infinity) return g;
+
+        // it's potentially infinite, add a Count for protection
+        const newChild = new CountGrammar(g.child, g.tape, env.opt.maxChars, false, false);
+        return new CursorGrammar(g.tape, newChild).tapify(env);
+    }
+}
 
 export function infinityProtection(
     grammar: Grammar,
@@ -229,9 +261,19 @@ function lengthRepeat(g: RepeatGrammar, tapeName: string, stack: CounterStack, e
     const childLength = lengthRange(g.child, tapeName, stack, env);
     return {
         null: childLength.null,
-        min: childLength.min * g.minReps,
-        max: childLength.max * g.maxReps
+        min: multAux(childLength.min, g.minReps),
+        max: multAux(childLength.max, g.maxReps)
     };
+}
+
+/** 
+ * Convenience function to get around the 
+ * bizarre fact that 0 * Infinity == NaN.
+ */
+function multAux(n1: number, n2: number) {
+    if (n1 === 0) return 0;
+    if (n2 === 0) return 0;
+    return n1 * n2;
 }
 
 function lengthNot(g: NegationGrammar, tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {

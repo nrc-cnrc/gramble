@@ -1255,6 +1255,14 @@ export class CountExpr extends UnaryExpr {
     public get id(): string {
         return `Count_${this.tapeName}:${this.maxChars}(${this.child.id})`;
     }
+
+    public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
+        for (const [handled, next] of this.child.forward(env)) {
+            const wrapped = constructCount(env, next, this.tapeName, this.maxChars,
+                this.countEpsilon, this.errorOnCountExceeded);
+            yield [handled, wrapped];
+        }
+    }
     
     public delta(
         tapeName: string,

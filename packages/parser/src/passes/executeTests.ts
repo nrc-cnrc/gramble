@@ -1,6 +1,6 @@
 import { Dict, StringDict, mapDict } from "../utils/func";
 import { constructCollection, Expr } from "../exprs";
-import { Msgs, Err, Success } from "../utils/msgs";
+import { Msgs, Err, Success, THROWER } from "../utils/msgs";
 import { 
     Grammar, 
     GrammarResult, TestNotGrammar, 
@@ -12,10 +12,9 @@ import {
 import { TapeNamespace} from "../tapes";
 import { generate } from "../generator";
 import { Pass, PassEnv } from "../passes";
-import { infinityProtection } from "./infinityProtection";
-import { Cursor } from "../grammarConvenience";
-import { prioritizeTapes } from "./prioritizeTapes";
 import { constructExpr } from "./constructExpr";
+import { CreateCursors } from "./createCursors";
+import { InfinityProtection } from "./infinityProtection";
 
 export class ExecuteTests extends Pass<Grammar,Grammar> {
 
@@ -121,10 +120,13 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
         // that the Equals we made above has a different join/concat tape structure
         // than the original grammar, so we have to check
         targetGrammar.collectAllVocab(this.tapeNS, env);        
-        const tapePriority = prioritizeTapes(targetGrammar, this.tapeNS, env);
-        targetGrammar = infinityProtection(targetGrammar, tapePriority, env);
-        targetGrammar = Cursor(tapePriority, targetGrammar);
+        
+        const createCursors = new CreateCursors();
+        targetGrammar = createCursors.go(targetGrammar, env).msgTo(THROWER);
 
+        const infinityProtection = new InfinityProtection();
+        targetGrammar = infinityProtection.go(targetGrammar, env).msgTo(THROWER);
+        
         let expr = constructExpr(env, targetGrammar);
         expr = constructCollection(env, expr, this.symbolTable);
         return [...generate(expr, this.tapeNS, false, env.opt)];
