@@ -4,7 +4,7 @@ import {
     CollectionGrammar,
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { qualifySymbol, qualifySymbolAux } from "./qualifySymbols";
+import { qualifySymbol } from "./qualifySymbols";
 
 /**
  * CollectionGrammars have a "selectedSymbol" member that determines

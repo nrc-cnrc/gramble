@@ -74,21 +74,17 @@ export const SHEET_PASSES =
     ))))))))))));
 
 
-export const PRE_SYMBOL_PASSES = 
+export const GRAMMAR_PASSES = 
 
     // Assign default symbols to collections that don't already
     // have a default defined.
-    new AssignDefaults();
-
-export const SYMBOL_PASSES = 
+    new AssignDefaults().compose(
 
     // qualify symbol names (e.g. turn `VERB` in sheet Sheet1 
     // into `Sheet1.VERB`) and attempt to qualify references to them
     // (e.g. figure out whether VERB refers to Sheet1.VERB or 
     // something else)
-    new FlattenCollections();
-
-export const POST_SYMBOL_PASSES =
+    new FlattenCollections().compose(
 
     new CalculateTapes().compose(
 
@@ -104,15 +100,7 @@ export const POST_SYMBOL_PASSES =
     // structures
     new ConstructReplaceBlocks()
 
-    )));
-
-export const GRAMMAR_PASSES = 
-
-    PRE_SYMBOL_PASSES.compose(
-
-    SYMBOL_PASSES.compose(
-        
-    POST_SYMBOL_PASSES));
+    )))));
 
 export const ALL_PASSES = SHEET_PASSES.compose(GRAMMAR_PASSES);
 

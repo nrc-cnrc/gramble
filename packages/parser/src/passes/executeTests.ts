@@ -114,14 +114,14 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
     ): StringDict[] {
 
         // create a filter for each test
-        let targetGrammar: Grammar = new JoinGrammar(test.child, test.test).tapify(env);
+        let targetGrammar: Grammar = new JoinGrammar(test.child, test.test)
+                                        .tapify(env);
 
         // there won't be any new vocabulary here, but it's possible (indeed, frequent)
         // that the Equals we made above has a different join/concat tape structure
         // than the original grammar, so we have to check
         targetGrammar.collectAllVocab(this.tapeNS, env);        
         const tapePriority = prioritizeTapes(targetGrammar, this.tapeNS, env);
-        
         targetGrammar = infinityProtection(targetGrammar, tapePriority, env);
         targetGrammar = Cursor(tapePriority, targetGrammar);
 

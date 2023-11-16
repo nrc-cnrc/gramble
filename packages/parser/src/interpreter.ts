@@ -24,10 +24,8 @@ import { generate } from "./generator";
 import { MissingSymbolError, Msg, THROWER, result } from "./utils/msgs";
 import { PassEnv } from "./passes";
 import { 
-    SYMBOL_PASSES, 
-    POST_SYMBOL_PASSES, 
-    PRE_SYMBOL_PASSES, 
-    SHEET_PASSES 
+    SHEET_PASSES,
+    GRAMMAR_PASSES
 } from "./passes/allPasses";
 import { ExecuteTests } from "./passes/executeTests";
 import { infinityProtection } from "./passes/infinityProtection";
@@ -40,6 +38,8 @@ import { Options } from "./utils/options";
 import { SelectSymbol } from "./passes/selectSymbol";
 import { getAllSymbols } from "./passes/getAllSymbols";
 import { qualifySymbol } from "./passes/qualifySymbols";
+import { FlattenCollections } from "./passes/flattenCollections";
+import { CreateQuery } from "./passes/createQuery";
 
 /**
  * An interpreter object is responsible for applying the passes in between sheets
@@ -81,13 +81,9 @@ export class Interpreter {
         // to get the grammar into an executable state: symbol references fully-qualified,
         // semantically impossible tape structures are massaged into well-formed ones, some 
         // scope problems adjusted, etc.
-        
-        const env = new PassEnv(this.opt);
-                            
+        const env = new PassEnv(this.opt);  
         this.grammar = result(g)
-                        .bind(g => PRE_SYMBOL_PASSES.go(g, env))
-                        .bind(g => SYMBOL_PASSES.go(g, env))
-                        .bind(g => POST_SYMBOL_PASSES.go(g, env))
+                        .bind(g => GRAMMAR_PASSES.go(g, env))
                         .msgTo(m => sendMsg(this.devEnv, m));
 
         // Next we collect the vocabulary on all tapes
@@ -251,7 +247,7 @@ export class Interpreter {
     
     public prepareExpr(
         symbol: string = "",
-        query: StringDict[] | StringDict = {}
+        query: StringDict | StringDict[] = {}
     ): Expr {
         const env = new PassEnv(this.opt);
 
@@ -259,13 +255,8 @@ export class Interpreter {
         const selectSymbol = new SelectSymbol(symbol);
         let targetGrammar: Grammar = selectSymbol.go(this.grammar, env).msgTo(THROWER);
         
-        if (Object.keys(query).length > 0) {
-            const querySeq = Query(query);
-            targetGrammar = new JoinGrammar(targetGrammar, querySeq).tapify(env);
-            // there might be new chars in the query
-            //targetGrammar.collectAllVocab(this.tapeNS, env);
-        }
-
+        const createQuery = new CreateQuery(query);
+        targetGrammar = createQuery.go(targetGrammar, env).msgTo(THROWER);
         targetGrammar.collectAllVocab(this.tapeNS, env);
         
         let tapePriority = prioritizeTapes(targetGrammar, this.tapeNS, env);
@@ -321,8 +312,9 @@ function addSheet(
     const grammar = SHEET_PASSES.go(project, transEnv)
                                      .msgTo((_) => {});
     // check to see if any names didn't get qualified
-    const [_, nameMsgs] = SYMBOL_PASSES.go(grammar, transEnv)
-                                     .destructure();
+    const [_, nameMsgs] =  new FlattenCollections()
+                                .go(grammar, transEnv)
+                                .destructure();
 
     const unqualifiedSymbols: Set<string> = new Set(); 
     for (const msg of nameMsgs) {
