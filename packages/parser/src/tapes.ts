@@ -42,7 +42,7 @@ export function renameTape(
 
 // New tape structures
 
-export type TapeID 
+export type TapeInfo 
     = TapeLit
     | TapeRef
     | TapeRename
@@ -50,32 +50,32 @@ export type TapeID
     | TapeUnknown; 
 
 export type TapeUnknown = { tag: "tapeUnknown" };
-export function TapeUnknown(): TapeID {
+export function TapeUnknown(): TapeInfo {
     return { tag: "tapeUnknown" };
 }
 
 export type TapeLit = { tag: "tapeLit", text: string };
-export function TapeLit(s: string): TapeID {
+export function TapeLit(s: string): TapeInfo {
     return { tag: "tapeLit", text: s }
 };
 
 export type TapeRef = { tag: "tapeRef", symbol: string };
-export function TapeRef(s: string): TapeID {
+export function TapeRef(s: string): TapeInfo {
     return { tag: "tapeRef", symbol: s }
 };
 
 export type TapeRename =  { 
     tag: "tapeRename", 
-    child: TapeID, 
+    child: TapeInfo, 
     fromTape: string, 
     toTape: string 
 };
 
 export function TapeRename(
-    child: TapeID, 
+    child: TapeInfo, 
     fromTape: string, 
     toTape: string
-): TapeID {
+): TapeInfo {
     if (child.tag === "tapeLit") {
         if (child.text === fromTape) return TapeLit(toTape);
         return child;
@@ -91,12 +91,12 @@ export function TapeRename(
              fromTape: fromTape, toTape: toTape }
 }
 
-export type TapeSet = { tag: "tapeSet", children: ValueSet<TapeID> };
+export type TapeSet = { tag: "tapeSet", children: ValueSet<TapeInfo> };
 
 export function TapeSet(
-    ...children: TapeID[]
-): TapeID {
-    let newChildren: ValueSet<TapeID> = new ValueSet([], tapeToStr);
+    ...children: TapeInfo[]
+): TapeInfo {
+    let newChildren: ValueSet<TapeInfo> = new ValueSet([], tapeToStr);
     for (const c of children) {
         if (c.tag !== "tapeSet") {
             newChildren.add(c);
@@ -109,7 +109,7 @@ export function TapeSet(
 
 // Turning a TapeID to a string
 
-export function tapeToStr(t: TapeID): string {
+export function tapeToStr(t: TapeInfo): string {
     switch (t.tag) {
         case "tapeUnknown": return "?";
         case "tapeLit": return t.text;
@@ -123,7 +123,7 @@ export function tapeToStr(t: TapeID): string {
 // Getting the literals from a tape set.  If anything in it isn't
 // a literal or a set, that's an error
 
-export function tapeToRefs(t: TapeID): string[] {
+export function tapeToRefs(t: TapeInfo): string[] {
     switch (t.tag) {
         case "tapeLit": return [];
         case "tapeRef": return [t.symbol];
@@ -136,7 +136,7 @@ export function tapeToRefs(t: TapeID): string[] {
 // Getting the literals from a tape set.  If anything in it isn't
 // a literal or a set, that's an error
 
-export function tapeToLits(t: TapeID): string[] {
+export function tapeToLits(t: TapeInfo): string[] {
     switch (t.tag) {
         case "tapeLit": return [t.text];
         case "tapeSet": return flatten(mapSet(t.children, c => tapeToLits(c)));
@@ -147,7 +147,7 @@ export function tapeToLits(t: TapeID): string[] {
 // Testing whether a tape is in a set
 
 export type Trivalent = true | false | "unknown"
-export function hasTape(t: TapeID, query: string): Trivalent  {
+export function hasTape(t: TapeInfo, query: string): Trivalent  {
     switch (t.tag) {
         case "tapeUnknown": return "unknown";
         case "tapeRef":     return "unknown";
@@ -170,7 +170,7 @@ function tapeInSet(t: TapeSet, query: string): Trivalent {
 }
 
 export type TapeLength = number | "unknown";
-export function tapeLength(t: TapeID): TapeLength {
+export function tapeLength(t: TapeInfo): TapeLength {
     switch (t.tag) {
         case "tapeUnknown": return "unknown";
         case "tapeRef":     return "unknown";

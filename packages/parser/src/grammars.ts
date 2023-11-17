@@ -8,7 +8,7 @@ import {
 import {
     renameTape,
     Tape, 
-    TapeID, 
+    TapeInfo, 
     TapeNamespace,
     tapeToLits,
     TapeUnknown
@@ -126,7 +126,7 @@ export abstract class AbstractGrammar extends Component {
         return super.mapChildren(f, env) as GrammarResult;
     }
 
-    public tapeSet: TapeID = TapeUnknown();
+    public tapeSet: TapeInfo = TapeUnknown();
 
     //public _tapes: string[] | undefined = undefined;
 

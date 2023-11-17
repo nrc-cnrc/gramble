@@ -15,7 +15,7 @@ import {
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
 import { Dict, mapValues, exhaustive, mapSet, update } from "../utils/func";
-import { TapeID, TapeSet, TapeLit, TapeRef, hasTape, TapeRename, tapeToRefs, tapeToStr, tapeLength } from "../tapes";
+import { TapeInfo, TapeSet, TapeLit, TapeRef, hasTape, TapeRename, tapeToRefs, tapeToStr, tapeLength } from "../tapes";
 import { HIDDEN_PREFIX } from "../utils/constants";
 import { toStr } from "./toStr";
 
@@ -33,7 +33,7 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
 
     constructor(
         public recalculate: boolean = false,
-        public knownTapes: Dict<TapeID> = {}
+        public knownTapes: Dict<TapeInfo> = {}
     ) {
         super();
     }
@@ -94,7 +94,7 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
     }
 }
 
-function updateTapes(g: Grammar, tapes: TapeID): Grammar {
+function updateTapes(g: Grammar, tapes: TapeInfo): Grammar {
     return update(g, { tapeSet: tapes });
 }
 
@@ -110,14 +110,14 @@ function getTapesDefault(
     return updateTapes(g, allTapes);
 }
 
-function getChildTapes(g: Grammar): TapeID {
+function getChildTapes(g: Grammar): TapeInfo {
     const childTapes = g.getChildren().map(c => c.tapeSet);
     return TapeSet(...childTapes);
 }
 
 function getTapesEmbed(
     g: EmbedGrammar, 
-    knownTapes:Dict<TapeID>
+    knownTapes:Dict<TapeInfo>
 ): Grammar {
     if (!(g.symbol in knownTapes)) return updateTapes(g, TapeRef(g.symbol));
     return updateTapes(g, knownTapes[g.symbol]);
@@ -249,7 +249,7 @@ function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar>
     const msgs: Msgs = [];
     
     // first get the initial tapes for each symbol
-    const tapeIDs: Dict<TapeID> = mapValues(g.symbols, v => v.tapeSet);
+    const tapeIDs: Dict<TapeInfo> = mapValues(g.symbols, v => v.tapeSet);
     
     // now resolve the references and renames until you're
     // left with only sets of literals
@@ -308,11 +308,11 @@ function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar>
 * inside TapeIDs into their corresponding TapeLits and sets thereof
 */
 function resolveTapes(
-    t: TapeID, 
+    t: TapeInfo, 
     key:string, 
-    val:TapeID,
+    val:TapeInfo,
     visited: Set<string>
-): TapeID {
+): TapeInfo {
     switch (t.tag) {
         case "tapeUnknown": return TapeSet();
         case "tapeLit": return t;
@@ -329,9 +329,9 @@ function resolveTapes(
 function resolveTapeRefs(    
     t: TapeRef, 
     key:string, 
-    val:TapeID,
+    val:TapeInfo,
     visited: Set<string>
-): TapeID {
+): TapeInfo {
     if (visited.has(key)) return TapeSet();
     if (key !== t.symbol) return t;
     const newVisited = new Set([...visited, key]);
