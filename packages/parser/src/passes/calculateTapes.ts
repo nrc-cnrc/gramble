@@ -17,6 +17,7 @@ import { Pass, PassEnv } from "../passes";
 import { Dict, mapValues, exhaustive, mapSet, update } from "../utils/func";
 import { TapeID, TapeSet, TapeLit, TapeRef, hasTape, TapeRename, tapeToRefs, tapeToStr, tapeLength } from "../tapes";
 import { HIDDEN_PREFIX } from "../utils/constants";
+import { toStr } from "./toStr";
 
 /**
  * Goes through the tree and 
@@ -254,10 +255,11 @@ function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar>
     // left with only sets of literals
     for (const [k1,v1] of Object.entries(tapeIDs)) {
         let refs = tapeToRefs(v1);
+        const visited: Set<string> = new Set([k1]); 
         for (let i = 0; i < refs.length; i++) {
             const k2 = refs[i];
             const newV1 = resolveTapes(tapeIDs[k1], k2, 
-                tapeIDs[k2], new Set(k1));
+                tapeIDs[k2], visited);
             refs = [...new Set([...refs, ...tapeToRefs(newV1)])];
             tapeIDs[k1] = newV1;
         }
@@ -330,8 +332,8 @@ function resolveTapeRefs(
     val:TapeID,
     visited: Set<string>
 ): TapeID {
-    if (key !== t.symbol) return t;
     if (visited.has(key)) return TapeSet();
+    if (key !== t.symbol) return t;
     const newVisited = new Set([...visited, key]);
     return resolveTapes(val, key, val, newVisited);
 }

@@ -113,7 +113,7 @@ export function tapeToStr(t: TapeID): string {
     switch (t.tag) {
         case "tapeUnknown": return "?";
         case "tapeLit": return t.text;
-        case "tapeRef": return "${" + t.symbol + "}";
+        case "tapeRef": return "$" + t.symbol + "";
         case "tapeRename": return `${t.fromTape}>${t.toTape}(${tapeToStr(t.child)})`;
         case "tapeSet": return "[" + [...mapSet(t.children, c => tapeToStr(c))].join(",") + "]";
         default: exhaustive(t);

@@ -90,7 +90,9 @@
     "testSourceRule": "mocha -r ts-node/register tests/source/rule/*.ts",
     "testSourceTest": "mocha -r ts-node/register tests/source/test/*.ts",
 
-    "testSampling": "mocha -r ts-node/register tests/sampling/*.ts"
+    "testSampling": "mocha -r ts-node/register tests/sampling/*.ts",
+
+    "testPropertyTapes": "mocha -r ts-node/register tests/property/testPropertyTapes.ts"
   },
   "bugs": {
     "url": "https://github.com/nrc-cnrc/gramble/issues"
