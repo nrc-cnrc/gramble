@@ -30,17 +30,17 @@ export function testToBreaking(
     numTests: number = 1000
 ): void {
     describe(`Property ${desc}`, function() {
-        let test = new testConstructor(""); // just a dummy
-        let result: PropertyTestResult = PropertyTestSuccess();
+        let originalTest = new testConstructor(""); // just a dummy
+        let originalResult: PropertyTestResult = PropertyTestSuccess();
 
         for (let i = 0; i < numTests; i++) {
             const id = desc + padZeros(i, numTests);
-            test = new testConstructor(id);
-            result = test.run();
-            if (result.tag === "failure") break;
+            originalTest = new testConstructor(id);
+            originalResult = originalTest.run();
+            if (originalResult.tag === "failure") break;
         }
     
-        if (result.tag === "success") {
+        if (originalResult.tag === "success") {
             it(`${numTests} test(s) succeeded.`, function() {
                 assert.isTrue(true);
             });
@@ -48,21 +48,21 @@ export function testToBreaking(
         }
 
         // we got a failure.
-        it(`${test.id} failed`, function() {
-            if (result.tag === "success") return; // TS isn't able to infer this 
-            assert.fail(result.msg);
+        it(`${originalTest.id} failed`, function() {
+            if (originalResult.tag === "success") return; // TS isn't able to infer this 
+            assert.fail(originalResult.msg);
         });
 
-        let simplifiedTest = test;
-        let simplifiedResult = result;
+        let currentTest = originalTest;
+        let currentResult = originalResult;
         let foundAnotherFailure = true;
         while (foundAnotherFailure) {
             foundAnotherFailure = false;
             for (let i = 0; i < 100; i++) {
-                const newTest = simplifiedTest.reduce();
-                if (simplifiedTest.toStr() == newTest.toStr()) {
+                const newTest = currentTest.reduce();
+                if (currentTest.toStr() == newTest.toStr()) {
                     // don't test the exact same as the previous
-                    // failure, we'll end up looping
+                    // failure, we can end up looping infinitely
                     continue;
                 }
 
@@ -71,19 +71,19 @@ export function testToBreaking(
                 
                 // it's a failure... good! that's what we're looking for
                 foundAnotherFailure = true;
-                simplifiedTest = newTest;
-                simplifiedResult = newResult;
+                currentTest = newTest;
+                currentResult = newResult;
                 break;
             }
         }
 
-        if (simplifiedTest.toStr() == test.toStr()) {
+        if (currentTest.toStr() == originalTest.toStr()) {
             // we didn't find anything actually simpler
             return;
         }
 
         it(`Simplified test also fails`, function() {
-            assert.fail(simplifiedResult.msg);
+            assert.fail(currentResult.msg);
         });
 
     });

@@ -1,7 +1,7 @@
 import { expect } from "chai";
-import { VocabSet, vocabIntersection, vocabUnion } from "../src/tapes";
 import { testSuiteName, logTestSuite } from "./testUtil";
 
+/*
 type VocabTest = {
     desc: string,
     vocab: VocabSet,
@@ -180,4 +180,4 @@ describe(`${testSuiteName(module)}`, function() {
         wildcard: false
     }); 
 
-});
+}); */

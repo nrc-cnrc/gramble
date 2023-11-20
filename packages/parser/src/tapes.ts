@@ -46,26 +46,40 @@ export type TapeInfo
     = TapeLit
     | TapeRef
     | TapeRename
-    | TapeSet
+    | TapeSum
     | TapeUnknown; 
 
-export type TapeUnknown = { tag: "tapeUnknown" };
-export function TapeUnknown(): TapeInfo {
-    return { tag: "tapeUnknown" };
-}
-
-export type TapeLit = { tag: "tapeLit", text: string };
-export function TapeLit(s: string): TapeInfo {
-    return { tag: "tapeLit", text: s }
+export type TapeSum = { 
+    tag: "TapeSum", 
+    c1: TapeInfo, 
+    c2: TapeInfo 
 };
 
-export type TapeRef = { tag: "tapeRef", symbol: string };
+export function TapeSum(child1: TapeInfo, child2: TapeInfo): TapeInfo {
+    if (child1.tag === "TapeLit" && child2.tag === "TapeLit") {
+        return TapeLit(union(child1.tapes, child2.tapes));
+    }
+    return { tag: "TapeSum", c1: child1, c2: child2 };
+}
+
+
+export type TapeUnknown = { tag: "TapeUnknown" };
+export function TapeUnknown(): TapeInfo {
+    return { tag: "TapeUnknown" };
+}
+
+export type TapeLit = { tag: "TapeLit", tapes: Set<string> };
+export function TapeLit(s: Iterable<string>): TapeInfo {
+    return { tag: "TapeLit", tapes: new Set(s) }
+};
+
+export type TapeRef = { tag: "TapeRef", symbol: string };
 export function TapeRef(s: string): TapeInfo {
-    return { tag: "tapeRef", symbol: s }
+    return { tag: "TapeRef", symbol: s }
 };
 
 export type TapeRename =  { 
-    tag: "tapeRename", 
+    tag: "TapeRename", 
     child: TapeInfo, 
     fromTape: string, 
     toTape: string 
@@ -76,46 +90,31 @@ export function TapeRename(
     fromTape: string, 
     toTape: string
 ): TapeInfo {
-    if (child.tag === "tapeLit") {
-        if (child.text === fromTape) return TapeLit(toTape);
-        return child;
+    if (child.tag === "TapeLit") {
+        const renamedTapes = mapSet(child.tapes, 
+            t => renameTape(t, fromTape, toTape))
+        return TapeLit(renamedTapes);
     }
 
-    if (child.tag === "tapeSet") {
-        const children = mapSet(child.children, 
-                c => TapeRename(c, fromTape, toTape));
-        return TapeSet(...children);
+    if (child.tag === "TapeSum") {
+        // distribute the renaming to the children
+        return TapeSum(TapeRename(child.c1, fromTape, toTape),
+                       TapeRename(child.c2, fromTape, toTape));
     }
 
-    return { tag: "tapeRename", child: child, 
+    return { tag: "TapeRename", child: child, 
              fromTape: fromTape, toTape: toTape }
 }
-
-export type TapeSet = { tag: "tapeSet", children: ValueSet<TapeInfo> };
-
-export function TapeSet(
-    ...children: TapeInfo[]
-): TapeInfo {
-    let newChildren: ValueSet<TapeInfo> = new ValueSet([], tapeToStr);
-    for (const c of children) {
-        if (c.tag !== "tapeSet") {
-            newChildren.add(c);
-            continue;
-        }
-        newChildren.add(...c.children);
-    }
-    return { tag: "tapeSet", children: newChildren }
-};
 
 // Turning a TapeID to a string
 
 export function tapeToStr(t: TapeInfo): string {
     switch (t.tag) {
-        case "tapeUnknown": return "?";
-        case "tapeLit": return t.text;
-        case "tapeRef": return "$" + t.symbol + "";
-        case "tapeRename": return `${t.fromTape}>${t.toTape}(${tapeToStr(t.child)})`;
-        case "tapeSet": return "[" + [...mapSet(t.children, c => tapeToStr(c))].join(",") + "]";
+        case "TapeUnknown": return "?";
+        case "TapeLit": return `{${[...t.tapes]}}`;
+        case "TapeRef": return "$" + t.symbol + "";
+        case "TapeRename": return `${t.fromTape}>${t.toTape}(${tapeToStr(t.child)})`;
+        case "TapeSum": return tapeToStr(t.c1) + "+" + tapeToStr(t.c2);
         default: exhaustive(t);
     }
 }
@@ -125,11 +124,11 @@ export function tapeToStr(t: TapeInfo): string {
 
 export function tapeToRefs(t: TapeInfo): string[] {
     switch (t.tag) {
-        case "tapeLit": return [];
-        case "tapeRef": return [t.symbol];
-        case "tapeSet": return flatten(mapSet(t.children, c => tapeToRefs(c)));
-        case "tapeRename": return tapeToRefs(t.child);
-        case "tapeUnknown": return [];
+        case "TapeLit": return [];
+        case "TapeRef": return [t.symbol];
+        case "TapeSum": return [...tapeToRefs(t.c1), ...tapeToRefs(t.c2)];
+        case "TapeRename": return tapeToRefs(t.child);
+        case "TapeUnknown": return [];
     }
 }
 
@@ -138,85 +137,12 @@ export function tapeToRefs(t: TapeInfo): string[] {
 
 export function tapeToLits(t: TapeInfo): string[] {
     switch (t.tag) {
-        case "tapeLit": return [t.text];
-        case "tapeSet": return flatten(mapSet(t.children, c => tapeToLits(c)));
+        case "TapeLit": return [...t.tapes];
         default: throw new Error(`unresolved tape structure: ${tapeToStr(t)}`)
     }
-}
-
-// Testing whether a tape is in a set
-
-export type Trivalent = true | false | "unknown"
-export function hasTape(t: TapeInfo, query: string): Trivalent  {
-    switch (t.tag) {
-        case "tapeUnknown": return "unknown";
-        case "tapeRef":     return "unknown";
-        case "tapeLit":     return t.text === query;
-        case "tapeRename":  return t.toTape === query 
-                                     ? hasTape(t.child, t.fromTape)
-                                     : hasTape(t.child, query);
-        case "tapeSet":     return tapeInSet(t, query);
-    }
-}
-
-function tapeInSet(t: TapeSet, query: string): Trivalent {
-    let found: Trivalent = false;
-    for (const c of t.children) {
-        const result = hasTape(c, query);
-        if (result === true) return true;
-        if (result === "unknown") found = "unknown";
-    }
-    return found;
-}
-
-export type TapeLength = number | "unknown";
-export function tapeLength(t: TapeInfo): TapeLength {
-    switch (t.tag) {
-        case "tapeUnknown": return "unknown";
-        case "tapeRef":     return "unknown";
-        case "tapeLit":     return 1;
-        case "tapeRename":  return tapeLength(t.child);
-        case "tapeSet":     return tapeLengthSet(t);
-    }
-}
-
-function tapeLengthSet(t: TapeSet): TapeLength {
-    let result: number = 0;
-    for (const c of t.children) {
-        const len = tapeLength(c);
-        if (len === "unknown") return "unknown";
-        result += len;
-    }
-    return result;
 }
 
 export type VocabSet = {
     tokens: Set<string>,
     wildcard: boolean,
-}
-
-export function VocabSet(tokens: Iterable<string>, wildcard: boolean = false): VocabSet {
-    return {
-        tokens: new Set(tokens), 
-        wildcard
-    }
-}
-
-export function vocabUnion(v1: VocabSet, v2: VocabSet) {
-    return {
-        wildcard: v1.wildcard || v2.wildcard,
-        tokens: union(v1.tokens, v2.tokens)
-    };
-}
-
-export function vocabIntersection(v1: VocabSet, v2: VocabSet): VocabSet {
-    const wildcard = v1.wildcard && v2.wildcard;
-    let tokens: Set<string> = new Set();
-    if (v1.wildcard) tokens = new Set(v2.tokens);
-    for (const t1 of v1.tokens) {
-        if (v2.wildcard || v2.tokens.has(t1)) {
-            tokens.add(t1);
-        }
-    }
-    return { wildcard, tokens };
 }

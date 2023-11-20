@@ -85,6 +85,7 @@ export function componentToStr(c: Component): string {
                              c.hasOwnProperty(k) &&
                              k != "tag" &&
                              k != "tapeSet" &&
+                             k != "qualifier" && 
                              !k.startsWith("_"));
     for (let i = 0; i < kvPairs.length; i++) {
         const [_,v] = kvPairs[i];

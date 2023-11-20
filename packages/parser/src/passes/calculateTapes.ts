@@ -4,20 +4,21 @@ import {
     CollectionGrammar,
     EmbedGrammar,
     HideGrammar,
-    MatchGrammar,
     RenameGrammar,
     FilterGrammar,
-    JoinGrammar,
     ReplaceGrammar,
     ReplaceBlockGrammar,
-    SequenceGrammar,
     EpsilonGrammar,
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { Dict, mapValues, exhaustive, mapSet, update } from "../utils/func";
-import { TapeInfo, TapeSet, TapeLit, TapeRef, hasTape, TapeRename, tapeToRefs, tapeToStr, tapeLength } from "../tapes";
+import { Dict, mapValues, exhaustive, update, foldRight } from "../utils/func";
+import { 
+    TapeInfo, TapeSum, 
+    TapeLit, TapeRef, 
+    TapeRename, 
+    tapeToRefs, tapeToStr 
+} from "../tapes";
 import { HIDDEN_PREFIX } from "../utils/constants";
-import { toStr } from "./toStr";
 
 /**
  * Goes through the tree and 
@@ -39,7 +40,7 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
     }
 
     public transform(g: Grammar, env: PassEnv): Result<Grammar> {
-        if (g.tapeSet.tag !== "tapeUnknown" && !this.recalculate) {
+        if (g.tapeSet.tag !== "TapeUnknown" && !this.recalculate) {
             return g.msg();
         }
 
@@ -48,11 +49,11 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
 
                 // have no tapes
                 case "epsilon":
-                case "null": return updateTapes(g, TapeSet())
+                case "null": return updateTapes(g, TapeLit([]));
 
                 // have their own tape name as tapes
-                case "lit": return updateTapes(g, TapeLit(g.tapeName));
-                case "dot": return updateTapes(g, TapeLit(g.tapeName));
+                case "lit": return updateTapes(g, TapeLit([g.tapeName]));
+                case "dot": return updateTapes(g, TapeLit([g.tapeName]));
 
                 // just the union of children's tapes
                 case "seq": 
@@ -80,7 +81,7 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
                 // something special
                 case "embed":      return getTapesEmbed(g, this.knownTapes);
                 case "collection": return getTapesCollection(g, env);
-                case "singletape": return updateTapes(g, TapeLit(g.tapeName));
+                case "singletape": return updateTapes(g, TapeLit([g.tapeName]));
                 case "rename":     return getTapesRename(g);
                 case "hide":       return getTapesHide(g);
                 case "filter":     return getTapesFilter(g);
@@ -105,14 +106,15 @@ function getTapesDefault(
     if (extras === undefined) {
         return updateTapes(g, getChildTapes(g));
     }
-    const lits = [...extras].map(s => TapeLit(s));
-    const allTapes = TapeSet(getChildTapes(g), ...lits);
+    const lits = TapeLit(extras);
+    const allTapes = TapeSum(getChildTapes(g), lits);
     return updateTapes(g, allTapes);
 }
 
 function getChildTapes(g: Grammar): TapeInfo {
     const childTapes = g.getChildren().map(c => c.tapeSet);
-    return TapeSet(...childTapes);
+    if (childTapes.length === 0) return TapeLit([]);
+    return foldRight(childTapes.slice(1), TapeSum, childTapes[0]);
 }
 
 function getTapesEmbed(
@@ -125,13 +127,21 @@ function getTapesEmbed(
 
 function getTapesRename(g: RenameGrammar): Result<Grammar> {
 
-    if (hasTape(g.child.tapeSet, g.fromTape) === false) {
+    
+    const tapes = TapeRename(g.child.tapeSet, g.fromTape, g.toTape);
+    const result = updateTapes(g, tapes).msg();
+
+    if (g.child.tapeSet.tag !== "TapeLit") {
+        return result;
+    }
+
+    if (!g.child.tapeSet.tapes.has(g.fromTape)) {
         return g.child.err("Renaming missing tape",
             `The ${g.child.constructor.name} to undergo renaming does not contain the tape ${g.fromTape}. ` +
             `Available tapes: [${[...g.child.tapes]}]`);
     }
 
-    if (g.fromTape !== g.toTape && hasTape(g.child.tapeSet, g.toTape) === true) {
+    if (g.fromTape !== g.toTape && g.child.tapeSet.tapes.has(g.toTape)) {
         const errTapeName = `${HIDDEN_PREFIX}ERR${g.toTape}`;
         let repair: Grammar = new RenameGrammar(g.child, g.toTape, errTapeName);
         repair = updateTapes(repair, TapeRename(repair.child.tapeSet, g.toTape, errTapeName));
@@ -142,12 +152,13 @@ function getTapesRename(g: RenameGrammar): Result<Grammar> {
                     `to the left already contains the tape ${g.toTape}. `)
     }
 
-    const tapes = TapeRename(g.child.tapeSet, g.fromTape, g.toTape);
-    return updateTapes(g, tapes).msg();
+    return result;
+
 }
 
 function getTapesHide(g: HideGrammar): Result<Grammar> {
-    if (hasTape(g.child.tapeSet, g.tapeName) === false) {
+    if (g.child.tapeSet.tag === "TapeLit" &&
+        !g.child.tapeSet.tapes.has(g.tapeName)) {
         return g.child.err("Hiding missing tape",
                     `The grammar being hidden does not contain the tape ${g.tapeName}. ` +
                     ` Available tapes: [${[...g.child.tapes]}]`);
@@ -165,25 +176,24 @@ function getTapesHide(g: HideGrammar): Result<Grammar> {
  */
 function getTapesFilter(g: FilterGrammar): Result<Grammar> {
 
-    const lenTapes1 = tapeLength(g.child1.tapeSet);
-    const lenTapes2 = tapeLength(g.child2.tapeSet);
-    if (lenTapes1 === "unknown" || lenTapes2 === "unknown") {
-        // there's nothing more to do right now
+    if (g.child1.tapeSet.tag !== "TapeLit" || 
+            g.child2.tapeSet.tag !== "TapeLit") {
+        // there's nothing we can check right now
         return getTapesDefault(g).msg();
     }
 
-    if (lenTapes2 === 0) {
+    if (g.child2.tapeSet.tapes.size === 0) {
         // it's an epsilon or failure caught elsewhere
         return getTapesDefault(g).msg();
     }
 
-    if (lenTapes2 > 1) {
+    if (g.child2.tapeSet.tapes.size > 1) {
         return g.child1.err("Filters must be single-tape", 
         `A filter like equals, starts, etc. should only reference a single tape.`);
     }
 
     const t2 = g.child2.tapes[0];
-    if (hasTape(g.child1.tapeSet, t2) === false) {
+    if (!g.child1.tapeSet.tapes.has(t2)) {
         return g.child1.err("Filtering non-existent tape", 
         `This filter references a tape ${t2} that does not exist`);
     }
@@ -205,8 +215,8 @@ function getTapesReplace(g: ReplaceGrammar, env: PassEnv): Result<Grammar> {
 
     const msgs: Msgs = [];
     for (const [childName, child] of childrenToCheck) {
-        const len = tapeLength(child.tapeSet);
-        if (len === "unknown" || len <= 1) continue;
+        if (child.tapeSet.tag !== "TapeLit") continue; // nothing to check
+        if (child.tapeSet.tapes.size <= 1) continue;
         msgs.push(Err( "Multitape rule", 
                     "This rule has the wrong number of tapes " +
                     ` in ${childName}: ${tapeToStr(child.tapeSet)}`));
@@ -220,9 +230,11 @@ function getTapesReplace(g: ReplaceGrammar, env: PassEnv): Result<Grammar> {
 }
                 
 function getTapesReplaceBlock(g: ReplaceBlockGrammar): Result<Grammar> {
+
     // make sure the tape we're replacing exists, otherwise
     // we generate infinitely
-    if (hasTape(g.child.tapeSet, g.inputTape) === false) {
+    if (g.child.tapeSet.tag === "TapeLit" &&
+        !g.child.tapeSet.tapes.has(g.inputTape)) {
         return g.child.err("Replacing non-existent tape",
                     `The grammar above does not have a tape ` +
                     `${g.inputTape} to replace on`);
@@ -239,9 +251,8 @@ function getTapesReplaceBlock(g: ReplaceBlockGrammar): Result<Grammar> {
 
     // the block's tapes are its child's tapes plus the 
     // hidden tapes of its rules
-    const hiddenTapes = g.rules.map(r => r.hiddenTapeName)
-                                   .map(t => TapeLit(t));
-    const newTapes = TapeSet(g.child.tapeSet, ...hiddenTapes);
+    const hiddenTapes = TapeLit(g.rules.map(r => r.hiddenTapeName))
+    const newTapes = TapeSum(g.child.tapeSet, hiddenTapes);
     return updateTapes(g, newTapes).msg();
 }
 
@@ -269,7 +280,7 @@ function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar>
     // check for unresolved content, and throw an exception immediately.
     // otherwise we have to puzzle it out from exceptions elsewhere.
     for (const [k,v] of Object.entries(tapeIDs)) {
-        if (tapeLength(v) === "unknown") { 
+        if (v.tag !== "TapeLit") {
             throw new Error(`Unresolved tape structure in ${k}: ${tapeToStr(v)}`);
         }
     }
@@ -315,15 +326,15 @@ function resolveTapes(
     visited: Set<string>
 ): TapeInfo {
     switch (t.tag) {
-        case "tapeUnknown": return TapeSet();
-        case "tapeLit": return t;
-        case "tapeRef": return resolveTapeRefs(t, key, val, visited);
-        case "tapeRename": 
+        case "TapeUnknown": return TapeLit([]);
+        case "TapeLit": return t;
+        case "TapeRef": return resolveTapeRefs(t, key, val, visited);
+        case "TapeRename": 
             return TapeRename(resolveTapes(t.child, key, val, visited), 
                                 t.fromTape, t.toTape);
-        case "tapeSet": 
-            return TapeSet(...mapSet(t.children, c => 
-                resolveTapes(c, key, val, visited)));
+        case "TapeSum": 
+            return TapeSum(resolveTapes(t.c1, key, val, visited),
+                           resolveTapes(t.c2, key, val, visited))
     }
 }
 
@@ -333,7 +344,7 @@ function resolveTapeRefs(
     val:TapeInfo,
     visited: Set<string>
 ): TapeInfo {
-    if (visited.has(t.symbol)) return TapeSet();
+    if (visited.has(t.symbol)) return TapeLit([]);
     
     if (key !== t.symbol) return t;
     
