@@ -60,7 +60,6 @@ function getTapePriority(
         case "not":    
         case "singletape": 
         case "count":    
-        case "locator":   
         case "match":
         case "test":     
         case "testnot": 

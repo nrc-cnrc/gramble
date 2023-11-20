@@ -75,6 +75,13 @@ export function repeatToStr(g: RepeatGrammar): string {
     return enclose([tag, ...strs]);
 }
 
+const EXCLUDED_FROM_STR = new Set([
+    "tag",
+    "tapeSet",
+    "qualifier",
+    "pos"
+]);
+
 export function componentToStr(c: Component): string {
     // by default, components' string representation is an
     // s-expr on the model of (tag toStr(child) toStr(child).
@@ -83,9 +90,7 @@ export function componentToStr(c: Component): string {
     const kvPairs = Object.entries(c)
                           .filter(([k,_]) =>
                              c.hasOwnProperty(k) &&
-                             k != "tag" &&
-                             k != "tapeSet" &&
-                             k != "qualifier" && 
+                             !EXCLUDED_FROM_STR.has(k) &&
                              !k.startsWith("_"));
     for (let i = 0; i < kvPairs.length; i++) {
         const [_,v] = kvPairs[i];

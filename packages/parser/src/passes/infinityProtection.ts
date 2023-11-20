@@ -120,7 +120,6 @@ export function lengthRange(
         case "test": 
         case "testnot":
         case "pretape":
-        case "locator": 
         case "cursor":
         case "singletape":
         case "correspond":

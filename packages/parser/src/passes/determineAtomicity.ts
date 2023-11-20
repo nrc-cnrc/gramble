@@ -40,7 +40,6 @@ function getAtomicityClass(
         case "alt":      
         case "singletape": 
         case "count":    
-        case "locator":   
         case "test":     
         case "testnot": 
         case "cursor":     

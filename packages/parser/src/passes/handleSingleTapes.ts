@@ -35,8 +35,13 @@ export class HandleSingleTapes extends Pass<Grammar,Grammar> {
         return "Handling single-tape environments";
     }
 
+    
     public transform(g: Grammar, env: PassEnv): GrammarResult {
+        return this.transformAux(g, env)
+                   .localize(g.pos);
+    }
 
+    public transformAux(g: Grammar, env: PassEnv): GrammarResult {
         switch (g.tag) {
             case "singletape": return this.handleSingleTape(g, env);
             case "lit":        return this.handleLiteral(g, env);
@@ -47,7 +52,6 @@ export class HandleSingleTapes extends Pass<Grammar,Grammar> {
     }
 
     handleDefault(g: Grammar, env: PassEnv): GrammarResult {
-
         
         if (this.tapeName === undefined) {
             return g.mapChildren(this, env);

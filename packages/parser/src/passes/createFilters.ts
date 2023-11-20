@@ -2,7 +2,7 @@ import { PassEnv } from "../passes";
 import { 
     AlternationGrammar, ContainsGrammar, 
     DotGrammar, EndsGrammar, Grammar,
-    IntersectionGrammar, LocatorGrammar, 
+    IntersectionGrammar, 
     NegationGrammar, RepeatGrammar, 
     SequenceGrammar, StartsGrammar, 
     RenameGrammar,
@@ -90,11 +90,6 @@ export class CreateFilters extends PostPass<Grammar> {
             return new IntersectionGrammar(newCond1, newCond2);
         }
 
-        if (g.child instanceof LocatorGrammar) {
-            const newCond = new StartsGrammar(g.child.child, g.tapes);
-            return new LocatorGrammar(g.child.position, newCond);
-        }
-
         if (g.child instanceof RenameGrammar) {
             const newCond = new StartsGrammar(g.child.child, g.child.child.tapes);
             return new RenameGrammar(newCond, g.child.fromTape, g.child.toTape);
@@ -138,11 +133,6 @@ export class CreateFilters extends PostPass<Grammar> {
             const newCond1 = new EndsGrammar(g.child.child1, g.tapes);
             const newCond2 = new EndsGrammar(g.child.child2, g.tapes);
             return new IntersectionGrammar(newCond1, newCond2);
-        }
-        
-        if (g.child instanceof LocatorGrammar) {
-            const newCond = new EndsGrammar(g.child.child, g.tapes);
-            return new LocatorGrammar(g.child.position, newCond);
         }
         
         if (g.child instanceof RenameGrammar) {
@@ -191,11 +181,6 @@ export class CreateFilters extends PostPass<Grammar> {
             const newCond1 = new ContainsGrammar(g.child.child1, g.tapes);
             const newCond2 = new ContainsGrammar(g.child.child2, g.tapes);
             return new IntersectionGrammar(newCond1, newCond2);
-        }
-
-        if (g.child instanceof LocatorGrammar) {
-            const newCond = new ContainsGrammar(g.child.child, g.tapes);
-            return new LocatorGrammar(g.child.position, newCond);
         }
         
         if (g.child instanceof RenameGrammar) {

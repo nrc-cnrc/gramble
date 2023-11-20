@@ -14,7 +14,7 @@ import {
     EpsilonGrammar, 
     Grammar, GrammarResult, 
     HideGrammar,  
-    ReplaceBlockGrammar, LocatorGrammar, 
+    ReplaceBlockGrammar, 
     TestNotGrammar, 
     CollectionGrammar, 
     RenameGrammar, ReplaceGrammar, 
@@ -71,7 +71,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
                 .bind(g => new HeaderToGrammar(g))
                 .bind(h => h.transform(t.header.header, env))
                 .localize(t.cell.pos)
-                .bind(g => new LocatorGrammar(t.cell.pos, g));
+                .bind(g => g.locate(t.cell.pos));
     }
     
     public handleRename(t: TstRename, env: PassEnv): GrammarResult {
@@ -84,7 +84,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
         const toTape = t.header.header.text;
         return this.transform(t.prev, env)
                     .bind(c => new RenameGrammar(c, fromTape, toTape))
-                    .bind(c => new LocatorGrammar(t.cell.pos, c));
+                    .bind(c => c.locate(t.cell.pos));
     }
     
     public handleHide(t: TstHide, env: PassEnv): GrammarResult {
@@ -92,7 +92,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
         for (const tape of t.cell.text.split("/")) {
             result = result.bind(c => new HideGrammar(c, tape.trim()));
         }
-        return result.bind(c => new LocatorGrammar(t.cell.pos, c));
+        return result.bind(g => g.locate(t.pos));
     }
 
     public handleFilter(t: TstFilter, env: PassEnv): GrammarResult {
@@ -104,12 +104,11 @@ export class CreateGrammars extends Pass<TST,Grammar> {
                 .bind(g => new HeaderToGrammar(g))
                 .bind(h => h.transform(t.header.header, env))
                 .localize(t.cell.pos)
-                .bind(g => new LocatorGrammar(t.cell.pos, g))
+                .bind(g => g.locate(t.pos))
                 .destructure();
 
         const result = new FilterGrammar(prevGrammar, grammar);
-        const locatedResult = new LocatorGrammar(t.cell.pos, result);
-        return locatedResult.msg(prevMsgs).msg(msgs);
+        return result.locate(t.cell.pos).msg(prevMsgs).msg(msgs);
     }
     
     public handleEmpty(t: TstEmpty, env: PassEnv): GrammarResult {
@@ -121,21 +120,21 @@ export class CreateGrammars extends Pass<TST,Grammar> {
                   .map(r => r.getParam(DEFAULT_PARAM))
                   .map(r => this.transform(r, env))
                   .bind(cs => new AlternationGrammar(cs))
-                  .bind(c => new LocatorGrammar(t.cell.pos, c))
+                  .bind(c => c.locate(t.cell.pos));
     }
     
     public handleOr(t: TstOr, env: PassEnv): GrammarResult {
         return resultList([t.sibling, t.child])
                     .map(c => this.transform(c, env))
                     .bind(cs => new AlternationGrammar(cs))
-                    .bind(c => new LocatorGrammar(t.cell.pos, c));
+                    .bind(c => c.locate(t.cell.pos));
     }
     
     public handleJoin(t: TstJoin, env: PassEnv): GrammarResult {
         return resultList([t.sibling, t.child])
                     .map(c => this.transform(c, env))
                     .bind(([c,s]) => new JoinGrammar(c, s))
-                    .bind(c => new LocatorGrammar(t.cell.pos, c));
+                    .bind(c => c.locate(t.cell.pos));
     }
 
     public handleReplace(t: TstReplace, env: PassEnv): GrammarResult {
@@ -153,24 +152,13 @@ export class CreateGrammars extends Pass<TST,Grammar> {
             let begins = false;
             let ends = false;
 
-            
             if (contextArg instanceof RuleContextGrammar) {
                 begins = contextArg.begins;
                 ends = contextArg.ends;
-                preArg = contextArg.preContext;
-                postArg = contextArg.postContext;
+                preArg = contextArg.preContext.locate(contextArg.pos);
+                postArg = contextArg.postContext.locate(contextArg.pos);
             }
             
-            if (contextArg instanceof LocatorGrammar && 
-                    contextArg.child instanceof RuleContextGrammar) {
-                begins = contextArg.child.begins;
-                ends = contextArg.child.ends;
-                preArg = new LocatorGrammar(contextArg.pos,
-                                contextArg.child.preContext);
-                postArg = new LocatorGrammar(contextArg.pos,
-                                contextArg.child.postContext); 
-            }
-
             const replaceRule = new ReplaceGrammar(fromArg, toArg,
                                                    preArg, postArg, new EpsilonGrammar(),
                                                    begins, ends, 0, Infinity, 
@@ -183,8 +171,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
         }
 
         let result: Grammar = new ReplaceBlockGrammar(t.tape, sibling, replaceRules);
-        result = new LocatorGrammar(t.cell.pos, result);
-        return result.msg(sibMsgs).msg(newMsgs);
+        return result.locate(t.cell.pos).msg(sibMsgs).msg(newMsgs);
     }
     
     public handleTest(t: TstTest, env: PassEnv): GrammarResult {
@@ -196,11 +183,11 @@ export class CreateGrammars extends Pass<TST,Grammar> {
             const unique = this.transform(params.getParam("unique"), env).msgTo(msgs);
             const uniqueLits = uniqueLiterals(unique);
             result = result.bind(c => new TestGrammar(c, testInputs, uniqueLits))
-                           .bind(c => new LocatorGrammar(params.pos, c));
+                           .bind(c => c.locate(params.pos))       
         }
 
-        return result.msg(msgs)
-                     .bind(c => new LocatorGrammar(t.cell.pos, c));
+        return result.bind(c => c.locate(t.cell.pos))
+                     .msg(msgs);
     }
     
     public handleNegativeTest(t: TstTestNot, env: PassEnv): GrammarResult {
@@ -210,11 +197,11 @@ export class CreateGrammars extends Pass<TST,Grammar> {
         for (const params of t.child.rows) {
             const testInputs = this.transform(params.getParam(DEFAULT_PARAM), env).msgTo(msgs);
             result = result.bind(c => new TestNotGrammar(c, testInputs))
-                           .bind(c => new LocatorGrammar(params.pos, c));
+                           .bind(c => c.locate(params.pos))   
         }
         
-        return result.msg(msgs)
-                     .bind(c => new LocatorGrammar(t.cell.pos, c));
+        return result.bind(c => c.locate(t.cell.pos))
+                     .msg(msgs);
     }
     
     public handleSequence(t: TstSequence, env: PassEnv): GrammarResult {
@@ -253,7 +240,6 @@ export class CreateGrammars extends Pass<TST,Grammar> {
             newColl.symbols[child.name] = grammar;
         }
 
-        return newColl.msg(msgs)
-                      .bind(c => new LocatorGrammar(t.pos, c));
+        return newColl.locate(t.pos).msg(msgs);
     }
 }

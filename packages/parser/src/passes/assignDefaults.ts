@@ -2,8 +2,7 @@ import {
     EmbedGrammar,
     Grammar,
     CollectionGrammar,
-    AlternationGrammar,
-    LocatorGrammar
+    AlternationGrammar
 } from "../grammars";
 import { PassEnv } from "../passes";
 import { ALL_SYMBOL } from "../utils/constants";
@@ -32,9 +31,7 @@ export class AssignDefaults extends PostPass<Grammar> {
         
         if (g.getSymbol(ALL_SYMBOL) == undefined) {
             const embeds = entries.map(([k,v]) => {
-                if (v instanceof CollectionGrammar || 
-                    v instanceof LocatorGrammar && 
-                    v.child instanceof CollectionGrammar) {
+                if (v instanceof CollectionGrammar) {
                     return new EmbedGrammar(`${k}.${ALL_SYMBOL}`);
                 } else {
                     return new EmbedGrammar(k);

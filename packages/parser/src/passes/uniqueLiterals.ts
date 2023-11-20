@@ -13,7 +13,6 @@ export function uniqueLiterals(
         case "epsilon": return [];
         case "lit":     return [g];
         case "seq":     return flatten(g.children.map(c => uniqueLiterals(c)));
-        case "locator": return uniqueLiterals(g.child);
         case "rename":  return uniqueLiteralsRename(g);
         case "singletape": return uniqueLiteralsSingleTape(g);
         default: throw new Error(`unhandled grammar in getLiterals: ${g.tag}`);

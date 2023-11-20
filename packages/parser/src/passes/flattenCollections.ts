@@ -4,8 +4,7 @@ import {
     EpsilonGrammar,
     Grammar,
     GrammarResult,
-    CollectionGrammar,
-    LocatorGrammar
+    CollectionGrammar
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
 import { SymbolQualifier, grammarToQualifier, qualifySymbolAux } from "./qualifySymbols";
@@ -60,10 +59,9 @@ export class FlattenCollections extends Pass<Grammar,Grammar> {
             const newV = newThis.transform(v, env)
                                 .msgTo(msgs);
 
-            if (v instanceof CollectionGrammar || 
-                    v instanceof LocatorGrammar && v.child instanceof CollectionGrammar) {
-                // if it's a nested CollectionGrammar, just discard it, we don't need it 
-                // for anything.  its symbols are in env.
+            if (v instanceof CollectionGrammar) {
+                // if it's a nested CollectionGrammar, just discard it, 
+                // we don't need it for anything.  its symbols are in env.
                 continue;
             }
 
@@ -88,7 +86,7 @@ export class FlattenCollections extends Pass<Grammar,Grammar> {
         }
 
         // didn't find it
-        const msg = new MissingSymbolError(g.symbol);
+        const msg = new MissingSymbolError(g.symbol).localize(g.pos);
         return new EpsilonGrammar().msg(msg);
     }
 

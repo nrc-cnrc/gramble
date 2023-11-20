@@ -44,54 +44,58 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
             return g.msg();
         }
 
-        return g.mapChildren(this, env).bind(g => {
-            switch (g.tag) {
+        return g.mapChildren(this, env)
+                .bind(g => this.transformAux(g, env))
+                .localize(g.pos);
+    }
 
-                // have no tapes
-                case "epsilon":
-                case "null": return updateTapes(g, TapeLit([]));
+    public transformAux(g: Grammar, env: PassEnv): Grammar|Result<Grammar> {
+        switch (g.tag) {
 
-                // have their own tape name as tapes
-                case "lit": return updateTapes(g, TapeLit([g.tapeName]));
-                case "dot": return updateTapes(g, TapeLit([g.tapeName]));
+            // have no tapes
+            case "epsilon":
+            case "null": return updateTapes(g, TapeLit([]));
 
-                // just the union of children's tapes
-                case "seq": 
-                case "alt": 
-                case "intersect": 
-                case "join":
-                case "short": 
-                case "count": 
-                case "not":
-                case "test":
-                case "testnot":
-                case "repeat":
-                case "correspond":
-                case "context":
-                case "cursor":
-                case "pretape":
-                case "locator": return getTapesDefault(g);
-                
-                // union of children's tapes, plus additional tapes
-                case "starts":
-                case "ends":
-                case "contains": return getTapesDefault(g, g.extraTapes);
-                case "match":    return getTapesDefault(g, [g.fromTape, g.toTape]);
+            // have their own tape name as tapes
+            case "lit": return updateTapes(g, TapeLit([g.tapeName]));
+            case "dot": return updateTapes(g, TapeLit([g.tapeName]));
 
-                // something special
-                case "embed":      return getTapesEmbed(g, this.knownTapes);
-                case "collection": return getTapesCollection(g, env);
-                case "singletape": return updateTapes(g, TapeLit([g.tapeName]));
-                case "rename":     return getTapesRename(g);
-                case "hide":       return getTapesHide(g);
-                case "filter":     return getTapesFilter(g);
-                case "replace":    return getTapesReplace(g, env);
-                case "replaceblock": return getTapesReplaceBlock(g);
+            // just the union of children's tapes
+            case "seq": 
+            case "alt": 
+            case "intersect": 
+            case "join":
+            case "short": 
+            case "count": 
+            case "not":
+            case "test":
+            case "testnot":
+            case "repeat":
+            case "correspond":
+            case "context":
+            case "cursor":
+            case "pretape": return getTapesDefault(g);
+            
+            // union of children's tapes, plus additional tapes
+            case "starts":
+            case "ends":
+            case "contains": return getTapesDefault(g, g.extraTapes);
+            case "match":    return getTapesDefault(g, [g.fromTape, g.toTape]);
 
-                default: exhaustive(g);
-                //default: throw new Error(`unhandled grammar in getTapes: ${g.tag}`);
-            }
-        });
+            // something special
+            case "embed":      return getTapesEmbed(g, this.knownTapes);
+            case "collection": return getTapesCollection(g, env);
+            case "singletape": return updateTapes(g, TapeLit([g.tapeName]));
+            case "rename":     return getTapesRename(g);
+            case "hide":       return getTapesHide(g);
+            case "filter":     return getTapesFilter(g);
+            case "replace":    return getTapesReplace(g, env);
+            case "replaceblock": return getTapesReplaceBlock(g);
+
+            default: exhaustive(g);
+            //default: throw new Error(`unhandled grammar in getTapes: ${g.tag}`);
+        }
+
     }
 }
 

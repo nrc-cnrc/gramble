@@ -5,15 +5,13 @@ import {
     ResultVoid
 } from "./utils/msgs";
 import { Pass, PassEnv } from "./passes";
-import { Dict } from "./utils/func";
+import { Dict, update } from "./utils/func";
 import { Pos } from "./utils/cell";
 
 export abstract class Component {
     public abstract readonly tag: string;
 
-    public get pos(): Pos | undefined {
-        return undefined;
-    } 
+    public pos: Pos | undefined = undefined;
 
     public mapChildren(f: Pass<Component,Component>, env: PassEnv): Result<Component> {
         const clone = Object.create(Object.getPrototypeOf(this));
@@ -23,7 +21,8 @@ export abstract class Component {
             if (k.startsWith("_")) continue;
             clone[k] = mapAny(v, f, env).msgTo(msgs);
         }
-        return clone.msg(msgs);
+        const newMsgs = msgs.map(m => m.localize(this.pos));
+        return clone.msg(newMsgs);
     }
 
     public msg(m: Msg | Msgs | ResultVoid = []): Result<this> {
@@ -38,6 +37,12 @@ export abstract class Component {
     public warn(longMsg: string): Result<this> {
         const e = Warn(longMsg);
         return this.msg(e);
+    }
+
+    public locate(pos: Pos | undefined): Component {
+        if (pos === undefined) return this;
+        if (this.pos !== undefined) return this;
+        return update(this, { pos: pos });
     }
 }
 

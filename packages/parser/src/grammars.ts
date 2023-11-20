@@ -68,7 +68,6 @@ export type Grammar = EpsilonGrammar
              | MatchGrammar
              | CollectionGrammar
              | EmbedGrammar
-             | LocatorGrammar
              | TestGrammar
              | TestNotGrammar
              | ReplaceBlockGrammar
@@ -125,6 +124,10 @@ export abstract class AbstractGrammar extends Component {
 
     public mapChildren(f: Pass<Grammar,Grammar>, env: PassEnv): GrammarResult {
         return super.mapChildren(f, env) as GrammarResult;
+    }
+    
+    public locate(pos: Pos | undefined): Grammar {
+        return super.locate(pos) as Grammar;
     }
 
     public tapeSet: TapeInfo = TapeUnknown();
@@ -643,31 +646,6 @@ export class EmbedGrammar extends AtomicGrammar {
         symbolsVisited.add([this.symbol, tapeName]);
         const referent = env.symbolNS.get(this.symbol);
         return referent.getVocabCopyEdges(tapeName, tapeNS, symbolsVisited, env);
-    }
-
-}
-
-/**
- * A LocatorGrammar is a semantically trivial grammar that 
- * associates a grammar with some location in a sheet
- */
-export class LocatorGrammar extends UnaryGrammar {
-    public readonly tag = "locator";
-
-    constructor(
-        public position: Pos,
-        child: Grammar
-    ) {
-        super(child);
-    }
-    
-    public mapChildren(f: Pass<Grammar,Grammar>, env: PassEnv): GrammarResult {
-        return super.mapChildren(f, env)
-                    .localize(this.pos);
-    }
-
-    public get pos(): Pos {
-        return this.position;
     }
 
 }

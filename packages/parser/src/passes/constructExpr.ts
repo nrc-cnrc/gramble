@@ -29,8 +29,7 @@ export function constructExpr(
 
         // test and testnot play no role in the Expr tree
         case "test":
-        case "testnot":
-        case "locator":    return constructExpr(env, g.child);
+        case "testnot":    return constructExpr(env, g.child);
 
         // grammars with no children are pretty trivial, do them
         // in one line

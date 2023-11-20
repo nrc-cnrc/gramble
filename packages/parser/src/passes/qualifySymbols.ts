@@ -9,8 +9,6 @@ export function qualifySymbol(
     symbol: string
 ): [string, Grammar] | undefined {
     switch (g.tag) {
-        case "locator": 
-            return qualifySymbol(g.child, symbol);
         case "collection":
             const symbolPieces = symbol.split(".").filter(s => s.length > 0);
             const result = qualifySymbolAux(g.qualifier, symbolPieces);
@@ -71,8 +69,6 @@ function qualifySymbolLocal(
  */
 export function grammarToQualifier(g: Grammar): SymbolQualifier {
     switch (g.tag) {
-        case "locator": 
-            return grammarToQualifier(g.child);
         case "collection": 
             const symbols = mapValues(g.symbols, grammarToQualifier)
             return { symbols };

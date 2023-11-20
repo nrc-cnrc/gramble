@@ -56,18 +56,18 @@ export abstract class AbstractTST extends Component {
  */
 export abstract class TstCellComponent extends AbstractTST {
 
+    public pos: Pos; // unlike the ancestor class,
+                     // these definitely have a pos
+
     constructor(
         public cell: Cell
     ) { 
         super();
+        this.pos = cell.pos;
     }
 
     public get text(): string {
         return this.cell.text;
-    }
-
-    public get pos(): Pos {
-        return this.cell.pos;
     }
 
 }

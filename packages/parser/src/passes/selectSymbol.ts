@@ -25,7 +25,6 @@ export class SelectSymbol extends Pass<Grammar,Grammar> {
     
     public transform(g: Grammar, env: PassEnv): Result<Grammar> {
         switch (g.tag) {
-            case "locator":    return g.mapChildren(this, env);
             case "collection": return this.selectSymbol(g, env);
             default:           return g.err("Symbol not found", 
                                     `Cannot find symbol ${this.symbol} in ${g.tag} grammar`);

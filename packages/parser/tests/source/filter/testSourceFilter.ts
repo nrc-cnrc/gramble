@@ -232,7 +232,11 @@ describe(`Source ${DIR}`, function() {
     describe('26. Equals embed with a join', test({
         id: "26",
         errors: [ Error(13,3) ],
-        results: [],
+        results: [
+            {"gloss":"[3SG]","subj":"[3SG]"},
+            {"text":"baz","gloss":"[2SG]","subj":"[2SG]"},
+            {"text":"bar","gloss":"[1SG]","subj":"[1SG]"}
+        ],
     }));
 
     describe('27. Equals embed where the symbol is defined later', test({
@@ -515,7 +519,11 @@ describe(`Source ${DIR}`, function() {
     describe('E1. Equals with an ill-formed filter', test({
         id: "E1",
         errors: [ Error(7,3) ],
-        results: []
+        results: [
+            {"text":"moo","pos":"n"},
+            {"text":"goo","pos":"v"},
+            {"text":"foo","pos":"v"}
+        ]
     }));
 
     describe('E2. Equals where the filter references a non-existent tape', test({

@@ -37,8 +37,7 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
                 case "testnot": return this.handleNegativeTest(g, env);
                 default:        return g;
             }
-        });
-
+        }).localize(g.pos);
     }
 
     public handleTest(g: TestGrammar, env: PassEnv): GrammarResult {
