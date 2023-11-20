@@ -10,7 +10,7 @@ import {
     Tape, 
     TapeInfo, 
     TapeNamespace,
-    tapeToLits,
+    tapeToStr,
     TapeUnknown
 } from "./tapes";
 import { Pass, PassEnv } from "./passes";
@@ -29,6 +29,7 @@ import { tokenizeUnicode } from "./utils/strings";
 import { Pos } from "./utils/cell";
 import { CalculateTapes } from "./passes/calculateTapes";
 import { SymbolQualifier } from "./passes/qualifySymbols";
+import { toStr } from "./passes/toStr";
 
 export { CounterStack, Expr };
 
@@ -131,7 +132,11 @@ export abstract class AbstractGrammar extends Component {
     //public _tapes: string[] | undefined = undefined;
 
     public get tapes(): string[] {
-        return tapeToLits(this.tapeSet);
+        if (this.tapeSet.tag !== "TapeLit") {
+            throw new Error(`Grammar ${toStr(this)} references unresolved tapes: ` +
+                                `${tapeToStr(this.tapeSet)}`);
+        }
+        return [...this.tapeSet.tapes];
     }
 
     public getChildren(): Grammar[] {

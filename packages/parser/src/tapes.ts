@@ -132,16 +132,6 @@ export function tapeToRefs(t: TapeInfo): string[] {
     }
 }
 
-// Getting the literals from a tape set.  If anything in it isn't
-// a literal or a set, that's an error
-
-export function tapeToLits(t: TapeInfo): string[] {
-    switch (t.tag) {
-        case "TapeLit": return [...t.tapes];
-        default: throw new Error(`unresolved tape structure: ${tapeToStr(t)}`)
-    }
-}
-
 export type VocabSet = {
     tokens: Set<string>,
     wildcard: boolean,

@@ -1,18 +1,26 @@
 import { Collection, Embed, Lit, Rename, Seq } from "../../src/grammarConvenience";
 import { CollectionGrammar, Grammar } from "../../src/grammars";
+import { Dict } from "../../src/utils/func";
 
 export type RandOptions = {
     numSymbols: number,
     numTapes: number,
     seqPoissonMean: number,
-    maxDepth: number
+    maxDepth: number,
+    probs: Dict<number>
 }
 
 const DEFAULT_OPTIONS: RandOptions = {
     numSymbols: 10,
     numTapes: 10,
     seqPoissonMean: 3,
-    maxDepth: 4
+    maxDepth: 4,
+    probs: {
+        lit: 0.3,
+        seq: 0.4,
+        embed: 0.1,
+        rename: 0.1,
+    }
 }
 
 export function RandOptions(
@@ -52,7 +60,7 @@ function poissonRange(mean: number): number[] {
 }
 
 function allSymbols(opt: RandOptions) {
-    return range(opt.numSymbols).map(n => `s${n}`);
+    return range(opt.numSymbols).map(n => `S${n}`);
 }
 
 function randomSymbol(opt: RandOptions) {
@@ -68,13 +76,11 @@ function randomTape(opt: RandOptions) {
 }
 
 export function randomEmbed(opt: RandOptions): Grammar {
-    const s = randomSymbol(opt);
-    return Embed(s);
+    return Embed(randomSymbol(opt));
 }
 
 export function randomLit(opt: RandOptions): Grammar {
-    const t = randomTape(opt);
-    return Lit(t, "a");
+    return Lit(randomTape(opt), "a");
 }
     
 export function randomSeq(opt: RandOptions): Grammar {
@@ -96,23 +102,25 @@ export function randomRename(opt: RandOptions): Grammar {
     return Rename(child, randomTape(opt), randomTape(opt));
 }
 
-type randomConstr = (opt: RandOptions) => Grammar;
-const RANDOM_CONSTRUCTORS: [randomConstr, number][] = [
-    [ randomLit, 0.3 ],
-    [ randomSeq, 0.4 ],
-    [ randomEmbed, 0.1],
-    [ randomRename, 0.1],
-]
-
 export function randomGrammar(opt: RandOptions): Grammar {
     if (opt.maxDepth <= 1) {
         return randomLit(opt);
     } 
     const rand = Math.random();
     let totalP = 0.0;
-    for (const [constr, p] of RANDOM_CONSTRUCTORS) {
+    for (const [tag, p] of Object.entries(opt.probs)) {
         totalP += p;
-        if (rand <= totalP) return constr(opt);
+        if (rand <= totalP) return randomGrammarFromTag(tag, opt);
     }
     return randomLit(opt);
+}
+
+export function randomGrammarFromTag(tag: string, opt: RandOptions): Grammar {
+    switch (tag) {
+        case "lit": return randomLit(opt);
+        case "seq": return randomSeq(opt);
+        case "embed": return randomEmbed(opt);
+        case "rename": return randomRename(opt);
+        default: throw new Error(`Can't make a random ${tag}.`)
+    }
 }
