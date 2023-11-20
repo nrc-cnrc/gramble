@@ -84,6 +84,16 @@ export function flatten<T>(ss: Iterable<Iterable<T>>): T[] {
     return results;
 }
 
+export function arrayEquals<T>(a1: T[], a2: T[]): boolean {
+    if (a1 === a2) return true;
+    if (a1 == null || a2 == null) return false;
+    if (a1.length !== a2.length) return false;
+    for (var i = 0; i < a1.length; ++i) {
+      if (a1[i] !== a2[i]) return false;
+    }
+    return true;
+}
+
 export function listIntersection<T>(s1: T[], s2: T[]): T[] {
     const set2 = new Set(s2);
     return s1.filter(i => set2.has(i));

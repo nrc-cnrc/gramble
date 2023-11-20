@@ -1,92 +1,90 @@
-import { Collection, Embed, Lit, Rename, Seq } from "../../src/grammarConvenience";
-import { Grammar } from "../../src/grammars";
+import { assert } from "chai";
 
-const NUM_SYMBOLS = 10;
-const NUM_TAPES = 10;
-const SEQ_POISSON_MEAN = 3;
-
-const SYMBOLS = range(NUM_SYMBOLS).map(n => `s${n}`);
-function randomSymbol() {
-    return random(SYMBOLS);
+export interface PropertyTest {
+    id: string,
+    run(): PropertyTestResult,
+    reduce(): PropertyTest,
+    toStr(): string
 }
 
-const TAPES = range(NUM_TAPES).map(n => `t${n}`);
-function randomTape() {
-    return random(TAPES);
+export type PropertyTestResult 
+        = { tag: "success" } 
+        | { tag: "failure", msg: string };
+
+export function PropertyTestSuccess(): PropertyTestResult {
+    return { tag: "success" };
 }
 
-function random<T>(xs: T[]): T {
-    const i = Math.floor(Math.random() * xs.length);
-    return xs[i];
+export function PropertyTestFailure(msg: string): PropertyTestResult {
+    return { tag: "failure", msg };
 }
 
-function range(length: number): number[] {
-    return [...Array(length).keys()];
-}
+export function padZeros(i: number, max: number) {
+    return `${i}`.padStart(Math.log10(max), "0");
+};
 
-function poissonRange(mean: number): number[] {
-    return range(poisson(mean));
-}
 
-function poisson(mean: number): number {
-    const L = Math.exp(-mean);
-    let p = 1.0;
-    let k = 0;
+export function testToBreaking(
+    desc: string,
+    testConstructor: new (id: string) => PropertyTest,
+    numTests: number = 1000
+): void {
+    describe(`Property ${desc}`, function() {
+        let test = new testConstructor(""); // just a dummy
+        let result: PropertyTestResult = PropertyTestSuccess();
+
+        for (let i = 0; i < numTests; i++) {
+            const id = desc + padZeros(i, numTests);
+            test = new testConstructor(id);
+            result = test.run();
+            if (result.tag === "failure") break;
+        }
     
-    do {
-        k++;
-        p *= Math.random();
-    } while (p > L);
-    
-    return k - 1;
-}
+        if (result.tag === "success") {
+            it(`${numTests} test(s) succeeded.`, function() {
+                assert.isTrue(true);
+            });
+            return;
+        }
 
-export function randomEmbed(maxDepth: number = 5): Grammar {
-    const s = randomSymbol();
-    return Embed(s);
-}
+        // we got a failure.
+        it(`${test.id} failed`, function() {
+            if (result.tag === "success") return; // TS isn't able to infer this 
+            assert.fail(result.msg);
+        });
 
-export function randomLit(maxDepth: number = 5): Grammar {
-    const t = randomTape();
-    return Lit(t, "a");
-}
-    
-export function randomSeq(maxDepth: number = 5): Grammar {
-    const children = poissonRange(SEQ_POISSON_MEAN).map(_ => randomGrammar(maxDepth-1));
-    return Seq(...children);
-}
+        let simplifiedTest = test;
+        let simplifiedResult = result;
+        let foundAnotherFailure = true;
+        while (foundAnotherFailure) {
+            foundAnotherFailure = false;
+            for (let i = 0; i < 100; i++) {
+                const newTest = simplifiedTest.reduce();
+                if (simplifiedTest.toStr() == newTest.toStr()) {
+                    // don't test the exact same as the previous
+                    // failure, we'll end up looping
+                    continue;
+                }
 
-export function randomCollection(maxDepth: number = 5): Grammar {
-    const result = Collection();
-    for (const symbol of SYMBOLS) {
-        result.symbols[symbol] = randomGrammar(maxDepth);
-    }
-    return result;
-}
+                const newResult = newTest.run();
+                if (newResult.tag === "success") continue;
+                
+                // it's a failure... good! that's what we're looking for
+                foundAnotherFailure = true;
+                simplifiedTest = newTest;
+                simplifiedResult = newResult;
+                break;
+            }
+        }
 
-export function randomRename(maxDepth: number = 5): Grammar {
-    const child = randomGrammar(maxDepth-1)
-    return Rename(child, randomTape(), randomTape());
-}
+        if (simplifiedTest.toStr() == test.toStr()) {
+            // we didn't find anything actually simpler
+            return;
+        }
 
+        it(`Simplified test also fails`, function() {
+            assert.fail(simplifiedResult.msg);
+        });
 
-type randomConstr = (depth: number) => Grammar;
-const RANDOM_CONSTRUCTORS: [randomConstr, number][] = [
-    [ randomLit, 0.2 ],
-    [ randomSeq, 0.4 ],
-    [ randomEmbed, 0.3],
-    [ randomRename, 0.1],
-]
-
-export function randomGrammar(maxDepth: number = 5): Grammar {
-    if (maxDepth <= 1) {
-        return randomLit();
-    } 
-    const rand = Math.random();
-    let totalP = 0.0;
-    for (const [constr, p] of RANDOM_CONSTRUCTORS) {
-        totalP += p;
-        if (rand <= totalP) return constr(maxDepth-1);
-    }
-    return randomLit();
+    });
 }

@@ -1,4 +1,4 @@
-import { CollectionGrammar, Grammar } from "../../src/grammars";
+import { Grammar } from "../../src/grammars";
 import { assert, expect } from "chai";
 import { t1, t2, t3 } from "../testUtil";
 import { 
@@ -13,14 +13,14 @@ import { SelectSymbol } from "../../src/passes/selectSymbol";
 import { FlattenCollections } from "../../src/passes/flattenCollections";
 
 type GrammarIDTest = {
-    testnum: string,
+    desc: string,
     grammar: Grammar,
     tapes: Iterable<string>,
     symbol?: string
 };
 
 export function testGrammarTapes({
-    testnum,
+    desc,
     grammar,
     tapes,
     symbol = ""
@@ -39,14 +39,14 @@ export function testGrammarTapes({
     try {
         resultTapes = new Set(newGrammar.tapes);
     } catch (e) {
-        it(`${testnum} has unresolved tape structure`, function() {
+        it(`${desc} has unresolved tape structure`, function() {
             assert.fail(`${e}`);
         });
         return;
     }
 
     const expectedTapes = new Set([...tapes]);
-    it(`${testnum} should have tapes [${[...tapes]}]`, function() {
+    it(`${desc} should have tapes [${[...tapes]}]`, function() {
         expect(resultTapes).to.deep.equal(expectedTapes);
     });
 }
@@ -54,50 +54,50 @@ export function testGrammarTapes({
 describe(`GrammarIDs`, function() {
 
     testGrammarTapes({
-        testnum: "1",
+        desc: "1",
         grammar: t1("hello"),
         tapes: ["t1"]
     });
 
     testGrammarTapes({
-        testnum: "2a",
+        desc: "2a",
         grammar: Seq(t1("hello"), t2("world")),
         tapes: ["t1", "t2"]
     });
 
     testGrammarTapes({
-        testnum: "2b",
+        desc: "2b",
         grammar: Seq(t1("hello"), Seq(t2("world"), t3("!"))),
         tapes: ["t1", "t2", "t3"]
     });
 
     testGrammarTapes({
-        testnum: "3a",
+        desc: "3a",
         grammar: Rename(t1("hello"), "t1", "t2"),
         tapes: ["t2"]
     });
 
     testGrammarTapes({
-        testnum: "3b",
+        desc: "3b",
         grammar: Rename(Seq(t1("hello"), t2("world")), "t1", "t3"),
         tapes: ["t2", "t3"]
     });
 
     testGrammarTapes({
-        testnum: "3c",
+        desc: "3c",
         grammar: Hide(Seq(t1("hello"), t2("world")), "t1", "HIDDEN"),
         tapes: ["t2", ".HIDDEN"]
     });
 
     testGrammarTapes({
-        testnum: "4a",
+        desc: "4a",
         grammar: Collection({a: t1("hi"), b: Embed("a")}),
         tapes: ["t1"],
         symbol: "b"
     });
 
     testGrammarTapes({
-        testnum: "4b",
+        desc: "4b",
         grammar: Collection({
             b: Embed("a"),
             a: t1("hi")
@@ -108,7 +108,7 @@ describe(`GrammarIDs`, function() {
 
     
     testGrammarTapes({
-        testnum: "5",
+        desc: "5",
         grammar: Collection({
             a: Seq(t1("hi"), t2("world")),
             b: Embed("a")
@@ -118,7 +118,7 @@ describe(`GrammarIDs`, function() {
     });
 
     testGrammarTapes({
-        testnum: "6a",
+        desc: "6a",
         grammar: Collection({
             a: Rename(Seq(t1("hi"), t2("world")), "t2", "t3"),
             b: Embed("a")
@@ -127,12 +127,8 @@ describe(`GrammarIDs`, function() {
         symbol: "b"
     });
     
-    /*
-    // These are correct, but I'm briefly going to ignore them
-    // because I want to replicate the old semantics
-    /*
     testGrammarTapes({
-        testnum: "6b",
+        desc: "6b",
         grammar: Collection({
             a: Seq(t1("hi"), t2("world")),
             b: Rename(Embed("a"), "t2", "t3")
@@ -142,7 +138,7 @@ describe(`GrammarIDs`, function() {
     });
 
     testGrammarTapes({
-        testnum: "6c",
+        desc: "6c",
         grammar: Collection({
             b: Rename(Embed("a"), "t2", "t3"),
             a: Seq(t1("hi"), t2("world"))
@@ -152,7 +148,7 @@ describe(`GrammarIDs`, function() {
     });
     
     testGrammarTapes({
-        testnum: "6d",
+        desc: "6d",
         grammar: Collection({
             a: Rename(Seq(t1("hi"), t2("world")), "t1", "t4"),
             b: Rename(Embed("a"), "t2", "t3")
@@ -160,10 +156,9 @@ describe(`GrammarIDs`, function() {
         tapes: ["t3", "t4"],
         symbol: "b"
     });
-    */
 
     testGrammarTapes({
-        testnum: "7",
+        desc: "7",
         grammar: Collection({
             a: Seq(t1("hi"), Embed("a"))
         }),
@@ -172,7 +167,7 @@ describe(`GrammarIDs`, function() {
     });
     
     testGrammarTapes({
-        testnum: "8a",
+        desc: "8a",
         grammar: Collection({
             a: Seq(t1("hi"), Embed("b")),
             b: Seq(t2("world"), Embed("b"))
@@ -182,7 +177,7 @@ describe(`GrammarIDs`, function() {
     });
     
     testGrammarTapes({
-        testnum: "8b",
+        desc: "8b",
         grammar: Collection({
             b: Seq(t2("world"), Embed("b")),
             a: Seq(t1("hi"), Embed("b")),
@@ -192,7 +187,7 @@ describe(`GrammarIDs`, function() {
     });
     
     testGrammarTapes({
-        testnum: "8c",
+        desc: "8c",
         grammar: Collection({
             a: Seq(t1("hi"), Embed("b")),
             b: Seq(t2("world"), Embed("b")),
@@ -201,10 +196,8 @@ describe(`GrammarIDs`, function() {
         symbol: "a"
     });
 
-    /*
-    // Likewise correct, but I'm replicating the old tape semantics for now
     testGrammarTapes({
-        testnum: "9a",
+        desc: "9a",
         grammar: Collection({
             a: Seq(t1("hi"), Rename(Embed("b"), "t2", "t3")),
             b: Seq(t2("world"), Embed("b")),
@@ -215,7 +208,7 @@ describe(`GrammarIDs`, function() {
 
     
     testGrammarTapes({
-        testnum: "9b",
+        desc: "9b",
         grammar: Collection({
             b: Seq(t2("world"), Embed("b")),
             a: Seq(t1("hi"), Rename(Embed("b"), "t2", "t3")),
@@ -224,10 +217,8 @@ describe(`GrammarIDs`, function() {
         symbol: "a"
     });
 
-    */
-
     testGrammarTapes({
-        testnum: "10a",
+        desc: "10a",
         grammar: Collection({
             b: Seq(t2("world"), Embed("a")),
             a: Seq(t1("hi"), Embed("b")),
@@ -237,7 +228,7 @@ describe(`GrammarIDs`, function() {
     });
 
     testGrammarTapes({
-        testnum: "10b",
+        desc: "10b",
         grammar: Collection({
             a: Seq(t1("hi"), Embed("b")),
             b: Seq(t2("world"), Embed("a")),
@@ -247,31 +238,31 @@ describe(`GrammarIDs`, function() {
     });
 
     testGrammarTapes({
-        testnum: "11a",
+        desc: "11a",
         grammar: Match(t1("hello"), "t1", "t2"),
         tapes: ["t1", "t2"]
     });
 
     testGrammarTapes({
-        testnum: "11b",
+        desc: "11b",
         grammar: Match(t1("hello"), "t2", "t3"),
         tapes: ["t1", "t2", "t3"]
     });
 
     testGrammarTapes({
-        testnum: "12a",
+        desc: "12a",
         grammar: Join(t1("hello"), t2("world")),
         tapes: ["t1", "t2"]
     });
 
     testGrammarTapes({
-        testnum: "12a",
+        desc: "12a",
         grammar: Join(t1("hello"), Seq(t1("hello"), t2("world"))),
         tapes: ["t1", "t2"]
     });
 
     testGrammarTapes({
-        testnum: "13a",
+        desc: "13a",
         grammar: Collection({
             a: t1("hi"),
             b: Seq(t2("world"), Embed("a")),
@@ -282,7 +273,7 @@ describe(`GrammarIDs`, function() {
     });
     
     testGrammarTapes({
-        testnum: "13b",
+        desc: "13b",
         grammar: Collection({
             a: t1("hi"),
             c: Seq(t3("!"), Embed("b")),
@@ -293,7 +284,7 @@ describe(`GrammarIDs`, function() {
     });
     
     testGrammarTapes({
-        testnum: "13c",
+        desc: "13c",
         grammar: Collection({
             b: Seq(t2("world"), Embed("a")),
             a: t1("hi"),
@@ -304,7 +295,7 @@ describe(`GrammarIDs`, function() {
     });
     
     testGrammarTapes({
-        testnum: "13d",
+        desc: "13d",
         grammar: Collection({
             b: Seq(t2("world"), Embed("a")),
             c: Seq(t3("!"), Embed("b")),
@@ -315,7 +306,7 @@ describe(`GrammarIDs`, function() {
     });
 
     testGrammarTapes({
-        testnum: "13e",
+        desc: "13e",
         grammar: Collection({
             c: Seq(t3("!"), Embed("b")),
             a: t1("hi"),
@@ -326,7 +317,7 @@ describe(`GrammarIDs`, function() {
     });
     
     testGrammarTapes({
-        testnum: "13f",
+        desc: "13f",
         grammar: Collection({
             c: Seq(t3("!"), Embed("b")),
             b: Seq(t2("world"), Embed("a")),
@@ -337,7 +328,7 @@ describe(`GrammarIDs`, function() {
     });
     
     testGrammarTapes({
-        testnum: "14a",
+        desc: "14a",
         grammar: Collection({
             a: Seq(t1("hi"), Embed("c")),
             b: Seq(t2("world"), Embed("a")),
@@ -348,7 +339,7 @@ describe(`GrammarIDs`, function() {
     });
     
     testGrammarTapes({
-        testnum: "14b",
+        desc: "14b",
         grammar: Collection({
             a: Seq(t1("hi"), Embed("c")),
             c: Seq(t3("!"), Embed("b")),
@@ -359,7 +350,7 @@ describe(`GrammarIDs`, function() {
     });
     
     testGrammarTapes({
-        testnum: "14c",
+        desc: "14c",
         grammar: Collection({
             b: Seq(t2("world"), Embed("a")),
             a: Seq(t1("hi"), Embed("c")),
@@ -370,7 +361,7 @@ describe(`GrammarIDs`, function() {
     });
     
     testGrammarTapes({
-        testnum: "14d",
+        desc: "14d",
         grammar: Collection({
             b: Seq(t2("world"), Embed("a")),
             c: Seq(t3("!"), Embed("b")),
@@ -381,7 +372,7 @@ describe(`GrammarIDs`, function() {
     });
 
     testGrammarTapes({
-        testnum: "14e",
+        desc: "14e",
         grammar: Collection({
             c: Seq(t3("!"), Embed("b")),
             a: Seq(t1("hi"), Embed("c")),
@@ -392,7 +383,7 @@ describe(`GrammarIDs`, function() {
     });
     
     testGrammarTapes({
-        testnum: "14f",
+        desc: "14f",
         grammar: Collection({
             c: Seq(t3("!"), Embed("b")),
             b: Seq(t2("world"), Embed("a")),
@@ -403,7 +394,7 @@ describe(`GrammarIDs`, function() {
     });
 
     testGrammarTapes({
-        testnum: "15",
+        desc: "15",
         grammar: Collection({
             a: t1("hello"),
             b: t2("world"),
@@ -414,8 +405,62 @@ describe(`GrammarIDs`, function() {
     });
 
     testGrammarTapes({
-        testnum: "16",
+        desc: "16",
         grammar: Replace("e", "a", "h", "llo"),
         tapes: ["$i", "$o"],
     });
+
+    testGrammarTapes({
+        desc: "17a",
+        grammar: Collection({
+            "S0": Seq(Embed("S2"), Embed("S0"), Embed("S1"), Embed("S3")),
+            "S1": Embed("S0"),
+            "S2": t1("a"),
+            "S3": Embed("S1")
+        }),
+        symbol: "S3",
+        tapes: ["t1"]
+    });
+
+    testGrammarTapes({
+        desc: "17b",
+        grammar: Collection({
+            "S1": Embed("S0"),
+            "S2": t1("a"),
+            "S0": Seq(Embed("S2"), Embed("S0"), Embed("S1"), Embed("S3")),
+            "S3": Embed("S1")
+        }),
+        symbol: "S3",
+        tapes: ["t1"]
+    });
+
+    testGrammarTapes({
+        desc: "18a",
+        grammar: Collection({
+            "S1": Embed("S1")
+        }),
+        symbol: "S1",
+        tapes: []
+    });
+
+    testGrammarTapes({
+        desc: "18b",
+        grammar: Collection({
+            "S1": Seq(Embed("S1"), t1("a"))
+        }),
+        symbol: "S1",
+        tapes: ["t1"]
+    });
+
+    
+    testGrammarTapes({
+        desc: "18a",
+        grammar: Collection({
+            "S1": Embed("S1")
+        }),
+        symbol: "S1",
+        tapes: []
+    });
+
+
 });

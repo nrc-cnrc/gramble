@@ -260,6 +260,7 @@ function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar>
             const k2 = refs[i];
             const newV1 = resolveTapes(tapeIDs[k1], k2, 
                 tapeIDs[k2], visited);
+            visited.add(k2);
             refs = [...new Set([...refs, ...tapeToRefs(newV1)])];
             tapeIDs[k1] = newV1;
         }
@@ -332,8 +333,11 @@ function resolveTapeRefs(
     val:TapeInfo,
     visited: Set<string>
 ): TapeInfo {
-    if (visited.has(key)) return TapeSet();
+    if (visited.has(t.symbol)) return TapeSet();
+    
     if (key !== t.symbol) return t;
-    const newVisited = new Set([...visited, key]);
-    return resolveTapes(val, key, val, newVisited);
+    
+    const newVisited = new Set([...visited, t.symbol]);
+    const result = resolveTapes(val, key, val, newVisited);
+    return result;
 }
