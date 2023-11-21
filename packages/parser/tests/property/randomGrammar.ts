@@ -3,16 +3,16 @@ import { CollectionGrammar, Grammar } from "../../src/grammars";
 import { Dict } from "../../src/utils/func";
 
 export type RandOptions = {
-    numSymbols: number,
-    numTapes: number,
+    symbols: string[],
+    tapes: string[],
     seqPoissonMean: number,
     maxDepth: number,
     probs: Dict<number>
 }
 
 const DEFAULT_OPTIONS: RandOptions = {
-    numSymbols: 10,
-    numTapes: 10,
+    symbols: range(10).map(n => `S${n}`),
+    tapes: range(10).map(n => `t${n}`),
     seqPoissonMean: 3,
     maxDepth: 4,
     probs: {
@@ -59,20 +59,12 @@ function poissonRange(mean: number): number[] {
     return range(poisson(mean));
 }
 
-function allSymbols(opt: RandOptions) {
-    return range(opt.numSymbols).map(n => `S${n}`);
-}
-
 function randomSymbol(opt: RandOptions) {
-    return randomChoice(allSymbols(opt));
-}
-
-function allTapes(opt: RandOptions): string[] {
-    return range(opt.numTapes).map(n => `t${n}`);
+    return randomChoice(opt.symbols);
 }
 
 function randomTape(opt: RandOptions) {
-    return randomChoice(allTapes(opt));
+    return randomChoice(opt.tapes);
 }
 
 export function randomEmbed(opt: RandOptions): Grammar {
@@ -91,7 +83,7 @@ export function randomSeq(opt: RandOptions): Grammar {
 
 export function randomCollection(opt: RandOptions): CollectionGrammar {
     const result = Collection();
-    for (const symbol of allSymbols(opt)) {
+    for (const symbol of opt.symbols) {
         result.symbols[symbol] = randomGrammar(opt);
     }
     return result;

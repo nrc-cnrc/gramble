@@ -5,13 +5,11 @@ import { FlattenCollections } from "../../src/passes/flattenCollections";
 import { RandOptions, randomCollection } from "./randomGrammar";
 import { PropertyTest, PropertyTestFailure, PropertyTestResult, PropertyTestSuccess, padZeros, testToBreaking } from "./testPropertyUtil";
 import { toStr } from "../../src/passes/toStr";
-import { reduceCollection } from "./reduceGrammar";
+import { ReduceOptions, reduceCollection } from "./reduceGrammar";
 
 const NUM_TESTS = 10000;
-const OPT = RandOptions({
-    numSymbols: 10,
-    numTapes: 4
-});
+const OPT = RandOptions();
+const REDUCE_OPT = ReduceOptions();
 
 class TapeCalcTest implements PropertyTest {
     
@@ -39,7 +37,7 @@ class TapeCalcTest implements PropertyTest {
     }
 
     public reduce(): TapeCalcTest {
-        const simplifiedGrammar = reduceCollection(this.grammar);
+        const simplifiedGrammar = reduceCollection(this.grammar, REDUCE_OPT);
         return new TapeCalcTest(this.id, simplifiedGrammar);
     }
 
@@ -48,4 +46,8 @@ class TapeCalcTest implements PropertyTest {
     }
 }
 
-testToBreaking("TapeCalc", TapeCalcTest, NUM_TESTS);
+testToBreaking(
+    "TapeCalc", 
+    (id: string) => new TapeCalcTest(id), 
+    NUM_TESTS
+);

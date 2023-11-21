@@ -1,6 +1,6 @@
 
 import {
-    Seq, Uni, Join, Epsilon, CharSet
+    Seq, Uni, Join, Epsilon, CharSet, Embed, Collection, Rename
 } from "../../src/grammarConvenience";
 
 import {
@@ -12,6 +12,7 @@ import {
 import { 
     logTestSuite, VERBOSE_TEST_L2,
 } from '../testUtil';
+import { VERBOSE_DEBUG } from "../../src/utils/logging";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -503,4 +504,38 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: "i"}, 
         ],
     })); */
+
+    
+    describe('58a. Join to an erroneous rename and an embed of epsilon', test({
+        grammar: Collection({
+            "X": Rename(Seq(Embed("Y"), t1("a"), t2("b")), "t1", "t2"),
+            "Y": Epsilon(),
+            "Z": Join(Embed("X"), Embed("Y"))
+        }),
+        symbol: "Z",
+        numErrors: 1,
+        tapes: ["t2", ".ERRt2"],
+        stripHidden: false,
+        results: [
+            { t2: 'a', '.ERRt2': 'b' } 
+        ],
+        verbose: VERBOSE_DEBUG
+    }));
+    
+    describe('58b. Join to an erroneous rename and a nontrivial embed', test({
+        grammar: Collection({
+            "X": Rename(Seq(Embed("Y"), t1("a"), t2("b")), "t1", "t2"),
+            "Y": t3("c"),
+            "Z": Join(Embed("X"), Embed("Y"))
+        }),
+        symbol: "Z",
+        numErrors: 1,
+        tapes: ["t2", "t3", ".ERRt2"],
+        stripHidden: false,
+        results: [
+            { t2: 'a', '.ERRt2': 'b', t3: 'c' } 
+        ],
+        verbose: VERBOSE_DEBUG
+    }));
+    
 });

@@ -26,16 +26,16 @@ export function padZeros(i: number, max: number) {
 
 export function testToBreaking(
     desc: string,
-    testConstructor: new (id: string) => PropertyTest,
+    testConstructor: (id: string) => PropertyTest,
     numTests: number = 1000
 ): void {
-    describe(`Property ${desc}`, function() {
-        let originalTest = new testConstructor(""); // just a dummy
+    describe(`${desc}`, function() {
+        let originalTest = testConstructor(""); // just a dummy
         let originalResult: PropertyTestResult = PropertyTestSuccess();
 
         for (let i = 0; i < numTests; i++) {
-            const id = desc + padZeros(i, numTests);
-            originalTest = new testConstructor(id);
+            const id = desc + " [" + padZeros(i, numTests) + "]";
+            originalTest = testConstructor(id);
             originalResult = originalTest.run();
             if (originalResult.tag === "failure") break;
         }

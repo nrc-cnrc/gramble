@@ -10,13 +10,11 @@ import { SelectSymbol } from "../../src/passes/selectSymbol";
 import { Dict, arrayEquals } from "../../src/utils/func";
 import { THROWER } from "../../src/utils/msgs";
 import { PropertyTest, PropertyTestFailure, PropertyTestResult, PropertyTestSuccess, testToBreaking } from "./testPropertyUtil";
-import { reduceCollection } from "./reduceGrammar";
+import { ReduceOptions, reduceCollection } from "./reduceGrammar";
 
 const NUM_TESTS = 10000;
-const OPT = RandOptions({
-    numSymbols: 10,
-    numTapes: 4,
-});
+const OPT = RandOptions();
+const REDUCE_OPT = ReduceOptions();
 
 class TapeCalcOrderTest implements PropertyTest {
     
@@ -72,7 +70,7 @@ class TapeCalcOrderTest implements PropertyTest {
     }
     
     public reduce(): TapeCalcOrderTest {
-        const newGrammar = reduceCollection(this.grammar);
+        const newGrammar = reduceCollection(this.grammar, REDUCE_OPT);
         const newKeys: string[] = [];
         for (const key of this.scrambledKeys) {
             if (!newGrammar.symbols.hasOwnProperty(key)) continue;
@@ -124,4 +122,8 @@ function fisherYates<T>(a: T[]): T[] {
     return a;
 }
 
-testToBreaking("TapeCalcOrder", TapeCalcOrderTest, NUM_TESTS);
+testToBreaking(
+    "TapeCalcOrder", 
+    (id: string) => new TapeCalcOrderTest(id), 
+    NUM_TESTS
+);
