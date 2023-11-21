@@ -3,7 +3,7 @@
   "compilerOptions": {
     "esModuleInterop": true,
     "outDir": "./dist",
-    "baseUrl": "../parser/",
+    "baseUrl": "../interpreter/",
     "paths": {
       "*": [ "src/@types/*"]
     },

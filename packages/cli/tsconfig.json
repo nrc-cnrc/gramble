@@ -9,7 +9,7 @@
     },
     "sourceMap": true,
     "composite": true,
-    "tsBuildInfoFile": "../../.build-cache/gramble-cli.tsbuildinfo",
+    "tsBuildInfoFile": "../../.build-cache/cli.tsbuildinfo",
     "types": [
       "node",
       "command-line-args",
@@ -25,6 +25,6 @@
     "es6"
   ],
   "references": [
-	  { "path": "../parser" }
+	  { "path": "../interpreter" }
   ]
 }

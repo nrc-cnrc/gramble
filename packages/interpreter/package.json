@@ -1,5 +1,5 @@
 {
-  "name": "@gramble/parser",
+  "name": "@gramble/interpreter",
   "version": "1.0.0",
   "description": "The parse library that underlies Gramble",
   "keywords": [

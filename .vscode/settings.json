@@ -4,7 +4,7 @@
     "mochaExplorer.files": "tests/{,grammar/,parse/,source/**/}*.ts",
     "mochaExplorer.require": "ts-node/register",
     "mochaExplorer.logpanel": true,
-    "mochaExplorer.cwd": "./packages/parser",
+    "mochaExplorer.cwd": "./packages/interpreter",
     "[csv]": {
         "editor.acceptSuggestionOnEnter": "off",
         "editor.inlineSuggest.enabled": false,

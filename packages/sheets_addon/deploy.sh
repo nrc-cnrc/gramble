@@ -29,7 +29,7 @@ TARGET_DIR=../../deployments/$PROJ_NAME
 
 # transpile Gramble to javascript and wrap it as HTML
 echo "Transpiling Gramble to JavaScript..." >&2
-browserify ../parser/src/indexGSuite.ts -p tsify -s gramble -o gramble.js
+browserify ../interpreter/src/indexGSuite.ts -p tsify -s gramble -o gramble.js
 cat <(echo '<script>') gramble.js <(echo '</script>') >> grambleWrapped.html
 
 # make sure the target directory exists, and copy the project files to it

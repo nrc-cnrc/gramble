@@ -7,7 +7,7 @@ import {
     timeIt,
     VERBOSE_TIME,
     VERBOSE_STATES
-} from "@gramble/parser";
+} from "@gramble/interpreter";
 import { createWriteStream, existsSync } from "fs";
 import { basename, dirname, parse } from "path";
 import { Writable } from "stream";
@@ -257,7 +257,7 @@ const commands: { [name: string]: Command } = {
 const sections = [
     {
         header: programName,
-        content: "the grammar table parser/generator/sampler",
+        content: "the grammar table generator/sampler",
     },
     {
         header: "Synopsis",

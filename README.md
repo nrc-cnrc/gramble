@@ -38,7 +38,7 @@ Then, run the following command to install all dependencies and build the Grambl
 
 Note: Users in a managed Windows environment may have trouble installing the `gramble` command because it requires a symbolic link.  If you run into this, run `npm install` as an adminstrator.
 
-After the initial install of all dependencies, you can recompile the Gramble parser and/or gramble-cli at any time by running:
+After the initial install of all dependencies, you can recompile the Gramble interpreter and/or cli packages at any time by running:
 
     npm run build
 
@@ -60,7 +60,7 @@ or:
 
 or even (if, on Windows, you lack administrator privileges to install the `gramble` command):
 
-    node packages/gramble-cli/bin/index.js help
+    node packages/cli/bin/index.js help
 
 Try generating from a sample file:
 

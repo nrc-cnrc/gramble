@@ -15,7 +15,7 @@
     "packages/*"
   ],
   "bin": {
-    "gramble": "./packages/gramble-cli/run-locally"
+    "gramble": "./packages/cli/run-locally"
   },
   "author": "Patrick Littell",
   "contributors": [

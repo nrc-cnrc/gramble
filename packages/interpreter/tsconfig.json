@@ -10,7 +10,7 @@
     },
     "sourceMap": true,
     "composite": true,
-    "tsBuildInfoFile": "../../.build-cache/parser.tsbuildinfo",
+    "tsBuildInfoFile": "../../.build-cache/interpreter.tsbuildinfo",
     "types": [
       "chai",
       "mocha",

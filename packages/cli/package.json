@@ -50,7 +50,7 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "@gramble/parser": "^1.0.0",
+    "@gramble/interpreter": "^1.0.0",
     "command-line-args": "^5.2.1",
     "command-line-usage": "^7.0.1"
   }
