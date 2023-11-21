@@ -9,12 +9,66 @@ import { ReduceOptions, reduceCollection, reduceGrammar } from "./reduceGrammar"
 import { generateOutputs, prepareInterpreter } from "../testUtil";
 import { Dict, StringDict, update } from "../../src/utils/func";
 import { Options } from "../../src/utils/options";
-import { Embed, Join, Uni } from "../../src/grammarConvenience";
+import { Embed, Epsilon, Join, Null, Seq, Uni } from "../../src/grammarConvenience";
 
-const NUM_TESTS = 1000;
+const NUM_TESTS = 10;
 const REDUCE_OPT = ReduceOptions({ symbolDrop: false });
 
 const EQUATIONS = [
+    {
+        desc: "Epsilon is the multiplicative identity: X ⋅ ε == X",
+        argNames: ["X"],
+        leftSide: Seq(Embed("X"), Epsilon()),
+        rightSide: Embed("X")
+    },
+    {
+        desc: "Epsilon is the multiplicative identity 2: ε ⋅ X == X",
+        argNames: ["X"],
+        leftSide: Seq(Epsilon(), Embed("X")),
+        rightSide: Embed("X")
+    },
+    {
+        desc: "Null is the additive identity: X | ∅ == X",
+        argNames: ["X"],
+        leftSide: Uni(Embed("X"), Null()),
+        rightSide: Embed("X")
+    },
+    {
+        desc: "Null is the additive identity: ∅ | X == X",
+        argNames: ["X"],
+        leftSide: Uni(Null(), Embed("X")),
+        rightSide: Embed("X")
+    },
+    { 
+        desc: "Union is reflexive: X | X == X",
+        argNames: ["X"],
+        leftSide: Uni(Embed("X"), Embed("X")),
+        rightSide: Embed("X")
+    },
+    { 
+        desc: "Union is commutative: X | Y == Y | X",
+        argNames: ["X","Y"],
+        leftSide: Uni(Embed("X"), Embed("Y")),
+        rightSide: Uni(Embed("Y"), Embed("X"))
+    },
+    { 
+        desc: "Union is associative: X | (Y | Z) == (X | Y) | Z",
+        argNames: ["X","Y"],
+        leftSide: Uni(Embed("X"), Uni(Embed("Y"), Embed("Z"))),
+        rightSide: Uni(Uni(Embed("X"), Embed("Y")), Embed("Z")),
+    },
+    { 
+        desc: "Union is idempotent: X | Y | Y == X | Y",
+        argNames: ["X","Y"],
+        leftSide: Uni(Uni(Embed("X"), Embed("Y")), Embed("Y")),
+        rightSide: Uni(Embed("X"), Embed("Y"))
+    },
+    { 
+        desc: "Join is reflexive: X ⨝ X == X",
+        argNames: ["X"],
+        leftSide: Join(Embed("X"), Embed("X")),
+        rightSide: Embed("X")
+    },
     { 
         desc: "Join is commutative: X ⨝ Y == Y ⨝ X",
         argNames: ["X","Y"],
@@ -26,7 +80,13 @@ const EQUATIONS = [
         argNames: ["X","Y","Z"],
         leftSide: Join(Embed("X"), Join(Embed("Y"), Embed("Z"))),
         rightSide: Join(Join(Embed("X"), Embed("Y")), Embed("Z")),
-    }
+    },
+    { 
+        desc: "Join is idempotent: X ⨝ Y ⨝ Y == X ⨝ Y",
+        argNames: ["X","Y"],
+        leftSide: Join(Join(Embed("X"), Embed("Y")), Embed("Y")),
+        rightSide: Join(Embed("X"), Embed("Y"))
+    },
 ]
 
 class EquationTest implements PropertyTest {

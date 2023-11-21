@@ -251,17 +251,71 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         numErrors: 1
     });
 
-    /*
-    // this next one is iffy, and we've kept going back and forth on
-    // whether the result is null or t2:hiwo.
-    describe('Filter t2:hiwo [Rename t1>t2, t1:hi + t2:wo]', function() {
-        const grammar = Filter(t2("hiwo"),
-                               Rename(Seq(t1("hi"), t2("wo")), "t1", "t2"));
-        testHasTapes(grammar, ["t2"]);
-        //testHasVocab(grammar, {t2: 4});
-        testGenerate(grammar, []);
-    }); 
-    */
+
+    testGrammar({
+        desc: 'E2a. Union with an erroneous rename and an embed of epsilon',
+        grammar: Collection({
+            "X": Rename(Seq(Embed("Y"), t1("a"), t2("b")), "t1", "t2"),
+            "Y": Epsilon(),
+            "Z": Uni(Embed("X"), Embed("Y"))
+        }),
+        symbol: "Z",
+        numErrors: 1,
+        tapes: ["t2", ".ERRt2"],
+        stripHidden: false,
+        results: [
+            { t2: 'a', '.ERRt2': 'b' } 
+        ],
+    });
+    
+    testGrammar({
+        desc: 'E2b. Union with an erroneous rename and a nontrivial embed',
+        grammar: Collection({
+            "X": Rename(Seq(Embed("Y"), t1("a"), t2("b")), "t1", "t2"),
+            "Y": t3("c"),
+            "Z": Uni(Embed("X"), Embed("Y"))
+        }),
+        symbol: "Z",
+        numErrors: 1,
+        tapes: ["t2", "t3", ".ERRt2"],
+        stripHidden: false,
+        results: [
+            { t2: 'a', '.ERRt2': 'b', t3: 'c' } 
+        ],
+    });
+
+    
+    testGrammar({
+        desc: 'E3a. Join to an erroneous rename and an embed of epsilon',
+        grammar: Collection({
+            "X": Rename(Seq(Embed("Y"), t1("a"), t2("b")), "t1", "t2"),
+            "Y": Epsilon(),
+            "Z": Join(Embed("X"), Embed("Y"))
+        }),
+        symbol: "Z",
+        numErrors: 1,
+        tapes: ["t2", ".ERRt2"],
+        stripHidden: false,
+        results: [
+            { t2: 'a', '.ERRt2': 'b' } 
+        ],
+    });
+    
+    testGrammar({
+        desc: 'E3b. Join to an erroneous rename and a nontrivial embed',
+        grammar: Collection({
+            "X": Rename(Seq(Embed("Y"), t1("a"), t2("b")), "t1", "t2"),
+            "Y": t3("c"),
+            "Z": Join(Embed("X"), Embed("Y"))
+        }),
+        symbol: "Z",
+        numErrors: 1,
+        tapes: ["t2", "t3", ".ERRt2"],
+        stripHidden: false,
+        results: [
+            { t2: 'a', '.ERRt2': 'b', t3: 'c' } 
+        ],
+    });
     
     /*
     describe('Rename + embed bug encountered in implementing templates', function() {
