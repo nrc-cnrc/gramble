@@ -1,40 +1,49 @@
 import { CollectionGrammar, Grammar } from "../../src/grammars";
-import { CalculateTapes } from "../../src/passes/calculateTapes";
-import { PassEnv } from "../../src/passes";
-import { FlattenCollections } from "../../src/passes/flattenCollections";
-import { RandOptions, randomChoice, randomCollection, randomGrammar, range } from "./randomGrammar";
-import { PropertyTest, PropertyTestFailure, PropertyTestResult, PropertyTestSuccess, padZeros, testToBreaking } from "./testPropertyUtil";
+import { RandOptions, randomCollection } from "./randomGrammar";
+import { PropertyTest, PropertyTestFailure, PropertyTestResult, PropertyTestSuccess, testToBreaking } from "./testPropertyUtil";
 import { toStr } from "../../src/passes/toStr";
-import { ReduceOptions, reduceCollection, reduceGrammar } from "./reduceGrammar";
+import { ReduceOptions, reduceCollection } from "./reduceGrammar";
 import { generateOutputs, prepareInterpreter } from "../testUtil";
 import { Dict, StringDict, update } from "../../src/utils/func";
 import { Options } from "../../src/utils/options";
 import { Embed, Epsilon, Join, Null, Seq, Uni } from "../../src/grammarConvenience";
 
-const NUM_TESTS = 10;
+const NUM_TESTS = 1000;
 const REDUCE_OPT = ReduceOptions({ symbolDrop: false });
 
 const EQUATIONS = [
     {
-        desc: "Epsilon is the multiplicative identity: X ⋅ ε == X",
+        desc: "Epsilon is multiplicative identity: X ⋅ ε == X",
         argNames: ["X"],
         leftSide: Seq(Embed("X"), Epsilon()),
         rightSide: Embed("X")
     },
     {
-        desc: "Epsilon is the multiplicative identity 2: ε ⋅ X == X",
+        desc: "Epsilon is multiplicative identity: ε ⋅ X == X",
         argNames: ["X"],
         leftSide: Seq(Epsilon(), Embed("X")),
         rightSide: Embed("X")
     },
     {
-        desc: "Null is the additive identity: X | ∅ == X",
+        desc: "Null is multiplicative annihilator: X ⋅ ∅ == ∅",
+        argNames: ["X"],
+        leftSide: Seq(Embed("X"), Null()),
+        rightSide: Null()
+    },
+    {
+        desc: "Null is multiplicative annihilator: ∅ ⋅ X == ∅",
+        argNames: ["X"],
+        leftSide: Seq(Null(), Embed("X")),
+        rightSide: Null()
+    },
+    {
+        desc: "Null is additive identity: X | ∅ == X",
         argNames: ["X"],
         leftSide: Uni(Embed("X"), Null()),
         rightSide: Embed("X")
     },
     {
-        desc: "Null is the additive identity: ∅ | X == X",
+        desc: "Null is additive identity: ∅ | X == X",
         argNames: ["X"],
         leftSide: Uni(Null(), Embed("X")),
         rightSide: Embed("X")
@@ -86,6 +95,18 @@ const EQUATIONS = [
         argNames: ["X","Y"],
         leftSide: Join(Join(Embed("X"), Embed("Y")), Embed("Y")),
         rightSide: Join(Embed("X"), Embed("Y"))
+    },
+    {
+        desc: "Null is join annihilator: X ⨝ ∅ == ∅",
+        argNames: ["X"],
+        leftSide: Join(Embed("X"), Null()),
+        rightSide: Null()
+    },
+    {
+        desc: "Null is join annihilator: ∅ ⨝ X == ∅",
+        argNames: ["X"],
+        leftSide: Join(Null(), Embed("X")),
+        rightSide: Null()
     },
 ]
 
