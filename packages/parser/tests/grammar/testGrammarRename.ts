@@ -21,6 +21,7 @@ import {
 import { 
     logTestSuite, VERBOSE_TEST_L2,
 } from "../testUtil";
+import { VERBOSE_GRAMMAR } from "../../src/utils/logging";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -87,9 +88,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '7. Rename t1>t2, t1:hi + t2:wo',
         grammar: Rename(Seq(t1("hi"), t2("wo")), "t1", "t2"),
-        tapes: ['t2'],
+        tapes: ['t1', 't2'],
         results: [
-            {t2: "hi"},
+            {t1: "hi", t2:"wo"},
         ],
         numErrors: 1
     });
@@ -108,7 +109,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '9. Rename t1>t2, t1:hello + t5:foo',
         grammar: Rename(Seq(t1("hello"), t5("foo")), "t1", "t2"),
         tapes: ['t2', 't5'],
-        // vocab: {t2:4, t5:2},
         results: [
             {t2: "hello", t5: "foo"},
         ],
@@ -239,7 +239,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: 'E1. Rename t3>t4 of symbol t1:hi+t2:world)',
+        desc: 'E1a. Rename t3>t4 of symbol t1:hi+t2:world',
         grammar: Collection({ 
                      a: Seq(t1("hi"), t2("world")),
                      default: Rename(Embed("a"), "t3", "t4") 
@@ -250,7 +250,19 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
         numErrors: 1
     });
-
+    
+    testGrammar({
+        desc: 'E1b. Rename t1>t2 of symbol t1:hi+t2:world',
+        grammar: Collection({ 
+                     a: Seq(t1("hi"), t2("world")),
+                     default: Rename(Embed("a"), "t1", "t2") 
+                 }),
+        tapes: ['t1', 't2'],
+        results: [
+            {t1: "hi", t2: "world"},
+        ],
+        numErrors: 1
+    });
 
     testGrammar({
         desc: 'E2a. Union with an erroneous rename and an embed of epsilon',
@@ -261,10 +273,11 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         }),
         symbol: "Z",
         numErrors: 1,
-        tapes: ["t2", ".ERRt2"],
+        tapes: ["t1", "t2"],
         stripHidden: false,
         results: [
-            { t2: 'a', '.ERRt2': 'b' } 
+            { t1: 'a', t2: 'b' },
+            {} 
         ],
     });
     
@@ -277,10 +290,11 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         }),
         symbol: "Z",
         numErrors: 1,
-        tapes: ["t2", "t3", ".ERRt2"],
+        tapes: ["t1", "t2", "t3"],
         stripHidden: false,
         results: [
-            { t2: 'a', '.ERRt2': 'b', t3: 'c' } 
+            { t1: 'a', t2: 'b', t3: 'c' },
+            { t3: 'c'} 
         ],
     });
 
@@ -294,10 +308,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         }),
         symbol: "Z",
         numErrors: 1,
-        tapes: ["t2", ".ERRt2"],
+        tapes: ["t1", "t2"],
         stripHidden: false,
         results: [
-            { t2: 'a', '.ERRt2': 'b' } 
+            { t1: 'a', t2: 'b' }
         ],
     });
     
@@ -310,11 +324,24 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         }),
         symbol: "Z",
         numErrors: 1,
-        tapes: ["t2", "t3", ".ERRt2"],
+        tapes: ["t1", "t2", "t3"],
         stripHidden: false,
         results: [
-            { t2: 'a', '.ERRt2': 'b', t3: 'c' } 
+            { t1: 'a', t2: 'b', t3: 'c' } 
         ],
+    });
+
+    testGrammar({
+        desc: 'E4. Recursive embed with tape change',
+        grammar: Collection({
+            "X": Seq(t1("a"), Rename(Embed("X"), "t1", "t2")),
+        }),
+        symbol: "X",
+        numErrors: 1,
+        tapes: ["t1"],
+        stripHidden: false,
+        results: [],
+        verbose: VERBOSE_GRAMMAR
     });
     
     /*
