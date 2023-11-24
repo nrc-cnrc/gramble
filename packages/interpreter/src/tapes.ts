@@ -1,4 +1,4 @@
-import { ValueSet, exhaustive, flatten, mapSet, union } from "./utils/func";
+import { exhaustive, union } from "./utils/func";
 import { 
     Namespace
 } from "./utils/namespace";
@@ -91,8 +91,9 @@ export function TapeRename(
     toTape: string
 ): TapeInfo {
     if (child.tag === "TapeLit") {
-        const renamedTapes = mapSet(child.tapes, 
-            t => renameTape(t, fromTape, toTape))
+        const renamedTapes = new Set(child.tapes);
+        renamedTapes.delete(fromTape);
+        renamedTapes.add(toTape);
         return TapeLit(renamedTapes);
     }
 
@@ -106,33 +107,16 @@ export function TapeRename(
              fromTape: fromTape, toTape: toTape }
 }
 
-// Turning a TapeID to a string
-
+/** 
+ * Turning a [TapeInfo] to a string
+ */ 
 export function tapeToStr(t: TapeInfo): string {
     switch (t.tag) {
         case "TapeUnknown": return "?";
         case "TapeLit": return `{${[...t.tapes]}}`;
-        case "TapeRef": return "$" + t.symbol + "";
+        case "TapeRef": return "$" + t.symbol;
         case "TapeRename": return `${t.fromTape}>${t.toTape}(${tapeToStr(t.child)})`;
         case "TapeSum": return tapeToStr(t.c1) + "+" + tapeToStr(t.c2);
         default: exhaustive(t);
     }
-}
-
-// Getting the literals from a tape set.  If anything in it isn't
-// a literal or a set, that's an error
-
-export function tapeToRefs(t: TapeInfo): string[] {
-    switch (t.tag) {
-        case "TapeLit": return [];
-        case "TapeRef": return [t.symbol];
-        case "TapeSum": return [...tapeToRefs(t.c1), ...tapeToRefs(t.c2)];
-        case "TapeRename": return tapeToRefs(t.child);
-        case "TapeUnknown": return [];
-    }
-}
-
-export type VocabSet = {
-    tokens: Set<string>,
-    wildcard: boolean,
 }

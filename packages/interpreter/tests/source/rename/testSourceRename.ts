@@ -44,12 +44,12 @@ describe(`Source ${DIR}`, function() {
         id: "4",
         errors: [ Error(10,3) ],
         results: [
-            {"text":"moo","gloss":"v[3SG]","subj":"[3SG]"},
-            {"text":"foo","gloss":"v[3SG]","subj":"[3SG]"},
-            {"text":"moobaz","gloss":"v[2SG]","subj":"[2SG]"},
-            {"text":"foobaz","gloss":"v[2SG]","subj":"[2SG]"},
-            {"text":"moobar","gloss":"v[1SG]","subj":"[1SG]"},
-            {"text":"foobar","gloss":"v[1SG]","subj":"[1SG]"}
+            {"pos":"v","text":"moo","gloss":"jump[3SG]","subj":"[3SG]"},
+            {"pos":"v","text":"foo","gloss":"run[3SG]","subj":"[3SG]"},
+            {"pos":"v","text":"moobaz","gloss":"jump[2SG]","subj":"[2SG]"},
+            {"pos":"v","text":"foobaz","gloss":"run[2SG]","subj":"[2SG]"},
+            {"pos":"v","text":"moobar","gloss":"jump[1SG]","subj":"[1SG]"},
+            {"pos":"v","text":"foobar","gloss":"run[1SG]","subj":"[1SG]"}
         ]
     }));
 });

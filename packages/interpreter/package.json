@@ -93,7 +93,8 @@
     "testSampling": "mocha -r ts-node/register tests/sampling/*.ts",
 
     "testPropertyTapeCalc": "mocha -r ts-node/register tests/property/testPropertyTapeCalc.ts",
-    "testPropertyTapeCalcOrder": "mocha -r ts-node/register tests/property/testPropertyTapeCalcOrder.ts"
+    "testPropertyTapeCalcOrder": "mocha -r ts-node/register tests/property/testPropertyTapeCalcOrder.ts",
+    "testPropertyEq": "mocha -r ts-node/register tests/property/testPropertyEq.ts"
   },
   "bugs": {
     "url": "https://github.com/nrc-cnrc/gramble/issues"

@@ -12,6 +12,7 @@ import {
 import { 
     logTestSuite, VERBOSE_TEST_L2,
 } from '../testUtil';
+import { VERBOSE_DEBUG } from "../../src/utils/logging";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -442,8 +443,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
     */
 
-    /*
-
     describe('50. Unfinished join: t1:h ⨝ t1:hello', test({
         grammar: Join(t1("h"), t1("hello")),
         results: [],
@@ -502,5 +501,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: "h"}, 
             {t1: "i"}, 
         ],
-    })); */
+    }));
+    
 });

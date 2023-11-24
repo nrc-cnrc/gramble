@@ -11,12 +11,11 @@ import {
     EpsilonGrammar,
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { Dict, mapValues, exhaustive, update, foldRight } from "../utils/func";
+import { Dict, mapValues, exhaustive, update, foldRight, union } from "../utils/func";
 import { 
     TapeInfo, TapeSum, 
     TapeLit, TapeRef, 
-    TapeRename, 
-    tapeToRefs, tapeToStr 
+    TapeRename, tapeToStr 
 } from "../tapes";
 import { HIDDEN_PREFIX } from "../utils/constants";
 
@@ -141,19 +140,23 @@ function getTapesRename(g: RenameGrammar): Result<Grammar> {
 
     if (!g.child.tapeSet.tapes.has(g.fromTape)) {
         return g.child.err("Renaming missing tape",
-            `The ${g.child.constructor.name} to undergo renaming does not contain the tape ${g.fromTape}. ` +
+            `The grammar to undergo renaming does not contain the tape ${g.fromTape}. ` +
             `Available tapes: [${[...g.child.tapes]}]`);
     }
 
     if (g.fromTape !== g.toTape && g.child.tapeSet.tapes.has(g.toTape)) {
-        const errTapeName = `${HIDDEN_PREFIX}ERR${g.toTape}`;
-        let repair: Grammar = new RenameGrammar(g.child, g.toTape, errTapeName);
-        repair = updateTapes(repair, TapeRename(repair.child.tapeSet, g.toTape, errTapeName));
-        repair = new RenameGrammar(repair, g.fromTape, g.toTape);
-        repair = updateTapes(repair, TapeRename(repair.child.tapeSet, g.fromTape, g.toTape));
-        return repair.err("Destination tape already exists",
-                    `Trying to rename ${g.fromTape}->${g.toTape} but the grammar ` +
-                    `to the left already contains the tape ${g.toTape}. `)
+        return g.child.err("Destination tape already exists",
+                  `Trying to rename ${g.fromTape}->${g.toTape} but the grammar ` +
+                  `to the left already contains the tape ${g.toTape}.`)
+        
+        //const errTapeName = `${HIDDEN_PREFIX}ERR${g.toTape}`;
+        //let repair: Grammar = new RenameGrammar(g.child, g.toTape, errTapeName);
+        //repair = updateTapes(repair, TapeRename(repair.child.tapeSet, g.toTape, errTapeName));
+        //repair = new RenameGrammar(repair, g.fromTape, g.toTape);
+        //repair = updateTapes(repair, TapeRename(repair.child.tapeSet, g.fromTape, g.toTape));
+        //return repair.err("Destination tape already exists",
+         //           `Trying to rename ${g.fromTape}->${g.toTape} but the grammar ` +
+      //              `to the left already contains the tape ${g.toTape}. `)
     }
 
     return result;
@@ -263,37 +266,38 @@ function getTapesReplaceBlock(g: ReplaceBlockGrammar): Result<Grammar> {
 function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar> {
     const msgs: Msgs = [];
     
-    // first get the initial tapes for each symbol
-    const tapeIDs: Dict<TapeInfo> = mapValues(g.symbols, v => v.tapeSet);
-    
-    // now resolve the references and renames until you're
-    // left with only sets of literals
-    for (const [k1,v1] of Object.entries(tapeIDs)) {
-        let refs = tapeToRefs(v1);
-        const visited: Set<string> = new Set([k1]); 
-        for (let i = 0; i < refs.length; i++) {
-            const k2 = refs[i];
-            const newV1 = resolveTapes(tapeIDs[k1], k2, 
-                tapeIDs[k2], visited);
-            visited.add(k2);
-            refs = [...new Set([...refs, ...tapeToRefs(newV1)])];
-            tapeIDs[k1] = newV1;
-        }
-    }
+    while (true) {
+        const newMsgs: Msgs = [];
 
-    // check for unresolved content, and throw an exception immediately.
-    // otherwise we have to puzzle it out from exceptions elsewhere.
-    for (const [k,v] of Object.entries(tapeIDs)) {
-        if (v.tag !== "TapeLit") {
-            throw new Error(`Unresolved tape structure in ${k}: ${tapeToStr(v)}`);
-        }
-    }
+        // first get the initial tapes for each symbol
+        let tapeIDs: Dict<TapeInfo> = mapValues(g.symbols, v => v.tapeSet);
 
-    // now feed those back into the structure so that every
-    // grammar node has only literal tapes
-    const tapePusher = new CalculateTapes(true, tapeIDs);
-    g.symbols = mapValues(g.symbols, v => 
-            tapePusher.transform(v, env).msgTo(msgs));
+        tapeIDs = unifySymbols(tapeIDs);
+
+        // check for unresolved content, and throw an exception immediately.
+        // otherwise we have to puzzle it out from exceptions elsewhere.
+        for (const [k,v] of Object.entries(tapeIDs)) {
+            if (v.tag !== "TapeLit") {
+                throw new Error(`Unresolved tape structure in ${k}: ${tapeToStr(v)}`);
+            }
+        }
+
+        // now feed those back into the structure so that every
+        // grammar node has only literal tapes
+        const tapePusher = new CalculateTapes(true, tapeIDs);
+        g.symbols = mapValues(g.symbols, v => 
+                tapePusher.transform(v, env).msgTo(newMsgs));
+
+        msgs.push(...newMsgs);
+
+        if (newMsgs.length === 0) break;
+        
+        // if there are any errors, the graph may have changed.  we
+        // need to restart the process from scratch.
+        const tapeRefresher = new CalculateTapes(true);
+        g.symbols = mapValues(g.symbols, v => 
+            tapeRefresher.transform(v, env).msgTo(newMsgs));
+    }
 
     // TODO: The following interpretation of tapes is incorrect,
     // but matches what we've been doing previously.  I'm going to
@@ -323,36 +327,63 @@ function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar>
 * Resolving tapes is the process of replacing TapeRefs
 * inside TapeIDs into their corresponding TapeLits and sets thereof
 */
-function resolveTapes(
+
+export function unifySymbols(symbols: Dict<TapeInfo>): Dict<TapeInfo> {
+    let currentSymbols = symbols;
+    for (const [symbol, ref] of Object.entries(symbols)) {
+        const visited = new Set(symbol);
+        const newRef = unify(ref, currentSymbols, visited);
+        currentSymbols[symbol] = newRef;
+    }
+    return currentSymbols;
+}
+
+function unify(
     t: TapeInfo, 
-    key:string, 
-    val:TapeInfo,
+    symbols: Dict<TapeInfo>,
     visited: Set<string>
 ): TapeInfo {
     switch (t.tag) {
         case "TapeUnknown": return TapeLit([]);
-        case "TapeLit": return t;
-        case "TapeRef": return resolveTapeRefs(t, key, val, visited);
-        case "TapeRename": 
-            return TapeRename(resolveTapes(t.child, key, val, visited), 
-                                t.fromTape, t.toTape);
-        case "TapeSum": 
-            return TapeSum(resolveTapes(t.c1, key, val, visited),
-                           resolveTapes(t.c2, key, val, visited))
+        case "TapeLit":     return t;
+        case "TapeRef":     return unifyRef(t, symbols, visited);
+        case "TapeRename":  return unifyRename(t, symbols, visited);
+        case "TapeSum":     return unifySum(t, symbols, visited);
     }
 }
 
-function resolveTapeRefs(    
+function unifyRef(
     t: TapeRef, 
-    key:string, 
-    val:TapeInfo,
+    symbols: Dict<TapeInfo>,
     visited: Set<string>
 ): TapeInfo {
-    if (visited.has(t.symbol)) return TapeLit([]);
-    
-    if (key !== t.symbol) return t;
-    
-    const newVisited = new Set([...visited, t.symbol]);
-    const result = resolveTapes(val, key, val, newVisited);
-    return result;
+    if (visited.has(t.symbol)) {
+        return TapeLit([]);
+    }
+    const referent = symbols[t.symbol];
+    if (referent === undefined) {
+        // should never happen so long as FlattenCollections has been run
+        throw new Error(`Unknown symbol ${t} in tape unification`);
+    }
+    const newVisited = union(visited, [t.symbol]);
+    return unify(referent, symbols, newVisited);
+}
+
+function unifyRename(
+    t: TapeRename, 
+    symbols: Dict<TapeInfo>,
+    visited: Set<string>
+): TapeInfo {
+    const newChild = unify(t.child, symbols, visited);
+    return TapeRename(newChild, t.fromTape, t.toTape);
+}
+
+function unifySum(
+    t: TapeSum, 
+    symbols: Dict<TapeInfo>,
+    visited: Set<string>
+): TapeInfo {
+    const newC1 = unify(t.c1, symbols, visited);
+    const newC2 = unify(t.c2, symbols, visited);
+    return TapeSum(newC1, newC2);
 }
