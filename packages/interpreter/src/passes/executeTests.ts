@@ -29,7 +29,7 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
         return "Running unit tests"
     }
 
-    public transform(g: Grammar, env: PassEnv): GrammarResult {
+    public transformAux(g: Grammar, env: PassEnv): GrammarResult {
         const result = g.mapChildren(this, env);
         return result.bind(g => {
             switch (g.tag) {

@@ -26,12 +26,12 @@ export abstract class Pass<T1,T2> {
 
     public go(c: T1|Result<T1>, env: PassEnv): Result<T2> {
 
+        // unwrap any messages already present
         const msgs: Msgs = [];
-
-        if (c instanceof Result) {
-            c = c.msgTo(msgs);     
-        }
-
+        if (c instanceof Result) c = c.msgTo(msgs);
+        
+        // execute the transformation, printing the desc and elapsed
+        // time if requested
         const verbose = (env.opt.verbose & VERBOSE_TIME) != 0;
         return timeIt(() => this.transform(c as T1, env).msg(msgs), 
                verbose, this.desc);
@@ -107,7 +107,7 @@ export abstract class AutoPass<T extends Component> extends Pass<T,T> {
 
     public transformAux(c: T, env: PassEnv): Result<T> {
         return this.tryTransform(this.preTransform, c, env)
-                   .bind(c => c.mapChildren(this, env) as Result<T>)
+                   .bind(c => c.mapChildren(this, env).localize(c.pos) as Result<T>)
                    .bind(c => this.tryTransform(this.postTransform, c, env))
     }
 

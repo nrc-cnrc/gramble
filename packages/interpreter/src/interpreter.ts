@@ -17,7 +17,7 @@ import { generate } from "./generator";
 import { MissingSymbolError, Msg, THROWER, result } from "./utils/msgs";
 import { PassEnv } from "./passes";
 import { 
-    SHEET_PASSES,
+    SOURCE_PASSES,
     GRAMMAR_PASSES
 } from "./passes/allPasses";
 import { ExecuteTests } from "./passes/executeTests";
@@ -114,7 +114,7 @@ export class Interpreter {
         logTime(passOpts.verbose, `Sheets loaded; ${elapsedTime}`);
         
         const env = new PassEnv(passOpts);
-        const grammar = SHEET_PASSES.go(workbook, env)
+        const grammar = SOURCE_PASSES.go(workbook, env)
                                   .msgTo(m => devEnv.message(m));
 
         const result = new Interpreter(devEnv, grammar, passOpts);
@@ -248,18 +248,26 @@ export class Interpreter {
         const selectSymbol = new SelectSymbol(symbol);
         let targetGrammar: Grammar = selectSymbol.go(this.grammar, env).msgTo(THROWER);
         
+        // join the client query to the grammar
         const createQuery = new CreateQuery(query);
         targetGrammar = createQuery.go(targetGrammar, env).msgTo(THROWER);
+        
+        // we have to re-collect the vocab in case it changed
         targetGrammar.collectAllVocab(this.tapeNS, env);
         
-        //let tapePriority = prioritizeTapes(targetGrammar, this.tapeNS, env);
-        //targetGrammar = infinityProtection(targetGrammar, tapePriority, env);
+        // any tape that isn't already inside a Cursor or PreTape needs
+        // to have a Cursor made for it, because otherwise that content will
+        // never be handled during the generation loop.
         const createCursors = new CreateCursors();
         targetGrammar = createCursors.go(targetGrammar, env).msgTo(THROWER);
         
+        // the client probably doesn't want an accidentally-infinite grammar
+        // to generate infinitely.  this checks which tapes could potentially
+        // generate infinitely and caps them to opt.maxChars.
         const infinityProtection = new InfinityProtection();
         targetGrammar = infinityProtection.go(targetGrammar, env).msgTo(THROWER);
         
+        // turns the Grammars into Exprs
         return constructExpr(env, targetGrammar);  
     }
 
@@ -306,7 +314,7 @@ function addSheet(
     const sheet = new Worksheet(sheetName, cells);
     project.sheets[sheetName] = sheet;
     const transEnv = new PassEnv(opt);
-    const grammar = SHEET_PASSES.go(project, transEnv)
+    const grammar = SOURCE_PASSES.go(project, transEnv)
                                      .msgTo((_) => {});
     // check to see if any names didn't get qualified
     const [_, nameMsgs] =  new FlattenCollections()

@@ -18,7 +18,28 @@ import { HandleSingleTapes } from "./handleSingleTapes";
 import { CombineLiterals } from "./combineLiterals";
 import { CalculateTapes } from "./calculateTapes";
 
-export const SHEET_PASSES = 
+/**
+ * There are three main sequences of Passes.  
+ * 
+ * The first, SOURCE_PASSES, is concerned with turning grids of cells representing Gramble
+ * programs into Grammars. 
+ * 
+ * The second, GRAMMAR_PASSES, is operations on Grammars like qualification of names, inference of tapes, 
+ * and various translations into lower-level Grammars (e.g. the conversion of ReplaceBlock to the appropriate
+ * sequences of renames and joins).
+ * 
+ * The reason these two are separated out is because many of our unit tests construct Grammars directly
+ * out of convenience functions like `Lit()` and `Seq()` and `Replace()`.  They don't have to go through 
+ * the SOURCE_PASSES -- they're not source -- but they do have to have their names qualified, their tapes 
+ * inferred, etc.
+ * 
+ * There's also a sequence of passes that happens after these, in which the grammar
+ * undergoes further transformations in response to queries from a client.  Those can't be pre-composed with
+ * these, though, because they depend on information that isn't yet available at the time these Passes 
+ * operate.
+ */
+
+export const SOURCE_PASSES = 
 
     // parse the sheet into an initial TST, mostly consisting of
     // placeholder TstOps and TstGrids without any particular 
@@ -86,6 +107,8 @@ export const GRAMMAR_PASSES =
     // something else)
     new FlattenCollections().compose(
 
+    // Replace the .tapeSet member (which by default is TapeUnknown)
+    // with a TapeLit (a concrete set of tape names)
     new CalculateTapes().compose(
 
     // handles some local tape renaming for plaintext/regex
@@ -102,7 +125,7 @@ export const GRAMMAR_PASSES =
 
     )))));
 
-export const ALL_PASSES = SHEET_PASSES.compose(GRAMMAR_PASSES);
+export const ALL_PASSES = SOURCE_PASSES.compose(GRAMMAR_PASSES);
 
 
 
