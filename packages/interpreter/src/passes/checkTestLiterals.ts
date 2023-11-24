@@ -2,11 +2,10 @@ import {
     TstHeader, 
     TstOp, TstHeadedGrid, TST 
 } from "../tsts";
-import { Pass, PassEnv } from "../passes";
+import { Pass, PassEnv, AutoPass } from "../passes";
 import { Err, Msgs, Result } from "../utils/msgs";
 import { Header, UniqueHeader, TapeHeader } from "../headers";
 import { paramsMustBeLiteral } from "../ops";
-import { PostPass } from "./ancestorPasses";
 
 /**
  * This pass checks whether named parameters in headers
@@ -18,7 +17,7 @@ import { PostPass } from "./ancestorPasses";
  * allows unnamed params, then the fix is to remove that TagHeader in favor 
  * of its child.  Otherwise, the fix is to remove the header entirely.
  */
-export class CheckTestLiterals extends PostPass<TST> {
+export class CheckTestLiterals extends AutoPass<TST> {
 
     public get desc(): string {
         return "Checking that all test content is literal";

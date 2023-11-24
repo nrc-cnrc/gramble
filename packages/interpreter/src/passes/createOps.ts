@@ -3,16 +3,15 @@ import {
     ReplaceOp,
     SymbolOp, 
 } from "../ops";
-import { PassEnv } from "../passes";
+import { PassEnv, AutoPass } from "../passes";
 import { 
     TstOp, 
     TstTest, 
     TstTable, TstTestNot, TstReplace, 
     TstOr, TstAssignment, TstParamList, TstJoin, TST
 } from "../tsts";
-import { PostPass } from "./ancestorPasses";
 
- export class CreateOps extends PostPass<TST> {
+ export class CreateOps extends AutoPass<TST> {
 
     public get desc(): string {
         return "Creating ops";

@@ -1,4 +1,4 @@
-import { PassEnv } from "../passes";
+import { PassEnv, AutoPass } from "../passes";
 import { 
     AlternationGrammar, ContainsGrammar, 
     DotGrammar, EndsGrammar, Grammar,
@@ -10,7 +10,6 @@ import {
     JoinGrammar
 } from "../grammars";
 import { HIDDEN_PREFIX } from "../utils/constants";
-import { PostPass } from "./ancestorPasses";
 
 /**
  * This pass creates Joins out of filters and handles a semantic 
@@ -36,7 +35,7 @@ import { PostPass } from "./ancestorPasses";
  * they really want the string to match (i.e. putting the .* exactly where they intend it to
  * be) and wrap that in an equals rather than using starts/ends/contains.
  */
-export class CreateFilters extends PostPass<Grammar> {
+export class CreateFilters extends AutoPass<Grammar> {
     
     public get desc(): string {
         return "Adjusting filter scope";

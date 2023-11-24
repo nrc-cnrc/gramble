@@ -4,8 +4,7 @@ import {
     LiteralGrammar,
     EpsilonGrammar
 } from "../grammars";
-import { PassEnv } from "../passes";
-import { PostPass } from "./ancestorPasses";
+import { PassEnv, AutoPass } from "../passes";
 
 /**
  * Plaintext/regex parsing results in a lot of single-character
@@ -15,7 +14,7 @@ import { PostPass } from "./ancestorPasses";
  * of literals is two), and also allows further optimizations like
  * atomicity.
  */
-export class CombineLiterals extends PostPass<Grammar> {
+export class CombineLiterals extends AutoPass<Grammar> {
 
     public get desc(): string {
         return "Combining literals";

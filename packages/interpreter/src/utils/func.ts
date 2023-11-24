@@ -9,7 +9,6 @@ export function update<T>(orig: T, update: any): T {
     let clone = Object.create(Object.getPrototypeOf(orig));
     Object.assign(clone, orig);
     Object.assign(clone, update);
-    clone._tapes = undefined;
     return clone as T;
 }
 

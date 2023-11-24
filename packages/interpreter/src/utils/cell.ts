@@ -21,6 +21,10 @@ export class Pos {
     }
 }
 
+export function hasPos(p: any): p is { pos: Pos } {
+    return p !== undefined && p.pos !== undefined;
+}
+
 export class Cell {
 
     constructor(

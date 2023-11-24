@@ -1,7 +1,7 @@
 import { 
     TableOp, childMustBeGrid, 
 } from "../ops";
-import { PassEnv } from "../passes";
+import { PassEnv, AutoPass } from "../passes";
 import { 
     TstOp, 
     TstEmpty,
@@ -9,7 +9,6 @@ import {
     TstCollection,
     TST
 } from "../tsts";
-import { PostPass } from "./ancestorPasses";
 
 /**
  * This pass goes through and make sure that TstOps have 
@@ -20,7 +19,7 @@ import { PostPass } from "./ancestorPasses";
  * assignments, etc.)
  */
 
-export class InsertTables extends PostPass<TST> {
+export class InsertTables extends AutoPass<TST> {
 
     public get desc(): string {
         return "Inserting tables";

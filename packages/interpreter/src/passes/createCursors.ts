@@ -23,7 +23,6 @@ export class CreateCursors extends Pass<Grammar,Grammar> {
 
 export function prioritizeTapes(
     g: Grammar,
-    //tapeNS: TapeNamespace,
     env: PassEnv
 ): string[] {
     const priorities: [string, number][] = g.tapes.map(t => {
@@ -122,7 +121,7 @@ function getTapePriorityCollection(
     symbolsVisited: StringPairSet,
     env: PassEnv  
 ): number {
-    const newEnv = env.pushSymbols(g.symbols);
+    const newEnv = env.setSymbols(g.symbols);
     const referent = g.getSymbol(g.selectedSymbol);
     if (referent === undefined) { 
         // without a valid symbol, collections are epsilon,
@@ -142,7 +141,7 @@ function getTapePriorityEmbed(
         return 0;
     }
     symbolsVisited.add([g.symbol, tape]);
-    const referent = env.symbolNS.get(g.symbol);
+    const referent = env.symbolNS[g.symbol];
     return getTapePriority(referent, tape, symbolsVisited, env);
 }
 

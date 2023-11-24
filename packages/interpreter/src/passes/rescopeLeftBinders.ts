@@ -17,11 +17,9 @@ import {
 } from "../headers";
 
 import { Err, Msgs } from "../utils/msgs";
-import { PassEnv } from "../passes";
-import { PostPass } from "./ancestorPasses";
+import { PassEnv, AutoPass } from "../passes";
 
-
-export class RescopeLeftBinders extends PostPass<TST> {
+export class RescopeLeftBinders extends AutoPass<TST> {
 
     public get desc(): string {
         return "Rescoping left-binding headers";

@@ -340,8 +340,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         numErrors: 1,
         tapes: ["t1"],
         stripHidden: false,
-        results: [],
-        verbose: VERBOSE_GRAMMAR
+        results: []
     });
     
     /*

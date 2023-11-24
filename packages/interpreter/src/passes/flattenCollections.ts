@@ -66,11 +66,11 @@ export class FlattenCollections extends Pass<Grammar,Grammar> {
             }
 
             const newName = newNameStack.join(".");
-            env.symbolNS.set(newName, newV);
+            env.symbolNS[newName] = newV;
         }
 
-        return new CollectionGrammar(env.symbolNS.entries, 
-                         g.selectedSymbol, qualifier).msg(msgs);
+        return new CollectionGrammar(env.symbolNS, g.selectedSymbol, qualifier)
+                    .msg(msgs);
     }
 
     public transformEmbed(g: EmbedGrammar, env: PassEnv): GrammarResult {

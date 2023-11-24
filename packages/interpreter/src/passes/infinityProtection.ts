@@ -156,7 +156,7 @@ function lengthEmbed(g: EmbedGrammar, tapeName: string, stack: CounterStack, env
     if (stack.get(g.symbol) >= 1)
         return { null: false, min: 0, max: Infinity };
     const newStack = stack.add(g.symbol);
-    const referent = env.symbolNS.get(g.symbol);
+    const referent = env.symbolNS[g.symbol];
     return lengthRange(referent, tapeName, newStack, env);
 }
 
@@ -288,7 +288,7 @@ function lengthCollection(
     stack: CounterStack, 
     env: PassEnv
 ): LengthRange {
-    const newEnv = env.pushSymbols(g.symbols);
+    const newEnv = env.setSymbols(g.symbols);
     const referent = g.getSymbol(g.selectedSymbol);
     if (referent === undefined) { 
         // without a valid symbol, collections are epsilon,

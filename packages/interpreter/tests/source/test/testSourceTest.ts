@@ -13,7 +13,6 @@ function test(params: Partial<ProjectTest>): () => void {
 
 describe(`Source ${DIR}`, function() {
 
-    /*
     describe('1. Simple grammar with unit tests', test({
         id: "1",
         results: [
@@ -78,8 +77,6 @@ describe(`Source ${DIR}`, function() {
         ]
     }));
 
-    */
-
     describe('7. Failing unit tests', test({
         id: "7",
         errors: [
@@ -96,7 +93,6 @@ describe(`Source ${DIR}`, function() {
         ]
     }));
 
-    /*
     describe('9. Failed test with an empty string', test({
         id: "8",
         errors: [
@@ -305,7 +301,7 @@ describe(`Source ${DIR}`, function() {
             { text: "foobar", gloss: "run-1SG" }
         ]
     }));
-    */
+
 });
 
 

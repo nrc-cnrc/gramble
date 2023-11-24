@@ -5,14 +5,13 @@ import {
     siblingRequired,
 } from "../ops";
 import { Err, Msgs, Result, Warn } from "../utils/msgs";
-import { PassEnv } from "../passes";
+import { Pass, PassEnv } from "../passes";
 import { 
     TstOp, 
     TstEmpty,
     TstGrid,
     TST
 } from "../tsts";
-import { CatchingPass } from "./ancestorPasses";
 
 /**
  * This pass goes through and make sure that TstOps have 
@@ -23,7 +22,7 @@ import { CatchingPass } from "./ancestorPasses";
  * assignments, etc.)
  */
 
-export class CheckStructuralParams extends CatchingPass<TST,TST> {
+export class CheckStructuralParams extends Pass<TST,TST> {
 
     public get desc(): string {
         return "Checking structural params";

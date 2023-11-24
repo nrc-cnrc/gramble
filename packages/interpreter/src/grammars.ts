@@ -362,7 +362,6 @@ abstract class ConditionGrammar extends UnaryGrammar {
         public extraTapes: string[] | undefined = undefined
     ) {
         super(child);
-        //this._tapes = tapes;
     }
 }
 
@@ -569,7 +568,7 @@ export class CollectionGrammar extends AbstractGrammar {
     }
     
     public mapChildren(f: Pass<Grammar,Grammar>, env: PassEnv): GrammarResult {
-        const newEnv = env.pushSymbols(this.symbols);
+        const newEnv = env.setSymbols(this.symbols);
         return super.mapChildren(f, newEnv);
     }
 
@@ -592,7 +591,7 @@ export class CollectionGrammar extends AbstractGrammar {
         env: PassEnv
     ): StringSet { 
         let vocab: StringSet = new Set();
-        const newEnv = env.pushSymbols(this.symbols);
+        const newEnv = env.setSymbols(this.symbols);
         for (const child of Object.values(this.symbols)) {
             const childVocab = child.collectVocab(tapeName, atomic, symbolsVisited, newEnv);
             vocab = union(vocab, childVocab);
@@ -606,7 +605,7 @@ export class CollectionGrammar extends AbstractGrammar {
         symbolsVisited: StringPairSet, 
         env: PassEnv
     ): StringPairSet {
-        const newEnv = env.pushSymbols(this.symbols);
+        const newEnv = env.setSymbols(this.symbols);
         return super.getVocabCopyEdges(tapeName, tapeNS, symbolsVisited, newEnv);    
     }
 }
@@ -630,7 +629,7 @@ export class EmbedGrammar extends AtomicGrammar {
             return new Set();
         }
         symbolsVisited.add([this.symbol, tapeName]);
-        const referent = env.symbolNS.get(this.symbol);
+        const referent = env.symbolNS[this.symbol];
         return referent.collectVocab(tapeName, atomic, symbolsVisited, env);
     }
     
@@ -644,7 +643,7 @@ export class EmbedGrammar extends AtomicGrammar {
             return new StringPairSet();
         }
         symbolsVisited.add([this.symbol, tapeName]);
-        const referent = env.symbolNS.get(this.symbol);
+        const referent = env.symbolNS[this.symbol];
         return referent.getVocabCopyEdges(tapeName, tapeNS, symbolsVisited, env);
     }
 

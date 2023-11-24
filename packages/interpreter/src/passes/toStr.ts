@@ -34,7 +34,6 @@ function objToStr(
     for (const [k, v] of Object.entries(g)) {
         if (!g.hasOwnProperty(k)) continue;
         if (k == "tag") continue;
-        if (k.startsWith("_")) continue;
         elements.push(`  ${k}:${toStr(v)}\n`);
     }
     return enclose(elements, "{\n", "}", "", brac);
@@ -90,8 +89,7 @@ export function componentToStr(c: Component): string {
     const kvPairs = Object.entries(c)
                           .filter(([k,_]) =>
                              c.hasOwnProperty(k) &&
-                             !EXCLUDED_FROM_STR.has(k) &&
-                             !k.startsWith("_"));
+                             !EXCLUDED_FROM_STR.has(k));
     for (let i = 0; i < kvPairs.length; i++) {
         const [_,v] = kvPairs[i];
         const isLast = i == kvPairs.length-1;

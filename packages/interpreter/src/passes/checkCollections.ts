@@ -1,4 +1,4 @@
-import { PassEnv } from "../passes";
+import { Pass, PassEnv } from "../passes";
 import { 
     TstCollection, 
     TstEmpty, 
@@ -6,13 +6,12 @@ import {
     TST
 } from "../tsts";
 import { Component } from "../components";
-import { CatchingPass } from "./ancestorPasses";
 import { Result } from "../utils/msgs";
 
 /**
  * Make sure that collections are reasonably placed
  */
-export class CheckCollections extends CatchingPass<TST,TST> {
+export class CheckCollections extends Pass<TST,TST> {
 
     constructor(
         public parent?: Component

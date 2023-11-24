@@ -10,8 +10,7 @@ import {
 } from "../grammars";
 
 import { INPUT_TAPE, OUTPUT_TAPE } from "../utils/constants";
-import { PassEnv } from "../passes";
-import { PostPass } from "./ancestorPasses";
+import { PassEnv, AutoPass } from "../passes";
 import { lengthRange } from "./infinityProtection";
 import { Result } from "../utils/msgs";
 
@@ -19,7 +18,7 @@ import { Result } from "../utils/msgs";
  * This pass handles the transformation of replacement rule blocks 
  * into the appropriate sequence of joins/renames/etc.
  */
-export class ConstructReplaceBlocks extends PostPass<Grammar> {
+export class ConstructReplaceBlocks extends AutoPass<Grammar> {
 
     public replaceIndex: number = 0;
 

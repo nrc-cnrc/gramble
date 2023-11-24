@@ -18,7 +18,6 @@ export abstract class Component {
         const msgs: Msgs = [];
         for (const [k, v] of Object.entries(this)) {
             if (!this.hasOwnProperty(k)) continue;
-            if (k.startsWith("_")) continue;
             clone[k] = mapAny(v, f, env).msgTo(msgs);
         }
         const newMsgs = msgs.map(m => m.localize(this.pos));
@@ -98,7 +97,6 @@ export function getChildren<T extends Component>(c: T): T[] {
     for (const [k,v] of Object.entries(c)) {
         if (!c.hasOwnProperty(k)) continue;
         if (k == "tag") continue;
-        if (k.startsWith("_")) continue;
         if (Array.isArray(v)) {
             children.push(...getChildrenFromArray<T>(v));
         } else if (v instanceof Component) {
@@ -118,8 +116,6 @@ function getChildrenObj<T extends Component>(c: Object): T[] {
     const children: T[] = [];
     for (const [k,v] of Object.entries(c)) {
         if (!c.hasOwnProperty(k)) continue;
-        if (k == "tag") continue;
-        if (k.startsWith("_")) continue;
         if (v instanceof Component) {
             children.push(v as T);
         }
