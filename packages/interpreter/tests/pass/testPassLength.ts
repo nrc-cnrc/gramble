@@ -1,23 +1,23 @@
 import { expect } from 'chai';
 
-import { CounterStack } from '../src/exprs';
+import { CounterStack } from '../../src/exprs';
 
 import {
     Count, Epsilon, 
     Join, Null, Rep, 
     Seq, Uni, Not, 
     Rename, Hide, Match, ReplaceBlock, Replace
-} from '../src/grammarConvenience';
+} from '../../src/grammarConvenience';
 
 import {
     testSuiteName, logTestSuite,
     VERBOSE_TEST_L2,
     t1, t2
-} from "./testUtil";
+} from "../testUtil";
 
-import { PassEnv } from '../src/passes';
-import { lengthRange } from '../src/passes/infinityProtection';
-import { Grammar } from '../src/grammars';
+import { PassEnv } from '../../src/passes';
+import { lengthRange } from '../../src/passes/infinityProtection';
+import { Grammar } from '../../src/grammars';
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;

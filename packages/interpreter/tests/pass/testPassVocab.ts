@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { testSuiteName, logTestSuite } from "./testUtil";
+import { testSuiteName, logTestSuite } from "../testUtil";
 
 /*
 type VocabTest = {

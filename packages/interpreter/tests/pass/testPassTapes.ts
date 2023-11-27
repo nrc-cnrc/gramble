@@ -3,8 +3,8 @@ import { assert, expect } from "chai";
 import { t1, t2, t3 } from "../testUtil";
 import { 
     Collection, Embed, 
-    Hide, Join, Match, 
-    Rename, Replace, Seq
+    Hide, 
+    Rename, Seq
 } from "../../src/grammarConvenience";
 import { CalculateTapes } from "../../src/passes/calculateTapes";
 import { PassEnv } from "../../src/passes";

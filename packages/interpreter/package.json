@@ -35,10 +35,6 @@
     "prepare": "npm run build",
 
     "test": "mocha -r ts-node/register tests/*.ts tests/grammar/*.ts tests/parse/*.ts tests/source/*/*.ts",
-    "testGenerate": "mocha -r ts-node/register tests/*.ts",
-    "testProperty": "mocha -r ts-node/register tests/property/testProperty.ts",
-    "testLength": "mocha -r ts-node/register tests/testLength.ts",
-    "testVocab": "mocha -r ts-node/register tests/testVocab.ts",
     
     "testGrammar": "mocha -r ts-node/register tests/grammar/*.ts",
     "testGrammarBasic": "mocha -r ts-node/register tests/grammar/testGrammarBasic.ts",
@@ -62,9 +58,6 @@
     "testGrammarRecursion": "mocha -r ts-node/register tests/grammar/testGrammarRecursion.ts",
     "testGrammarShort": "mocha -r ts-node/register tests/grammar/testGrammarShort.ts",
     "testGrammarSingleTape": "mocha -r ts-node/register tests/grammar/testGrammarSingleTape.ts",
-
-    "testGrammarID": "mocha -r ts-node/register tests/grammar/testGrammarID.ts",
-    "testGrammarTapes": "mocha -r ts-node/register tests/grammar/testGrammarTapes.ts",
     
     "testParse": "mocha -r ts-node/register tests/parse/*.ts",
     "testParseHeader": "mocha -r ts-node/register tests/parse/testParseHeader.ts",
@@ -74,6 +67,16 @@
     "testParseRuleContext": "mocha -r ts-node/register tests/parse/testParseRuleContext.ts",
     "testParseSymbol": "mocha -r ts-node/register tests/parse/testParseSymbol.ts",
     "testParseTokenize": "mocha -r ts-node/register tests/parse/testParseTokenize.ts",
+
+    "testPassID": "mocha -r ts-node/register tests/pass/testPassID.ts",
+    "testPassLength": "mocha -r ts-node/register tests/testPassLength.ts",
+    "testPassTapes": "mocha -r ts-node/register tests/pass/testPassTapes.ts",
+    "testPassVocab": "mocha -r ts-node/register tests/testPassVocab.ts",
+
+    "testProperty": "mocha -r ts-node/register tests/property/testProperty.ts",
+    "testPropertyEq": "mocha -r ts-node/register tests/property/testPropertyEq.ts",
+    "testPropertyTapeCalc": "mocha -r ts-node/register tests/property/testPropertyTapeCalc.ts",
+    "testPropertyTapeCalcOrder": "mocha -r ts-node/register tests/property/testPropertyTapeCalcOrder.ts",
 
     "testSource": "mocha -r ts-node/register tests/source/*/*.ts",
     "testSourceBare": "mocha -r ts-node/register tests/source/bare/*.ts",
@@ -90,11 +93,7 @@
     "testSourceRule": "mocha -r ts-node/register tests/source/rule/*.ts",
     "testSourceTest": "mocha -r ts-node/register tests/source/test/*.ts",
 
-    "testSampling": "mocha -r ts-node/register tests/sampling/*.ts",
-
-    "testPropertyTapeCalc": "mocha -r ts-node/register tests/property/testPropertyTapeCalc.ts",
-    "testPropertyTapeCalcOrder": "mocha -r ts-node/register tests/property/testPropertyTapeCalcOrder.ts",
-    "testPropertyEq": "mocha -r ts-node/register tests/property/testPropertyEq.ts"
+    "testSampling": "mocha -r ts-node/register tests/sampling/*.ts"
   },
   "bugs": {
     "url": "https://github.com/nrc-cnrc/gramble/issues"
