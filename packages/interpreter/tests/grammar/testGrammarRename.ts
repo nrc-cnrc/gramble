@@ -5,7 +5,6 @@ import {
     Uni, 
     Collection,
     Embed,
-    Intersect,
     Rep,
     Any,
     Epsilon,
@@ -125,45 +124,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t2: "hello", t5: "foo"},
             {t3: "hello", t5: "foo"},
         ],
-    });
-
-    testGrammar({
-        desc: '11. Intersect t2:hello & Rename t1>t2, t1:hello',
-        grammar: Intersect(t2("hello"),
-                           Rename(t1("hello"), "t1", "t2")),
-        results: [
-            {t2: "hello"},
-        ],
-    });
-
-    testGrammar({
-        desc: '12. Intersect t2:hello & Rename t2>t1, t2:hello',
-        grammar: Intersect(t2("hello"),
-                           Rename(t2("hello"), "t2", "t1")),
-        results: [],
-    });
-
-    testGrammar({
-        desc: '13. Intersect (Rename t1>t2, t1:hello) & t2:hello',
-        grammar: Intersect(Rename(t1("hello"), "t1", "t2"),
-                           t2("hello")),
-        results: [
-            {t2: "hello"},
-        ],
-    });
-
-    testGrammar({
-        desc: '14. Intersect (Rename t2>t1, t2:hello) & t2:hello',
-        grammar: Intersect(Rename(t2("hello"), "t2", "t1"),
-                           t2("hello")),
-        results: [],
-    });
-
-    testGrammar({
-        desc: '15. Intersect (t2:hello + t1:.*) & Rename t2>t1, t2:hello',
-        grammar: Intersect(Seq(t2("hello"), Rep(Any("t1"))),
-                           Rename(t2("hello"), "t2", "t1")),
-        results: [],
     });
 
     testGrammar({

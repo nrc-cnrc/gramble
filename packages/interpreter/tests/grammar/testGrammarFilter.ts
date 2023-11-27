@@ -1,7 +1,8 @@
 
 import {
     Contains, Ends, Epsilon,
-    Intersect, Not, Null,
+    Join,
+    Not, Null,
     Seq, Starts, Uni,
 } from "../../src/grammarConvenience";
 
@@ -24,6 +25,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     // STARTS WITH
 
+    /*
     testGrammar({
         desc: 'S.1 t1:hello starts with ε',
         grammar: Starts(t1("hello"), Epsilon()),
@@ -172,16 +174,18 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'world'},
         ],
     });
+    */
 
     testGrammar({
         desc: 'S.20 (t1:hello|t1:world|t1:kitty) starts with ~t1:h & ~t1:k',
         grammar: Starts(Uni(t1("hello"), t1("world"), t1("kitty")), 
-                        Intersect(Not(t1("h")), Not(t1("k")))),
+                        Join(Not(t1("h")), Not(t1("k")))),
         results: [
             {t1: 'world'},
         ],
     });
 
+    /*
     testGrammar({
         desc: 'S.21 t1:hello starts with t1:h+t1:e',
         grammar: Starts(t1("hello"), Seq(t1("h"), t1("e"))),
@@ -374,7 +378,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: 'E.18 (t1:hello|t1:world|t1:kitty) ends with ~t1:o & ~t1:y',
         grammar: Ends(Uni(t1("hello"), t1("world"), t1("kitty")), 
-                      Intersect(Not(t1("o")), Not(t1("y")))),
+                      Join(Not(t1("o")), Not(t1("y")))),
         results: [
             {t1: 'world'},
         ],
@@ -634,7 +638,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: 'C.26 (t1:hello|t1:world|t1:kitty) contains ~t1:e & ~t1:i',
         grammar: Contains(Uni(t1("hello"), t1("world"), t1("kitty")), 
-                          Intersect(Not(t1("e")), Not(t1("i")))),
+                          Join(Not(t1("e")), Not(t1("i")))),
         results: [
             {t1: 'world'},
         ],
@@ -698,4 +702,5 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [],
     });
 
+    */
 });

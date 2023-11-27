@@ -2,8 +2,8 @@ import { Pass, PassEnv } from "../passes";
 import { 
     CollectionGrammar,
     CursorGrammar, DotGrammar, 
-    EmbedGrammar, Grammar, HideGrammar, 
-    IntersectionGrammar, JoinGrammar, 
+    EmbedGrammar, Grammar, 
+    HideGrammar, JoinGrammar, 
     LiteralGrammar, 
     PreTapeGrammar, 
     RenameGrammar, 
@@ -73,7 +73,6 @@ function getTapePriority(
 
         // joins & similar increase the priority of their intersecting tapes
         case "join":        return getTapePriorityJoin(g, tape, symbolsVisited, env);
-        case "intersect":   return getTapePriorityIntersect(g, tape, symbolsVisited, env);
 
         // cursor and pretape handle priority on their own, so they're -1 for the tape they handle
         case "pretape":     return getTapePriorityPreTape(g, tape, symbolsVisited, env);
@@ -197,24 +196,12 @@ function getTapePriorityJoin(
     symbolsVisited: StringPairSet,
     env: PassEnv
 ): number {
-        const c1tapes = new Set(g.child1.tapes);
-        const c2tapes = new Set(g.child2.tapes);
-        const c1priority = getTapePriority(g.child1, tapeName, symbolsVisited, env);
-        const c2priority = getTapePriority(g.child2, tapeName, symbolsVisited, env);
-        if (c1tapes.has(tapeName) && c2tapes.has(tapeName)) {
-            return c1priority + c2priority * 10;
-        }
-        return (c1priority + c2priority);
-    }
-
-function getTapePriorityIntersect(
-    g: IntersectionGrammar,
-    tapeName: string,
-    symbolsVisited: StringPairSet,
-    env: PassEnv
-): number {
+    const c1tapes = new Set(g.child1.tapes);
+    const c2tapes = new Set(g.child2.tapes);
     const c1priority = getTapePriority(g.child1, tapeName, symbolsVisited, env);
     const c2priority = getTapePriority(g.child2, tapeName, symbolsVisited, env);
-    return c1priority + c2priority * 10;
+    if (c1tapes.has(tapeName) && c2tapes.has(tapeName)) {
+        return c1priority + c2priority * 10;
+    }
+    return (c1priority + c2priority);
 }
-

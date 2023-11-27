@@ -3,7 +3,7 @@ import {
     AlternationGrammar,
     CollectionGrammar, CorrespondGrammar, CountGrammar, CursorGrammar, DotGrammar,
     EmbedGrammar, Expr, Grammar, HideGrammar,
-    IntersectionGrammar, JoinGrammar, MatchGrammar,
+    JoinGrammar, MatchGrammar,
     NegationGrammar, PreTapeGrammar, RenameGrammar, RepeatGrammar,
     ReplaceGrammar, SequenceGrammar, ShortGrammar,
 } from "../grammars";
@@ -13,7 +13,7 @@ import {
     NULL, constructAlternation, constructCollection, 
     constructCorrespond, constructCount, constructCursor, 
     constructDot, constructDotStar, constructEmbed, 
-    constructIntersection, constructJoin, constructLiteral, 
+    constructJoin, constructLiteral, 
     constructMatch, constructNegation, constructPreTape, 
     constructPrecede, constructRename, constructRepeat, 
     constructSequence, constructShort 
@@ -43,7 +43,6 @@ export function constructExpr(
         case "seq":        return constructExprSeq(env, g);
         case "alt":        return constructExprAlt(env, g);
         case "short":      return constructExprShort(env, g);
-        case "intersect":  return constructExprIntersect(env, g);
         case "join":       return constructExprJoin(env, g);
         case "count":      return constructExprCount(env, g);
         case "rename":     return constructExprRename(env, g);
@@ -83,15 +82,6 @@ function constructExprShort(
 ): Expr {
     const child = constructExpr(env, g.child);
     return constructShort(env, child);
-}
-
-function constructExprIntersect(
-    env: PassEnv,
-    g: IntersectionGrammar
-): Expr {
-    const left = constructExpr(env, g.child1);
-    const right = constructExpr(env, g.child2);
-    return constructIntersection(env, left, right);
 }
 
 function constructExprJoin(

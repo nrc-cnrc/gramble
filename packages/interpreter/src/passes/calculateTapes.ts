@@ -77,8 +77,7 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
 
             // just the union of children's tapes
             case "seq": 
-            case "alt": 
-            case "intersect": 
+            case "alt":
             case "short": 
             case "count": 
             case "not":
@@ -90,21 +89,19 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
             case "cursor":
             case "pretape": return getTapesDefault(g);
 
-            // join and filter are special w.r.t. vocabs
+            // join and filter are special w.r.t. vocabs and wildcards
             case "join":       return getTapesJoin(g);
             case "filter":     return getTapesFilter(g);
-            
-            // union of children's tapes, plus additional tapes
             case "starts":
             case "ends":
-            case "contains": return getTapesCondition(g); // g.extraTapes);
-            case "match":    return getTapesMatch(g);
+            case "contains": return getTapesCondition(g);
 
             // something special
             case "embed":      return getTapesEmbed(g, this.knownTapes);
             case "collection": return getTapesCollection(g, env);
             case "rename":     return getTapesRename(g);
             case "hide":       return getTapesHide(g);
+            case "match":    return getTapesMatch(g);
             case "replace":    return getTapesReplace(g, env);
             case "replaceblock": return getTapesReplaceBlock(g);
 

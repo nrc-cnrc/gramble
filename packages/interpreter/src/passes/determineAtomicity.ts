@@ -2,7 +2,7 @@ import { PassEnv } from "../passes";
 import { 
     CollectionGrammar, CorrespondGrammar, DotGrammar, 
     EmbedGrammar, Grammar, HideGrammar, 
-    IntersectionGrammar, JoinGrammar, MatchGrammar, 
+    JoinGrammar, MatchGrammar, 
     NegationGrammar, RenameGrammar, RepeatGrammar, 
     ReplaceGrammar, SequenceGrammar, ShortGrammar, 
     StringPairSet 
@@ -49,7 +49,6 @@ function getAtomicityClass(
         // independent of their children
         case "seq":        return getAtomicityClassSeq(g, tape, symbolsVisited, env);
         case "repeat":     return getAtomicityClassRepeat(g, tape, symbolsVisited, env);
-        case "intersect":  return getAtomicityClassIntersect(g, tape, symbolsVisited, env);
         case "join":       return getAtomicityClassJoin(g, tape, symbolsVisited, env);
 
         // if any of the char-level operators are present relevant to the tape in question,
@@ -161,20 +160,6 @@ function getAtomicityClassShort(
         return { joinable: true, concatenable: true };
     }
     return getAtomicityClassDefault(g, tape, symbolsVisited, env);
-}
-
-function getAtomicityClassIntersect(
-    g: IntersectionGrammar,
-    tape: string,
-    symbolsVisited: StringPairSet,
-    env: PassEnv
-): AtomicityClass {
-    const result = getAtomicityClassDefault(g, tape, symbolsVisited, env);
-    const child1Tapes = g.child1.tapes;
-    const child2Tapes = g.child2.tapes;
-    const intersection = new Set(listIntersection(child1Tapes, child2Tapes));
-    result.joinable ||= intersection.has(tape);
-    return result;
 }
 
 function getAtomicityClassEmbed(

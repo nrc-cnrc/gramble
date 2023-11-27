@@ -46,7 +46,6 @@
     "testGrammarFilter": "mocha -r ts-node/register tests/grammar/testGrammarFilter.ts",
     "testGrammarHide": "mocha -r ts-node/register tests/grammar/testGrammarHide.ts",
     "testGrammarInfinity": "mocha -r ts-node/register tests/grammar/testGrammarInfinity.ts",
-    "testGrammarIntersection": "mocha -r ts-node/register tests/grammar/testGrammarIntersection.ts",
     "testGrammarJoin": "mocha -r ts-node/register tests/grammar/testGrammarJoin.ts",
     "testGrammarReplaceBlock": "mocha -r ts-node/register tests/grammar/testGrammarReplaceBlock.ts",
     "testGrammarMatch": "mocha -r ts-node/register tests/grammar/testGrammarMatch.ts",

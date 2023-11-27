@@ -914,64 +914,6 @@ export class UnionExpr extends Expr {
     }
 }
 
-class IntersectExpr extends BinaryExpr {
-
-    public get id(): string {
-        return `(${this.child1.id}&${this.child2.id})`;
-    }
-
-    public delta(
-        tapeName: string,
-        env: DerivEnv
-    ): Expr {
-        const newChild1 = this.child1.delta(tapeName, env);
-        const newChild2 = this.child2.delta(tapeName, env);
-        return constructIntersection(env, newChild1, newChild2);
-    }
-
-    public *deriv(
-        query: Query,
-        env: DerivEnv
-    ): Derivs {
-        const c1derivs = this.child1.deriv(query, env);
-        for (const d1 of disjoin(c1derivs, env)) {
-            if (d1.result instanceof EpsilonExpr) {
-                yield d1.wrap(c => constructIntersection(env, c, this.child2));
-                continue;
-            }
-    
-            const c2derivs = this.child2.deriv(d1.result, env);
-            for (const d2 of disjoin(c2derivs, env)) {
-                const c1nxt = (d2.result instanceof EpsilonExpr) ? this.child1 : d1.next;
-                yield d2.wrap(c => constructIntersection(env, c1nxt, c));
-            }
-        }
-    } 
-
-    public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
-        for (const [handled1, next1] of this.child1.forward(env)) {
-            for (const [handled2, next2] of this.child2.forward(env)) {
-                const wrapped = constructIntersection(env, next1, next2);
-                yield [handled1 || handled2, wrapped];
-            }
-        }
-    }
-
-    public simplify(env: Env): Expr {
-        if (this.child1 instanceof NullExpr) return this.child1;
-        if (this.child2 instanceof NullExpr) return this.child2;
-        if (this.child1 instanceof EpsilonExpr && this.child2 instanceof EpsilonExpr) {
-            return this.child1;
-        }
-        if (this.child1 instanceof IntersectExpr) {
-            const head = this.child1.child1;
-            const tail = constructIntersection(env, this.child1.child2, this.child2);
-            return constructIntersection(env, head, tail);
-        }
-        return this;
-    }
-}
-
 class JoinExpr extends BinaryExpr {
 
     constructor(
@@ -2101,14 +2043,6 @@ export function constructAlternation(
     ...children: Expr[]
 ): Expr {
     return new UnionExpr(children).simplify(env);
-}
-
-export function constructIntersection(
-    env: Env,
-    c1: Expr, 
-    c2: Expr
-): Expr {
-    return new IntersectExpr(c1, c2).simplify(env);
 }
 
 export function constructCount(

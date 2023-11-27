@@ -51,7 +51,6 @@ export type Grammar = EpsilonGrammar
              | SequenceGrammar
              | AlternationGrammar
              | ShortGrammar
-             | IntersectionGrammar
              | JoinGrammar
              | CountGrammar
              | StartsGrammar
@@ -325,10 +324,6 @@ abstract class BinaryGrammar extends AbstractGrammar {
 
 export class ShortGrammar extends UnaryGrammar {
     public readonly tag = "short";
-}
-
-export class IntersectionGrammar extends BinaryGrammar {
-    public readonly tag = "intersect";
 }
 
 export class JoinGrammar extends BinaryGrammar {

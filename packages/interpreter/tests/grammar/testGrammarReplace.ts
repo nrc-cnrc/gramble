@@ -1,6 +1,6 @@
 import {
     Any, Count, Cursor, Epsilon,
-    Intersect, Not, OptionalReplace,
+    Not, OptionalReplace,
     Replace, Uni, Vocab,
 } from "../../src/grammarConvenience";
 
@@ -1696,23 +1696,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         {$i: 'eeyeleehelee'},
     ];
 
-    testGrammar({
-        desc: '30c. Replace e by a in hel, hey, hee: Spotchk_10 ' +
-              'e -> a {0,2} || h_(.&~h) (vocab $i:ehly)',
-        grammar: Count({$i:10, $o:10},
-        			 Vocab({$i:'ehly'},
-                     	 Replace(
-                         	 "e", "a",
-                             "h",
-                             Intersect(Any(), Not("h")),
-                             EMPTY_CONTEXT,
-                             false, false, 0, 2
-                     	 ))),
-        vocab: {$i:4, $o:5},
-        query: inputs(io_30c),
-        results: outputs(io_30c),
-    });
-
     const io_30d: StringDict[] = [
         // Some Valid Inputs - Copy through
         {$i: 'hl', $o: 'hl'},           {$i: 'heh', $o: 'heh'},
@@ -1731,23 +1714,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         {$i: 'helyeleel'},              {$i: 'eeehhhlllyyy'},
         {$i: 'eeyeleehelee'},
     ];
-
-    testGrammar({
-        desc: '30d. Replace e by a in hel, yel, eel: Spotchk_10 ' +
-              'e -> a {0,2} || (.&~l)_l (vocab $i:ehly)',
-        grammar: Count({$i:10, $o:10},
-        			 Vocab({$i:'ehly'},
-                     	 Replace(
-                             "e", "a",
-                             Intersect(Any(), Not("l")),
-                             "l",
-                             EMPTY_CONTEXT,
-                             false, false, 0, 2
-                     	 ))),
-        vocab: {$i:4, $o:5},
-        query: inputs(io_30d),
-        results: outputs(io_30d),
-    });
 
     const io_31a: StringDict[] = [
         // Some Valid Inputs - Copy through

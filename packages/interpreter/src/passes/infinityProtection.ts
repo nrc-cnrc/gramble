@@ -4,8 +4,7 @@ import { AlternationGrammar,
     CountGrammar, CounterStack, 
     CursorGrammar, 
     EmbedGrammar, 
-    Grammar, HideGrammar, 
-    IntersectionGrammar, 
+    Grammar, HideGrammar,
     JoinGrammar, 
     LengthRange, 
     MatchGrammar,
@@ -18,7 +17,6 @@ import { renameTape } from "../tapes";
 import { Count } from "../grammarConvenience";
 import { exhaustive } from "../utils/func";
 import { Result } from "../utils/msgs";
-import { toStr } from "./toStr";
 
 export class InfinityProtection extends Pass<Grammar,Grammar> {
 
@@ -130,7 +128,6 @@ export function lengthRange(
         case "seq": return lengthSeq(g, tapeName, stack, env);
         case "alt": return lengthAlt(g, tapeName, stack, env);
         case "join": return lengthJoin(g, tapeName, stack, env);
-        case "intersect": return lengthIntersect(g, tapeName, stack, env);
         case "match": return lengthMatch(g, tapeName, stack, env);
         case "count": return lengthCount(g, tapeName, stack, env);
         case "rename": return lengthRename(g, tapeName, stack, env);
@@ -198,19 +195,6 @@ function lengthJoin(g: JoinGrammar, tapeName: string, stack: CounterStack, env: 
     if (!(child2tapes.has(tapeName))) return child1Length;
 
     if (child1Length.null == true || child2Length.null == true) {
-        return { null: true, min: 0, max: 0 };
-    }
-    return { 
-        null: false,
-        min: Math.max(child1Length.min, child2Length.min),
-        max: Math.min(child1Length.max, child2Length.max)
-    }
-}
-    
-function lengthIntersect(g: IntersectionGrammar, tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
-    const child1Length = lengthRange(g.child1, tapeName, stack, env);
-    const child2Length = lengthRange(g.child2, tapeName, stack, env);
-    if (child1Length.null === true || child2Length.null === true) {
         return { null: true, min: 0, max: 0 };
     }
     return { 

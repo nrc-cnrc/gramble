@@ -1,9 +1,11 @@
 import { 
     AlternationGrammar, CollectionGrammar, 
     ContainsGrammar, CorrespondGrammar, 
-    CountGrammar, CursorGrammar, DotGrammar, 
-    EmbedGrammar, EndsGrammar, EpsilonGrammar, FilterGrammar, Grammar, 
-    HideGrammar, IntersectionGrammar, 
+    CountGrammar, CursorGrammar, 
+    DotGrammar, EmbedGrammar, 
+    EndsGrammar, EpsilonGrammar, 
+    FilterGrammar, Grammar, 
+    HideGrammar, 
     JoinGrammar, LiteralGrammar, 
     MatchGrammar, NegationGrammar, 
     NullGrammar, PreTapeGrammar, 
@@ -168,15 +170,6 @@ export function Any(
     tape: string = DEFAULT_TAPE
 ): DotGrammar {
     return new DotGrammar(tape);
-}
-
-export function Intersect(
-    child1: Grammar | string, 
-    child2: Grammar | string
-): IntersectionGrammar {
-    child1 = makeGrammar(child1);
-    child2 = makeGrammar(child2);
-    return new IntersectionGrammar(child1, child2);
 }
 
 export function Join(

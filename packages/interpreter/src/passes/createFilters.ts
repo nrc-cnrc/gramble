@@ -2,7 +2,6 @@ import { PassEnv, AutoPass } from "../passes";
 import { 
     AlternationGrammar, ContainsGrammar, 
     DotGrammar, EndsGrammar, Grammar,
-    IntersectionGrammar, 
     NegationGrammar, RepeatGrammar, 
     SequenceGrammar, StartsGrammar, 
     RenameGrammar,
@@ -82,11 +81,11 @@ export class CreateFilters extends AutoPass<Grammar> {
             return new AlternationGrammar(newChildren);
         }
 
-        if (g.child instanceof IntersectionGrammar) {
+        if (g.child instanceof JoinGrammar) {
             // this(x&y) -> this(x)&this(y)
             const newCond1 = new StartsGrammar(g.child.child1, g.tapes);
             const newCond2 = new StartsGrammar(g.child.child2, g.tapes);
-            return new IntersectionGrammar(newCond1, newCond2);
+            return new JoinGrammar(newCond1, newCond2);
         }
 
         if (g.child instanceof RenameGrammar) {
@@ -126,12 +125,12 @@ export class CreateFilters extends AutoPass<Grammar> {
             const newChildren = g.child.children.map(c => new EndsGrammar(c, g.tapes));
             return new AlternationGrammar(newChildren);
         }
-
-        if (g.child instanceof IntersectionGrammar) {
+        
+        if (g.child instanceof JoinGrammar) {
             // this(x&y) -> this(x)&this(y)
             const newCond1 = new EndsGrammar(g.child.child1, g.tapes);
             const newCond2 = new EndsGrammar(g.child.child2, g.tapes);
-            return new IntersectionGrammar(newCond1, newCond2);
+            return new JoinGrammar(newCond1, newCond2);
         }
         
         if (g.child instanceof RenameGrammar) {
@@ -175,11 +174,11 @@ export class CreateFilters extends AutoPass<Grammar> {
             return new AlternationGrammar(newChildren);
         }
 
-        if (g.child instanceof IntersectionGrammar) {
+        if (g.child instanceof JoinGrammar) {
             // this(x&y) -> this(x)&this(y)
             const newCond1 = new ContainsGrammar(g.child.child1, g.tapes);
             const newCond2 = new ContainsGrammar(g.child.child2, g.tapes);
-            return new IntersectionGrammar(newCond1, newCond2);
+            return new JoinGrammar(newCond1, newCond2);
         }
         
         if (g.child instanceof RenameGrammar) {
