@@ -3,7 +3,7 @@ import {
     Grammar, JoinGrammar
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { StringDict } from "../utils/func";
+import { StringDict, dictLen } from "../utils/func";
 import { Query } from "../grammarConvenience";
 
 /**
@@ -25,7 +25,10 @@ export class CreateQuery extends Pass<Grammar,Grammar> {
     public transform(g: Grammar, env: PassEnv): Result<Grammar> {
 
         // if it's an empty query there's nothing to do
-        if (Object.keys(this.query).length == 0) 
+        if (Array.isArray(this.query) && this.query.length === 0) 
+            return g.msg();
+        
+        if (!Array.isArray(this.query) && dictLen(this.query) == 0) 
             return g.msg();
 
         // otherwise turn it into a product of literals and join it

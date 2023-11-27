@@ -122,6 +122,10 @@ export function mapValues<T1,T2>(d: Dict<T1>, f: Func<T1,T2>): Dict<T2> {
     return result;
 }
 
+export function dictLen<T>(d: Dict<T>): number {
+    return Object.keys(d).length;
+}
+
 export function mapDict<T1,T2>(
     d: Dict<T1>, 
     f: (k: string, value: T1) => T2

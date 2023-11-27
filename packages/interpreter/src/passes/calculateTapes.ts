@@ -19,7 +19,7 @@ import { Pass, PassEnv } from "../passes";
 import { 
     Dict, mapValues, 
     exhaustive, update, 
-    foldRight, union, Func 
+    foldRight, union, Func, dictLen 
 } from "../utils/func";
 import { 
     TapeInfo, TapeSum, 
@@ -131,8 +131,9 @@ function getChildTapes(g: Grammar): TapeInfo {
 }
 
 function getTapesLit(g: LiteralGrammar): Grammar {
-    const tapes: Map<string,VocabString> = new Map();
-    tapes.set(g.tapeName, VocabString(g.tokens, false));
+    const tapes: Dict<VocabString> = {
+        [g.tapeName]: VocabString(g.tokens, false)
+    };
     return updateTapes(g, TapeLit(tapes));
 }
 
@@ -146,7 +147,7 @@ function getTapesSingleTape(g: SingleTapeGrammar): Grammar|Result<Grammar> {
         return updateTapes(g, tapes);
     }
 
-    if (g.child.tapeSet.tapes.size > 1) {
+    if (dictLen(g.child.tapeSet.tapes) > 1) {
         // shouldn't be possible in real source grammars
         const result = new EpsilonGrammar();
         return updateTapes(result, TapeLit())
@@ -156,20 +157,21 @@ function getTapesSingleTape(g: SingleTapeGrammar): Grammar|Result<Grammar> {
             .localize(g.pos);
     }
 
-    if (g.child.tapeSet.tapes.size === 0) {
+    if (dictLen(g.child.tapeSet.tapes) === 0) {
         return g.child;
     }
 
     // there's just one tape, rename it
-    const tapeToRename = [...g.child.tapeSet.tapes.keys()][0];
+    const tapeToRename = Object.keys(g.child.tapeSet.tapes)[0];
     const tapes = TapeRename(g.child.tapeSet, tapeToRename, g.tapeName);
     return updateTapes(g, tapes);
 
 }
 
 function getTapesDot(g: DotGrammar): Grammar {
-    const tapes: Map<string,VocabString> = new Map();
-    tapes.set(g.tapeName, VocabString(new Set(), true));
+    const tapes: Dict<VocabString> = {
+        [g.tapeName]: VocabString(new Set(), true)
+    };
     return updateTapes(g, TapeLit(tapes));
 }
 
@@ -201,13 +203,13 @@ function getTapesRename(g: RenameGrammar): Result<Grammar> {
         return result;
     }
 
-    if (!g.child.tapeSet.tapes.has(g.fromTape)) {
+    if (g.child.tapeSet.tapes[g.fromTape] === undefined) {
         return g.child.err("Renaming missing tape",
             `The grammar to undergo renaming does not contain the tape ${g.fromTape}. ` +
             `Available tapes: [${[...g.child.tapes]}]`);
     }
 
-    if (g.fromTape !== g.toTape && g.child.tapeSet.tapes.has(g.toTape)) {
+    if (g.fromTape !== g.toTape && g.child.tapeSet.tapes[g.toTape] !== undefined) {
         return g.child.err("Destination tape already exists",
                   `Trying to rename ${g.fromTape}->${g.toTape} but the grammar ` +
                   `to the left already contains the tape ${g.toTape}.`)
@@ -219,7 +221,7 @@ function getTapesRename(g: RenameGrammar): Result<Grammar> {
 
 function getTapesHide(g: HideGrammar): Result<Grammar> {
     if (g.child.tapeSet.tag === "TapeLit" &&
-        !g.child.tapeSet.tapes.has(g.tapeName)) {
+        g.child.tapeSet.tapes[g.tapeName] === undefined) {
         return g.child.err("Hiding missing tape",
                     `The grammar being hidden does not contain the tape ${g.tapeName}. ` +
                     ` Available tapes: [${[...g.child.tapes]}]`);
@@ -243,18 +245,18 @@ function getTapesFilter(g: FilterGrammar): Result<Grammar> {
         return getTapesDefault(g).msg();
     }
 
-    if (g.child2.tapeSet.tapes.size === 0) {
+    if (dictLen(g.child2.tapeSet.tapes) === 0) {
         // it's an epsilon or failure caught elsewhere
         return getTapesDefault(g).msg();
     }
 
-    if (g.child2.tapeSet.tapes.size > 1) {
+    if (dictLen(g.child2.tapeSet.tapes) > 1) {
         return g.child1.err("Filters must be single-tape", 
         `A filter like equals, starts, etc. should only reference a single tape.`);
     }
 
     const t2 = g.child2.tapes[0];
-    if (!g.child1.tapeSet.tapes.has(t2)) {
+    if (g.child1.tapeSet.tapes[t2] === undefined) {
         return g.child1.err("Filtering non-existent tape", 
         `This filter references a tape ${t2} that does not exist`);
     }
@@ -277,7 +279,7 @@ function getTapesReplace(g: ReplaceGrammar, env: PassEnv): Result<Grammar> {
     const msgs: Msgs = [];
     for (const [childName, child] of childrenToCheck) {
         if (child.tapeSet.tag !== "TapeLit") continue; // nothing to check
-        if (child.tapeSet.tapes.size <= 1) continue;
+        if (dictLen(child.tapeSet.tapes) <= 1) continue;
         msgs.push(Err( "Multitape rule", 
                     "This rule has the wrong number of tapes " +
                     ` in ${childName}: ${tapeToStr(child.tapeSet)}`));
@@ -295,7 +297,7 @@ function getTapesReplaceBlock(g: ReplaceBlockGrammar): Result<Grammar> {
     // make sure the tape we're replacing exists, otherwise
     // we generate infinitely
     if (g.child.tapeSet.tag === "TapeLit" &&
-        !g.child.tapeSet.tapes.has(g.inputTape)) {
+        g.child.tapeSet.tapes[g.inputTape] === undefined) {
         return g.child.err("Replacing non-existent tape",
                     `The grammar above does not have a tape ` +
                     `${g.inputTape} to replace on`);
@@ -314,7 +316,7 @@ function getTapesReplaceBlock(g: ReplaceBlockGrammar): Result<Grammar> {
     // hidden tapes of its rules
     const hiddenTapes: TapeLit = TapeLit();
     for (const r of g.rules) {
-        hiddenTapes.tapes.set(r.hiddenTapeName, VocabString());
+        hiddenTapes.tapes[r.hiddenTapeName] = VocabString();
     }
 
     //const hiddenTapes = TapeLit(g.rules.map(r => r.hiddenTapeName))

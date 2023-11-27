@@ -52,10 +52,8 @@ export function testGrammarTapes({
 
         if (grammar.tapeSet.tag !== "TapeLit") return;
 
-        console.log(tapeToStr(grammar.tapeSet));
-
         const expectedTapes = new Set(Object.keys(tapes));
-        const foundTapes = new Set(grammar.tapeSet.tapes.keys())
+        const foundTapes = new Set(Object.keys(grammar.tapeSet.tapes))
         it(`Tapes should equal [${[...expectedTapes]}]`, function() {
             expect(foundTapes).to.deep.equal(expectedTapes);
         });
@@ -65,7 +63,7 @@ export function testGrammarTapes({
                                 ? VocabString(vocab)
                                 : vocab;
 
-            const tape = grammar.tapeSet.tapes.get(tapeName);
+            const tape = grammar.tapeSet.tapes[tapeName];
             if (tape === undefined) {
                 it(`${tapeName} should exist]`, function() {
                     assert.fail();
@@ -696,6 +694,18 @@ describe(`GrammarIDs`, function() {
             "t2": ["w","o","r","l","d"],
         },
         symbol: "c"
+    });
+
+    testGrammarTapes({
+        desc: "16. Collection without symbol selected",
+        grammar: Collection({
+            a: t1("hello"),
+            b: t2("world")
+        }),
+        tapes: {
+            "t1": ["h","e","l","o"],
+            "t2": ["w","o","r","l","d"],
+        },
     });
 
     testGrammarTapes({

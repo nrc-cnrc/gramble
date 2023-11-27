@@ -2,7 +2,7 @@ import {
     CounterStack, Expr
 } from "./exprs";
 import { 
-    Result,
+    Result, THROWER,
 } from "./utils/msgs";
 
 import {
@@ -139,7 +139,7 @@ export abstract class AbstractGrammar extends Component {
             throw new Error(`Grammar ${toStr(this)} references unresolved tapes: ` +
                                 `${tapeToStr(this.tapeSet)}`);
         }
-        return [...this.tapeSet.tapes.keys()];
+        return Object.keys(this.tapeSet.tapes);
     }
 
     public getChildren(): Grammar[] {
@@ -159,9 +159,7 @@ export abstract class AbstractGrammar extends Component {
      */
     public tapify(env: PassEnv): Grammar {
         const pass = new CalculateTapes();
-        const [result, msgs] = pass.transform(this as Grammar, env).destructure();
-        if (msgs.length > 0) throw new Error(JSON.stringify(msgs));
-        return result;
+        return pass.transform(this as Grammar, env).msgTo(THROWER);
     }
 
     /**

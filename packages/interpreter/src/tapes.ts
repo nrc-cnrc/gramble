@@ -1,4 +1,4 @@
-import { exhaustive, union } from "./utils/func";
+import { Dict, exhaustive, union } from "./utils/func";
 import { 
     Namespace
 } from "./utils/namespace";
@@ -62,15 +62,16 @@ export function TapeSum(c1: TapeInfo, c2: TapeInfo): TapeInfo {
     if (c1.tag !== "TapeLit" || c2.tag !== "TapeLit") 
         return { tag: "TapeSum", c1, c2 };
 
-    const resultTapes: Map<string,VocabString> = new Map(c1.tapes);
-    for (const [k,v] of c2.tapes) {
-        const other = c1.tapes.get(k);
+    const resultTapes: Dict<VocabString> = {};
+    Object.assign(resultTapes, c1.tapes);
+    for (const [k,v] of Object.entries(c2.tapes)) {
+        const other = c1.tapes[k];
         if (other === undefined) {
-            resultTapes.set(k,v);
+            resultTapes[k] = v;
             continue;
         }
         const newVocab = vocabUnion(v, other);
-        resultTapes.set(k, newVocab);
+        resultTapes[k] = newVocab;
     }
 
     return TapeLit(resultTapes);
@@ -88,16 +89,16 @@ export function TapeJoin(c1: TapeInfo, c2: TapeInfo): TapeInfo {
     if (c1.tag !== "TapeLit" || c2.tag !== "TapeLit") 
         return { tag: "TapeJoin", c1, c2 };
 
-    const resultTapes: Map<string,VocabString> = new Map(c1.tapes);
-    for (const [k,v] of c2.tapes) {
-        const other = c1.tapes.get(k);
+    const resultTapes: Dict<VocabString> = {};
+    Object.assign(resultTapes, c1.tapes);
+    for (const [k,v] of Object.entries(c2.tapes)) {
+        const other = c1.tapes[k];
         if (other === undefined) {
-            resultTapes.set(k,v);
+            resultTapes[k] = v;
             continue;
         }
-        // unlike Sums, shared tapes have the intersections of their vocabs
         const newVocab = vocabIntersection(v, other);
-        resultTapes.set(k, newVocab);
+        resultTapes[k] = newVocab;
     }
 
     return TapeLit(resultTapes);
@@ -114,11 +115,11 @@ export function TapeUnknown(): TapeInfo {
  */
 export type TapeLit = { 
     tag: "TapeLit", 
-    tapes: Map<string, VocabString> 
+    tapes: Dict<VocabString> 
 };
 
 export function TapeLit(
-    tapes: Map<string, VocabString> = new Map()
+    tapes: Dict<VocabString> = {}
 ): TapeLit {
     return { tag: "TapeLit", tapes }
 };
@@ -154,12 +155,13 @@ export function TapeRename(
     toTape: string
 ): TapeInfo {
     if (child.tag === "TapeLit") {
-        const renamedTapes = new Map(child.tapes);
-        let oldVocab = child.tapes.get(fromTape);
+        const renamedTapes: Dict<VocabString> = {};
+        Object.assign(renamedTapes, child.tapes);
+        let oldVocab = child.tapes[fromTape];
         if (oldVocab === undefined) 
             oldVocab = VocabString([], false); // dummy value
-        renamedTapes.set(toTape, oldVocab);
-        renamedTapes.delete(fromTape);
+        renamedTapes[toTape] = oldVocab;
+        delete renamedTapes[fromTape];
         return TapeLit(renamedTapes);
     }
 
