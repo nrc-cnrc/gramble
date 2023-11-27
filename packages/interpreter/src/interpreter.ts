@@ -26,7 +26,7 @@ import { constructExpr } from "./passes/constructExpr";
 import { toStr } from "./passes/toStr";
 import { DEFAULT_PROJECT_NAME, DEFAULT_SYMBOL, HIDDEN_PREFIX } from "./utils/constants";
 import { VERBOSE_GRAMMAR, VERBOSE_TIME, logTime, msToTime, timeIt } from "./utils/logging";
-import { Options } from "./utils/options";
+import { INDICES, Options } from "./utils/options";
 import { SelectSymbol } from "./passes/selectSymbol";
 import { getAllSymbols } from "./passes/getAllSymbols";
 import { qualifySymbol } from "./passes/qualifySymbols";
@@ -66,6 +66,10 @@ export class Interpreter {
         g: Grammar,
         opt: Partial<Options> = {}
     ) { 
+
+        // reset indices to zero
+        INDICES.HIDE = 0;
+        INDICES.REPLACE = 0;
 
         this.opt = Options(opt);
         const timeVerbose = (this.opt.verbose & VERBOSE_TIME) != 0;

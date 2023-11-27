@@ -29,7 +29,7 @@ import {
     TapeLit, TapeRef, 
     TapeRename, tapeToStr, TapeJoin 
 } from "../tapes";
-import { DEFAULT_TAPE, HIDDEN_PREFIX } from "../utils/constants";
+import { DEFAULT_TAPE, HIDDEN_PREFIX, INPUT_TAPE, OUTPUT_TAPE } from "../utils/constants";
 import { VocabString } from "../vocab";
 import { toStr } from "./toStr";
 
@@ -311,16 +311,22 @@ function getTapesReplaceBlock(g: ReplaceBlockGrammar): Result<Grammar> {
         return g.child.warn("This replace has no valid rules");
     }
 
-    // the block's tapes are its child's tapes plus the 
-    // hidden tapes of its rules
-    const hiddenTapes: TapeLit = TapeLit();
+    let current = g.child.tapeSet;
+    let currentTape = g.inputTape;
     for (const r of g.rules) {
-        hiddenTapes.tapes[r.hiddenTapeName] = VocabString();
+        console.log(`current = ${tapeToStr(g.child.tapeSet)}`);
+        console.log(`currentTape = ${currentTape}`);
+        current = TapeRename(current, currentTape, INPUT_TAPE);
+        currentTape = OUTPUT_TAPE;
+        const additionalVocab = TapeSum(r.tapeSet, 
+                TapeRename(current, INPUT_TAPE, OUTPUT_TAPE));
+        current = TapeSum(current, additionalVocab);
+        current = TapeRename(current, INPUT_TAPE, r.hiddenTapeName);
     }
-
-    //const hiddenTapes = TapeLit(g.rules.map(r => r.hiddenTapeName))
-    const newTapes = TapeSum(g.child.tapeSet, hiddenTapes);
-    return updateTapes(g, newTapes).msg();
+    console.log(`current = ${tapeToStr(g.child.tapeSet)}`);
+    console.log(`currentTape = ${currentTape}`);
+    current = TapeRename(current, OUTPUT_TAPE, g.inputTape);
+    return updateTapes(g, current).msg();
 }
 
 function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar> {

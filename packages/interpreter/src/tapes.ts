@@ -181,11 +181,17 @@ export function TapeRename(
 export function tapeToStr(t: TapeInfo): string {
     switch (t.tag) {
         case "TapeUnknown": return "?";
-        case "TapeLit": return `${JSON.stringify(t.tapes)}`;
+        case "TapeLit": return tapeLitToStr(t);
         case "TapeRef": return "$" + t.symbol;
         case "TapeRename": return `${t.fromTape}>${t.toTape}(${tapeToStr(t.child)})`;
         case "TapeSum": return tapeToStr(t.c1) + "+" + tapeToStr(t.c2);
         case "TapeJoin": return tapeToStr(t.c1) + "⋈" + tapeToStr(t.c2);
         default: exhaustive(t);
     }
+}
+
+function tapeLitToStr(t: TapeLit): string {
+    const entries = Object.entries(t.tapes).map(([k,v]) => 
+        `${k}:${[...v.tokens]}`);
+    return "{" + entries.join(",") + "}"
 }

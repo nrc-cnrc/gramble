@@ -1,6 +1,11 @@
 import { DEFAULT_MAX_CHARS, DEFAULT_MAX_RECURSION } from "./constants";
 import { SILENT } from "./logging";
 
+export const INDICES = {
+    HIDE: 0,
+    REPLACE: 0,
+};
+
 export interface Options {
     maxRecursion: number,
     maxChars: number,

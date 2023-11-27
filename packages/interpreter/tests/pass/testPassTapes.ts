@@ -1,4 +1,4 @@
-import { Grammar } from "../../src/grammars";
+import { Grammar, ReplaceGrammar } from "../../src/grammars";
 import { assert, expect } from "chai";
 import { t1, t2, t3 } from "../testUtil";
 import { 
@@ -9,7 +9,7 @@ import {
     Join, 
     Match, 
     Null, 
-    Rename, Replace, Seq, SingleTape, Starts
+    Rename, Replace, ReplaceBlock, Seq, SingleTape, Starts
 } from "../../src/grammarConvenience";
 import { CalculateTapes } from "../../src/passes/calculateTapes";
 import { PassEnv } from "../../src/passes";
@@ -84,6 +84,17 @@ export function testGrammarTapes({
     });
 
 
+}
+
+function NamedReplace(
+    name: string, 
+    i: string, 
+    o: string,
+    pre: string = "",
+    post: string = "",
+): ReplaceGrammar {
+    return Replace(i, o, pre, post, undefined, undefined,
+            undefined, undefined, undefined, name, false)
 }
 
 describe(`GrammarIDs`, function() {
@@ -915,6 +926,36 @@ describe(`GrammarIDs`, function() {
         },
     });
 
+    testGrammarTapes({
+        desc: "25a",
+        grammar: ReplaceBlock("t1", t1("hello"), 
+                NamedReplace("R1", "e", "")),
+        tapes: {
+            "t1": ["h","e","l","o"],
+            ".R1": ["h","e","l","o"],
+        },
+    });
+
+    testGrammarTapes({
+        desc: "25b",
+        grammar: ReplaceBlock("t1", t1("hello"), 
+                    NamedReplace("R1", "e", "a")),
+        tapes: {
+            "t1": ["h","e","l","o","a"],
+            ".R1": ["h","e","l","o"],
+        },
+    });
     
+    testGrammarTapes({
+        desc: "25c",
+        grammar: ReplaceBlock("t1", t1("hello"), 
+                    NamedReplace("R1", "e", "a"),
+                    NamedReplace("R2", "a", "u")),
+        tapes: {
+            "t1": ["h","e","l","o","a","u"],
+            ".R2": ["h","e","l","o","a"],
+            ".R1": ["h","e","l","o"],
+        },
+    });
 
 });

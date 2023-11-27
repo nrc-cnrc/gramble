@@ -30,6 +30,7 @@ import { Pos } from "./utils/cell";
 import { CalculateTapes } from "./passes/calculateTapes";
 import { SymbolQualifier } from "./passes/qualifySymbols";
 import { toStr } from "./passes/toStr";
+import { INDICES } from "./utils/options";
 
 export { CounterStack, Expr };
 
@@ -474,8 +475,6 @@ export class PreTapeGrammar extends UnaryGrammar {
     }
 }
 
-
-let HIDE_INDEX = 0; 
 export class HideGrammar extends UnaryGrammar {
     public readonly tag = "hide";
 
@@ -486,7 +485,7 @@ export class HideGrammar extends UnaryGrammar {
     ) {
         super(child);
         if (toTape == "") {
-            this.toTape = `${HIDDEN_PREFIX}H${HIDE_INDEX++}_${tapeName}`;
+            this.toTape = `${HIDDEN_PREFIX}H${INDICES.HIDE++}_${tapeName}`;
         } else if (!toTape.startsWith(HIDDEN_PREFIX)) {
             this.toTape = `${HIDDEN_PREFIX}${toTape}`;
         }
@@ -698,7 +697,6 @@ export class CorrespondGrammar extends UnaryGrammar {
 
 }
 
-let REPLACE_INDEX = 0;
 export class ReplaceGrammar extends AbstractGrammar {
     public readonly tag = "replace";
 
@@ -717,7 +715,7 @@ export class ReplaceGrammar extends AbstractGrammar {
     ) {
         super();
         if (this.hiddenTapeName.length == 0) {
-            this.hiddenTapeName = `${HIDDEN_PREFIX}R${REPLACE_INDEX++}`;
+            this.hiddenTapeName = `${HIDDEN_PREFIX}R${INDICES.REPLACE++}`;
         } else if (!this.hiddenTapeName.startsWith(HIDDEN_PREFIX)) {
             this.hiddenTapeName = HIDDEN_PREFIX + this.hiddenTapeName;
         }
