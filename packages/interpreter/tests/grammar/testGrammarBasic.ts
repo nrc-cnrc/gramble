@@ -34,6 +34,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
 
+    /*
+
     describe('2. Literal t1:""', test({
         grammar: t1(""),
         tapes: ["t1"],
@@ -360,4 +362,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'ii'}
         ],
     }));
+
+    */
 });

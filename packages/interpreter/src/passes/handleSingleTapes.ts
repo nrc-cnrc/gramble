@@ -57,14 +57,6 @@ export class HandleSingleTapes extends Pass<Grammar,Grammar> {
             return g.mapChildren(this, env);
         }
 
-        if (g.tapes.length > 1) {
-            // shouldn't be possible in real source grammars
-            return g.err("Multiple fields not allowed in this context",
-                `Only grammars with one field (e.g. just "text" but not any other fields) ` +
-                `can be embedded into a regex or rule context.`)
-                .bind(_ => new EpsilonGrammar().tapify(env));
-        }
-
         const [result, msgs] = g.mapChildren(this, env).destructure();
         result.tapeSet = TapeUnknown();
         return result.tapify(env).msg(msgs);

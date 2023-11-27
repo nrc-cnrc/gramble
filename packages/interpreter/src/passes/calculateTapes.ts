@@ -26,7 +26,7 @@ import {
     TapeLit, TapeRef, 
     TapeRename, tapeToStr, TapeJoin 
 } from "../tapes";
-import { HIDDEN_PREFIX } from "../utils/constants";
+import { DEFAULT_TAPE, HIDDEN_PREFIX } from "../utils/constants";
 import { VocabString } from "../vocab";
 import { toStr } from "./toStr";
 
@@ -119,15 +119,9 @@ function updateTapes(g: Grammar, tapes: TapeInfo): Grammar {
 }
 
 function getTapesDefault(
-    g: Grammar, 
-    extras: Map<string,VocabString> | undefined = undefined
+    g: Grammar
 ): Grammar {
-    if (extras === undefined) {
-        return updateTapes(g, getChildTapes(g));
-    }
-    const lits = TapeLit(extras);
-    const allTapes = TapeSum(getChildTapes(g), lits);
-    return updateTapes(g, allTapes);
+    return updateTapes(g, getChildTapes(g));
 }
 
 function getChildTapes(g: Grammar): TapeInfo {
@@ -142,10 +136,34 @@ function getTapesLit(g: LiteralGrammar): Grammar {
     return updateTapes(g, TapeLit(tapes));
 }
 
-function getTapesSingleTape(g: SingleTapeGrammar): Grammar {
-    const tapes: Map<string,VocabString> = new Map();
-    tapes.set(g.tapeName, VocabString());  // TODO: fix this
-    return updateTapes(g, TapeLit(tapes));
+function getTapesSingleTape(g: SingleTapeGrammar): Grammar|Result<Grammar> {
+
+    if (g.child.tapeSet.tag !== "TapeLit") {
+        // we know there should be a single tape, but we don't
+        // yet know what it is.  let it be the dummy tape for now,
+        // we'll be back later to fix it
+        const tapes = TapeRename(g.child.tapeSet, DEFAULT_TAPE, g.tapeName);
+        return updateTapes(g, tapes);
+    }
+
+    if (g.child.tapeSet.tapes.size > 1) {
+        // shouldn't be possible in real source grammars
+        const result = new EpsilonGrammar();
+        return updateTapes(result, TapeLit())
+            .err("Multiple fields not allowed in this context",
+                `Only grammars with one field (e.g. just "text" but not any other fields) ` +
+                `can be embedded into a regex or rule context.`)
+            .localize(g.pos);
+    }
+
+    if (g.child.tapeSet.tapes.size === 0) {
+        return g.child;
+    }
+
+    // there's just one tape, rename it
+    const tapeToRename = [...g.child.tapeSet.tapes.keys()][0];
+    const tapes = TapeRename(g.child.tapeSet, tapeToRename, g.tapeName);
+    return updateTapes(g, tapes);
 
 }
 

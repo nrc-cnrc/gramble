@@ -8,7 +8,7 @@ import {
     Join, 
     Match, 
     Null, 
-    Rename, Replace, Seq
+    Rename, Replace, Seq, SingleTape
 } from "../../src/grammarConvenience";
 import { CalculateTapes } from "../../src/passes/calculateTapes";
 import { PassEnv } from "../../src/passes";
@@ -38,8 +38,6 @@ export function testGrammarTapes({
     const pass = new FlattenCollections().compose(new CalculateTapes());
     const env = new PassEnv();
     grammar = pass.go(grammar, env).msgTo(THROWER);
-
-    console.log(`Grammar = ${toStr(grammar)}`)
     
     if (symbol) {
         const selectSymbol = new SelectSymbol(symbol);
@@ -101,22 +99,30 @@ describe(`GrammarIDs`, function() {
 
     testGrammarTapes({
         desc: "1b",
+        grammar: t1(""),
+        tapes: {
+            "t1": []
+        }
+    });
+
+    testGrammarTapes({
+        desc: "1c",
+        grammar: Dot("t1"),
+        tapes: {
+            "t1": VocabString([], true)
+        }
+    });
+
+    testGrammarTapes({
+        desc: "1d",
         grammar: Epsilon(),
         tapes: {}
     });
     
     testGrammarTapes({
-        desc: "1c",
+        desc: "1e",
         grammar: Null(),
         tapes: {}
-    });
-    
-    testGrammarTapes({
-        desc: "1d",
-        grammar: Dot("t1"),
-        tapes: {
-            "t1": VocabString([], true)
-        }
     });
 
     testGrammarTapes({
@@ -739,16 +745,71 @@ describe(`GrammarIDs`, function() {
             t1: ["a"],
         }
     });
-    
-    /*
+   
     testGrammarTapes({
-        desc: "16",
+        desc: "19a",
+        grammar: SingleTape("t1", "hello"),
+        tapes: {
+            "t1": ["h","e","l","o"],
+        },
+    });
+
+    testGrammarTapes({
+        desc: "19b",
+        grammar: SingleTape("t1", t2("hello")),
+        tapes: {
+            "t1": ["h","e","l","o"],
+        },
+    });
+    
+    testGrammarTapes({
+        desc: "19c",
+        grammar: SingleTape("t1", Epsilon()),
+        tapes: {},
+    });
+
+
+    
+    testGrammarTapes({
+        desc: "20a",
+        grammar: Collection({
+            "a": SingleTape("t1", Embed("b")),
+            "b": t2("hello"),
+        }),
+        symbol: "a",
+        tapes: {
+            "t1": ["h","e","l","o"],
+        },
+    });
+    
+    testGrammarTapes({
+        desc: "20b",
+        grammar: Collection({
+            "b": t2("hello"),
+            "a": SingleTape("t1", Embed("b")),
+        }),
+        symbol: "a",
+        tapes: {
+            "t1": ["h","e","l","o"],
+        },
+    });
+
+    testGrammarTapes({
+        desc: "21a",
         grammar: Replace("e", "a", "h", "llo"),
         tapes: {
-            "$i": [],
+            "$i": ["h","e","l","o"],
+            "$o": ["a"],
+        },
+    });
+    
+    testGrammarTapes({
+        desc: "21b",
+        grammar: Replace("e", "", "h", "llo"),
+        tapes: {
+            "$i": ["h","e","l","o"],
             "$o": [],
         },
     });
-    */
 
 });

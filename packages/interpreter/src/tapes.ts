@@ -60,7 +60,7 @@ export type TapeSum = {
 export function TapeSum(c1: TapeInfo, c2: TapeInfo): TapeInfo {
 
     if (c1.tag !== "TapeLit" || c2.tag !== "TapeLit") 
-        return { tag: "TapeSum", c1: c1, c2: c2 };
+        return { tag: "TapeSum", c1, c2 };
 
     const resultTapes: Map<string,VocabString> = new Map(c1.tapes);
     for (const [k,v] of c2.tapes) {
@@ -120,7 +120,7 @@ export type TapeLit = {
 export function TapeLit(
     tapes: Map<string, VocabString> = new Map()
 ): TapeLit {
-    return { tag: "TapeLit", tapes: tapes }
+    return { tag: "TapeLit", tapes }
 };
 
 /**
@@ -173,16 +173,13 @@ export function TapeRename(
              fromTape: fromTape, toTape: toTape }
 }
 
-
-
-
 /** 
  * Turning a [TapeInfo] to a string
  */ 
 export function tapeToStr(t: TapeInfo): string {
     switch (t.tag) {
         case "TapeUnknown": return "?";
-        case "TapeLit": return `{${[...t.tapes.keys()]}}`;
+        case "TapeLit": return `${JSON.stringify(t.tapes)}`;
         case "TapeRef": return "$" + t.symbol;
         case "TapeRename": return `${t.fromTape}>${t.toTape}(${tapeToStr(t.child)})`;
         case "TapeSum": return tapeToStr(t.c1) + "+" + tapeToStr(t.c2);
