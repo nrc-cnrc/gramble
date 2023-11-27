@@ -2,7 +2,7 @@ import { exhaustive, union } from "./utils/func";
 import { 
     Namespace
 } from "./utils/namespace";
-import { VocabInfo, VocabString, vocabUnion } from "./vocab";
+import { VocabInfo, VocabString, vocabIntersection, vocabUnion } from "./vocab";
 
 /**
  * Tape
@@ -48,6 +48,7 @@ export type TapeInfo
     | TapeRef
     | TapeRename
     | TapeSum
+    | TapeJoin
     | TapeUnknown; 
 
 export type TapeSum = { 
@@ -56,19 +57,46 @@ export type TapeSum = {
     c2: TapeInfo 
 };
 
-export function TapeSum(child1: TapeInfo, child2: TapeInfo): TapeInfo {
+export function TapeSum(c1: TapeInfo, c2: TapeInfo): TapeInfo {
 
-    if (child1.tag !== "TapeLit" || child2.tag !== "TapeLit") 
-        return { tag: "TapeSum", c1: child1, c2: child2 };
+    if (c1.tag !== "TapeLit" || c2.tag !== "TapeLit") 
+        return { tag: "TapeSum", c1: c1, c2: c2 };
 
-    const resultTapes: Map<string,VocabString> = new Map(child1.tapes);
-    for (const [k,v] of child2.tapes) {
-        const other = child1.tapes.get(k);
+    const resultTapes: Map<string,VocabString> = new Map(c1.tapes);
+    for (const [k,v] of c2.tapes) {
+        const other = c1.tapes.get(k);
         if (other === undefined) {
             resultTapes.set(k,v);
             continue;
         }
         const newVocab = vocabUnion(v, other);
+        resultTapes.set(k, newVocab);
+    }
+
+    return TapeLit(resultTapes);
+    
+}
+
+export type TapeJoin = { 
+    tag: "TapeJoin", 
+    c1: TapeInfo, 
+    c2: TapeInfo 
+};
+
+export function TapeJoin(c1: TapeInfo, c2: TapeInfo): TapeInfo {
+
+    if (c1.tag !== "TapeLit" || c2.tag !== "TapeLit") 
+        return { tag: "TapeJoin", c1, c2 };
+
+    const resultTapes: Map<string,VocabString> = new Map(c1.tapes);
+    for (const [k,v] of c2.tapes) {
+        const other = c1.tapes.get(k);
+        if (other === undefined) {
+            resultTapes.set(k,v);
+            continue;
+        }
+        // unlike Sums, shared tapes have the intersections of their vocabs
+        const newVocab = vocabIntersection(v, other);
         resultTapes.set(k, newVocab);
     }
 
@@ -106,6 +134,13 @@ export function TapeRef(s: string): TapeInfo {
     return { tag: "TapeRef", symbol: s }
 };
 
+/**
+ * A TapeRename expresses a subspended rename operation.  If
+ * we pass in a TapeLit to the `TapeRename()` smart constructor,
+ * it does the operation immediately.  If we pass in anything else
+ * (a ref or another suspend) it results in a TapeRename object
+ * and the operation will be performed when it becomes available.
+ */
 export type TapeRename =  { 
     tag: "TapeRename", 
     child: TapeInfo, 
@@ -138,6 +173,9 @@ export function TapeRename(
              fromTape: fromTape, toTape: toTape }
 }
 
+
+
+
 /** 
  * Turning a [TapeInfo] to a string
  */ 
@@ -148,6 +186,7 @@ export function tapeToStr(t: TapeInfo): string {
         case "TapeRef": return "$" + t.symbol;
         case "TapeRename": return `${t.fromTape}>${t.toTape}(${tapeToStr(t.child)})`;
         case "TapeSum": return tapeToStr(t.c1) + "+" + tapeToStr(t.c2);
+        case "TapeJoin": return tapeToStr(t.c1) + "⋈" + tapeToStr(t.c2);
         default: exhaustive(t);
     }
 }

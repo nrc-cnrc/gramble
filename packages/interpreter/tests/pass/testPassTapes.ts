@@ -2,9 +2,12 @@ import { Grammar } from "../../src/grammars";
 import { assert, expect } from "chai";
 import { t1, t2, t3 } from "../testUtil";
 import { 
-    Collection, Embed, 
+    Collection, Dot, Embed, 
+    Epsilon, 
     Hide, 
+    Join, 
     Match, 
+    Null, 
     Rename, Seq
 } from "../../src/grammarConvenience";
 import { CalculateTapes } from "../../src/passes/calculateTapes";
@@ -60,8 +63,9 @@ export function testGrammarTapes({
         });
 
         for (const [tapeName, vocab] of Object.entries(tapes)) {
-            const voc = Array.isArray(vocab) ?
-                                   VocabString(vocab) : vocab;
+            const v = Array.isArray(vocab) 
+                                ? VocabString(vocab)
+                                : vocab;
 
             const tape = grammar.tapeSet.tapes.get(tapeName);
             if (tape === undefined) {
@@ -71,8 +75,13 @@ export function testGrammarTapes({
                 continue;
             }
 
-            it(`${tapeName} should have vocab [${[...voc.tokens]}]`, function() {
-                expect(tape.tokens).to.deep.equal(voc.tokens);
+            it(`${tapeName} should have vocab [${[...v.tokens]}]`, function() {
+                expect(tape.tokens).to.deep.equal(v.tokens);
+            });
+            
+            const msg = v.wildcard ? "should" : "should not";
+            it(`${tapeName} ${msg} have a wildcard`, function() {
+                expect(tape.wildcard).to.equal(v.wildcard);
             });
         }
     });
@@ -83,10 +92,30 @@ export function testGrammarTapes({
 describe(`GrammarIDs`, function() {
 
     testGrammarTapes({
-        desc: "1",
+        desc: "1a",
         grammar: t1("hello"),
         tapes: {
             "t1": ["h","e","l","o"]
+        }
+    });
+
+    testGrammarTapes({
+        desc: "1b",
+        grammar: Epsilon(),
+        tapes: {}
+    });
+    
+    testGrammarTapes({
+        desc: "1c",
+        grammar: Null(),
+        tapes: {}
+    });
+    
+    testGrammarTapes({
+        desc: "1d",
+        grammar: Dot("t1"),
+        tapes: {
+            "t1": VocabString([], true)
         }
     });
 
@@ -106,6 +135,22 @@ describe(`GrammarIDs`, function() {
             "t1": ["h","e","l","o"],
             "t2": ["w","o","r","l","d"],
             "t3": ["!"],
+        }
+    });
+
+    testGrammarTapes({
+        desc: "2c",
+        grammar: Seq(t1("hello"), Dot("t1")),
+        tapes: {
+            "t1": VocabString(["h","e","l","o"], true)
+        }
+    });
+    
+    testGrammarTapes({
+        desc: "2d",
+        grammar: Seq(Dot("t1"), t1("hello")),
+        tapes: {
+            "t1": VocabString(["h","e","l","o"], true)
         }
     });
 
@@ -391,18 +436,69 @@ describe(`GrammarIDs`, function() {
         }
     });
 
-    /*
     testGrammarTapes({
         desc: "12a",
         grammar: Join(t1("hello"), t2("world")),
-        tapes: ["t1", "t2"]
+        tapes: {
+            "t1": ["h","e","l","o"],
+            "t2": ["w","o","r","l","d"]
+        }
     });
 
     testGrammarTapes({
-        desc: "12a",
+        desc: "12b",
         grammar: Join(t1("hello"), Seq(t1("hello"), t2("world"))),
-        tapes: ["t1", "t2"]
+        tapes: {
+            "t1": ["h","e","l","o"],
+            "t2": ["w","o","r","l","d"]
+        }
     });
+    
+    testGrammarTapes({
+        desc: "12c",
+        grammar: Join(Seq(t1("hello"), t3("kitty")), 
+                      Seq(t1("hello"), t2("world"))),
+        tapes: {
+            "t1": ["h","e","l","o"],
+            "t2": ["w","o","r","l","d"],
+            "t3": ["k","i","t","y"],
+        }
+    });
+    
+    testGrammarTapes({
+        desc: "12d",
+        grammar: Join(Seq(t1("hello"), t3("kitty")), 
+                      Seq(t1("goodbye"), t2("world"))),
+        tapes: {
+            "t1": ["e","o"],
+            "t2": ["w","o","r","l","d"],
+            "t3": ["k","i","t","y"],
+        }
+    });
+
+    testGrammarTapes({
+        desc: "12e",
+        grammar: Join(Seq(t1("hello"), Dot("t1"), t3("kitty")), 
+                      Seq(t1("goodbye"), t2("world"))),
+        tapes: {
+            "t1": ['g','o','d','b','y','e'],
+            "t2": ["w","o","r","l","d"],
+            "t3": ["k","i","t","y"],
+        }
+    });
+
+    testGrammarTapes({
+        desc: "12e",
+        grammar: Join(Seq(t1("hello"), Dot("t1"), t3("kitty")), 
+                      Seq(t1("goodbye"), Dot("t1"), t2("world"))),
+        tapes: {
+            "t1": VocabString(['h','e','l','o','g','d','b','y'], true),
+            "t2": ["w","o","r","l","d"],
+            "t3": ["k","i","t","y"],
+        }
+    });
+
+    /*
 
     testGrammarTapes({
         desc: "13a",

@@ -111,6 +111,20 @@ export function vocabUnion(v1: VocabString, v2: VocabString): VocabString {
     };
 }
 
+export function vocabIntersection(v1: VocabString, v2: VocabString): VocabString {
+    const wildcard = v1.wildcard && v2.wildcard;
+    //const concatenable = v1.concatenable && v2.concatenable;
+    let tokens: Set<string> = new Set();
+    if (v1.wildcard) tokens = new Set(v2.tokens);
+    for (const t1 of v1.tokens) {
+        if (v2.wildcard || v2.tokens.has(t1)) {
+            tokens.add(t1);
+        }
+    }
+    return VocabString(tokens, wildcard);
+}
+
+/*
 export function vocabIntersection(v1: VocabAtomic, v2: VocabAtomic): VocabInfo {
     const wildcard = v1.wildcard && v2.wildcard;
     const concatenable = v1.concatenable && v2.concatenable;
@@ -122,4 +136,4 @@ export function vocabIntersection(v1: VocabAtomic, v2: VocabAtomic): VocabInfo {
         }
     }
     return VocabAtomic(tokens, wildcard, true, concatenable);
-}
+} */

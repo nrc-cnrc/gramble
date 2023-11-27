@@ -13,17 +13,18 @@ import {
     DotGrammar,
     SingleTapeGrammar,
     MatchGrammar,
+    JoinGrammar,
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
 import { 
     Dict, mapValues, 
     exhaustive, update, 
-    foldRight, union 
+    foldRight, union, Func 
 } from "../utils/func";
 import { 
     TapeInfo, TapeSum, 
     TapeLit, TapeRef, 
-    TapeRename, tapeToStr 
+    TapeRename, tapeToStr, TapeJoin 
 } from "../tapes";
 import { HIDDEN_PREFIX } from "../utils/constants";
 import { VocabString } from "../vocab";
@@ -55,10 +56,6 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
 
         return g.mapChildren(this, env)
                 .bind(g => this.transformAux(g, env))
-                .bind(g => {    
-                    console.log(`${toStr(g)} has tapes ${tapeToStr(g.tapeSet)}`);
-                    return g;
-                })
                 .localize(g.pos);
     }
 
@@ -79,7 +76,6 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
             case "seq": 
             case "alt": 
             case "intersect": 
-            case "join":
             case "short": 
             case "count": 
             case "not":
@@ -90,6 +86,10 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
             case "context":
             case "cursor":
             case "pretape": return getTapesDefault(g);
+
+            // join is special w.r.t. vocabs
+            
+            case "join": return getTapesJoin(g);
             
             // union of children's tapes, plus additional tapes
             case "starts":
@@ -151,10 +151,9 @@ function getTapesSingleTape(g: SingleTapeGrammar): Grammar {
 
 function getTapesDot(g: DotGrammar): Grammar {
     const tapes: Map<string,VocabString> = new Map();
-    tapes.set(g.tapeName, VocabString(new Set(), false));
+    tapes.set(g.tapeName, VocabString(new Set(), true));
     return updateTapes(g, TapeLit(tapes));
 }
-
 
 function getTapesEmbed(
     g: EmbedGrammar, 
@@ -167,6 +166,11 @@ function getTapesEmbed(
 function getTapesMatch(g: MatchGrammar): Grammar {
     const matchTapes = TapeRename(g.child.tapeSet, g.fromTape, g.toTape);
     const tapes = TapeSum(g.child.tapeSet, matchTapes);
+    return updateTapes(g, tapes);
+}
+
+function getTapesJoin(g: JoinGrammar): Grammar {
+    const tapes = TapeJoin(g.child1.tapeSet, g.child2.tapeSet);
     return updateTapes(g, tapes);
 }
 
@@ -395,6 +399,7 @@ function unify(
         case "TapeRef":     return unifyRef(t, symbols, visited);
         case "TapeRename":  return unifyRename(t, symbols, visited);
         case "TapeSum":     return unifySum(t, symbols, visited);
+        case "TapeJoin":    return unifyJoin(t, symbols, visited);
     }
 }
 
@@ -432,4 +437,14 @@ function unifySum(
     const newC1 = unify(t.c1, symbols, visited);
     const newC2 = unify(t.c2, symbols, visited);
     return TapeSum(newC1, newC2);
+}
+
+function unifyJoin(
+    t: TapeJoin, 
+    symbols: Dict<TapeInfo>,
+    visited: Set<string>
+): TapeInfo {
+    const newC1 = unify(t.c1, symbols, visited);
+    const newC2 = unify(t.c2, symbols, visited);
+    return TapeJoin(newC1, newC2);
 }
