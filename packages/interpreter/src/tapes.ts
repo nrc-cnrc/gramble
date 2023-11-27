@@ -160,8 +160,8 @@ export function TapeRename(
         let oldVocab = child.tapes[fromTape];
         if (oldVocab === undefined) 
             oldVocab = VocabString([], false); // dummy value
-        renamedTapes[toTape] = oldVocab;
         delete renamedTapes[fromTape];
+        renamedTapes[toTape] = oldVocab;
         return TapeLit(renamedTapes);
     }
 

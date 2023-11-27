@@ -43,8 +43,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      Epsilon(),
                      "t1", "t2"
                  ),
-        tapes: ['t1', 't2'],
-        vocab: {t1: 0, t2: 0},
+        tapes: ['t2'],
+        vocab: {t2: 0},
         results: [
             {},
         ],
@@ -56,8 +56,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      Null(),
                      "t1", "t2"
                  ),
-        tapes: ['t1', 't2'],
-        vocab: {t1: 0, t2: 0},
+        tapes: ['t2'],
+        vocab: {t2: 0},
         results: [
         ],
     });
@@ -499,8 +499,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 Epsilon(),
         		 	 "t1", "t2", "t3"
         		 ),
-        tapes: ['t1', 't2', 't3'],
-        vocab: {t1: 0, t2: 0, t3: 0},
+        tapes: ['t2', 't3'],
+        vocab: {t2: 0, t3: 0},
         results: [
             {},
         ],
@@ -512,8 +512,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 Null(),
         		 	 "t1", "t2", "t3"
         		 ),
-        tapes: ['t1', 't2', 't3'],
-        vocab: {t1: 0, t2: 0, t3: 0},
+        tapes: ['t2', 't3'],
+        vocab: {t2: 0, t3: 0},
         results: [
         ],
     });

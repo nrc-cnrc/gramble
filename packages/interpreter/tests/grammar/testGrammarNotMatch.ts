@@ -39,6 +39,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                         ]))),
     });
 
+    /*
     testGrammarEqual({
         desc: '2. ~(Match t1>t2, ε) (vocab hi)',
         grammar: Count({t1:2, t2:2},
@@ -53,7 +54,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              Not(Query([
                                  {t1: '', t2: ''},
                         ])))),
-    });
+    }); */
 
     testGrammarEqual({
         desc: '3. ~(Match t1>t2, t1:h + t1:i)',

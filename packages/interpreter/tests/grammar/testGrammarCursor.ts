@@ -243,6 +243,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '12b. Cursor inside an irrelevant rename',
         grammar: Rename(Cursor("t1", t1("hello")), "t2", "t3"),
         tapes: ["t1"],
+        numErrors: 1,
         results: [
             {t1: 'hello'}, 
         ]

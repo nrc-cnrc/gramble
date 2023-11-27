@@ -135,7 +135,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {},
         ],
-        numErrors: 1
     }));
 
     describe('E3. Single_t1(embed(t1:hello,t2:world))', test({

@@ -66,7 +66,7 @@ export function testGrammarTapes({
 
             const tape = grammar.tapeSet.tapes[tapeName];
             if (tape === undefined) {
-                it(`${tapeName} should exist]`, function() {
+                it(`${tapeName} should exist`, function() {
                     assert.fail();
                 });
                 continue;
@@ -182,6 +182,14 @@ describe(`GrammarIDs`, function() {
         tapes: {
             ".HIDDEN": ["h","e","l","o"],
             "t2": ["w","o","r","l","d"]
+        }
+    });
+
+    testGrammarTapes({
+        desc: "3d",
+        grammar: Rename(t1("hello"), "t1", "t1"),
+        tapes: {
+            "t1": ["h","e","l","o"],
         }
     });
 
