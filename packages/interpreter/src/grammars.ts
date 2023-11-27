@@ -139,7 +139,7 @@ export abstract class AbstractGrammar extends Component {
             throw new Error(`Grammar ${toStr(this)} references unresolved tapes: ` +
                                 `${tapeToStr(this.tapeSet)}`);
         }
-        return [...this.tapeSet.tapes];
+        return [...this.tapeSet.tapes.keys()];
     }
 
     public getChildren(): Grammar[] {

@@ -9,12 +9,12 @@ import { tokenizeUnicode } from "./utils/strings";
  */
 
 export type VocabInfo = VocabAtomic
-                      | VocabTokens
-                      | VocabSum
-                      | VocabProduct
-                      | VocabIntersection
-                      | VocabRef
-                      | VocabUnknown;
+                      | VocabString
+//                      | VocabSum
+//                      | VocabProduct
+//                      | VocabIntersection
+//                      | VocabRef
+//                      | VocabUnknown;
 
 /**
  * Every vocab starts out with the assumption that it's VocabAtomic.
@@ -49,24 +49,27 @@ export function VocabAtomic(
  * If a VocabAtomic gets too large or is both joinable & concatenable, we need
  * to split it apart into tokens instead.
  */
-export type VocabTokens = {
+export type VocabString = {
     tag: "VocabTokens",
     tokens: Set<string>,
     wildcard: boolean,
 }
 
-export function VocabTokens(tokens: Iterable<string>, wildcard: boolean): VocabTokens {
+export function VocabString(
+    tokens: Iterable<string> = [],
+    wildcard: boolean = false
+): VocabString {
     return { tag: "VocabTokens", tokens: new Set(tokens), wildcard };
 }
 
-function splitVocab(v: VocabAtomic): VocabTokens {
+function splitVocab(v: VocabAtomic): VocabString {
     const tokens: Set<string> = new Set();
     for (const t of v.atoms) {
         for (const c of tokenizeUnicode(t)) {
             tokens.add(c);
         }
     }
-    return VocabTokens(tokens, v.wildcard);
+    return VocabString(tokens, v.wildcard);
 }
 
 export type VocabRef = {
@@ -100,10 +103,11 @@ export type VocabIntersection = {
     v2: VocabInfo
 }
 
-export function vocabUnion(v1: VocabAtomic, v2: VocabAtomic) {
+export function vocabUnion(v1: VocabString, v2: VocabString): VocabString {
     return {
+        tag: "VocabTokens",
         wildcard: v1.wildcard || v2.wildcard,
-        tokens: union(v1.atoms, v2.atoms)
+        tokens: union(v1.tokens, v2.tokens)
     };
 }
 

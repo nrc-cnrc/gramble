@@ -9,15 +9,23 @@ import {
     ReplaceGrammar,
     ReplaceBlockGrammar,
     EpsilonGrammar,
+    LiteralGrammar,
+    DotGrammar,
+    SingleTapeGrammar,
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
-import { Dict, mapValues, exhaustive, update, foldRight, union } from "../utils/func";
+import { 
+    Dict, mapValues, 
+    exhaustive, update, 
+    foldRight, union 
+} from "../utils/func";
 import { 
     TapeInfo, TapeSum, 
     TapeLit, TapeRef, 
     TapeRename, tapeToStr 
 } from "../tapes";
 import { HIDDEN_PREFIX } from "../utils/constants";
+import { VocabString } from "../vocab";
 
 /**
  * Goes through the tree and 
@@ -45,6 +53,10 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
 
         return g.mapChildren(this, env)
                 .bind(g => this.transformAux(g, env))
+                .bind(g => {    
+                    console.log(`${g.tag} has tapes ${tapeToStr(g.tapeSet)}`);
+                    return g;
+                })
                 .localize(g.pos);
     }
 
@@ -53,11 +65,13 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
 
             // have no tapes
             case "epsilon":
-            case "null": return updateTapes(g, TapeLit([]));
+            case "null": return updateTapes(g, TapeLit());
 
             // have their own tape name as tapes
-            case "lit": return updateTapes(g, TapeLit([g.tapeName]));
-            case "dot": return updateTapes(g, TapeLit([g.tapeName]));
+            case "lit": return getTapesLit(g);
+            case "dot": return getTapesDot(g);
+            
+            case "singletape": return getTapesSingleTape(g);
 
             // just the union of children's tapes
             case "seq": 
@@ -78,13 +92,12 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
             // union of children's tapes, plus additional tapes
             case "starts":
             case "ends":
-            case "contains": return getTapesDefault(g, g.extraTapes);
-            case "match":    return getTapesDefault(g, [g.fromTape, g.toTape]);
+            case "contains": return getTapesDefault(g); // g.extraTapes);
+            case "match":    return getTapesDefault(g); //[g.fromTape, g.toTape]);
 
             // something special
             case "embed":      return getTapesEmbed(g, this.knownTapes);
             case "collection": return getTapesCollection(g, env);
-            case "singletape": return updateTapes(g, TapeLit([g.tapeName]));
             case "rename":     return getTapesRename(g);
             case "hide":       return getTapesHide(g);
             case "filter":     return getTapesFilter(g);
@@ -98,13 +111,14 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
     }
 }
 
+
 function updateTapes(g: Grammar, tapes: TapeInfo): Grammar {
     return update(g, { tapeSet: tapes });
 }
 
 function getTapesDefault(
     g: Grammar, 
-    extras: Iterable<string> | undefined = undefined
+    extras: Map<string,VocabString> | undefined = undefined
 ): Grammar {
     if (extras === undefined) {
         return updateTapes(g, getChildTapes(g));
@@ -116,9 +130,29 @@ function getTapesDefault(
 
 function getChildTapes(g: Grammar): TapeInfo {
     const childTapes = g.getChildren().map(c => c.tapeSet);
-    if (childTapes.length === 0) return TapeLit([]);
+    if (childTapes.length === 0) return TapeLit();
     return foldRight(childTapes.slice(1), TapeSum, childTapes[0]);
 }
+
+function getTapesLit(g: LiteralGrammar): Grammar {
+    const tapes: Map<string,VocabString> = new Map();
+    tapes.set(g.tapeName, VocabString(g.tokens, false));
+    return updateTapes(g, TapeLit(tapes));
+}
+
+function getTapesSingleTape(g: SingleTapeGrammar): Grammar {
+    const tapes: Map<string,VocabString> = new Map();
+    tapes.set(g.tapeName, VocabString());  // TODO: fix this
+    return updateTapes(g, TapeLit(tapes));
+
+}
+
+function getTapesDot(g: DotGrammar): Grammar {
+    const tapes: Map<string,VocabString> = new Map();
+    tapes.set(g.tapeName, VocabString(new Set(), false));
+    return updateTapes(g, TapeLit(tapes));
+}
+
 
 function getTapesEmbed(
     g: EmbedGrammar, 
@@ -130,7 +164,6 @@ function getTapesEmbed(
 
 function getTapesRename(g: RenameGrammar): Result<Grammar> {
 
-    
     const tapes = TapeRename(g.child.tapeSet, g.fromTape, g.toTape);
     const result = updateTapes(g, tapes).msg();
 
@@ -258,7 +291,12 @@ function getTapesReplaceBlock(g: ReplaceBlockGrammar): Result<Grammar> {
 
     // the block's tapes are its child's tapes plus the 
     // hidden tapes of its rules
-    const hiddenTapes = TapeLit(g.rules.map(r => r.hiddenTapeName))
+    const hiddenTapes: TapeLit = TapeLit();
+    for (const r of g.rules) {
+        hiddenTapes.tapes.set(r.hiddenTapeName, VocabString());
+    }
+
+    //const hiddenTapes = TapeLit(g.rules.map(r => r.hiddenTapeName))
     const newTapes = TapeSum(g.child.tapeSet, hiddenTapes);
     return updateTapes(g, newTapes).msg();
 }
@@ -344,7 +382,7 @@ function unify(
     visited: Set<string>
 ): TapeInfo {
     switch (t.tag) {
-        case "TapeUnknown": return TapeLit([]);
+        case "TapeUnknown": return TapeLit();
         case "TapeLit":     return t;
         case "TapeRef":     return unifyRef(t, symbols, visited);
         case "TapeRename":  return unifyRename(t, symbols, visited);
@@ -358,7 +396,7 @@ function unifyRef(
     visited: Set<string>
 ): TapeInfo {
     if (visited.has(t.symbol)) {
-        return TapeLit([]);
+        return TapeLit();
     }
     const referent = symbols[t.symbol];
     if (referent === undefined) {

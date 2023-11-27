@@ -13,7 +13,7 @@ export const DEFAULT_OPTIONS: Options = {
     maxRecursion: DEFAULT_MAX_RECURSION, 
     maxChars: DEFAULT_MAX_CHARS,
     verbose: SILENT,
-    optimizeAtomicity: true,
+    optimizeAtomicity: false,
     directionLTR: true
 }
 

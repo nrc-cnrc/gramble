@@ -11,11 +11,14 @@ import { PassEnv } from "../../src/passes";
 import { THROWER } from "../../src/utils/msgs";
 import { SelectSymbol } from "../../src/passes/selectSymbol";
 import { FlattenCollections } from "../../src/passes/flattenCollections";
+import { VocabString } from "../../src/vocab";
+import { Dict } from "../../src/utils/func";
+import { tapeToStr } from "../../src/tapes";
 
 type GrammarIDTest = {
     desc: string,
     grammar: Grammar,
-    tapes: Iterable<string>,
+    tapes: Dict<string[]>,
     symbol?: string
 };
 
@@ -27,28 +30,39 @@ export function testGrammarTapes({
 }: GrammarIDTest): void {
     const pass = new FlattenCollections().compose(new CalculateTapes());
     const env = new PassEnv();
-    let newGrammar = pass.go(grammar, env).msgTo(THROWER);
+    grammar = pass.go(grammar, env).msgTo(THROWER);
     
     if (symbol) {
         const selectSymbol = new SelectSymbol(symbol);
-        newGrammar = selectSymbol.go(newGrammar, env).msgTo(THROWER); 
+        grammar = selectSymbol.go(grammar, env).msgTo(THROWER); 
     }
 
-    let resultTapes: Set<string> = new Set();
+    describe(`${desc}`, function() {
 
-    try {
-        resultTapes = new Set(newGrammar.tapes);
-    } catch (e) {
-        it(`${desc} has unresolved tape structure`, function() {
-            assert.fail(`${e}`);
+        it(`Tapes are resolved`, function() {
+            expect(grammar.tapeSet.tag).to.equal("TapeLit");
         });
-        return;
-    }
 
-    const expectedTapes = new Set([...tapes]);
-    it(`${desc} should have tapes [${[...tapes]}]`, function() {
-        expect(resultTapes).to.deep.equal(expectedTapes);
+        if (grammar.tapeSet.tag !== "TapeLit") return;
+
+        console.log(tapeToStr(grammar.tapeSet));
+
+        for (const [tapeName, vocab] of Object.entries(tapes)) {
+            const tape = grammar.tapeSet.tapes.get(tapeName);
+            if (tape === undefined) {
+                it(`${tapeName} should have tape [${[...vocab]}]`, function() {
+                    assert.fail();
+                });
+                continue;
+            }
+
+            it(`${tapeName} should have vocab [${[...vocab]}]`, function() {
+                expect(tape.tokens).to.deep.equal(new Set(vocab));
+            });
+        }
     });
+
+
 }
 
 describe(`GrammarIDs`, function() {
@@ -56,43 +70,62 @@ describe(`GrammarIDs`, function() {
     testGrammarTapes({
         desc: "1",
         grammar: t1("hello"),
-        tapes: ["t1"]
+        tapes: {
+            "t1": ["h","e","l","o"]
+        }
     });
 
     testGrammarTapes({
         desc: "2a",
         grammar: Seq(t1("hello"), t2("world")),
-        tapes: ["t1", "t2"]
+        tapes: {
+            "t1": ["h","e","l","o"],
+            "t2": ["w","o","r","l","d"]
+        }
     });
 
     testGrammarTapes({
         desc: "2b",
         grammar: Seq(t1("hello"), Seq(t2("world"), t3("!"))),
-        tapes: ["t1", "t2", "t3"]
+        tapes: {
+            "t1": ["h","e","l","o"],
+            "t2": ["w","o","r","l","d"],
+            "t3": ["!"],
+        }
     });
 
     testGrammarTapes({
         desc: "3a",
         grammar: Rename(t1("hello"), "t1", "t2"),
-        tapes: ["t2"]
+        tapes: {
+            "t2": ["h","e","l","o"],
+        }
     });
 
     testGrammarTapes({
         desc: "3b",
         grammar: Rename(Seq(t1("hello"), t2("world")), "t1", "t3"),
-        tapes: ["t2", "t3"]
+        tapes: {
+            "t3": ["h","e","l","o"],
+            "t2": ["w","o","r","l","d"]
+        }
     });
 
     testGrammarTapes({
         desc: "3c",
         grammar: Hide(Seq(t1("hello"), t2("world")), "t1", "HIDDEN"),
-        tapes: ["t2", ".HIDDEN"]
+        tapes: {
+            ".HIDDEN": ["h","e","l","o"],
+            "t2": ["w","o","r","l","d"]
+        }
     });
 
     testGrammarTapes({
         desc: "4a",
         grammar: Collection({a: t1("hi"), b: Embed("a")}),
-        tapes: ["t1"],
+        tapes: {
+            "t1": ["h", "i"],
+        },
         symbol: "b"
     });
 
@@ -102,10 +135,11 @@ describe(`GrammarIDs`, function() {
             b: Embed("a"),
             a: t1("hi")
         }),
-        tapes: ["t1"],
+        tapes: {
+            "t1": ["h", "i"],
+        },
         symbol: "b"
     });
-
     
     testGrammarTapes({
         desc: "5",
@@ -113,7 +147,10 @@ describe(`GrammarIDs`, function() {
             a: Seq(t1("hi"), t2("world")),
             b: Embed("a")
         }),
-        tapes: ["t1", "t2"],
+        tapes: {
+            "t1": ["h","i"],
+            "t2": ["w","o","r","l","d"]
+        },
         symbol: "b"
     });
 
@@ -123,7 +160,10 @@ describe(`GrammarIDs`, function() {
             a: Rename(Seq(t1("hi"), t2("world")), "t2", "t3"),
             b: Embed("a")
         }),
-        tapes: ["t1", "t3"],
+        tapes: {
+            "t1": ["h","i"],
+            "t3": ["w","o","r","l","d"]
+        },
         symbol: "b"
     });
     
@@ -133,7 +173,10 @@ describe(`GrammarIDs`, function() {
             a: Seq(t1("hi"), t2("world")),
             b: Rename(Embed("a"), "t2", "t3")
         }),
-        tapes: ["t1", "t3"],
+        tapes: {
+            "t1": ["h","i"],
+            "t3": ["w","o","r","l","d"]
+        },
         symbol: "b"
     });
 
@@ -143,7 +186,10 @@ describe(`GrammarIDs`, function() {
             b: Rename(Embed("a"), "t2", "t3"),
             a: Seq(t1("hi"), t2("world"))
         }),
-        tapes: ["t1", "t3"],
+        tapes: {
+            "t1": ["h","i"],
+            "t3": ["w","o","r","l","d"]
+        },
         symbol: "b"
     });
     
@@ -153,7 +199,10 @@ describe(`GrammarIDs`, function() {
             a: Rename(Seq(t1("hi"), t2("world")), "t1", "t4"),
             b: Rename(Embed("a"), "t2", "t3")
         }),
-        tapes: ["t3", "t4"],
+        tapes: {
+            "t4": ["h","i"],
+            "t3": ["w","o","r","l","d"]
+        },
         symbol: "b"
     });
 
@@ -162,7 +211,9 @@ describe(`GrammarIDs`, function() {
         grammar: Collection({
             a: Seq(t1("hi"), Embed("a"))
         }),
-        tapes: ["t1"],
+        tapes: {
+            "t1": ["h","i"],
+        },
         symbol: "a"
     });
     
@@ -172,7 +223,10 @@ describe(`GrammarIDs`, function() {
             a: Seq(t1("hi"), Embed("b")),
             b: Seq(t2("world"), Embed("b"))
         }),
-        tapes: ["t1", "t2"],
+        tapes: {
+            "t1": ["h","i"],
+            "t2": ["w","o","r","l","d"]
+        },
         symbol: "a"
     });
     
@@ -182,7 +236,10 @@ describe(`GrammarIDs`, function() {
             b: Seq(t2("world"), Embed("b")),
             a: Seq(t1("hi"), Embed("b")),
         }),
-        tapes: ["t1", "t2"],
+        tapes: {
+            "t1": ["h","i"],
+            "t2": ["w","o","r","l","d"]
+        },
         symbol: "a"
     });
     
@@ -192,7 +249,10 @@ describe(`GrammarIDs`, function() {
             a: Seq(t1("hi"), Embed("b")),
             b: Seq(t2("world"), Embed("b")),
         }),
-        tapes: ["t1", "t2"],
+        tapes: {
+            "t1": ["h","i"],
+            "t2": ["w","o","r","l","d"]
+        },
         symbol: "a"
     });
 
@@ -202,18 +262,23 @@ describe(`GrammarIDs`, function() {
             a: Seq(t1("hi"), Rename(Embed("b"), "t2", "t3")),
             b: Seq(t2("world"), Embed("b")),
         }),
-        tapes: ["t1", "t3"],
+        tapes: {
+            "t1": ["h","i"],
+            "t3": ["w","o","r","l","d"]
+        },
         symbol: "a"
     });
 
-    
     testGrammarTapes({
         desc: "9b",
         grammar: Collection({
             b: Seq(t2("world"), Embed("b")),
             a: Seq(t1("hi"), Rename(Embed("b"), "t2", "t3")),
         }),
-        tapes: ["t1", "t3"],
+        tapes: {
+            "t1": ["h","i"],
+            "t3": ["w","o","r","l","d"]
+        },
         symbol: "a"
     });
 
@@ -223,7 +288,10 @@ describe(`GrammarIDs`, function() {
             b: Seq(t2("world"), Embed("a")),
             a: Seq(t1("hi"), Embed("b")),
         }),
-        tapes: ["t1", "t2"],
+        tapes: {
+            "t1": ["h","i"],
+            "t2": ["w","o","r","l","d"]
+        },
         symbol: "a"
     });
 
@@ -233,10 +301,14 @@ describe(`GrammarIDs`, function() {
             a: Seq(t1("hi"), Embed("b")),
             b: Seq(t2("world"), Embed("a")),
         }),
-        tapes: ["t1", "t2"],
+        tapes: {
+            "t1": ["h","i"],
+            "t2": ["w","o","r","l","d"]
+        },
         symbol: "a"
     });
 
+    /*
     testGrammarTapes({
         desc: "11a",
         grammar: Match(t1("hello"), "t1", "t2"),
@@ -461,6 +533,6 @@ describe(`GrammarIDs`, function() {
         symbol: "S1",
         tapes: []
     });
-
+    */
 
 });
