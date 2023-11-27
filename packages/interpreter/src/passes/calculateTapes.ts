@@ -193,15 +193,6 @@ function getTapesRename(g: RenameGrammar): Result<Grammar> {
         return g.child.err("Destination tape already exists",
                   `Trying to rename ${g.fromTape}->${g.toTape} but the grammar ` +
                   `to the left already contains the tape ${g.toTape}.`)
-        
-        //const errTapeName = `${HIDDEN_PREFIX}ERR${g.toTape}`;
-        //let repair: Grammar = new RenameGrammar(g.child, g.toTape, errTapeName);
-        //repair = updateTapes(repair, TapeRename(repair.child.tapeSet, g.toTape, errTapeName));
-        //repair = new RenameGrammar(repair, g.fromTape, g.toTape);
-        //repair = updateTapes(repair, TapeRename(repair.child.tapeSet, g.fromTape, g.toTape));
-        //return repair.err("Destination tape already exists",
-         //           `Trying to rename ${g.fromTape}->${g.toTape} but the grammar ` +
-      //              `to the left already contains the tape ${g.toTape}. `)
     }
 
     return result;

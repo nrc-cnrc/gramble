@@ -36,10 +36,10 @@ export class ConstructReplaceBlocks extends AutoPass<Grammar> {
 
     public handleReplaceBlock(g: ReplaceBlockGrammar, env: PassEnv): Grammar {
 
-        const isReplace = (r: Grammar): r is ReplaceGrammar => 
-                                r instanceof ReplaceGrammar;
         // it's possible for rule transformation to result in a non
         // rule (due to errors), so we filter those out
+        const isReplace = (r: Grammar): r is ReplaceGrammar => 
+                                r instanceof ReplaceGrammar;
         const validRules = g.rules.filter(isReplace);
 
         if (validRules.length == 0) {
