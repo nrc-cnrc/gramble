@@ -12,6 +12,7 @@ import {
     LiteralGrammar,
     DotGrammar,
     SingleTapeGrammar,
+    MatchGrammar,
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
 import { 
@@ -26,6 +27,7 @@ import {
 } from "../tapes";
 import { HIDDEN_PREFIX } from "../utils/constants";
 import { VocabString } from "../vocab";
+import { toStr } from "./toStr";
 
 /**
  * Goes through the tree and 
@@ -54,7 +56,7 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
         return g.mapChildren(this, env)
                 .bind(g => this.transformAux(g, env))
                 .bind(g => {    
-                    console.log(`${g.tag} has tapes ${tapeToStr(g.tapeSet)}`);
+                    console.log(`${toStr(g)} has tapes ${tapeToStr(g.tapeSet)}`);
                     return g;
                 })
                 .localize(g.pos);
@@ -93,7 +95,7 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
             case "starts":
             case "ends":
             case "contains": return getTapesDefault(g); // g.extraTapes);
-            case "match":    return getTapesDefault(g); //[g.fromTape, g.toTape]);
+            case "match":    return getTapesMatch(g);
 
             // something special
             case "embed":      return getTapesEmbed(g, this.knownTapes);
@@ -160,6 +162,12 @@ function getTapesEmbed(
 ): Grammar {
     if (!(g.symbol in knownTapes)) return updateTapes(g, TapeRef(g.symbol));
     return updateTapes(g, knownTapes[g.symbol]);
+}
+
+function getTapesMatch(g: MatchGrammar): Grammar {
+    const matchTapes = TapeRename(g.child.tapeSet, g.fromTape, g.toTape);
+    const tapes = TapeSum(g.child.tapeSet, matchTapes);
+    return updateTapes(g, tapes);
 }
 
 function getTapesRename(g: RenameGrammar): Result<Grammar> {

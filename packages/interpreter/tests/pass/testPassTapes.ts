@@ -4,6 +4,7 @@ import { t1, t2, t3 } from "../testUtil";
 import { 
     Collection, Embed, 
     Hide, 
+    Match, 
     Rename, Seq
 } from "../../src/grammarConvenience";
 import { CalculateTapes } from "../../src/passes/calculateTapes";
@@ -14,11 +15,14 @@ import { FlattenCollections } from "../../src/passes/flattenCollections";
 import { VocabString } from "../../src/vocab";
 import { Dict } from "../../src/utils/func";
 import { tapeToStr } from "../../src/tapes";
+import { toStr } from "../../src/passes/toStr";
+
+type Voc = string[] | VocabString;
 
 type GrammarIDTest = {
     desc: string,
     grammar: Grammar,
-    tapes: Dict<string[]>,
+    tapes: Dict<Voc>
     symbol?: string
 };
 
@@ -31,6 +35,8 @@ export function testGrammarTapes({
     const pass = new FlattenCollections().compose(new CalculateTapes());
     const env = new PassEnv();
     grammar = pass.go(grammar, env).msgTo(THROWER);
+
+    console.log(`Grammar = ${toStr(grammar)}`)
     
     if (symbol) {
         const selectSymbol = new SelectSymbol(symbol);
@@ -47,17 +53,26 @@ export function testGrammarTapes({
 
         console.log(tapeToStr(grammar.tapeSet));
 
+        const expectedTapes = new Set(Object.keys(tapes));
+        const foundTapes = new Set(grammar.tapeSet.tapes.keys())
+        it(`Tapes should equal [${[...expectedTapes]}]`, function() {
+            expect(foundTapes).to.deep.equal(expectedTapes);
+        });
+
         for (const [tapeName, vocab] of Object.entries(tapes)) {
+            const voc = Array.isArray(vocab) ?
+                                   VocabString(vocab) : vocab;
+
             const tape = grammar.tapeSet.tapes.get(tapeName);
             if (tape === undefined) {
-                it(`${tapeName} should have tape [${[...vocab]}]`, function() {
+                it(`${tapeName} should exist]`, function() {
                     assert.fail();
                 });
                 continue;
             }
 
-            it(`${tapeName} should have vocab [${[...vocab]}]`, function() {
-                expect(tape.tokens).to.deep.equal(new Set(vocab));
+            it(`${tapeName} should have vocab [${[...voc.tokens]}]`, function() {
+                expect(tape.tokens).to.deep.equal(voc.tokens);
             });
         }
     });
@@ -308,19 +323,75 @@ describe(`GrammarIDs`, function() {
         symbol: "a"
     });
 
-    /*
     testGrammarTapes({
         desc: "11a",
         grammar: Match(t1("hello"), "t1", "t2"),
-        tapes: ["t1", "t2"]
+        tapes: {
+            "t1": ["h","e","l","o"],
+            "t2": ["h","e","l","o"],
+        }
     });
 
     testGrammarTapes({
         desc: "11b",
         grammar: Match(t1("hello"), "t2", "t3"),
-        tapes: ["t1", "t2", "t3"]
+        tapes: {
+            "t1": ["h","e","l","o"],
+            "t3": [],
+        }
+    });
+    
+    testGrammarTapes({
+        desc: "11c",
+        grammar: Match(t1("hello"), "t1", "t2", "t3"),
+        tapes: {
+            "t1": ["h","e","l","o"],
+            "t2": ["h","e","l","o"],
+            "t3": ["h","e","l","o"],
+        }
+    });
+    
+    testGrammarTapes({
+        desc: "11a-embed",
+        grammar: Collection({
+            "a": Match(Embed("b"), "t1", "t2"),
+            "b": t1("hello")
+        }),
+        symbol: "a",
+        tapes: {
+            "t1": ["h","e","l","o"],
+            "t2": ["h","e","l","o"],
+        }
     });
 
+    testGrammarTapes({
+        desc: "11b-embed",
+        grammar: Collection({
+            "a": Match(Embed("b"), "t2", "t3"),
+            "b": t1("hello")
+        }),
+        symbol: "a",
+        tapes: {
+            "t1": ["h","e","l","o"],
+            "t3": [],
+        }
+    });
+    
+    testGrammarTapes({
+        desc: "11c-embed",
+        grammar: Collection({
+            "a": Match(Embed("b"), "t1", "t2", "t3"),
+            "b": t1("hello")
+        }),
+        symbol: "a",
+        tapes: {
+            "t1": ["h","e","l","o"],
+            "t2": ["h","e","l","o"],
+            "t3": ["h","e","l","o"],
+        }
+    });
+
+    /*
     testGrammarTapes({
         desc: "12a",
         grammar: Join(t1("hello"), t2("world")),
