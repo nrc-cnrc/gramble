@@ -2,13 +2,14 @@ import { Grammar } from "../../src/grammars";
 import { assert, expect } from "chai";
 import { t1, t2, t3 } from "../testUtil";
 import { 
-    Collection, Dot, Embed, 
+    Collection, Contains, Dot, Embed, 
+    Ends, 
     Epsilon, 
     Hide, 
     Join, 
     Match, 
     Null, 
-    Rename, Replace, Seq, SingleTape
+    Rename, Replace, Seq, SingleTape, Starts
 } from "../../src/grammarConvenience";
 import { CalculateTapes } from "../../src/passes/calculateTapes";
 import { PassEnv } from "../../src/passes";
@@ -821,5 +822,91 @@ describe(`GrammarIDs`, function() {
             "$o": [],
         },
     });
+
+    testGrammarTapes({
+        desc: "22a",
+        grammar: Starts(t1("hello"), t1("w")),
+        tapes: {
+            "t1": ["h","e","l","o"],
+        },
+    });
+
+    testGrammarTapes({
+        desc: "22b",
+        grammar: Ends(t1("hello"), t1("w")),
+        tapes: {
+            "t1": ["h","e","l","o"],
+        },
+    });
+
+    testGrammarTapes({
+        desc: "22c",
+        grammar: Contains(t1("hello"), t1("w")),
+        tapes: {
+            "t1": ["h","e","l","o"],
+        },
+    });
+    
+    testGrammarTapes({
+        desc: "23a",
+        grammar: Collection({
+            "a": Starts(t1("hello"), t1("w")),
+            "b": t1("hello")
+        }),
+        symbol: "b",
+        tapes: {
+            "t1": ["h","e","l","o"],
+        },
+    });
+
+    testGrammarTapes({
+        desc: "23b",
+        grammar: Collection({
+            "a": Ends(t1("hello"), t1("w")),
+            "b": t1("hello")
+        }),
+        symbol: "b",
+        tapes: {
+            "t1": ["h","e","l","o"],
+        },
+    });
+
+    testGrammarTapes({
+        desc: "23c",
+        grammar: Collection({
+            "a": Contains(t1("hello"), t1("w")),
+            "b": t1("hello")
+        }),
+        symbol: "b",
+        tapes: {
+            "t1": ["h","e","l","o"],
+        },
+    });
+
+    testGrammarTapes({
+        desc: "24a",
+        grammar: Starts(Seq(t1("hello"), Dot("t1")), t1("w")),
+        tapes: {
+            "t1": VocabString(["h","e","l","o","w"], true)
+        },
+    });
+
+    testGrammarTapes({
+        desc: "24b",
+        grammar: Ends(Seq(t1("hello"), Dot("t1")), t1("w")),
+        tapes: {
+            "t1": VocabString(["h","e","l","o","w"], true)
+        },
+    });
+
+    testGrammarTapes({
+        desc: "24c",
+        grammar: Contains(Seq(t1("hello"), Dot("t1")), t1("w")),
+        tapes: {
+            "t1": VocabString(["h","e","l","o","w"], true)
+        },
+    });
+
+    
 
 });

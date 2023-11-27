@@ -14,6 +14,9 @@ import {
     SingleTapeGrammar,
     MatchGrammar,
     JoinGrammar,
+    StartsGrammar,
+    EndsGrammar,
+    ContainsGrammar,
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
 import { 
@@ -87,14 +90,14 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
             case "cursor":
             case "pretape": return getTapesDefault(g);
 
-            // join is special w.r.t. vocabs
-            
-            case "join": return getTapesJoin(g);
+            // join and filter are special w.r.t. vocabs
+            case "join":       return getTapesJoin(g);
+            case "filter":     return getTapesFilter(g);
             
             // union of children's tapes, plus additional tapes
             case "starts":
             case "ends":
-            case "contains": return getTapesDefault(g); // g.extraTapes);
+            case "contains": return getTapesCondition(g); // g.extraTapes);
             case "match":    return getTapesMatch(g);
 
             // something special
@@ -102,7 +105,6 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
             case "collection": return getTapesCollection(g, env);
             case "rename":     return getTapesRename(g);
             case "hide":       return getTapesHide(g);
-            case "filter":     return getTapesFilter(g);
             case "replace":    return getTapesReplace(g, env);
             case "replaceblock": return getTapesReplaceBlock(g);
 
@@ -189,7 +191,7 @@ function getTapesMatch(g: MatchGrammar): Grammar {
     return updateTapes(g, tapes);
 }
 
-function getTapesJoin(g: JoinGrammar): Grammar {
+function getTapesJoin(g: JoinGrammar | FilterGrammar): Grammar {
     const tapes = TapeJoin(g.child1.tapeSet, g.child2.tapeSet);
     return updateTapes(g, tapes);
 }
@@ -242,12 +244,12 @@ function getTapesFilter(g: FilterGrammar): Result<Grammar> {
     if (g.child1.tapeSet.tag !== "TapeLit" || 
             g.child2.tapeSet.tag !== "TapeLit") {
         // there's nothing we can check right now
-        return getTapesDefault(g).msg();
+        return getTapesJoin(g).msg();
     }
 
     if (dictLen(g.child2.tapeSet.tapes) === 0) {
         // it's an epsilon or failure caught elsewhere
-        return getTapesDefault(g).msg();
+        return getTapesJoin(g).msg();
     }
 
     if (dictLen(g.child2.tapeSet.tapes) > 1) {
@@ -261,7 +263,7 @@ function getTapesFilter(g: FilterGrammar): Result<Grammar> {
         `This filter references a tape ${t2} that does not exist`);
     }
 
-    return getTapesDefault(g).msg();
+    return getTapesJoin(g).msg();
 }
 
 
@@ -458,4 +460,30 @@ function unifyJoin(
     const newC1 = unify(t.c1, symbols, visited);
     const newC2 = unify(t.c2, symbols, visited);
     return TapeJoin(newC1, newC2);
+}
+
+/**
+ * Starts/Ends/Contains have the tapes of their child AND a wildcard
+ * on its tape (for the dot-star).  Sometimes because of scope adjustment
+ * this tape might not actually be on the child anymore, so in that case
+ * it's store in .extraTapes.
+ */
+function getTapesCondition(
+    g: StartsGrammar | EndsGrammar | ContainsGrammar
+): Grammar {
+    const extras: Dict<VocabString> = {}
+    for (const t of g.extraTapes) {
+        extras[t] = VocabString([], true);
+    }
+    
+    if (g.child.tapeSet.tag === "TapeLit") {
+    // if we know what the child tapes are, add those wildcards too
+        for (const t of Object.keys(g.child.tapeSet.tapes)) {
+            extras[t] = VocabString([], true);
+        }
+    }
+
+    const tapes = TapeSum(g.child.tapeSet, TapeLit(extras));
+    return updateTapes(g, tapes);
+    
 }
