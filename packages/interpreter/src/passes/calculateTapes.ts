@@ -314,8 +314,6 @@ function getTapesReplaceBlock(g: ReplaceBlockGrammar): Result<Grammar> {
     let current = g.child.tapeSet;
     let currentTape = g.inputTape;
     for (const r of g.rules) {
-        console.log(`current = ${tapeToStr(g.child.tapeSet)}`);
-        console.log(`currentTape = ${currentTape}`);
         current = TapeRename(current, currentTape, INPUT_TAPE);
         currentTape = OUTPUT_TAPE;
         const additionalVocab = TapeSum(r.tapeSet, 
@@ -323,8 +321,6 @@ function getTapesReplaceBlock(g: ReplaceBlockGrammar): Result<Grammar> {
         current = TapeSum(current, additionalVocab);
         current = TapeRename(current, INPUT_TAPE, r.hiddenTapeName);
     }
-    console.log(`current = ${tapeToStr(g.child.tapeSet)}`);
-    console.log(`currentTape = ${currentTape}`);
     current = TapeRename(current, OUTPUT_TAPE, g.inputTape);
     return updateTapes(g, current).msg();
 }
