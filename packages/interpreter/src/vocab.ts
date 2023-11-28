@@ -1,4 +1,4 @@
-import { union } from "./utils/func";
+import { flatmapSet, mapSet, union, update } from "./utils/func";
 import { tokenizeUnicode } from "./utils/strings";
 
 /**
@@ -9,12 +9,45 @@ import { tokenizeUnicode } from "./utils/strings";
  */
 
 export type VocabInfo = VocabAtomic
-                      | VocabString
-//                      | VocabSum
-//                      | VocabProduct
-//                      | VocabIntersection
-//                      | VocabRef
-//                      | VocabUnknown;
+                      | VocabString;
+
+export class WildcardSet {
+
+    constructor(
+        public items: Set<string> = new Set(),
+        public wildcard: boolean = false
+    ) { 
+        this.items = items;
+    }
+
+    public get size(): number {
+        return this.items.size;
+    }
+
+    public tokenize(): WildcardSet {
+        const newItems = flatmapSet(this.items, t => tokenizeUnicode(t));
+        return new WildcardSet(newItems, this.wildcard);
+    }
+
+    public union(other: WildcardSet): WildcardSet {
+        return new WildcardSet(union(this.items, other.items), 
+                            this.wildcard || other.wildcard)
+    }
+
+    public intersect(other: WildcardSet): WildcardSet {
+        const wildcard = this.wildcard && other.wildcard;
+        //const concatenable = v1.concatenable && v2.concatenable;
+        let tokens: Set<string> = new Set();
+        if (this.wildcard) tokens = new Set(other.items);
+        for (const t1 of this.items) {
+            if (other.wildcard || other.items.has(t1)) {
+                tokens.add(t1);
+            }
+        }
+        return new WildcardSet(tokens, wildcard);
+    }
+
+}
 
 /**
  * Every vocab starts out with the assumption that it's VocabAtomic.
@@ -23,8 +56,7 @@ export type VocabInfo = VocabAtomic
  */
 export type VocabAtomic = {
     tag: "VocabAtomic",
-    atoms: Set<string>,
-    wildcard: boolean,
+    tokens: WildcardSet,
     joinable: boolean,
     concatenable: boolean,
 }
@@ -32,16 +64,15 @@ export type VocabAtomic = {
 const MAX_TOKENS = 1000;
 
 export function VocabAtomic(
-    atoms: Iterable<string>, 
-    wildcard: boolean = false,
+    tokens: WildcardSet = new WildcardSet(),
     joinable: boolean = false,
     concatenable: boolean = false
 ): VocabInfo {
-    const result = { tag: "VocabAtomic", atoms: new Set(atoms), 
-                     wildcard, joinable, concatenable } as VocabAtomic;
+    const result: VocabAtomic = { tag: "VocabAtomic", 
+                            tokens, joinable, concatenable };
     // now check if it has to be broken up
-    if (result.atoms.size > MAX_TOKENS) return splitVocab(result);
-    if (result.joinable && result.concatenable) return splitVocab(result);
+    if (tokens.size > MAX_TOKENS) return splitVocab(result);
+    if (joinable && concatenable) return splitVocab(result);
     return result;
 }
 
@@ -50,90 +81,57 @@ export function VocabAtomic(
  * to split it apart into tokens instead.
  */
 export type VocabString = {
-    tag: "VocabTokens",
-    tokens: Set<string>,
-    wildcard: boolean,
+    tag: "VocabString",
+    tokens: WildcardSet
 }
 
 export function VocabString(
-    tokens: Iterable<string> = [],
-    wildcard: boolean = false
+    tokens: WildcardSet = new WildcardSet(),
 ): VocabString {
-    return { tag: "VocabTokens", tokens: new Set(tokens), wildcard };
+    return { tag: "VocabString", tokens };
 }
 
-function splitVocab(v: VocabAtomic): VocabString {
-    const tokens: Set<string> = new Set();
-    for (const t of v.atoms) {
-        for (const c of tokenizeUnicode(t)) {
-            tokens.add(c);
-        }
+export const WILDCARD = VocabString(new WildcardSet(new Set(), true));
+
+function splitVocab(v: VocabInfo): VocabString {
+    if (v.tag === "VocabString") return v;
+    const newTokens = v.tokens.tokenize();
+    return VocabString(newTokens);
+}
+
+export function sumVocab(v1: VocabInfo, v2: VocabInfo): VocabInfo {
+    
+    // If either is a string, both must be
+    if (v1.tag === "VocabString" || v2.tag === "VocabString") {
+        const splitV1 = splitVocab(v1);
+        const splitV2 = splitVocab(v2);
+        const newTokens = splitV1.tokens.union(splitV2.tokens);
+        return VocabString(newTokens);
     }
-    return VocabString(tokens, v.wildcard);
+
+    const newTokens = v1.tokens.union(v2.tokens);
+    return VocabAtomic(newTokens,
+                       v1.joinable || v2.joinable,  
+                       v1.concatenable || v2.concatenable);
 }
 
-export type VocabRef = {
-    tag: "VocabRef",
-    symbol: string
+export function multVocab(v1: VocabInfo, v2: VocabInfo): VocabInfo {
+    
+    const result = sumVocab(v1, v2);
+    if (result.tag === "VocabString") return result;
+
+    return VocabAtomic(result.tokens, result.joinable, true);
 }
 
-export type VocabUnknown = {
-    tag: "VocabUnknown"
-}
+export function intersectVocab(v1: VocabInfo, v2: VocabInfo): VocabInfo {
 
-/**
- * VocabSum, VocabProduct, and VocabIntersection represent suspended calculations
- * on Vocabs.
- */
-export type VocabSum = {
-    tag: "VocabSum",
-    v1: VocabInfo,
-    v2: VocabInfo
-}
-
-export type VocabProduct = {
-    tag: "VocabProduct",
-    v1: VocabInfo,
-    v2: VocabInfo
-}
-
-export type VocabIntersection = {
-    tag: "VocabIntersection",
-    v1: VocabInfo,
-    v2: VocabInfo
-}
-
-export function vocabUnion(v1: VocabString, v2: VocabString): VocabString {
-    return {
-        tag: "VocabTokens",
-        wildcard: v1.wildcard || v2.wildcard,
-        tokens: union(v1.tokens, v2.tokens)
-    };
-}
-
-export function vocabIntersection(v1: VocabString, v2: VocabString): VocabString {
-    const wildcard = v1.wildcard && v2.wildcard;
-    //const concatenable = v1.concatenable && v2.concatenable;
-    let tokens: Set<string> = new Set();
-    if (v1.wildcard) tokens = new Set(v2.tokens);
-    for (const t1 of v1.tokens) {
-        if (v2.wildcard || v2.tokens.has(t1)) {
-            tokens.add(t1);
-        }
+    if (v1.tag === "VocabString" || v2.tag === "VocabString") {
+        const splitV1 = splitVocab(v1);
+        const splitV2 = splitVocab(v2);
+        const newTokens = splitV1.tokens.intersect(splitV2.tokens);
+        return VocabString(newTokens);
     }
-    return VocabString(tokens, wildcard);
-}
 
-/*
-export function vocabIntersection(v1: VocabAtomic, v2: VocabAtomic): VocabInfo {
-    const wildcard = v1.wildcard && v2.wildcard;
-    const concatenable = v1.concatenable && v2.concatenable;
-    let tokens: Set<string> = new Set();
-    if (v1.wildcard) tokens = new Set(v2.atoms);
-    for (const t1 of v1.atoms) {
-        if (v2.wildcard || v2.atoms.has(t1)) {
-            tokens.add(t1);
-        }
-    }
-    return VocabAtomic(tokens, wildcard, true, concatenable);
-} */
+    const newTokens = v1.tokens.intersect(v2.tokens);
+    return VocabAtomic(newTokens, true, v1.concatenable || v2.concatenable);
+}

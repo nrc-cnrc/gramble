@@ -18,7 +18,7 @@ export abstract class Component {
         const msgs: Msgs = [];
         for (const [k, v] of Object.entries(this)) {
             if (!this.hasOwnProperty(k)) continue;
-            clone[k] = mapAny(v, f, env).msgTo(msgs);
+            clone[k] = mapChildrenAny(v, f, env).msgTo(msgs);
         }
         const newMsgs = msgs.map(m => m.localize(this.pos));
         return clone.msg(newMsgs);
@@ -45,46 +45,46 @@ export abstract class Component {
     }
 }
 
-export function mapAny<T extends Component>(x: any, f: Pass<T,T>, env: PassEnv): Result<any> {
+export function mapChildrenAny<T extends Component>(x: any, f: Pass<T,T>, env: PassEnv): Result<any> {
     if (x instanceof Component) {
         return f.transform(x as T, env);
     } else if (Array.isArray(x)) {
-        return mapArray(x, f, env);
+        return mapChildrenArray(x, f, env);
     } else if (x instanceof Set) {
-        return mapSet(x, f, env);
+        return mapChildrenSet(x, f, env);
     } else if (x instanceof Object) {
-        return mapObj(x, f, env);
+        return mapChildrenObj(x, f, env);
     } else {
         return result(x);
     }
 }
 
-export function mapSet<T extends Component>(xs: Set<any>, f: Pass<T,T>, env: PassEnv): Result<Set<any>> {
+export function mapChildrenSet<T extends Component>(xs: Set<any>, f: Pass<T,T>, env: PassEnv): Result<Set<any>> {
     const results: Set<any> = new Set();
     const msgs: Msgs = [];
     for (const x of xs) {
-        const newX = mapAny(x, f, env).msgTo(msgs);
+        const newX = mapChildrenAny(x, f, env).msgTo(msgs);
         results.add(newX);
     }
     return result(results).msg(msgs);
 }
 
-export function mapArray<T extends Component>(xs: any[], f: Pass<T,T>, env: PassEnv): Result<any[]> {
+export function mapChildrenArray<T extends Component>(xs: any[], f: Pass<T,T>, env: PassEnv): Result<any[]> {
     const results: any[] = [];
     const msgs: Msgs = [];
     for (const x of xs) {
-        const newX = mapAny(x, f, env).msgTo(msgs);
+        const newX = mapChildrenAny(x, f, env).msgTo(msgs);
         results.push(newX);
     }
     return result(results).msg(msgs);
 }
 
-export function mapObj<T extends Component>(x: any, f: Pass<T,T>, env: PassEnv): Result<Dict<any>> {
+export function mapChildrenObj<T extends Component>(x: any, f: Pass<T,T>, env: PassEnv): Result<Dict<any>> {
     const results: Dict<any> = Object.create(Object.getPrototypeOf(x));
     const msgs: Msgs = [];
     for (const [k, v] of Object.entries(x)) {
         if (!x.hasOwnProperty(k)) continue;
-        const newX = mapAny(v, f, env).msgTo(msgs);
+        const newX = mapChildrenAny(v, f, env).msgTo(msgs);
         results[k] = newX;
     }
     return result(results).msg(msgs);

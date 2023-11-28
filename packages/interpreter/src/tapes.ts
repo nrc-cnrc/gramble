@@ -1,8 +1,8 @@
-import { Dict, exhaustive, union } from "./utils/func";
+import { Dict, exhaustive } from "./utils/func";
 import { 
     Namespace
 } from "./utils/namespace";
-import { VocabInfo, VocabString, vocabIntersection, vocabUnion } from "./vocab";
+import { VocabAtomic, VocabInfo, intersectVocab, multVocab, sumVocab } from "./vocab";
 
 /**
  * Tape
@@ -48,6 +48,7 @@ export type TapeInfo
     | TapeRef
     | TapeRename
     | TapeSum
+    | TapeProduct
     | TapeJoin
     | TapeUnknown; 
 
@@ -62,7 +63,7 @@ export function TapeSum(c1: TapeInfo, c2: TapeInfo): TapeInfo {
     if (c1.tag !== "TapeLit" || c2.tag !== "TapeLit") 
         return { tag: "TapeSum", c1, c2 };
 
-    const resultTapes: Dict<VocabString> = {};
+    const resultTapes: Dict<VocabInfo> = {};
     Object.assign(resultTapes, c1.tapes);
     for (const [k,v] of Object.entries(c2.tapes)) {
         const other = c1.tapes[k];
@@ -70,7 +71,35 @@ export function TapeSum(c1: TapeInfo, c2: TapeInfo): TapeInfo {
             resultTapes[k] = v;
             continue;
         }
-        const newVocab = vocabUnion(v, other);
+        const newVocab = sumVocab(v, other);
+        resultTapes[k] = newVocab;
+    }
+
+    return TapeLit(resultTapes);
+    
+}
+
+
+export type TapeProduct = { 
+    tag: "TapeProduct", 
+    c1: TapeInfo, 
+    c2: TapeInfo 
+};
+
+export function TapeProduct(c1: TapeInfo, c2: TapeInfo): TapeInfo {
+
+    if (c1.tag !== "TapeLit" || c2.tag !== "TapeLit") 
+        return { tag: "TapeProduct", c1, c2 };
+
+    const resultTapes: Dict<VocabInfo> = {};
+    Object.assign(resultTapes, c1.tapes);
+    for (const [k,v] of Object.entries(c2.tapes)) {
+        const other = c1.tapes[k];
+        if (other === undefined) {
+            resultTapes[k] = v;
+            continue;
+        }
+        const newVocab = multVocab(v, other);
         resultTapes[k] = newVocab;
     }
 
@@ -89,7 +118,7 @@ export function TapeJoin(c1: TapeInfo, c2: TapeInfo): TapeInfo {
     if (c1.tag !== "TapeLit" || c2.tag !== "TapeLit") 
         return { tag: "TapeJoin", c1, c2 };
 
-    const resultTapes: Dict<VocabString> = {};
+    const resultTapes: Dict<VocabInfo> = {};
     Object.assign(resultTapes, c1.tapes);
     for (const [k,v] of Object.entries(c2.tapes)) {
         const other = c1.tapes[k];
@@ -97,7 +126,7 @@ export function TapeJoin(c1: TapeInfo, c2: TapeInfo): TapeInfo {
             resultTapes[k] = v;
             continue;
         }
-        const newVocab = vocabIntersection(v, other);
+        const newVocab = intersectVocab(v, other);
         resultTapes[k] = newVocab;
     }
 
@@ -115,11 +144,11 @@ export function TapeUnknown(): TapeInfo {
  */
 export type TapeLit = { 
     tag: "TapeLit", 
-    tapes: Dict<VocabString> 
+    tapes: Dict<VocabInfo> 
 };
 
 export function TapeLit(
-    tapes: Dict<VocabString> = {}
+    tapes: Dict<VocabInfo> = {}
 ): TapeLit {
     return { tag: "TapeLit", tapes }
 };
@@ -155,11 +184,11 @@ export function TapeRename(
     toTape: string
 ): TapeInfo {
     if (child.tag === "TapeLit") {
-        const renamedTapes: Dict<VocabString> = {};
+        const renamedTapes: Dict<VocabInfo> = {};
         Object.assign(renamedTapes, child.tapes);
         let oldVocab = child.tapes[fromTape];
         if (oldVocab === undefined) 
-            oldVocab = VocabString([], false); // dummy value
+            oldVocab = VocabAtomic(); // dummy value
         delete renamedTapes[fromTape];
         renamedTapes[toTape] = oldVocab;
         return TapeLit(renamedTapes);
@@ -185,6 +214,7 @@ export function tapeToStr(t: TapeInfo): string {
         case "TapeRef": return "$" + t.symbol;
         case "TapeRename": return `${t.fromTape}>${t.toTape}(${tapeToStr(t.child)})`;
         case "TapeSum": return tapeToStr(t.c1) + "+" + tapeToStr(t.c2);
+        case "TapeProduct": return tapeToStr(t.c1) + "⋅" + tapeToStr(t.c2);
         case "TapeJoin": return tapeToStr(t.c1) + "⋈" + tapeToStr(t.c2);
         default: exhaustive(t);
     }
@@ -192,6 +222,6 @@ export function tapeToStr(t: TapeInfo): string {
 
 function tapeLitToStr(t: TapeLit): string {
     const entries = Object.entries(t.tapes).map(([k,v]) => 
-        `${k}:${[...v.tokens]}`);
+        `${k}:${[...v.tokens.items]}`);
     return "{" + entries.join(",") + "}"
 }

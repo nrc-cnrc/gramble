@@ -22,15 +22,15 @@ import { Pass, PassEnv } from "../passes";
 import { 
     Dict, mapValues, 
     exhaustive, update, 
-    foldRight, union, Func, dictLen 
+    foldRight, union, dictLen 
 } from "../utils/func";
 import { 
     TapeInfo, TapeSum, 
     TapeLit, TapeRef, 
-    TapeRename, tapeToStr, TapeJoin 
+    TapeRename, tapeToStr, TapeJoin, TapeProduct 
 } from "../tapes";
-import { DEFAULT_TAPE, HIDDEN_PREFIX, INPUT_TAPE, OUTPUT_TAPE } from "../utils/constants";
-import { VocabString } from "../vocab";
+import { DEFAULT_TAPE, INPUT_TAPE, OUTPUT_TAPE } from "../utils/constants";
+import { VocabAtomic, VocabInfo, VocabString, WILDCARD, WildcardSet } from "../vocab";
 import { toStr } from "./toStr";
 
 /**
@@ -70,7 +70,7 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
             case "null": return updateTapes(g, TapeLit());
 
             // have their own tape name as tapes
-            case "lit": return getTapesLit(g);
+            case "lit": return getTapesLit(g, env);
             case "dot": return getTapesDot(g);
             
             case "singletape": return getTapesSingleTape(g);
@@ -129,10 +129,13 @@ function getChildTapes(g: Grammar): TapeInfo {
     return foldRight(childTapes.slice(1), TapeSum, childTapes[0]);
 }
 
-function getTapesLit(g: LiteralGrammar): Grammar {
-    const tapes: Dict<VocabString> = {
-        [g.tapeName]: VocabString(g.tokens, false)
-    };
+function getTapesLit(g: LiteralGrammar, env: PassEnv): Grammar {
+    const text = new WildcardSet(new Set([g.text]));
+    const tokens = new WildcardSet(new Set(g.tokens));
+    const vocab = env.opt.optimizeAtomicity 
+                        ? VocabAtomic(text)
+                        : VocabString(tokens);
+    const tapes = { [g.tapeName]: vocab };
     return updateTapes(g, TapeLit(tapes));
 }
 
@@ -168,9 +171,7 @@ function getTapesSingleTape(g: SingleTapeGrammar): Grammar|Result<Grammar> {
 }
 
 function getTapesDot(g: DotGrammar): Grammar {
-    const tapes: Dict<VocabString> = {
-        [g.tapeName]: VocabString(new Set(), true)
-    };
+    const tapes = { [g.tapeName]: WILDCARD };
     return updateTapes(g, TapeLit(tapes));
 }
 
@@ -263,7 +264,6 @@ function getTapesFilter(g: FilterGrammar): Result<Grammar> {
     return getTapesJoin(g).msg();
 }
 
-
 function getTapesReplace(g: ReplaceGrammar, env: PassEnv): Result<Grammar> {
 
     // during normal construction it shouldn't be possible to construct
@@ -287,7 +287,12 @@ function getTapesReplace(g: ReplaceGrammar, env: PassEnv): Result<Grammar> {
     if (msgs.length > 0)
         return new EpsilonGrammar().tapify(env).msg(msgs);
 
-    return getTapesDefault(g).msg();
+    const wild = TapeLit({ 
+        [INPUT_TAPE]: WILDCARD,
+        [OUTPUT_TAPE]: WILDCARD 
+    });
+    const tapes = TapeSum(wild, getChildTapes(g));
+    return updateTapes(g, tapes).msg(msgs);
 
 }
                 
@@ -411,6 +416,7 @@ function unify(
         case "TapeRef":     return unifyRef(t, symbols, visited);
         case "TapeRename":  return unifyRename(t, symbols, visited);
         case "TapeSum":     return unifySum(t, symbols, visited);
+        case "TapeProduct": return unifyProduct(t, symbols, visited);
         case "TapeJoin":    return unifyJoin(t, symbols, visited);
     }
 }
@@ -451,6 +457,16 @@ function unifySum(
     return TapeSum(newC1, newC2);
 }
 
+function unifyProduct(
+    t: TapeProduct, 
+    symbols: Dict<TapeInfo>,
+    visited: Set<string>
+): TapeInfo {
+    const newC1 = unify(t.c1, symbols, visited);
+    const newC2 = unify(t.c2, symbols, visited);
+    return TapeProduct(newC1, newC2);
+}
+
 function unifyJoin(
     t: TapeJoin, 
     symbols: Dict<TapeInfo>,
@@ -470,15 +486,15 @@ function unifyJoin(
 function getTapesCondition(
     g: StartsGrammar | EndsGrammar | ContainsGrammar
 ): Grammar {
-    const extras: Dict<VocabString> = {}
+    const extras: Dict<VocabInfo> = {}
     for (const t of g.extraTapes) {
-        extras[t] = VocabString([], true);
+        extras[t] = WILDCARD;
     }
     
     if (g.child.tapeSet.tag === "TapeLit") {
     // if we know what the child tapes are, add those wildcards too
         for (const t of Object.keys(g.child.tapeSet.tapes)) {
-            extras[t] = VocabString([], true);
+            extras[t] = WILDCARD;
         }
     }
 
