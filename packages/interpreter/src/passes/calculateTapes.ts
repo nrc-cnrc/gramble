@@ -17,6 +17,8 @@ import {
     StartsGrammar,
     EndsGrammar,
     ContainsGrammar,
+    SequenceGrammar,
+    RepeatGrammar,
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
 import { 
@@ -76,14 +78,12 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
             case "singletape": return getTapesSingleTape(g);
 
             // just the union of children's tapes
-            case "seq": 
             case "alt":
             case "short": 
             case "count": 
             case "not":
             case "test":
             case "testnot":
-            case "repeat":
             case "correspond":
             case "context":
             case "cursor":
@@ -95,6 +95,10 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
             case "starts":
             case "ends":
             case "contains": return getTapesCondition(g);
+
+            // seq and repeat involve products
+            case "seq":         return getTapesSeq(g);
+            case "repeat":      return getTapesRepeat(g);
 
             // something special
             case "embed":      return getTapesEmbed(g, this.knownTapes);
@@ -121,6 +125,29 @@ function getTapesDefault(
     g: Grammar
 ): Grammar {
     return updateTapes(g, getChildTapes(g));
+}
+
+function getTapesSeq(
+    g: SequenceGrammar
+): Grammar {
+    const childTapes = g.children.map(c => c.tapeSet);
+    if (childTapes.length === 0) 
+        return updateTapes(g, TapeLit());
+    if (childTapes.length === 1)
+        return updateTapes(g, childTapes[0]);
+    const tapes = foldRight(childTapes.slice(1), TapeProduct, childTapes[0]);
+    return updateTapes(g, tapes);
+}
+
+function getTapesRepeat(
+    g: RepeatGrammar
+): Grammar {
+    // (child⋅child) will give the right atomicity answer for 
+    // maxReps > 1.  It's not really worth it to do the correct
+    // atomicity answer for degerate repeats, we don't really use
+    // those.
+    const tapes = TapeProduct(g.child.tapeSet, g.child.tapeSet); 
+    return updateTapes(g, tapes);
 }
 
 function getChildTapes(g: Grammar): TapeInfo {
@@ -321,9 +348,11 @@ function getTapesReplaceBlock(g: ReplaceBlockGrammar): Result<Grammar> {
     for (const r of g.rules) {
         current = TapeRename(current, currentTape, INPUT_TAPE);
         currentTape = OUTPUT_TAPE;
-        const additionalVocab = TapeSum(r.tapeSet, 
-                TapeRename(current, INPUT_TAPE, OUTPUT_TAPE));
-        current = TapeSum(current, additionalVocab);
+        const inputStar = TapeLit({[INPUT_TAPE]: WILDCARD}); 
+        current = TapeJoin(current, inputStar);
+        const vocabFromInput = TapeRename(current, INPUT_TAPE, OUTPUT_TAPE);
+        const outputVocab = TapeSum(r.toGrammar.tapeSet, vocabFromInput);
+        current = TapeJoin(current, outputVocab);
         current = TapeRename(current, INPUT_TAPE, r.hiddenTapeName);
     }
     current = TapeRename(current, OUTPUT_TAPE, g.inputTape);

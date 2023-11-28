@@ -47,6 +47,12 @@ export class WildcardSet {
         return new WildcardSet(tokens, wildcard);
     }
 
+    public toStr(): string {
+        const tokens = [...this.items];
+        if (this.wildcard) tokens.push("*");
+        return "[" + tokens.join(",") + "]";
+    }
+
 }
 
 /**

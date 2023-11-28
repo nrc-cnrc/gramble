@@ -1,7 +1,7 @@
 import { Grammar } from "../../src/grammars";
 import { toStr } from "../../src/passes/toStr";
 import { expect } from "chai";
-import { t1, t2 } from "../testUtil";
+import { t1, t2, testSuiteName } from "../testUtil";
 import { 
     Any, Collection, 
     Embed, Epsilon, 
@@ -28,7 +28,7 @@ export function testGrammarID({
 }
 
 
-describe(`GrammarIDs`, function() {
+describe(`${testSuiteName(module)}`, function() {
 
     testGrammarID({
         testnum: "1",

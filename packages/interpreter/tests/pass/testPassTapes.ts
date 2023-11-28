@@ -1,6 +1,6 @@
 import { Grammar, ReplaceGrammar } from "../../src/grammars";
 import { assert, expect } from "chai";
-import { t1, t2, t3 } from "../testUtil";
+import { t1, t2, t3, testSuiteName } from "../testUtil";
 import { 
     Collection, Contains, Dot, Embed, 
     Ends, 
@@ -119,7 +119,7 @@ function NamedReplace(
             undefined, undefined, undefined, name, false)
 }
 
-describe(`GrammarIDs`, function() {
+describe(`${testSuiteName(module)}`, function() {
 
     testGrammarTapes({
         desc: "1a",
@@ -1195,4 +1195,102 @@ describe(`GrammarIDs`, function() {
         },
     });
 
+    testGrammarTapes({
+        desc: "25a-embed",
+        grammar: Collection({ 
+            "a": ReplaceBlock("t1", Embed("b"), 
+                NamedReplace("R1", "e", "")),
+            "b": t1("hello")
+        }),
+        symbol: "a",
+        tapes: {
+            "t1": ["h","e","l","o"],
+            ".R1": ["h","e","l","o"],
+        },
+    });
+    
+    testGrammarTapes({
+        desc: "25a-atom=embed",
+        atomicity: true,
+        grammar: Collection({ 
+            "a": ReplaceBlock("t1", Embed("b"), 
+                NamedReplace("R1", "e", "")),
+            "b": t1("hello")
+        }),
+        symbol: "a",
+        tapes: {
+            "t1": ["h","e","l","o"],
+            ".R1": ["h","e","l","o"],
+        },
+    });
+
+    testGrammarTapes({
+        desc: "25b-embed",
+        grammar: Collection({ 
+            "a": ReplaceBlock("t1", Embed("b"), 
+                    NamedReplace("R1", "e", "a")),
+            "b": t1("hello")
+        }),
+        symbol: "a",
+        tapes: {
+            "t1": ["h","e","l","o","a"],
+            ".R1": ["h","e","l","o"],
+        },
+    });
+    
+    testGrammarTapes({
+        desc: "25c-embed",
+        grammar: Collection({ 
+            "a": ReplaceBlock("t1", Embed("b"), 
+                    NamedReplace("R1", "e", "a"),
+                    NamedReplace("R2", "a", "u")),
+            "b": t1("hello")
+        }),
+        symbol: "a",
+        tapes: {
+            "t1": ["h","e","l","o","a","u"],
+            ".R2": ["h","e","l","o","a"],
+            ".R1": ["h","e","l","o"],
+        },
+    });
+
+    testGrammarTapes({
+        desc: "26",
+        grammar: Join(t1("helloworld"), 
+                Seq(t1("hello"), t1("world"))),
+        tapes: {
+            "t1": ["h","e","l","o","w","r","d"]
+        }
+    });
+
+    testGrammarTapes({
+        desc: "26-atom",
+        atomicity: true,
+        grammar: Join(t1("helloworld"), 
+                Seq(t1("hello"), t1("world"))),
+        tapes: {
+            "t1": ["h","e","l","o","w","r","d"]
+        }
+    });
+
+    // the following aren't really correct, but match our old
+    // semantics. TODO: get these right
+    testGrammarTapes({
+        desc: "27",
+        grammar: Seq(t1("hello"), 
+                Join(t1("world"), t1("world"))),
+        tapes: {
+            "t1": ["h","e","l","o","w","r","d"]
+        }
+    });
+
+    testGrammarTapes({
+        desc: "27-atom",
+        atomicity: true,
+        grammar: Seq(t1("hello"), 
+                Join(t1("world"), t1("world"))),
+        tapes: {
+            "t1": ["h","e","l","o","w","r","d"]
+        }
+    });
 });

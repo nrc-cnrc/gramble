@@ -34,7 +34,7 @@
     "build": "tsc --build --verbose",
     "prepare": "npm run build",
 
-    "test": "mocha -r ts-node/register tests/*.ts tests/grammar/*.ts tests/parse/*.ts tests/source/*/*.ts",
+    "test": "mocha -r ts-node/register tests/*.ts tests/grammar/*.ts tests/parse/*.ts tests/source/*/*.ts tests/pass/*.ts",
     
     "testGrammar": "mocha -r ts-node/register tests/grammar/*.ts",
     "testGrammarBasic": "mocha -r ts-node/register tests/grammar/testGrammarBasic.ts",

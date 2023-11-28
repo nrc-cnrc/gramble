@@ -222,6 +222,6 @@ export function tapeToStr(t: TapeInfo): string {
 
 function tapeLitToStr(t: TapeLit): string {
     const entries = Object.entries(t.tapes).map(([k,v]) => 
-        `${k}:${[...v.tokens.items]}`);
+        `${k}:${v.tokens.toStr()}`);
     return "{" + entries.join(",") + "}"
 }
