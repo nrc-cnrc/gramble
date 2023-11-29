@@ -13,3 +13,5 @@ export const AUTO_SYMBOL = INTERNAL_PREFIX + "Auto"
 
 export const DEFAULT_MAX_CHARS = 100;
 export const DEFAULT_MAX_RECURSION = 4;
+
+export const VOCAB_MAX_TOKENS = 1000;

@@ -2,7 +2,7 @@ import { Dict, exhaustive } from "./utils/func";
 import { 
     Namespace
 } from "./utils/namespace";
-import { VocabAtomic, VocabInfo, intersectVocab, multVocab, sumVocab } from "./vocab";
+import { VocabAtomic, VocabInfo, intersectVocab, multVocab, sumVocab, vocabToStr } from "./vocab";
 
 /**
  * Tape
@@ -222,6 +222,6 @@ export function tapeToStr(t: TapeInfo): string {
 
 function tapeLitToStr(t: TapeLit): string {
     const entries = Object.entries(t.tapes).map(([k,v]) => 
-        `${k}:${v.tokens.toStr()}`);
+        `${k}:${vocabToStr(v)}`);
     return "{" + entries.join(",") + "}"
 }

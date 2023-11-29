@@ -1,143 +1,171 @@
+import { VOCAB_MAX_TOKENS } from "./utils/constants";
 import { flatmapSet, mapSet, union, update } from "./utils/func";
 import { tokenizeUnicode } from "./utils/strings";
 
+
 /**
- * VocabInfo objects are either sets of tokens (whether those represent atomic multichar units or 
- * individual Unicode grapheme clusters) or they're placeholders (like a reference to a symbol/tape
- * pair), or they represent un-evaluated operations on vocab objects that can't yet complete because
- * one of the operands is a placeholder.
+ * For efficiency's sake, if long tokens like "abracadabra"
+ * CAN be treated as single units for the purposes of calculating
+ * derivatives, they should.  However, sometimes doing that will
+ * cause us to get the wrong answer.  Consider intersecting two units 
+ * with what should be their product:
+ * 
+ *    L = helloworld & (hello ⋅ world)
+ * 
+ * If we treat this as a string, everything goes fine:
+ * 
+ *    D_{h}(L) = elloworld & (ello ⋅ world)
+ * 
+ * If we treat "helloworld", "hello", and "world" as atomic units,
+ * however, this goes very wrong.  The derivative of "hello" 
+ * w.r.t. "helloworld" is null!
+ * 
+ *    D_{helloworld}(L) = 0
+ * 
+ * To calculate this, we assume every literal contributes a VocabAtomic
+ * until proven otherwise.  Atomics can be alternated and joined, but
+ * if they're put into sequence (e.g. by a Seq or Repeat)
+ * they become a VocabSeq.  
+ * 
+ * The elements of a VocabSeq can be put in a sequence; in many
+ * case Glosses will be VocabSeqs.  Each piece of `1SG-love-V` is
+ * a unit but there's no reason yet to treat the units as being made
+ * up of characters.
+ * 
+ * However, if a VocabSeq undergoes a join, it becomes a VocabString and
+ * the elements of the vocab are tokenized into indivdual characters
+ * according to Gramble's character rules.
  */
 
 export type VocabInfo = VocabAtomic
+                      | VocabSeq
                       | VocabString;
 
-export class WildcardSet {
+type VocabTag = VocabInfo["tag"];
 
-    constructor(
-        public items: Set<string> = new Set(),
-        public wildcard: boolean = false
-    ) { 
-        this.items = items;
-    }
-
-    public get size(): number {
-        return this.items.size;
-    }
-
-    public tokenize(): WildcardSet {
-        const newItems = flatmapSet(this.items, t => tokenizeUnicode(t));
-        return new WildcardSet(newItems, this.wildcard);
-    }
-
-    public union(other: WildcardSet): WildcardSet {
-        return new WildcardSet(union(this.items, other.items), 
-                            this.wildcard || other.wildcard)
-    }
-
-    public intersect(other: WildcardSet): WildcardSet {
-        const wildcard = this.wildcard && other.wildcard;
-        //const concatenable = v1.concatenable && v2.concatenable;
-        let tokens: Set<string> = new Set();
-        if (this.wildcard) tokens = new Set(other.items);
-        for (const t1 of this.items) {
-            if (other.wildcard || other.items.has(t1)) {
-                tokens.add(t1);
-            }
-        }
-        return new WildcardSet(tokens, wildcard);
-    }
-
-    public toStr(): string {
-        const tokens = [...this.items];
-        if (this.wildcard) tokens.push("*");
-        return "[" + tokens.join(",") + "]";
-    }
-
-}
-
-/**
- * Every vocab starts out with the assumption that it's VocabAtomic.
- * If it's both joined and concatenated, or if it grows too large,
- * it'll be split into a VocabString.
- */
 export type VocabAtomic = {
     tag: "VocabAtomic",
-    tokens: WildcardSet,
-    joinable: boolean,
-    concatenable: boolean,
+    tokens: Set<string>,
+    wildcard: boolean,
 }
 
-const MAX_TOKENS = 1000;
-
 export function VocabAtomic(
-    tokens: WildcardSet = new WildcardSet(),
-    joinable: boolean = false,
-    concatenable: boolean = false
+    tokens: Set<string> = new Set(),
+    wildcard: boolean = false,
 ): VocabInfo {
-    const result: VocabAtomic = { tag: "VocabAtomic", 
-                            tokens, joinable, concatenable };
-    // now check if it has to be broken up
-    if (tokens.size > MAX_TOKENS) return splitVocab(result);
-    if (joinable && concatenable) return splitVocab(result);
+    const result: VocabAtomic = { tag: "VocabAtomic", tokens, wildcard };
+    if (tokens.size > VOCAB_MAX_TOKENS) return tokenizeVocab(result);
     return result;
 }
 
-/**
- * If a VocabAtomic gets too large or is both joinable & concatenable, we need
- * to split it apart into tokens instead.
- */
+export type VocabSeq = {
+    tag: "VocabSeq",
+    tokens: Set<string>,
+    wildcard: boolean,
+}
+
+export function VocabSeq(
+    tokens: Set<string> = new Set(),
+    wildcard: boolean = false,
+): VocabInfo {
+    const result: VocabSeq = { tag: "VocabSeq", tokens, wildcard };
+    if (tokens.size > VOCAB_MAX_TOKENS) return tokenizeVocab(result);
+    return result;
+}
+
 export type VocabString = {
     tag: "VocabString",
-    tokens: WildcardSet
+    tokens: Set<string>,
+    wildcard: boolean,
 }
 
 export function VocabString(
-    tokens: WildcardSet = new WildcardSet(),
+    tokens: Set<string> = new Set(),
+    wildcard: boolean = false,
 ): VocabString {
-    return { tag: "VocabString", tokens };
+    return { tag: "VocabString", tokens, wildcard };
 }
 
-export const WILDCARD = VocabString(new WildcardSet(new Set(), true));
+export const WILDCARD = VocabString(new Set(), true);
 
-function splitVocab(v: VocabInfo): VocabString {
+function tokenizeVocab(v: VocabInfo): VocabString {
     if (v.tag === "VocabString") return v;
-    const newTokens = v.tokens.tokenize();
-    return VocabString(newTokens);
+    const newTokens = flatmapSet(v.tokens, t => tokenizeUnicode(t));
+    return VocabString(newTokens, v.wildcard);
 }
 
 export function sumVocab(v1: VocabInfo, v2: VocabInfo): VocabInfo {
-    
-    // If either is a string, both must be
+
+    // If either is a string, both must be.  tokenize them both,
+    // if either is already tokenized it won't matter
     if (v1.tag === "VocabString" || v2.tag === "VocabString") {
-        const splitV1 = splitVocab(v1);
-        const splitV2 = splitVocab(v2);
-        const newTokens = splitV1.tokens.union(splitV2.tokens);
-        return VocabString(newTokens);
+        const splitV1 = tokenizeVocab(v1);
+        const splitV2 = tokenizeVocab(v2);
+        return sumVocabAux("VocabString", splitV1, splitV2);
+    }
+    
+    // If either is a string, both become seq
+    if (v1.tag === "VocabSeq" || v2.tag === "VocabSeq") {
+        return sumVocabAux("VocabSeq", v1, v2);
     }
 
-    const newTokens = v1.tokens.union(v2.tokens);
-    return VocabAtomic(newTokens,
-                       v1.joinable || v2.joinable,  
-                       v1.concatenable || v2.concatenable);
+    return sumVocabAux("VocabAtomic", v1, v2);
 }
 
-export function multVocab(v1: VocabInfo, v2: VocabInfo): VocabInfo {
-    
-    const result = sumVocab(v1, v2);
-    if (result.tag === "VocabString") return result;
+function sumVocabAux(
+    resultTag: VocabTag,
+    s1: VocabInfo, 
+    s2: VocabInfo
+): VocabInfo {
+    return {
+        tag: resultTag,
+        tokens: union(s1.tokens, s2.tokens),
+        wildcard: s1.wildcard || s2.wildcard
+    };
+}
 
-    return VocabAtomic(result.tokens, result.joinable, true);
+/** 
+ * multVocab returns the sum of the tokens, so we just use that function,
+ * but with one difference: if the result would have been a VocabAtomic, 
+ * it's now a VocabSeq
+ */
+export function multVocab(v1: VocabInfo, v2: VocabInfo): VocabInfo {
+    const result = sumVocab(v1, v2);
+    if (result.tag === "VocabAtomic") 
+        return VocabSeq(result.tokens, result.wildcard);
+    return result;
 }
 
 export function intersectVocab(v1: VocabInfo, v2: VocabInfo): VocabInfo {
-
-    if (v1.tag === "VocabString" || v2.tag === "VocabString") {
-        const splitV1 = splitVocab(v1);
-        const splitV2 = splitVocab(v2);
-        const newTokens = splitV1.tokens.intersect(splitV2.tokens);
-        return VocabString(newTokens);
+    if (v1.tag === "VocabAtomic" && v2.tag === "VocabAtomic") {
+        // only when both operands are atomic is the result atomic
+        return intersectVocabAux("VocabAtomic", v1, v2);
     }
 
-    const newTokens = v1.tokens.intersect(v2.tokens);
-    return VocabAtomic(newTokens, true, v1.concatenable || v2.concatenable);
+    // otherwise it's string
+    const splitV1 = tokenizeVocab(v1);
+    const splitV2 = tokenizeVocab(v2);
+    return intersectVocabAux("VocabString", splitV1, splitV2);
+}
+
+function intersectVocabAux(
+    resultTag: VocabTag,
+    s1: VocabInfo, 
+    s2: VocabInfo
+): VocabInfo {
+    const wildcard = s1.wildcard && s2.wildcard;
+    let tokens: Set<string> = new Set();
+    if (s1.wildcard) tokens = new Set(s2.tokens);
+    for (const t1 of s1.tokens) {
+        if (s2.wildcard || s2.tokens.has(t1)) {
+            tokens.add(t1);
+        }
+    }
+    return {tag: resultTag, tokens, wildcard };
+}
+
+export function vocabToStr(s: VocabInfo): string {
+    const tokens = [...s.tokens];
+    if (s.wildcard) tokens.push("*");
+    return "{" + tokens.join(",") + "}";
 }

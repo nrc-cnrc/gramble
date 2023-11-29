@@ -2,32 +2,31 @@ import { Grammar, ReplaceGrammar } from "../../src/grammars";
 import { assert, expect } from "chai";
 import { t1, t2, t3, testSuiteName } from "../testUtil";
 import { 
-    Collection, Contains, Dot, Embed, 
+    Collection, Contains, 
+    Dot, Embed, 
     Ends, 
     Epsilon, 
     Hide, 
     Join, 
     Match, 
     Null, 
-    Rename, Replace, ReplaceBlock, Seq, SingleTape, Starts
+    Rename, Rep, Replace, 
+    ReplaceBlock, Seq, 
+    SingleTape, Starts, Uni
 } from "../../src/grammarConvenience";
 import { CalculateTapes } from "../../src/passes/calculateTapes";
 import { PassEnv } from "../../src/passes";
 import { THROWER } from "../../src/utils/msgs";
 import { SelectSymbol } from "../../src/passes/selectSymbol";
 import { FlattenCollections } from "../../src/passes/flattenCollections";
-import { VocabAtomic, VocabInfo, VocabString, WildcardSet } from "../../src/vocab";
 import { Dict } from "../../src/utils/func";
-import { tapeToStr } from "../../src/tapes";
-import { toStr } from "../../src/passes/toStr";
 import { Options } from "../../src/utils/options";
-
-type Voc = string[] | VocabInfo;
+import { VocabInfo, VocabString } from "../../src/vocab";
 
 type GrammarIDTest = {
     desc: string,
     grammar: Grammar,
-    tapes: Dict<Voc>
+    tapes: Dict<string[]>
     symbol?: string,
     atomicity?: boolean
 };
@@ -64,10 +63,8 @@ export function testGrammarTapes({
             expect(foundTapes).to.deep.equal(expectedTapes);
         });
 
-        for (const [tapeName, vocab] of Object.entries(tapes)) {
-            const v = Array.isArray(vocab) 
-                                ? voc(vocab)
-                                : vocab;
+        for (const [tapeName, wildList] of Object.entries(tapes)) {
+            const expectedVocab = wildListToVocab(wildList)
 
             const tape = grammar.tapeSet.tapes[tapeName];
             if (tape === undefined) {
@@ -77,35 +74,25 @@ export function testGrammarTapes({
                 continue;
             }
 
-            it(`${tapeName} should have vocab [${[...v.tokens.items]}]`, function() {
-                expect(tape.tokens.items).to.deep.equal(v.tokens.items);
+            it(`${tapeName} should have vocab [${[...expectedVocab.tokens]}]`, function() {
+                expect(tape.tokens).to.deep.equal(expectedVocab.tokens);
             });
-
-            if (v.tokens.size !== 0) {
-                // don't bother checking for atomicity when there aren't supposed
-                // to be any actual tokens.
-                const atomicMsg = v.tag === "VocabAtomic" ? "should" : "should not";
-                it(`${tapeName} ${atomicMsg} be atomic`, function() {
-                    expect(tape.tag).to.equal(v.tag);
-                });
-            }
             
-            const msg = v.tokens.wildcard ? "should" : "should not";
+            const msg = expectedVocab.wildcard ? "should" : "should not";
             it(`${tapeName} ${msg} have a wildcard`, function() {
-                expect(tape.tokens.wildcard).to.equal(v.tokens.wildcard);
+                expect(tape.wildcard).to.equal(expectedVocab.wildcard);
             });
         }
     });
-
-
 }
 
-function voc(ss: string[], wildcard: boolean = false): VocabInfo {
-    return VocabString(new WildcardSet(new Set(ss), wildcard))
-}
-
-function vocAtomic(ss: string[], wildcard: boolean = false): VocabInfo {
-    return VocabAtomic(new WildcardSet(new Set(ss), wildcard))
+function wildListToVocab(ss: string[]): VocabInfo {
+    const tokens = new Set(ss);
+    if (tokens.has("*")) {
+        tokens.delete("*");
+        return VocabString(tokens, true);  // doesn't really matter
+    }                                      // what kind of Vocab
+    return VocabString(tokens);
 }
 
 function NamedReplace(
@@ -134,7 +121,7 @@ describe(`${testSuiteName(module)}`, function() {
         atomicity: true,
         grammar: t1("hello"),
         tapes: {
-            "t1": vocAtomic(["hello"])
+            "t1": ["hello"]
         }
     });
 
@@ -150,7 +137,7 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "1c",
         grammar: Dot("t1"),
         tapes: {
-            "t1": voc([], true)
+            "t1": ["*"]
         }
     });
 
@@ -159,7 +146,7 @@ describe(`${testSuiteName(module)}`, function() {
         atomicity: true,
         grammar: Dot("t1"),
         tapes: {
-            "t1": voc([], true)
+            "t1": ["*"]
         }
     });
 
@@ -189,8 +176,8 @@ describe(`${testSuiteName(module)}`, function() {
         atomicity: true,
         grammar: Seq(t1("hello"), t2("world")),
         tapes: {
-            "t1": vocAtomic(["hello"]),
-            "t2": vocAtomic(["world"])
+            "t1": ["hello"],
+            "t2": ["world"]
         }
     });
     
@@ -199,7 +186,7 @@ describe(`${testSuiteName(module)}`, function() {
         atomicity: true,
         grammar: Seq(t1("hello"), t1("world")),
         tapes: {
-            "t1": vocAtomic(["hello", "world"]),
+            "t1": ["hello", "world"],
         }
     });
 
@@ -218,9 +205,9 @@ describe(`${testSuiteName(module)}`, function() {
         atomicity: true,
         grammar: Seq(t1("hello"), Seq(t2("world"), t3("!"))),
         tapes: {
-            "t1": vocAtomic(["hello"]),
-            "t2": vocAtomic(["world"]),
-            "t3": vocAtomic(["!"]),
+            "t1": ["hello"],
+            "t2": ["world"],
+            "t3": ["!"],
         }
     });
 
@@ -228,7 +215,15 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "2c",
         grammar: Seq(t1("hello"), Dot("t1")),
         tapes: {
-            "t1": voc(["h","e","l","o"], true)
+            "t1": ["h","e","l","o","*"]
+        }
+    });
+
+    testGrammarTapes({
+        desc: "2c-alt",
+        grammar: Uni(t1("hello"), Dot("t1")),
+        tapes: {
+            "t1": ["h","e","l","o","*"]
         }
     });
 
@@ -237,7 +232,7 @@ describe(`${testSuiteName(module)}`, function() {
         atomicity: true,
         grammar: Seq(t1("hello"), Dot("t1")),
         tapes: {
-            "t1": voc(["h","e","l","o"], true)
+            "t1": ["h","e","l","o","*"]
         }
     });
     
@@ -245,7 +240,7 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "2d",
         grammar: Seq(Dot("t1"), t1("hello")),
         tapes: {
-            "t1": voc(["h","e","l","o"], true)
+            "t1": ["h","e","l","o","*"]
         }
     });
 
@@ -254,7 +249,7 @@ describe(`${testSuiteName(module)}`, function() {
         atomicity: true,
         grammar: Seq(Dot("t1"), t1("hello")),
         tapes: {
-            "t1": voc(["h","e","l","o"], true)
+            "t1": ["h","e","l","o","*"]
         }
     });
 
@@ -271,7 +266,7 @@ describe(`${testSuiteName(module)}`, function() {
         atomicity: true,
         grammar: Rename(t1("hello"), "t1", "t2"),
         tapes: {
-            "t2": vocAtomic(["hello"]),
+            "t2": ["hello"],
         }
     });
 
@@ -315,7 +310,7 @@ describe(`${testSuiteName(module)}`, function() {
         atomicity: true,
         grammar: Collection({a: t1("hi"), b: Embed("a")}),
         tapes: {
-            "t1": vocAtomic(["hi"]),
+            "t1": ["hi"],
         },
         symbol: "b"
     });
@@ -366,8 +361,8 @@ describe(`${testSuiteName(module)}`, function() {
             b: Embed("a")
         }),
         tapes: {
-            "t1": vocAtomic(["hi"]),
-            "t3": vocAtomic(["world"])
+            "t1": ["hi"],
+            "t3": ["world"]
         },
         symbol: "b"
     });
@@ -527,8 +522,8 @@ describe(`${testSuiteName(module)}`, function() {
         atomicity: true,
         grammar: Match(t1("hello"), "t1", "t2"),
         tapes: {
-            "t1": vocAtomic(["hello"]),
-            "t2": vocAtomic(["hello"]),
+            "t1": ["hello"],
+            "t2": ["hello"],
         }
     });
 
@@ -573,8 +568,8 @@ describe(`${testSuiteName(module)}`, function() {
         }),
         symbol: "a",
         tapes: {
-            "t1": vocAtomic(["hello"]),
-            "t2": vocAtomic(["hello"]),
+            "t1": ["hello"],
+            "t2": ["hello"],
         }
     });
 
@@ -628,8 +623,8 @@ describe(`${testSuiteName(module)}`, function() {
         atomicity: true,
         grammar: Join(t1("hello"), Seq(t1("hello"), t2("world"))),
         tapes: {
-            "t1": vocAtomic(["hello"]),
-            "t2": vocAtomic(["world"])
+            "t1": ["hello"],
+            "t2": ["world"]
         }
     });
     
@@ -671,7 +666,7 @@ describe(`${testSuiteName(module)}`, function() {
         grammar: Join(Seq(t1("hello"), Dot("t1"), t3("kitty")), 
                       Seq(t1("goodbye"), Dot("t1"), t2("world"))),
         tapes: {
-            "t1": voc(['h','e','l','o','g','d','b','y'], true),
+            "t1": ['h','e','l','o','g','d','b','y',"*"], 
             "t2": ["w","o","r","l","d"],
             "t3": ["k","i","t","y"],
         }
@@ -983,8 +978,8 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "21a",
         grammar: Replace("e", "a", "h", "llo"),
         tapes: {
-            "$i": voc(["h","e","l","o"], true),
-            "$o": voc(["a"], true)
+            "$i": ["h","e","l","o","*"],
+            "$o": ["a", "*"]
         },
     });
     
@@ -992,8 +987,8 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "21b",
         grammar: Replace("e", "", "h", "llo"),
         tapes: {
-            "$i": voc(["h","e","l","o"], true),
-            "$o": voc([], true)
+            "$i": ["h","e","l","o","*"],
+            "$o": ["*"]
         },
     });
 
@@ -1132,7 +1127,7 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "24a",
         grammar: Starts(Seq(t1("hello"), Dot("t1")), t1("w")),
         tapes: {
-            "t1": voc(["h","e","l","o","w"], true)
+            "t1": ["h","e","l","o","w","*"]
         },
     });
 
@@ -1140,7 +1135,7 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "24b",
         grammar: Ends(Seq(t1("hello"), Dot("t1")), t1("w")),
         tapes: {
-            "t1": voc(["h","e","l","o","w"], true)
+            "t1": ["h","e","l","o","w","*"]
         },
     });
 
@@ -1148,7 +1143,7 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "24c",
         grammar: Contains(Seq(t1("hello"), Dot("t1")), t1("w")),
         tapes: {
-            "t1": voc(["h","e","l","o","w"], true)
+            "t1": ["h","e","l","o","w","*"]
         },
     });
 
@@ -1273,8 +1268,6 @@ describe(`${testSuiteName(module)}`, function() {
         }
     });
 
-    // the following aren't really correct, but match our old
-    // semantics. TODO: get these right
     testGrammarTapes({
         desc: "27",
         grammar: Seq(t1("hello"), 
@@ -1290,7 +1283,99 @@ describe(`${testSuiteName(module)}`, function() {
         grammar: Seq(t1("hello"), 
                 Join(t1("world"), t1("world"))),
         tapes: {
-            "t1": ["h","e","l","o","w","r","d"]
+            "t1": ["hello","world"]
         }
     });
+
+    testGrammarTapes({
+        desc: "28",
+        grammar: Uni(t1("hi"), Join(t1("helloworld"), 
+                Seq(t1("hello"), t1("world")))),
+        tapes: {
+            "t1": ["h","e","l","o","w","r","d","i"]
+        }
+    });
+
+    testGrammarTapes({
+        desc: "28-atom",
+        atomicity: true,
+        grammar: Uni(t1("hi"), Join(t1("helloworld"), 
+                Seq(t1("hello"), t1("world")))),
+        tapes: {
+            "t1": ["h","e","l","o","w","r","d","i"]
+        }
+    });
+
+    testGrammarTapes({
+        desc: "29",
+        grammar: Uni(t1("hi"), Seq(t1("hello"), 
+                Join(t1("world"), t1("world")))),
+        tapes: {
+            "t1": ["h","e","l","o","w","r","d","i"]
+        }
+    });
+
+    testGrammarTapes({
+        desc: "29-atom",
+        atomicity: true,
+        grammar: Uni(t1("hi"), Seq(t1("hello"), 
+                Join(t1("world"), t1("world")))),
+        tapes: {
+            "t1": ["hello","world","hi"]
+        }
+    });
+    
+    testGrammarTapes({
+        desc: "30",
+        grammar: Seq(t1("hello"), Dot("t1")),
+        tapes: {
+            "t1": ["h","e","l","o","*"]
+        }
+    });
+
+    testGrammarTapes({
+        desc: "30-atom",
+        atomicity: true,
+        grammar: Seq(t1("hello"), Dot("t1")),
+        tapes: {
+            "t1": ["h","e","l","o","*"]
+        }
+    });
+
+    testGrammarTapes({
+        desc: "31",
+        grammar: Join(t1("hellohello"), 
+                    Rep(t1("hello"))),
+        tapes: {
+            "t1": ["h","e","l","o"]
+        }
+    });
+
+    testGrammarTapes({
+        desc: "31-atom",
+        atomicity: true,
+        grammar: Join(t1("hellohello"), 
+                    Rep(t1("hello"))),
+        tapes: {
+            "t1": ["h","e","l","o"]
+        }
+    });
+
+    testGrammarTapes({
+        desc: "32",
+        grammar: Rep(Join(t1("hello"), t1("hello"))),
+        tapes: {
+            "t1": ["h","e","l","o"]
+        }
+    });
+
+    testGrammarTapes({
+        desc: "32-atom",
+        atomicity: true,
+        grammar: Rep(Join(t1("hello"), t1("hello"))),
+        tapes: {
+            "t1": ["hello"]
+        }
+    });
+
 });

@@ -32,7 +32,7 @@ import {
     TapeRename, tapeToStr, TapeJoin, TapeProduct 
 } from "../tapes";
 import { DEFAULT_TAPE, INPUT_TAPE, OUTPUT_TAPE } from "../utils/constants";
-import { VocabAtomic, VocabInfo, VocabString, WILDCARD, WildcardSet } from "../vocab";
+import { VocabAtomic, VocabInfo, VocabString, WILDCARD } from "../vocab";
 import { toStr } from "./toStr";
 
 /**
@@ -157,11 +157,9 @@ function getChildTapes(g: Grammar): TapeInfo {
 }
 
 function getTapesLit(g: LiteralGrammar, env: PassEnv): Grammar {
-    const text = new WildcardSet(new Set([g.text]));
-    const tokens = new WildcardSet(new Set(g.tokens));
-    const vocab = env.opt.optimizeAtomicity 
-                        ? VocabAtomic(text)
-                        : VocabString(tokens);
+    const vocab = env.opt.optimizeAtomicity
+                        ? VocabAtomic(new Set([g.text]))
+                        : VocabString(new Set(g.tokens));
     const tapes = { [g.tapeName]: vocab };
     return updateTapes(g, TapeLit(tapes));
 }
@@ -198,8 +196,8 @@ function getTapesSingleTape(g: SingleTapeGrammar): Grammar|Result<Grammar> {
 }
 
 function getTapesDot(g: DotGrammar): Grammar {
-    const tapes = { [g.tapeName]: WILDCARD };
-    return updateTapes(g, TapeLit(tapes));
+    const tapes = TapeLit({ [g.tapeName]: WILDCARD });
+    return updateTapes(g, tapes);
 }
 
 function getTapesEmbed(
