@@ -1,4 +1,4 @@
-import { Grammar, ReplaceGrammar } from "../../src/grammars";
+import { Grammar, NegationGrammar, ReplaceGrammar } from "../../src/grammars";
 import { assert, expect } from "chai";
 import { t1, t2, t3, testSuiteName } from "../testUtil";
 import { 
@@ -9,9 +9,11 @@ import {
     Hide, 
     Join, 
     Match, 
+    Not, 
     Null, 
     Rename, Rep, Replace, 
     ReplaceBlock, Seq, 
+    Short, 
     SingleTape, Starts, Uni
 } from "../../src/grammarConvenience";
 import { CalculateTapes } from "../../src/passes/calculateTapes";
@@ -979,7 +981,7 @@ describe(`${testSuiteName(module)}`, function() {
         grammar: Replace("e", "a", "h", "llo"),
         tapes: {
             "$i": ["h","e","l","o","*"],
-            "$o": ["a", "*"]
+            "$o": ["h","e","l","o","a","*"],
         },
     });
     
@@ -988,7 +990,7 @@ describe(`${testSuiteName(module)}`, function() {
         grammar: Replace("e", "", "h", "llo"),
         tapes: {
             "$i": ["h","e","l","o","*"],
-            "$o": ["*"]
+            "$o": ["h","e","l","o","*"],
         },
     });
 
@@ -1375,6 +1377,41 @@ describe(`${testSuiteName(module)}`, function() {
         grammar: Rep(Join(t1("hello"), t1("hello"))),
         tapes: {
             "t1": ["hello"]
+        }
+    });
+
+    testGrammarTapes({
+        desc: "33. Short vocabs are always strings",
+        grammar: Short(Uni(t1("h"), t1("hh"))),
+        tapes: {
+            "t1": ["h"]
+        }
+    });
+
+    testGrammarTapes({
+        desc: "33-atom. Short vocabs are always strings",
+        atomicity: true,
+        grammar: Short(Uni(t1("h"), t1("hh"))),
+        tapes: {
+            "t1": ["h"]
+        }
+    });
+
+    
+    testGrammarTapes({
+        desc: "34. Negations are always strings and wildcard",
+        grammar: Not(t1("hello")),
+        tapes: {
+            "t1": ["h","e","l","o","*"]
+        }
+    });
+
+    testGrammarTapes({
+        desc: "34-atom. Negations are always strings and wildcard",
+        atomicity: true,
+        grammar: Not(t1("hello")),
+        tapes: {
+            "t1": ["h","e","l","o","*"]
         }
     });
 

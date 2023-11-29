@@ -2638,5 +2638,4 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'ii', $o: 'ii'},
         ],
     });
-
 });

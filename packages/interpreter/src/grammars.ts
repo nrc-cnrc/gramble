@@ -170,7 +170,13 @@ export abstract class AbstractGrammar extends Component {
         env: PassEnv
     ): void {
         for (const tapeName of this.tapes) {
-            const atomic = determineAtomicity(this as Grammar, tapeName, env);
+            //const atomic = determineAtomicity(this as Grammar, tapeName, env);
+            
+            if (this.tapeSet.tag !== "TapeLit") throw new Error("Collecting vocab from a non-literal tape");
+            const tapeInfo = this.tapeSet.tapes[tapeName];
+            const atomic = tapeInfo.tag !== "VocabString";
+            
+            console.log(`${tapeName} is atomic: ${atomic}`);
             let tape = tapeNS.attemptGet(tapeName);
             if (tape == undefined) {
                 // make a new one if it doesn't exist
@@ -179,10 +185,13 @@ export abstract class AbstractGrammar extends Component {
             } 
             tape = tapeNS.get(tapeName); 
             tape.atomic = atomic;
-            const strs = this.collectVocab(tapeName, atomic, new StringPairSet(), env);
+            //const strs = this.collectVocab(tapeName, atomic, new StringPairSet(), env);
+            
+            const strs = tapeInfo.tokens;
+            
             tape.registerTokens([...strs]);
         }
-
+/*
         const vocabCopyEdges = new StringPairSet();
         for (const tapeName of this.tapes) {
             const edges = this.getVocabCopyEdges(tapeName, 
@@ -204,6 +213,7 @@ export abstract class AbstractGrammar extends Component {
                 }
             }
         }
+        */
     }
 
     public collectVocab(

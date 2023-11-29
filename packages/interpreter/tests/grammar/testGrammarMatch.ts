@@ -14,6 +14,7 @@ import {
     logTestSuite, VERBOSE_TEST_L2,
 } from "../testUtil";
 import { Grammar } from "../../src/grammars";
+import { VERBOSE_DEBUG, VERBOSE_GRAMMAR } from "../../src/utils/logging";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;

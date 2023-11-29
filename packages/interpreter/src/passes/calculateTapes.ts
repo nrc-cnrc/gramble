@@ -19,6 +19,7 @@ import {
     ContainsGrammar,
     SequenceGrammar,
     RepeatGrammar,
+    ShortGrammar,
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
 import { 
@@ -79,15 +80,17 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
 
             // just the union of children's tapes
             case "alt":
-            case "short": 
             case "count": 
-            case "not":
             case "test":
             case "testnot":
             case "correspond":
             case "context":
             case "cursor":
             case "pretape": return getTapesDefault(g);
+
+            // union of children's tapes but always String vocab
+            case "short":      return getTapesDefaultString(g);
+            case "not":        return getTapesDefaultStringWildcard(g);
 
             // join and filter are special w.r.t. vocabs and wildcards
             case "join":       return getTapesJoin(g);
@@ -116,7 +119,6 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
     }
 }
 
-
 function updateTapes(g: Grammar, tapes: TapeInfo): Grammar {
     return update(g, { tapeSet: tapes });
 }
@@ -125,6 +127,36 @@ function getTapesDefault(
     g: Grammar
 ): Grammar {
     return updateTapes(g, getChildTapes(g));
+}
+
+function getTapesDefaultString(g: Grammar): Grammar {
+    let tapes = getChildTapes(g);
+    if (tapes.tag !== "TapeLit") {
+        // nothing we can do at the moment
+        return updateTapes(g, tapes);
+    }
+
+    const stringifiers = TapeLit();
+    for (const tape of Object.keys(tapes.tapes)) {
+        stringifiers.tapes[tape] = VocabString();  // dummy vocab ensures string-ness
+    }
+    tapes = TapeSum(stringifiers, getChildTapes(g));
+    return updateTapes(g, tapes);
+}
+
+function getTapesDefaultStringWildcard(g: Grammar): Grammar {
+    let tapes = getChildTapes(g);
+    if (tapes.tag !== "TapeLit") {
+        // nothing we can do at the moment
+        return updateTapes(g, tapes);
+    }
+
+    const stringifiers = TapeLit();
+    for (const tape of Object.keys(tapes.tapes)) {
+        stringifiers.tapes[tape] = VocabString(new Set(), true);
+    }
+    tapes = TapeSum(stringifiers, getChildTapes(g));
+    return updateTapes(g, tapes);
 }
 
 function getTapesSeq(
@@ -312,11 +344,14 @@ function getTapesReplace(g: ReplaceGrammar, env: PassEnv): Result<Grammar> {
     if (msgs.length > 0)
         return new EpsilonGrammar().tapify(env).msg(msgs);
 
-    const wild = TapeLit({ 
+    const childTapes = getChildTapes(g);
+    let tapes: TapeInfo = TapeLit({ 
         [INPUT_TAPE]: WILDCARD,
         [OUTPUT_TAPE]: WILDCARD 
     });
-    const tapes = TapeSum(wild, getChildTapes(g));
+    tapes = TapeSum(tapes, childTapes);
+    const tapesFromInput = TapeRename(childTapes, INPUT_TAPE, OUTPUT_TAPE);
+    tapes = TapeSum(tapes, tapesFromInput);
     return updateTapes(g, tapes).msg(msgs);
 
 }
