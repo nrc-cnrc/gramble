@@ -1,7 +1,7 @@
 import { basename } from "path";
 import { assert, expect } from "chai";
 
-import { Lit } from "../src/grammarConvenience";
+import { Epsilon, Lit } from "../src/grammarConvenience";
 import { Interpreter } from "../src/interpreter";
 import { Grammar } from "../src/grammars";
 import { Tape } from "../src/tapes";
@@ -149,12 +149,22 @@ export function prepareInterpreter(
     grammar: Grammar | Interpreter,
     opt: Partial<Options> = {},
 ): Interpreter {
-    opt = Options(opt);
-    const interpreter = (grammar instanceof Interpreter) ?
-                        grammar :
-                        Interpreter.fromGrammar(grammar, opt);
+    try {
+        opt = Options(opt);
+        const interpreter = (grammar instanceof Interpreter) ?
+                            grammar :
+                            Interpreter.fromGrammar(grammar, opt);
 
-    return interpreter;
+        return interpreter;
+    } catch (e) {
+        it("Unexpected Exception", function() {
+            console.log("");
+            console.log(`[${this.test?.fullTitle()}]`);
+            console.log(e);
+            assert.fail(JSON.stringify(e));
+        });
+    }
+    return Interpreter.fromGrammar(Epsilon(), opt);
 }
 
 export function generateOutputs(

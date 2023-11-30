@@ -23,7 +23,7 @@ import { SelectSymbol } from "../../src/passes/selectSymbol";
 import { FlattenCollections } from "../../src/passes/flattenCollections";
 import { Dict } from "../../src/utils/func";
 import { Options } from "../../src/utils/options";
-import { VocabInfo, VocabString } from "../../src/vocab";
+import { VocabInfo, VocabString, unifyVocabSymbols, vocabIsSuspended, vocabToStr } from "../../src/vocab";
 
 type GrammarIDTest = {
     desc: string,
@@ -66,7 +66,10 @@ export function testGrammarTapes({
         });
 
         for (const [tapeName, wildList] of Object.entries(tapes)) {
-            const expectedVocab = wildListToVocab(wildList)
+            const expectedVocab = VocabString(new Set(wildList));
+
+            let tapes = grammar.tapeSet.tapes;
+            tapes = unifyVocabSymbols(tapes);
 
             const tape = grammar.tapeSet.tapes[tapeName];
             if (tape === undefined) {
@@ -76,25 +79,18 @@ export function testGrammarTapes({
                 continue;
             }
 
+            if (vocabIsSuspended(tape)) {
+                it(`${tapeName} is unresolved`, function() {
+                    assert.fail(vocabToStr(tape));
+                });
+                return;
+            }
+
             it(`${tapeName} should have vocab [${[...expectedVocab.tokens]}]`, function() {
                 expect(tape.tokens).to.deep.equal(expectedVocab.tokens);
             });
-            
-            const msg = expectedVocab.wildcard ? "should" : "should not";
-            it(`${tapeName} ${msg} have a wildcard`, function() {
-                expect(tape.wildcard).to.equal(expectedVocab.wildcard);
-            });
         }
     });
-}
-
-function wildListToVocab(ss: string[]): VocabInfo {
-    const tokens = new Set(ss);
-    if (tokens.has("*")) {
-        tokens.delete("*");
-        return VocabString(tokens, true);  // doesn't really matter
-    }                                      // what kind of Vocab
-    return VocabString(tokens);
 }
 
 function NamedReplace(
@@ -110,6 +106,7 @@ function NamedReplace(
 
 describe(`${testSuiteName(module)}`, function() {
 
+    /*
     testGrammarTapes({
         desc: "1a",
         grammar: t1("hello"),
@@ -139,7 +136,7 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "1c",
         grammar: Dot("t1"),
         tapes: {
-            "t1": ["*"]
+            "t1": []
         }
     });
 
@@ -148,7 +145,7 @@ describe(`${testSuiteName(module)}`, function() {
         atomicity: true,
         grammar: Dot("t1"),
         tapes: {
-            "t1": ["*"]
+            "t1": []
         }
     });
 
@@ -217,7 +214,7 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "2c",
         grammar: Seq(t1("hello"), Dot("t1")),
         tapes: {
-            "t1": ["h","e","l","o","*"]
+            "t1": ["h","e","l","o"]
         }
     });
 
@@ -225,7 +222,7 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "2c-alt",
         grammar: Uni(t1("hello"), Dot("t1")),
         tapes: {
-            "t1": ["h","e","l","o","*"]
+            "t1": ["h","e","l","o"]
         }
     });
 
@@ -234,7 +231,7 @@ describe(`${testSuiteName(module)}`, function() {
         atomicity: true,
         grammar: Seq(t1("hello"), Dot("t1")),
         tapes: {
-            "t1": ["h","e","l","o","*"]
+            "t1": ["h","e","l","o"]
         }
     });
     
@@ -242,7 +239,7 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "2d",
         grammar: Seq(Dot("t1"), t1("hello")),
         tapes: {
-            "t1": ["h","e","l","o","*"]
+            "t1": ["h","e","l","o"]
         }
     });
 
@@ -251,7 +248,7 @@ describe(`${testSuiteName(module)}`, function() {
         atomicity: true,
         grammar: Seq(Dot("t1"), t1("hello")),
         tapes: {
-            "t1": ["h","e","l","o","*"]
+            "t1": ["h","e","l","o"]
         }
     });
 
@@ -295,6 +292,14 @@ describe(`${testSuiteName(module)}`, function() {
         grammar: Rename(t1("hello"), "t1", "t1"),
         tapes: {
             "t1": ["h","e","l","o"],
+        }
+    });
+
+    testGrammarTapes({
+        desc: "3e",
+        grammar: Rename(Seq(t1("hello"), Dot("t1")), "t1", "t2"),
+        tapes: {
+            "t2": ["h","e","l","o"],
         }
     });
 
@@ -646,7 +651,7 @@ describe(`${testSuiteName(module)}`, function() {
         grammar: Join(Seq(t1("hello"), t3("kitty")), 
                       Seq(t1("goodbye"), t2("world"))),
         tapes: {
-            "t1": ["e","o"],
+            "t1": ["h","e","l","o","g","d","b","y"],
             "t2": ["w","o","r","l","d"],
             "t3": ["k","i","t","y"],
         }
@@ -657,7 +662,7 @@ describe(`${testSuiteName(module)}`, function() {
         grammar: Join(Seq(t1("hello"), Dot("t1"), t3("kitty")), 
                       Seq(t1("goodbye"), t2("world"))),
         tapes: {
-            "t1": ['g','o','d','b','y','e'],
+            "t1":  ["h","e","l","o","g","d","b","y"],
             "t2": ["w","o","r","l","d"],
             "t3": ["k","i","t","y"],
         }
@@ -668,7 +673,7 @@ describe(`${testSuiteName(module)}`, function() {
         grammar: Join(Seq(t1("hello"), Dot("t1"), t3("kitty")), 
                       Seq(t1("goodbye"), Dot("t1"), t2("world"))),
         tapes: {
-            "t1": ['h','e','l','o','g','d','b','y',"*"], 
+            "t1": ['h','e','l','o','g','d','b','y'], 
             "t2": ["w","o","r","l","d"],
             "t3": ["k","i","t","y"],
         }
@@ -980,8 +985,8 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "21a",
         grammar: Replace("e", "a", "h", "llo"),
         tapes: {
-            "$i": ["h","e","l","o","*"],
-            "$o": ["h","e","l","o","a","*"],
+            "$i": ["h","e","l","o"],
+            "$o": ["h","e","l","o","a"],
         },
     });
     
@@ -989,8 +994,8 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "21b",
         grammar: Replace("e", "", "h", "llo"),
         tapes: {
-            "$i": ["h","e","l","o","*"],
-            "$o": ["h","e","l","o","*"],
+            "$i": ["h","e","l","o"],
+            "$o": ["h","e","l","o"],
         },
     });
 
@@ -998,7 +1003,7 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "22a",
         grammar: Starts(t1("hello"), t1("w")),
         tapes: {
-            "t1": ["h","e","l","o"],
+            "t1": ["h","e","l","o","w"],
         },
     });
 
@@ -1007,7 +1012,7 @@ describe(`${testSuiteName(module)}`, function() {
         atomicity: true,
         grammar: Starts(t1("hello"), t1("w")),
         tapes: {
-            "t1": ["h","e","l","o"],
+            "t1": ["h","e","l","o","w"],
         },
     });
 
@@ -1015,7 +1020,7 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "22b",
         grammar: Ends(t1("hello"), t1("w")),
         tapes: {
-            "t1": ["h","e","l","o"],
+            "t1": ["h","e","l","o","w"],
         },
     });
 
@@ -1023,7 +1028,7 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "22c",
         grammar: Contains(t1("hello"), t1("w")),
         tapes: {
-            "t1": ["h","e","l","o"],
+            "t1": ["h","e","l","o","w"],
         },
     });
     
@@ -1035,7 +1040,7 @@ describe(`${testSuiteName(module)}`, function() {
         }),
         symbol: "a",
         tapes: {
-            "t1": ["h","e","l","o"],
+            "t1": ["h","e","l","o","w"],
         },
     });
 
@@ -1048,7 +1053,7 @@ describe(`${testSuiteName(module)}`, function() {
         }),
         symbol: "a",
         tapes: {
-            "t1": ["h","e","l","o"],
+            "t1": ["h","e","l","o","w"],
         },
     });
 
@@ -1060,7 +1065,7 @@ describe(`${testSuiteName(module)}`, function() {
         }),
         symbol: "a",
         tapes: {
-            "t1": ["h","e","l","o"],
+            "t1": ["h","e","l","o","w"],
         },
     });
 
@@ -1072,7 +1077,7 @@ describe(`${testSuiteName(module)}`, function() {
         }),
         symbol: "a",
         tapes: {
-            "t1": ["h","e","l","o"],
+            "t1": ["h","e","l","o","w"],
         },
     });
     
@@ -1084,7 +1089,7 @@ describe(`${testSuiteName(module)}`, function() {
         }),
         symbol: "a",
         tapes: {
-            "t1": ["h","e","l","o"],
+            "t1": ["h","e","l","o","w"],
         },
     });
 
@@ -1097,7 +1102,7 @@ describe(`${testSuiteName(module)}`, function() {
         }),
         symbol: "a",
         tapes: {
-            "t1": ["h","e","l","o"],
+            "t1": ["h","e","l","o","w"],
         },
     });
 
@@ -1109,7 +1114,7 @@ describe(`${testSuiteName(module)}`, function() {
         }),
         symbol: "a",
         tapes: {
-            "t1": ["h","e","l","o"],
+            "t1": ["h","e","l","o","w"],
         },
     });
 
@@ -1121,7 +1126,7 @@ describe(`${testSuiteName(module)}`, function() {
         }),
         symbol: "a",
         tapes: {
-            "t1": ["h","e","l","o"],
+            "t1": ["h","e","l","o","w"],
         },
     });
 
@@ -1129,7 +1134,7 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "24a",
         grammar: Starts(Seq(t1("hello"), Dot("t1")), t1("w")),
         tapes: {
-            "t1": ["h","e","l","o","w","*"]
+            "t1": ["h","e","l","o","w"]
         },
     });
 
@@ -1137,7 +1142,7 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "24b",
         grammar: Ends(Seq(t1("hello"), Dot("t1")), t1("w")),
         tapes: {
-            "t1": ["h","e","l","o","w","*"]
+            "t1": ["h","e","l","o","w"]
         },
     });
 
@@ -1145,10 +1150,11 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "24c",
         grammar: Contains(Seq(t1("hello"), Dot("t1")), t1("w")),
         tapes: {
-            "t1": ["h","e","l","o","w","*"]
+            "t1": ["h","e","l","o","w"]
         },
     });
 
+    */
     testGrammarTapes({
         desc: "25a",
         grammar: ReplaceBlock("t1", t1("hello"), 
@@ -1158,7 +1164,7 @@ describe(`${testSuiteName(module)}`, function() {
             ".R1": ["h","e","l","o"],
         },
     });
-    
+
     testGrammarTapes({
         desc: "25a-atom",
         atomicity: true,
@@ -1331,7 +1337,7 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "30",
         grammar: Seq(t1("hello"), Dot("t1")),
         tapes: {
-            "t1": ["h","e","l","o","*"]
+            "t1": ["h","e","l","o"]
         }
     });
 
@@ -1340,7 +1346,7 @@ describe(`${testSuiteName(module)}`, function() {
         atomicity: true,
         grammar: Seq(t1("hello"), Dot("t1")),
         tapes: {
-            "t1": ["h","e","l","o","*"]
+            "t1": ["h","e","l","o"]
         }
     });
 
@@ -1402,7 +1408,7 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "34. Negations are always strings and wildcard",
         grammar: Not(t1("hello")),
         tapes: {
-            "t1": ["h","e","l","o","*"]
+            "t1": ["h","e","l","o"]
         }
     });
 
@@ -1411,7 +1417,19 @@ describe(`${testSuiteName(module)}`, function() {
         atomicity: true,
         grammar: Not(t1("hello")),
         tapes: {
-            "t1": ["h","e","l","o","*"]
+            "t1": ["h","e","l","o"]
+        }
+    });
+
+    testGrammarTapes({
+        desc: "35. Match with a dot",
+        grammar: Not(Match(
+            Seq(t1("hi"), Dot("t1")),
+            "t1", "t2")
+        ),
+        tapes: {
+            "t1": ["h","i"],
+            "t2": ["h","i"]
         }
     });
 

@@ -1,8 +1,8 @@
-import { Dict, exhaustive } from "./utils/func";
+import { Dict, exhaustive, mapDict } from "./utils/func";
 import { 
     Namespace
 } from "./utils/namespace";
-import { VocabAtomic, VocabInfo, intersectVocab, multVocab, sumVocab, vocabToStr } from "./vocab";
+import { VocabAtomic, VocabInfo, VocabIntersect, VocabProduct, VocabRename, VocabSum, vocabToStr } from "./vocab";
 
 /**
  * Tape
@@ -71,7 +71,7 @@ export function TapeSum(c1: TapeInfo, c2: TapeInfo): TapeInfo {
             resultTapes[k] = v;
             continue;
         }
-        const newVocab = sumVocab(v, other);
+        const newVocab = VocabSum(v, other);
         resultTapes[k] = newVocab;
     }
 
@@ -99,7 +99,7 @@ export function TapeProduct(c1: TapeInfo, c2: TapeInfo): TapeInfo {
             resultTapes[k] = v;
             continue;
         }
-        const newVocab = multVocab(v, other);
+        const newVocab = VocabProduct(v, other);
         resultTapes[k] = newVocab;
     }
 
@@ -126,7 +126,7 @@ export function TapeJoin(c1: TapeInfo, c2: TapeInfo): TapeInfo {
             resultTapes[k] = v;
             continue;
         }
-        const newVocab = intersectVocab(v, other);
+        const newVocab = VocabIntersect(v, other);
         resultTapes[k] = newVocab;
     }
 
@@ -184,20 +184,14 @@ export function TapeRename(
     toTape: string
 ): TapeInfo {
     if (child.tag === "TapeLit") {
-        const renamedTapes: Dict<VocabInfo> = {};
-        Object.assign(renamedTapes, child.tapes);
-        let oldVocab = child.tapes[fromTape];
+        const renamedTapes: Dict<VocabInfo> = mapDict(child.tapes,
+                        (k,v) => VocabRename(v, fromTape, toTape));
+        let oldVocab = renamedTapes[fromTape];
         if (oldVocab === undefined) 
             oldVocab = VocabAtomic(); // dummy value
         delete renamedTapes[fromTape];
         renamedTapes[toTape] = oldVocab;
         return TapeLit(renamedTapes);
-    }
-
-    if (child.tag === "TapeSum") {
-        // distribute the renaming to the children
-        return TapeSum(TapeRename(child.c1, fromTape, toTape),
-                       TapeRename(child.c2, fromTape, toTape));
     }
 
     return { tag: "TapeRename", child: child, 

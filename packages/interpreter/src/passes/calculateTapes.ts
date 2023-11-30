@@ -33,7 +33,7 @@ import {
     TapeRename, tapeToStr, TapeJoin, TapeProduct 
 } from "../tapes";
 import { DEFAULT_TAPE, INPUT_TAPE, OUTPUT_TAPE } from "../utils/constants";
-import { VocabAtomic, VocabInfo, VocabString, WILDCARD } from "../vocab";
+import { VocabAtomic, VocabInfo, VocabString, VocabSum, VocabRef, VocabWildcard } from "../vocab";
 import { toStr } from "./toStr";
 
 /**
@@ -89,7 +89,7 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
             case "pretape": return getTapesDefault(g);
 
             // union of children's tapes but always String vocab
-            case "short":      return getTapesDefaultString(g);
+            case "short":      return getTapesShort(g);
             case "not":        return getTapesDefaultStringWildcard(g);
 
             // join and filter are special w.r.t. vocabs and wildcards
@@ -129,7 +129,7 @@ function getTapesDefault(
     return updateTapes(g, getChildTapes(g));
 }
 
-function getTapesDefaultString(g: Grammar): Grammar {
+function getTapesShort(g: Grammar): Grammar {
     let tapes = getChildTapes(g);
     if (tapes.tag !== "TapeLit") {
         // nothing we can do at the moment
@@ -153,7 +153,7 @@ function getTapesDefaultStringWildcard(g: Grammar): Grammar {
 
     const stringifiers = TapeLit();
     for (const tape of Object.keys(tapes.tapes)) {
-        stringifiers.tapes[tape] = VocabString(new Set(), true);
+        stringifiers.tapes[tape] = VocabWildcard(tape);
     }
     tapes = TapeSum(stringifiers, getChildTapes(g));
     return updateTapes(g, tapes);
@@ -228,7 +228,7 @@ function getTapesSingleTape(g: SingleTapeGrammar): Grammar|Result<Grammar> {
 }
 
 function getTapesDot(g: DotGrammar): Grammar {
-    const tapes = TapeLit({ [g.tapeName]: WILDCARD });
+    const tapes = TapeLit({ [g.tapeName]: VocabWildcard(g.tapeName) });
     return updateTapes(g, tapes);
 }
 
@@ -346,8 +346,8 @@ function getTapesReplace(g: ReplaceGrammar, env: PassEnv): Result<Grammar> {
 
     const childTapes = getChildTapes(g);
     let tapes: TapeInfo = TapeLit({ 
-        [INPUT_TAPE]: WILDCARD,
-        [OUTPUT_TAPE]: WILDCARD 
+        [INPUT_TAPE]: VocabWildcard(INPUT_TAPE),
+        [OUTPUT_TAPE]: VocabWildcard(OUTPUT_TAPE), 
     });
     tapes = TapeSum(tapes, childTapes);
     const tapesFromInput = TapeRename(childTapes, INPUT_TAPE, OUTPUT_TAPE);
@@ -381,7 +381,7 @@ function getTapesReplaceBlock(g: ReplaceBlockGrammar): Result<Grammar> {
     for (const r of g.rules) {
         current = TapeRename(current, currentTape, INPUT_TAPE);
         currentTape = OUTPUT_TAPE;
-        const inputStar = TapeLit({[INPUT_TAPE]: WILDCARD}); 
+        const inputStar = TapeLit({[INPUT_TAPE]: VocabWildcard(INPUT_TAPE)}); 
         current = TapeJoin(current, inputStar);
         const vocabFromInput = TapeRename(current, INPUT_TAPE, OUTPUT_TAPE);
         const outputVocab = TapeSum(r.toGrammar.tapeSet, vocabFromInput);
@@ -494,7 +494,7 @@ function unifyRef(
     const referent = symbols[t.symbol];
     if (referent === undefined) {
         // should never happen so long as FlattenCollections has been run
-        throw new Error(`Unknown symbol ${t} in tape unification`);
+        throw new Error(`Unknown symbol ${t.symbol} in tape unification`);
     }
     const newVisited = union(visited, [t.symbol]);
     return unify(referent, symbols, newVisited);
@@ -550,13 +550,13 @@ function getTapesCondition(
 ): Grammar {
     const extras: Dict<VocabInfo> = {}
     for (const t of g.extraTapes) {
-        extras[t] = WILDCARD;
+        extras[t] = VocabWildcard(t);
     }
     
     if (g.child.tapeSet.tag === "TapeLit") {
     // if we know what the child tapes are, add those wildcards too
         for (const t of Object.keys(g.child.tapeSet.tapes)) {
-            extras[t] = WILDCARD;
+            extras[t] = VocabWildcard(t);
         }
     }
 

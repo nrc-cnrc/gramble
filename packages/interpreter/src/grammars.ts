@@ -31,6 +31,7 @@ import { CalculateTapes } from "./passes/calculateTapes";
 import { SymbolQualifier } from "./passes/qualifySymbols";
 import { toStr } from "./passes/toStr";
 import { INDICES } from "./utils/options";
+import { unifyVocabSymbols, vocabIsSuspended, vocabToStr, VTag } from "./vocab";
 
 export { CounterStack, Expr };
 
@@ -173,10 +174,15 @@ export abstract class AbstractGrammar extends Component {
             //const atomic = determineAtomicity(this as Grammar, tapeName, env);
             
             if (this.tapeSet.tag !== "TapeLit") throw new Error("Collecting vocab from a non-literal tape");
-            const tapeInfo = this.tapeSet.tapes[tapeName];
-            const atomic = tapeInfo.tag !== "VocabString";
             
-            console.log(`${tapeName} is atomic: ${atomic}`);
+            let tapes = this.tapeSet.tapes;
+            tapes = unifyVocabSymbols(tapes);
+            const vocabInfo = this.tapeSet.tapes[tapeName];
+            
+            if (vocabIsSuspended(vocabInfo)) throw new Error(`Non-literal vocab encountered on tape ${tapeName}: ${vocabToStr(vocabInfo)}`);
+
+            const atomic = vocabInfo.tag == VTag.Atomic || vocabInfo.tag == VTag.Seq;
+            
             let tape = tapeNS.attemptGet(tapeName);
             if (tape == undefined) {
                 // make a new one if it doesn't exist
@@ -187,7 +193,7 @@ export abstract class AbstractGrammar extends Component {
             tape.atomic = atomic;
             //const strs = this.collectVocab(tapeName, atomic, new StringPairSet(), env);
             
-            const strs = tapeInfo.tokens;
+            const strs = vocabInfo.tokens;
             
             tape.registerTokens([...strs]);
         }
