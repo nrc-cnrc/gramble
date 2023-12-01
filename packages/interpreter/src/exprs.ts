@@ -10,7 +10,7 @@ import {
     Func,
 } from "./utils/func";
 import { 
-    Tape, TapeNamespace, 
+    OldTape, TapeNamespace, 
     renameTape
 } from "./tapes";
 import { INPUT_TAPE, OUTPUT_TAPE } from "./utils/constants";
@@ -68,12 +68,12 @@ export class DerivEnv extends Env {
         return update(this, { tapeNS: newTapeNS });
     }
 
-    public addTapes(tapes: Dict<Tape>): DerivEnv {
+    public addTapes(tapes: Dict<OldTape>): DerivEnv {
         const newTapeNS = new TapeNamespace(tapes, this.tapeNS);
         return update(this, { tapeNS: newTapeNS });
     }
 
-    public getTape(tapeName: string): Tape {
+    public getTape(tapeName: string): OldTape {
         return this.tapeNS.get(tapeName);
     }
 

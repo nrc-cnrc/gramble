@@ -92,7 +92,7 @@ class TapeCalcOrderTest implements PropertyTest {
             for (const symbol of getAllSymbols(grammar)) {
                 const selectSymbol = new SelectSymbol(symbol);
                 let ref = selectSymbol.go(grammar, env).msgTo(THROWER); 
-                tapes[symbol] = ref.tapes;
+                tapes[symbol] = ref.tapeNames;
             }
 
         } catch (e) {

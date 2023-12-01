@@ -281,7 +281,7 @@ export function Hide(
     return new HideGrammar(child, tape, toTape);
 }
 
-export function Vocab(vocabs: StringDict, child: Grammar | string) {
+export function WithVocab(vocabs: StringDict, child: Grammar | string) {
     child = makeGrammar(child);
     return Seq(VocabAux(vocabs), child);
 }

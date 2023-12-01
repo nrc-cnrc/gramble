@@ -25,7 +25,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     // STARTS WITH
 
-    /*
     testGrammar({
         desc: 'S.1 t1:hello starts with ε',
         grammar: Starts(t1("hello"), Epsilon()),
@@ -174,7 +173,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'world'},
         ],
     });
-    */
 
     testGrammar({
         desc: 'S.20 (t1:hello|t1:world|t1:kitty) starts with ~t1:h & ~t1:k',
@@ -185,7 +183,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     });
 
-    /*
     testGrammar({
         desc: 'S.21 t1:hello starts with t1:h+t1:e',
         grammar: Starts(t1("hello"), Seq(t1("h"), t1("e"))),
@@ -701,6 +698,4 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Contains(t1("world"), Uni(t1("he"), Not(t1("r")))),
         results: [],
     });
-
-    */
 });

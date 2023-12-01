@@ -10,7 +10,7 @@ import {
     SingleTapeGrammar
 } from "../grammars";
 import { DEFAULT_TAPE } from "../utils/constants";
-import { TapeUnknown } from "../tapes";
+import * as Tapes from "../tapes";
 
 /**
  * Some environments require the grammar inside to only reveal 
@@ -58,7 +58,7 @@ export class HandleSingleTapes extends Pass<Grammar,Grammar> {
         }
 
         const [result, msgs] = g.mapChildren(this, env).destructure();
-        result.tapeSet = TapeUnknown();
+        result.tapeSet = Tapes.Unknown();
         return result.tapify(env).msg(msgs);
     }
 
@@ -69,20 +69,20 @@ export class HandleSingleTapes extends Pass<Grammar,Grammar> {
             return g.mapChildren(this, env);
         }
 
-        if (g.tapes.length == 0) {
+        if (g.tapeNames.length == 0) {
             return g.err("Embedding zero-field symbol",
                 `This embedded symbol has no fields (e.g. "text"), it should have exactly one.`)
                 .bind(_ => new EpsilonGrammar().tapify(env));
         }
 
-        if (g.tapes.length > 1) {
+        if (g.tapeNames.length > 1) {
             return g.err("Embedding multi-field symbol",
                 `Only grammars with one field (e.g. just "text" but not any other fields) ` +
                 `can be embedded into a regex or rule context.`)
                 .bind(_ => new EpsilonGrammar().tapify(env));
         }
 
-        const embedTapeName = g.tapes[0];
+        const embedTapeName = g.tapeNames[0];
         if (this.tapeName != embedTapeName) {
             return new RenameGrammar(g, embedTapeName, this.tapeName)
                         .tapify(env)

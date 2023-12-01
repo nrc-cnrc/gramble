@@ -1,20 +1,17 @@
 import { 
-    Any, Count, Epsilon, Join,
+    Any, Count, Join,
     Match, Not, Query, Rep,
-    Seq, Uni, Vocab,
+    Seq, Uni, WithVocab,
 } from "../../src/grammarConvenience";
 
 import {
     grammarTestSuiteName,
-    testGrammar,
     t1, t2, t4, testGrammarEqual,
 } from "./testGrammarUtil";
 
 import { 
     logTestSuite, VERBOSE_TEST_L2
 } from "../testUtil";
-import { Grammar } from "../../src/grammars";
-import { Dict } from "../../src/utils/func";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -274,14 +271,14 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammarEqual({
         desc: '17. ~(Match t1>t2, t1:.{0}) (vocab hi)',
         grammar: Count({t1:3, t2:3},
-                     Vocab({t1:'hi', t2:'hi'},
+                     WithVocab({t1:'hi', t2:'hi'},
                          Not(
                          	 Match(
         		 	     	 	 Rep(Any("t1"), 0, 0),
         		 	     	 	 "t1", "t2"
                          )))),
         grammar2: Count({t1:3, t2:3},
-                         Vocab({t1:'hi', t2:'hi'},
+                         WithVocab({t1:'hi', t2:'hi'},
                              Not(Query([
                                  {t1:'', t2:''},
                              ])))),

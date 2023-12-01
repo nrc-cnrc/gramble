@@ -110,7 +110,7 @@ function getAtomicityClassSeq(
                                             // it's already concatenable
     let alreadyFound = false;
     for (const child of g.children) {
-        const ts = new Set(child.tapes);
+        const ts = new Set(child.tapeNames);
         if (!(ts.has(tape))) {
             continue;
         }
@@ -141,7 +141,7 @@ function getAtomicityClassReplace(
     symbolsVisited: StringPairSet,
     env: PassEnv
 ): AtomicityClass {
-    const ts = new Set(g.tapes);
+    const ts = new Set(g.tapeNames);
     if (ts.has(tape)) {
         return { joinable: true, concatenable: true };
     }
@@ -155,7 +155,7 @@ function getAtomicityClassShort(
     symbolsVisited: StringPairSet,
     env: PassEnv
 ): AtomicityClass {
-    const ts = new Set(g.tapes);
+    const ts = new Set(g.tapeNames);
     if (ts.has(tape)) {
         return { joinable: true, concatenable: true };
     }
@@ -228,7 +228,7 @@ function getAtomicityClassNegation(
     symbolsVisited: StringPairSet,
     env: PassEnv
 ): AtomicityClass {
-    const ts = new Set(g.tapes);
+    const ts = new Set(g.tapeNames);
     if (ts.has(tape)) {
         return { joinable: true, concatenable: true };
     }
@@ -242,7 +242,7 @@ function getAtomicityClassRepeat(
     env: PassEnv
 ): AtomicityClass {
     const result = getAtomicityClass(g.child, tape, symbolsVisited, env);
-    const ts = new Set(g.tapes);
+    const ts = new Set(g.tapeNames);
     if (ts.has(tape)) {
         result.concatenable = true;
     }
@@ -269,8 +269,8 @@ function getAtomicityClassJoin(
     env: PassEnv
 ): AtomicityClass {
     const result = getAtomicityClassDefault(g, tape, symbolsVisited, env);
-    const child1Tapes = g.child1.tapes;
-    const child2Tapes = g.child2.tapes;
+    const child1Tapes = g.child1.tapeNames;
+    const child2Tapes = g.child2.tapeNames;
     const intersection = new Set(listIntersection(child1Tapes, child2Tapes));
     result.joinable ||= intersection.has(tape);
     return result;

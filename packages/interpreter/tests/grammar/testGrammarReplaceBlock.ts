@@ -1,6 +1,6 @@
 import { 
     Count, Epsilon, Null, OptionalReplace, Rep,
-    Replace, ReplaceBlock, Uni, Vocab,
+    Replace, ReplaceBlock, Uni, WithVocab,
 } from "../../src/grammarConvenience";
 
 import {
@@ -80,7 +80,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
 		desc: '5a. 1-char deletion: abc ⨝ a -> "" (vocab abcx)',
-        grammar: Vocab({t1: "abcx"},
+        grammar: WithVocab({t1: "abcx"},
                      ReplaceBlock("t1", "abc",
                                   Replace("a", ""))),
         results: [
@@ -90,7 +90,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
 		desc: '5b. 2-char deletion: abc ⨝ ab -> "" (vocab abcx)',
-        grammar: Vocab({t1: "abcx"},
+        grammar: WithVocab({t1: "abcx"},
                      ReplaceBlock("t1", "abc",
                                   Replace("ab", ""))),
         results: [
@@ -101,7 +101,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
 		desc: '5c. 2-char deletion, later in string: ' +
               'abc ⨝ bc -> "" (vocab abcx)',
-        grammar: Vocab({t1: "abcx"},
+        grammar: WithVocab({t1: "abcx"},
                      ReplaceBlock("t1", "abc",
                                   Replace("bc", ""))),
         results: [
@@ -115,7 +115,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
 		desc: '6a. 2-rule cascade: ' +
               'abcd ⨝ a -> A, b -> B (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "abcd",
                                   Replace("a", "A"),
                                   Replace("b", "B"))),
@@ -129,7 +129,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
 		desc: '6b. 2-rule cascade starting with 1-char deletion: ' +
               'abcd ⨝ a -> "", b -> B (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcABC"},
+        grammar: WithVocab({t1: "abcABC"},
                      ReplaceBlock("t1", "abc",
                                   Replace("a", ""),
                                   Replace("b", "B"))),
@@ -143,7 +143,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
 		desc: '6c. 3-rule cascade: ' +
               'abcd ⨝ a -> A, b -> B, c -> C (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "abcd",
                                   Replace("a", "A"),
                                   Replace("b", "B"),
@@ -158,7 +158,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
 		desc: '6d. 3-rule cascade starting with 1-char deletion: ' +
               'abcd ⨝ a -> "", b -> B, c -> C (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "abcd",
                                   Replace("a", ""),
                                   Replace("b", "B"),
@@ -174,7 +174,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 		desc: '6e. 4-rule cascade: ' +
               'abcd ⨝ a -> A, b -> B, c -> C, d -> D ' +
               '(vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "abcd",
                                   Replace("a", "A"),
                                   Replace("b", "B"),
@@ -191,7 +191,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 		desc: '6f. 4-rule cascade starting with 1-char deletion: ' +
               'abcd ⨝ a -> "", b -> B, c -> C, d -> D ' +
               '(vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "abcd",
                                   Replace("a", ""),
                                   Replace("b", "B"),
@@ -209,7 +209,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '7a. 14-char input, 2-rule cascade: ' +
               'CCCCCabcdCCCCC ⨝ a -> A, b -> B (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "CCCCCabcdCCCCC",
                                   Replace("a", "A"),
                                   Replace("b", "B"))),
@@ -223,7 +223,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '7b. 24-char input, 2-rule cascade: ' +
               'BBBBBCCCCCabcdCCCCCBBBBB ⨝ a -> A, b -> B (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "BBBBBCCCCCabcdCCCCCBBBBB",
                                   Replace("a", "A"),
                                   Replace("b", "B"))),
@@ -238,7 +238,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '7c. 14-char input, 4-rule cascade: ' +
               'CCCCCabcdCCCCC ⨝ a -> A, b -> B, c -> C, d -> D ' +
               '(vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "CCCCCabcdCCCCC",
                                   Replace("a", "A"),
                                   Replace("b", "B"),
@@ -255,7 +255,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '7d. 14-char input, 4-rule cascade starting with 1-char deletion: ' +
               'CCCCCabcdCCCCC ⨝ a -> "", b -> B, c -> C, d -> D ' +
               '(vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "CCCCCabcdCCCCC",
                                   Replace("a", ""),
                                   Replace("b", "B"),
@@ -272,7 +272,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '7e. 24-char input, 4-rule cascade starting with 1-char deletion: ' +
               'BBBBBCCCCCabcdCCCCCBBBBB ⨝ a -> "", b -> B, c -> C, d -> D ' +
               '(vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "BBBBBCCCCCabcdCCCCCBBBBB",
                                   Replace("a", ""),
                                   Replace("b", "B"),
@@ -290,7 +290,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '8a-1. Single rule with 1>1-char substitution: ' +
               'abcd ⨝ a -> A (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "abcd",
                                   Replace("a", "A"))),
         results: [
@@ -303,7 +303,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '8a-2. Single rule with 2>1-char substitution: ' +
               'aabcd ⨝ aa -> A (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "aabcd",
                                   Replace("aa", "A"))),
         results: [
@@ -316,7 +316,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '8a-3. Single rule with 3>1-char substitution: ' +
               'aaabcd ⨝ aaa -> A (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "aaabcd",
                                   Replace("aaa", "A"))),
         results: [
@@ -329,7 +329,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '8a-4. Single rule with 4>1-char substitution: ' +
               'aaaabcd ⨝ aaaa -> A (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "aaaabcd",
                                   Replace("aaaa", "A"))),
         results: [
@@ -342,7 +342,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '8a-5. Single rule with 5>1-char substitution: ' +
               'aaaaabcd ⨝ aaaaa -> A (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "aaaaabcd",
                                   Replace("aaaaa", "A"))),
         results: [
@@ -355,7 +355,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '8b-2. 2-rule cascade starting with 2>1-char substitution: ' +
               'aabcd ⨝ aa -> A, b -> B (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "aabcd",
                                   Replace("aa", "A"),
                                   Replace("b", "B"))),
@@ -369,7 +369,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '8b-3. 2-rule cascade starting with 3>1-char substitution: ' +
               'aaabcd ⨝ aaa -> A, b -> B (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "aaabcd",
                                   Replace("aaa", "A"),
                                   Replace("b", "B"))),
@@ -383,7 +383,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '8c-1. 4-rule cascade starting with 1>1-char substitution: ' +
               'abcd ⨝ a -> A, b -> B, c -> C, d -> D (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "abcd",
                                   Replace("a", "A"),
                                   Replace("b", "B"),
@@ -399,7 +399,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '8c-2. 4-rule cascade starting with 2>1-char substitution: ' +
               'aabcd ⨝ aa -> A, b -> B, c -> C, d -> D (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "aabcd",
                                   Replace("aa", "A"),
                                   Replace("b", "B"),
@@ -415,7 +415,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '8c-3. 4-rule cascade starting with 3>1-char substitution: ' +
               'aaabcd ⨝ aaa -> A, b -> B, c -> C, d -> D (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "aaabcd",
                                   Replace("aaa", "A"),
                                   Replace("b", "B"),
@@ -431,7 +431,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '8c-4. 4-rule cascade starting with 4>1-char substitution: ' +
               'aaaabcd ⨝ aaaa -> A, b -> B, c -> C, d -> D (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "aaaabcd",
                                   Replace("aaaa", "A"),
                                   Replace("b", "B"),
@@ -447,7 +447,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '10a. 2-rule cascade starting with 1-char deletion: ' +
               'abcd ⨝ a -> "", b -> B (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "abcd",
                                   Replace("a", ""),
                                   Replace("b", "B"))),
@@ -461,7 +461,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '10b. 2-rule cascade starting with 2-char deletion: ' +
               'aabcd ⨝ aa -> "", b -> B (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "aabcd",
                                   Replace("aa", ""),
                                   Replace("b", "B"))),
@@ -475,7 +475,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '10c. 2-rule cascade starting with 3-char deletion: ' +
               'aaabcd ⨝ aaa -> "", b -> B (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "aaabcd",
                                   Replace("aaa", ""),
                                   Replace("b", "B"))),
@@ -489,7 +489,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '11a. 4-rule cascade starting with 1-char deletion: ' +
               'abcd ⨝ a -> "", b -> B, c -> C, d -> D (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "abcd",
                                   Replace("a", ""),
                                   Replace("b", "B"),
@@ -505,7 +505,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '11b. 4-rule cascade starting with 2-char deletion: ' +
               'aabcd ⨝ aa -> "", b -> B, c -> C, d -> D (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "aabcd",
                                   Replace("aa", ""),
                                   Replace("b", "B"),
@@ -523,7 +523,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '12a. Single rule with 1>2-char substitution: ' +
               'abcd ⨝ a -> AA (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
         			 ReplaceBlock("t1", "abcd",
                                   Replace("a", "AA"))),
         results: [
@@ -536,7 +536,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '12b. Single rule with 1>5-char substitution: ' +
               'abcd ⨝ a -> AAAAA (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
         			 ReplaceBlock("t1", "abcd",
                                   Replace("a", "AAAAA"))),
         results: [
@@ -549,7 +549,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '12c. Single rule with 1>5-char substitution: ' +
               'abcd ⨝ c -> CCCCC (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
         			 ReplaceBlock("t1", "abcd",
                                   Replace("c", "CCCCC"))),
         results: [
@@ -562,7 +562,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '12d. Single rule with 1>5-char substitution: ' +
               'abcd ⨝ d -> DDDDD (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
         			 ReplaceBlock("t1", "abcd",
                                   Replace("d", "DDDDD"))),
         results: [
@@ -574,7 +574,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '13. Deleting twice in one word: ' +
               'abcdabcd ⨝ a -> "" (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcdABCD"},
+        grammar: WithVocab({t1: "abcdABCD"},
         			 ReplaceBlock("t1", "abcdabcd",
                                   Replace("a", ""))),
         results: [
@@ -584,7 +584,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '14. Unconditional generation: abc ⨝ "" -> D (vocab abcdABCD)',
-        grammar: Vocab({t1: "abcABC"},
+        grammar: WithVocab({t1: "abcABC"},
         			 Count({t1:5},
                          ReplaceBlock("t1", "ab",
                                       OptionalReplace("", "C")))),

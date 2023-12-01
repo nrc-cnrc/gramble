@@ -25,7 +25,7 @@ export function prioritizeTapes(
     g: Grammar,
     env: PassEnv
 ): string[] {
-    const priorities: [string, number][] = g.tapes.map(t => {
+    const priorities: [string, number][] = g.tapeNames.map(t => {
         const joinWeight = getTapePriority(g, t, new StringPairSet(), env);
         
         /* TODO: temporarily removing vocab size from
@@ -173,7 +173,7 @@ function getTapePriorityCursor(
     symbolsVisited: StringPairSet,
     env: PassEnv
 ): number {
-    if (tapeName == g.tape) return -1;
+    if (tapeName == g.tapeName) return -1;
     return getTapePriorityDefault(g, tapeName, symbolsVisited, env);
 }
 
@@ -196,8 +196,8 @@ function getTapePriorityJoin(
     symbolsVisited: StringPairSet,
     env: PassEnv
 ): number {
-    const c1tapes = new Set(g.child1.tapes);
-    const c2tapes = new Set(g.child2.tapes);
+    const c1tapes = new Set(g.child1.tapeNames);
+    const c2tapes = new Set(g.child2.tapeNames);
     const c1priority = getTapePriority(g.child1, tapeName, symbolsVisited, env);
     const c2priority = getTapePriority(g.child2, tapeName, symbolsVisited, env);
     if (c1tapes.has(tapeName) && c2tapes.has(tapeName)) {

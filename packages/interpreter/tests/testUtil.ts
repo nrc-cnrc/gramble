@@ -4,7 +4,7 @@ import { assert, expect } from "chai";
 import { Epsilon, Lit } from "../src/grammarConvenience";
 import { Interpreter } from "../src/interpreter";
 import { Grammar } from "../src/grammars";
-import { Tape } from "../src/tapes";
+import { OldTape } from "../src/tapes";
 import {
     StringDict
 } from "../src/utils/func";
@@ -231,11 +231,11 @@ export function testHasTapes(
         }
         let tapes: string[] = [];
         try {
-            tapes = referent.tapes;
+            tapes = referent.tapeNames;
             if (stripHidden) {
                 // for the purpose of this comparison, leave out any internal-only
                 // tapes, like those created by a Hide().
-                tapes = referent.tapes.filter(t => !t.startsWith(HIDDEN_PREFIX));
+                tapes = referent.tapeNames.filter(t => !t.startsWith(HIDDEN_PREFIX));
             }
             expect(tapes.length).to.equal(bSet.size);
             for (const a of tapes) {
@@ -257,7 +257,7 @@ export function testHasVocab(
     const interpreter = prepareInterpreter(grammar, {optimizeAtomicity: false});
 
     for (const tapeName in expectedVocab) {
-        let tape: Tape;
+        let tape: OldTape;
         try {
             tape = interpreter.tapeNS.get(tapeName);
         } catch (e) {

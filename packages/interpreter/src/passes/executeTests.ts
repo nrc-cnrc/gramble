@@ -43,8 +43,8 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
     public handleTest(g: TestGrammar, env: PassEnv): GrammarResult {
         const msgs: Msgs = [];
 
-        const childTapes = new Set(g.child.tapes);
-        for (const testTape of g.test.tapes) {
+        const childTapes = new Set(g.child.tapeNames);
+        for (const testTape of g.test.tapeNames) {
             if (childTapes.has(testTape)) continue;
             Err("Ill-formed unit test", 
                 `This expects a tape called ${testTape} but none exists in the grammar being tested.` + 
@@ -86,8 +86,8 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
     public handleNegativeTest(g: TestNotGrammar, env: PassEnv): GrammarResult {
         const msgs: Msgs = [];
 
-        const childTapes = new Set(g.child.tapes);
-        for (const testTape of g.test.tapes) {
+        const childTapes = new Set(g.child.tapeNames);
+        for (const testTape of g.test.tapeNames) {
             if (childTapes.has(testTape)) continue;
             Err("Ill-formed unit test", 
                 `This expects a tape called ${testTape} but none exists in the grammar being tested.` + 

@@ -17,7 +17,6 @@ export abstract class Component {
         const clone = Object.create(Object.getPrototypeOf(this));
         const msgs: Msgs = [];
         for (const [k, v] of Object.entries(this)) {
-            if (!this.hasOwnProperty(k)) continue;
             clone[k] = mapChildrenAny(v, f, env).msgTo(msgs);
         }
         const newMsgs = msgs.map(m => m.localize(this.pos));
@@ -83,7 +82,6 @@ export function mapChildrenObj<T extends Component>(x: any, f: Pass<T,T>, env: P
     const results: Dict<any> = Object.create(Object.getPrototypeOf(x));
     const msgs: Msgs = [];
     for (const [k, v] of Object.entries(x)) {
-        if (!x.hasOwnProperty(k)) continue;
         const newX = mapChildrenAny(v, f, env).msgTo(msgs);
         results[k] = newX;
     }
@@ -95,7 +93,6 @@ export function mapChildrenObj<T extends Component>(x: any, f: Pass<T,T>, env: P
 export function getChildren<T extends Component>(c: T): T[] {
     const children: T[] = [];
     for (const [k,v] of Object.entries(c)) {
-        if (!c.hasOwnProperty(k)) continue;
         if (k == "tag") continue;
         if (Array.isArray(v)) {
             children.push(...getChildrenFromArray<T>(v));
@@ -115,7 +112,6 @@ function getChildrenFromArray<T extends Component>(c: any[]): T[] {
 function getChildrenObj<T extends Component>(c: Object): T[] {
     const children: T[] = [];
     for (const [k,v] of Object.entries(c)) {
-        if (!c.hasOwnProperty(k)) continue;
         if (v instanceof Component) {
             children.push(v as T);
         }

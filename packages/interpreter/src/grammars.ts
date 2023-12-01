@@ -7,12 +7,13 @@ import {
 
 import {
     renameTape,
-    Tape, 
-    TapeInfo, 
+    OldTape, 
     TapeNamespace,
-    tapeToStr,
-    TapeUnknown
+    Tape,
 } from "./tapes";
+
+import * as Tapes from "./tapes";
+
 import { Pass, PassEnv } from "./passes";
 
 import {
@@ -23,7 +24,6 @@ import {
 } from "./utils/func";
 
 import { Component, getChildren } from "./components";
-import { determineAtomicity } from "./passes/determineAtomicity";
 import { DEFAULT_SYMBOL,  HIDDEN_PREFIX, INPUT_TAPE, OUTPUT_TAPE } from "./utils/constants";
 import { tokenizeUnicode } from "./utils/strings";
 import { Pos } from "./utils/cell";
@@ -31,7 +31,7 @@ import { CalculateTapes } from "./passes/calculateTapes";
 import { SymbolQualifier } from "./passes/qualifySymbols";
 import { toStr } from "./passes/toStr";
 import { INDICES } from "./utils/options";
-import { unifyVocabSymbols, vocabIsSuspended, vocabToStr, VTag } from "./vocab";
+import * as Vocabs from "./vocab";
 
 export { CounterStack, Expr };
 
@@ -131,16 +131,16 @@ export abstract class AbstractGrammar extends Component {
         return super.locate(pos) as Grammar;
     }
 
-    public tapeSet: TapeInfo = TapeUnknown();
+    public tapeSet: Tape = Tapes.Unknown();
 
     //public _tapes: string[] | undefined = undefined;
 
-    public get tapes(): string[] {
-        if (this.tapeSet.tag !== "TapeLit") {
+    public get tapeNames(): string[] {
+        if (this.tapeSet.tag !== Tapes.Tag.Lit) {
             throw new Error(`Grammar ${toStr(this)} references unresolved tapes: ` +
-                                `${tapeToStr(this.tapeSet)}`);
+                                `${Tapes.toStr(this.tapeSet)}`);
         }
-        return Object.keys(this.tapeSet.tapes);
+        return Object.keys(this.tapeSet.vocabMap);
     }
 
     public getChildren(): Grammar[] {
@@ -170,56 +170,34 @@ export abstract class AbstractGrammar extends Component {
         tapeNS: TapeNamespace,
         env: PassEnv
     ): void {
-        for (const tapeName of this.tapes) {
+        for (const tapeName of this.tapeNames) {
             //const atomic = determineAtomicity(this as Grammar, tapeName, env);
             
-            if (this.tapeSet.tag !== "TapeLit") throw new Error("Collecting vocab from a non-literal tape");
+            if (this.tapeSet.tag !== Tapes.Tag.Lit) throw new Error("Collecting vocab from a non-literal tape");
             
-            let tapes = this.tapeSet.tapes;
-            tapes = unifyVocabSymbols(tapes);
-            const vocabInfo = this.tapeSet.tapes[tapeName];
+            let vocabMap = this.tapeSet.vocabMap;
+            vocabMap = Vocabs.resolveAll(vocabMap);
+            const vocab = this.tapeSet.vocabMap[tapeName];
             
-            if (vocabIsSuspended(vocabInfo)) throw new Error(`Non-literal vocab encountered on tape ${tapeName}: ${vocabToStr(vocabInfo)}`);
+            if (vocab.tag !== Vocabs.Tag.Lit) 
+                throw new Error(`Non-literal vocab encountered on tape ${tapeName}: ${toStr(vocab)}`);
 
-            const atomic = vocabInfo.tag == VTag.Atomic || vocabInfo.tag == VTag.Seq;
+            const atomic = vocab.atomicity !== Vocabs.Atomicity.Tokenized;
             
             let tape = tapeNS.attemptGet(tapeName);
             if (tape == undefined) {
                 // make a new one if it doesn't exist
-                const newTape = new Tape(tapeName, atomic);
+                const newTape = new OldTape(tapeName, atomic);
                 tapeNS.set(tapeName, newTape);
             } 
             tape = tapeNS.get(tapeName); 
             tape.atomic = atomic;
             //const strs = this.collectVocab(tapeName, atomic, new StringPairSet(), env);
             
-            const strs = vocabInfo.tokens;
+            const strs = vocab.tokens;
             
             tape.registerTokens([...strs]);
         }
-/*
-        const vocabCopyEdges = new StringPairSet();
-        for (const tapeName of this.tapes) {
-            const edges = this.getVocabCopyEdges(tapeName, 
-                tapeNS, new StringPairSet(), env);
-            vocabCopyEdges.add(...edges);
-        }
-        
-        let dirty: boolean = true;
-        while (dirty) {
-            dirty = false;
-            for (const [fromTapeName, toTapeName] of vocabCopyEdges) {
-                const fromTape = tapeNS.get(fromTapeName);
-                const toTape = tapeNS.get(toTapeName);
-                for (const c of fromTape.vocab) {
-                    if (!toTape.vocab.has(c)) {
-                        dirty = true;
-                        toTape.registerTokens([c]);
-                    }
-                }
-            }
-        }
-        */
     }
 
     public collectVocab(
@@ -472,7 +450,7 @@ export class CursorGrammar extends UnaryGrammar {
     public readonly tag = "cursor";
 
     constructor(
-        public tape: string,
+        public tapeName: string,
         child: Grammar
     ) {
         super(child);

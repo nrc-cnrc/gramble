@@ -1,4 +1,4 @@
-import { Grammar, NegationGrammar, ReplaceGrammar } from "../../src/grammars";
+import { Grammar, ReplaceGrammar } from "../../src/grammars";
 import { assert, expect } from "chai";
 import { t1, t2, t3, testSuiteName } from "../testUtil";
 import { 
@@ -23,7 +23,8 @@ import { SelectSymbol } from "../../src/passes/selectSymbol";
 import { FlattenCollections } from "../../src/passes/flattenCollections";
 import { Dict } from "../../src/utils/func";
 import { Options } from "../../src/utils/options";
-import { VocabInfo, VocabString, unifyVocabSymbols, vocabIsSuspended, vocabToStr } from "../../src/vocab";
+import * as Vocabs from "../../src/vocab";
+import * as Tapes from "../../src/tapes";
 
 type GrammarIDTest = {
     desc: string,
@@ -41,53 +42,61 @@ export function testGrammarTapes({
     atomicity = false
 }: GrammarIDTest): void {
 
-    const opt = Options({optimizeAtomicity: atomicity});
-    const env = new PassEnv(opt);
-    const pass = new FlattenCollections().compose(new CalculateTapes());
-    grammar = pass.go(grammar, env).msgTo(THROWER);
-    
-    if (symbol) {
-        const selectSymbol = new SelectSymbol(symbol);
-        grammar = selectSymbol.go(grammar, env).msgTo(THROWER); 
-    }
-
     describe(`${desc}`, function() {
 
-        it(`Tapes are resolved`, function() {
-            expect(grammar.tapeSet.tag).to.equal("TapeLit");
-        });
-
-        if (grammar.tapeSet.tag !== "TapeLit") return;
-
-        const expectedTapes = new Set(Object.keys(tapes));
-        const foundTapes = new Set(Object.keys(grammar.tapeSet.tapes))
-        it(`Tapes should equal [${[...expectedTapes]}]`, function() {
-            expect(foundTapes).to.deep.equal(expectedTapes);
-        });
-
-        for (const [tapeName, wildList] of Object.entries(tapes)) {
-            const expectedVocab = VocabString(new Set(wildList));
-
-            let tapes = grammar.tapeSet.tapes;
-            tapes = unifyVocabSymbols(tapes);
-
-            const tape = grammar.tapeSet.tapes[tapeName];
-            if (tape === undefined) {
-                it(`${tapeName} should exist`, function() {
-                    assert.fail();
-                });
-                continue;
+        try {
+            const opt = Options({optimizeAtomicity: atomicity});
+            const env = new PassEnv(opt);
+            const pass = new FlattenCollections().compose(new CalculateTapes());
+            grammar = pass.go(grammar, env).msgTo(THROWER);
+            
+            if (symbol) {
+                const selectSymbol = new SelectSymbol(symbol);
+                grammar = selectSymbol.go(grammar, env).msgTo(THROWER); 
             }
+        
 
-            if (vocabIsSuspended(tape)) {
-                it(`${tapeName} is unresolved`, function() {
-                    assert.fail(vocabToStr(tape));
+            it(`Tapes are resolved`, function() {
+                expect(grammar.tapeSet.tag).to.equal(Tapes.Tag.Lit);
+            });
+
+            if (grammar.tapeSet.tag !== Tapes.Tag.Lit) return;
+
+            const expectedTapes = new Set(Object.keys(tapes));
+            const foundTapes = new Set(Object.keys(grammar.tapeSet.vocabMap))
+            it(`Tapes should equal [${[...expectedTapes]}]`, function() {
+                expect(foundTapes).to.deep.equal(expectedTapes);
+            });
+
+            for (const [tapeName, wildList] of Object.entries(tapes)) {
+                const expectedVocab = Vocabs.Atomic(new Set(wildList));
+                const vocabMap = Vocabs.resolveAll(grammar.tapeSet.vocabMap);
+
+                const vocab = vocabMap[tapeName];
+                if (vocab === undefined) {
+                    it(`${tapeName} should exist`, function() {
+                        assert.fail();
+                    });
+                    continue;
+                }
+
+                if (vocab.tag !== Vocabs.Tag.Lit) {
+                    it(`${tapeName} is unresolved`, function() {
+                        assert.fail(Vocabs.toStr(vocab));
+                    });
+                    return;
+                }
+
+                it(`${tapeName} should have vocab [${[...expectedVocab.tokens]}]`, function() {
+                    expect(vocab.tokens).to.deep.equal(expectedVocab.tokens);
                 });
-                return;
             }
-
-            it(`${tapeName} should have vocab [${[...expectedVocab.tokens]}]`, function() {
-                expect(tape.tokens).to.deep.equal(expectedVocab.tokens);
+        } catch (e) {
+            it("Unexpected Exception", function() {
+                console.log("");
+                console.log(`[${this.test?.fullTitle()}]`);
+                console.log(e);
+                assert.fail(JSON.stringify(e));
             });
         }
     });
@@ -106,7 +115,6 @@ function NamedReplace(
 
 describe(`${testSuiteName(module)}`, function() {
 
-    /*
     testGrammarTapes({
         desc: "1a",
         grammar: t1("hello"),
@@ -300,6 +308,22 @@ describe(`${testSuiteName(module)}`, function() {
         grammar: Rename(Seq(t1("hello"), Dot("t1")), "t1", "t2"),
         tapes: {
             "t2": ["h","e","l","o"],
+        }
+    });
+
+    testGrammarTapes({
+        desc: "3f",
+        grammar: Rename(Rename(t1("hello"), "t1", "t2"), "t2", "t3"),
+        tapes: {
+            "t3": ["h","e","l","o"],
+        }
+    });
+
+    testGrammarTapes({
+        desc: "3g",
+        grammar: Rename(Rename(Seq(t1("hello"), Dot("t1")), "t1", "t2"), "t2", "t3"),
+        tapes: {
+            "t3": ["h","e","l","o"],
         }
     });
 
@@ -1154,7 +1178,6 @@ describe(`${testSuiteName(module)}`, function() {
         },
     });
 
-    */
     testGrammarTapes({
         desc: "25a",
         grammar: ReplaceBlock("t1", t1("hello"), 
@@ -1403,7 +1426,6 @@ describe(`${testSuiteName(module)}`, function() {
         }
     });
 
-    
     testGrammarTapes({
         desc: "34. Negations are always strings and wildcard",
         grammar: Not(t1("hello")),
@@ -1422,11 +1444,46 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     testGrammarTapes({
-        desc: "35. Match with a dot",
+        desc: "35. Not",
+        grammar: Not(t1("hello")),
+        tapes: {
+            "t1": ["h","e","l","l","o"],
+        }
+    });
+
+    testGrammarTapes({
+        desc: "36a. Match with a dot",
+        grammar: Match(
+            Seq(t1("hi"), Dot("t1")), "t1", "t2"),
+        tapes: {
+            "t1": ["h","i"],
+            "t2": ["h","i"]
+        }
+    });
+
+    testGrammarTapes({
+        desc: "36b. Not match",
         grammar: Not(Match(
-            Seq(t1("hi"), Dot("t1")),
-            "t1", "t2")
-        ),
+            Seq(t1("hi")), "t1", "t2")),
+        tapes: {
+            "t1": ["h","i"],
+            "t2": ["h","i"]
+        }
+    });
+
+    testGrammarTapes({
+        desc: "36c. Not match with a dot",
+        grammar: Not(Match(
+            Seq(t1("hi"), Dot("t1")), "t1", "t2")),
+        tapes: {
+            "t1": ["h","i"],
+            "t2": ["h","i"]
+        }
+    });
+
+    testGrammarTapes({
+        desc: "37. Joining to a wildcard match",
+        grammar: Join(t1("hi"), (Match(Dot("t1"), "t1", "t2"))),
         tapes: {
             "t1": ["h","i"],
             "t2": ["h","i"]

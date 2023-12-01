@@ -163,9 +163,9 @@ export class Interpreter {
             throw new Error(`Cannot find symbol ${symbol}`);
         }
         if (stripHidden) {
-            return referent.tapes.filter(t => !t.startsWith(HIDDEN_PREFIX));
+            return referent.tapeNames.filter(t => !t.startsWith(HIDDEN_PREFIX));
         }
-        return referent.tapes;
+        return referent.tapeNames;
     }
 
     public getTapeColor(

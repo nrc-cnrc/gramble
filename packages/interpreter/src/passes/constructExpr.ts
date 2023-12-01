@@ -90,8 +90,8 @@ function constructExprJoin(
 ): Expr {
     return constructJoin(env, constructExpr(env, g.child1),
         constructExpr(env, g.child2),
-        new Set(g.child1.tapes),
-        new Set(g.child2.tapes));
+        new Set(g.child1.tapeNames),
+        new Set(g.child2.tapeNames));
 }
 
 
@@ -125,7 +125,7 @@ function constructExprNot(
     g: NegationGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
-    return constructNegation(env, childExpr, new Set(g.child.tapes));
+    return constructNegation(env, childExpr, new Set(g.child.tapeNames));
 }
 
 function constructExprCursor(
@@ -133,7 +133,7 @@ function constructExprCursor(
     g: CursorGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
-    return constructCursor(env, g.tape, childExpr);
+    return constructCursor(env, g.tapeName, childExpr);
 }
 
 function constructExprPreTape(
@@ -254,7 +254,7 @@ function constructExprReplace(
         let copyExpr: Expr = matchAnythingElse(true);
         if (! (otherContextExpr instanceof EpsilonExpr)) {
             let negatedOtherContext: Expr = 
-                constructNegation(env, otherContextExpr, new Set(g.otherContext.tapes));
+                constructNegation(env, otherContextExpr, new Set(g.otherContext.tapeNames));
             const matchDotStar: Expr =
                 constructMatch(env, constructDotStar(INPUT_TAPE));
             copyExpr = constructAlternation(env, constructSequence(env, matchAnythingElse(true), otherContextExpr),

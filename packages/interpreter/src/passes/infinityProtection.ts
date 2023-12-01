@@ -35,15 +35,15 @@ export class InfinityProtection extends Pass<Grammar,Grammar> {
 
     public transformCursor(g: CursorGrammar, env: PassEnv): Grammar {
         const stack = new CounterStack(2);
-        const len = lengthRange(g.child, g.tape, stack, env);
+        const len = lengthRange(g.child, g.tapeName, stack, env);
 
         // if it's not potentially infinite, we don't do anything
         if (len.null == true) return g;
         if (len.max !== Infinity) return g;
 
         // it's potentially infinite, add a Count for protection
-        const newChild = new CountGrammar(g.child, g.tape, env.opt.maxChars, false, false);
-        return new CursorGrammar(g.tape, newChild).tapify(env);
+        const newChild = new CountGrammar(g.child, g.tapeName, env.opt.maxChars, false, false);
+        return new CursorGrammar(g.tapeName, newChild).tapify(env);
     }
 }
 
@@ -188,8 +188,8 @@ function lengthJoin(g: JoinGrammar, tapeName: string, stack: CounterStack, env: 
     const child1Length = lengthRange(g.child1, tapeName, stack, env);
     const child2Length = lengthRange(g.child2, tapeName, stack, env);
 
-    const child1tapes = new Set(g.child1.tapes);
-    const child2tapes = new Set(g.child2.tapes);
+    const child1tapes = new Set(g.child1.tapeNames);
+    const child2tapes = new Set(g.child2.tapeNames);
 
     if (!(child1tapes.has(tapeName))) return child2Length;
     if (!(child2tapes.has(tapeName))) return child1Length;
@@ -260,7 +260,7 @@ function multAux(n1: number, n2: number) {
 }
 
 function lengthNot(g: NegationGrammar, tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
-    const childTapes = new Set(g.child.tapes);
+    const childTapes = new Set(g.child.tapeNames);
     if (childTapes.has(tapeName)) 
         return { null: false, min: 0, max: Infinity };
     return lengthRange(g.child, tapeName, stack, env);
