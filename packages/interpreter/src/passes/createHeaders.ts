@@ -4,7 +4,7 @@ import {
     TstHeader, TstGrid, TST
 } from "../tsts";
 import { Pass, PassEnv } from "../passes";
-import { HeaderMsg, Msgs, Result } from "../utils/msgs";
+import { HeaderMsg, Message, Msg } from "../utils/msgs";
 import { 
     DEFAULT_VALUE, ErrorHeader, 
     backgroundColor, parseHeaderCell 
@@ -19,7 +19,7 @@ export class CreateHeaders extends Pass<TST,TST> {
         return "Parsing headers";
     }
 
-    public transform(t: TST, env: PassEnv): Result<TST> {
+    public transform(t: TST, env: PassEnv): Msg<TST> {
 
         return t.mapChildren(this, env).bind(t => {
             
@@ -31,7 +31,7 @@ export class CreateHeaders extends Pass<TST,TST> {
                 return new TstEmpty(); 
             }
 
-            const msgs: Msgs = [];
+            const msgs: Message[] = [];
             const headers: TstHeader[] = [];
             for (const c of t.rows[0].content) {
                 const h = parseHeaderCell(c.text)

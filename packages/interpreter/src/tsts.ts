@@ -11,8 +11,8 @@ import {
     paramName,
 } from "./headers";
 import { 
-    Msgs, Warn, 
-    ResultVoid, unit, Result
+    Warn, MsgVoid, 
+    unit, Msg, Message
 } from "./utils/msgs";
 import { Op } from "./ops";
 import { Component } from "./components";
@@ -43,8 +43,8 @@ export type TST = TstHeader
 
 export abstract class AbstractTST extends Component {
 
-    public mapChildren(f: Pass<TST,TST>, env: PassEnv): Result<TST> {
-        return super.mapChildren(f, env) as Result<TST>;
+    public mapChildren(f: Pass<TST,TST>, env: PassEnv): Msg<TST> {
+        return super.mapChildren(f, env) as Msg<TST>;
     }
 
 }
@@ -154,7 +154,7 @@ export abstract class TstEnclosure extends TstCellComponent {
         this.sibling = sibling;
     }
 
-    public abstract setChild(child: TST): ResultVoid;
+    public abstract setChild(child: TST): MsgVoid;
 
 }
 
@@ -174,11 +174,11 @@ export abstract class TstEnclosure extends TstCellComponent {
         super(cell, sibling)
     }
     
-    public setChild(newChild: TST): ResultVoid {
+    public setChild(newChild: TST): MsgVoid {
         throw new Error("TstGrids cannot have children");
     }
 
-    public addContent(cell: Cell): ResultVoid {
+    public addContent(cell: Cell): MsgVoid {
         const msgs = unit;
 
         if (this.rows.length == 0 || cell.pos.row != this.rows[this.rows.length-1].pos.row) {
@@ -201,7 +201,7 @@ export class TstRow extends TstCellComponent {
         super(cell)
     }
     
-    public addContent(cell: Cell): ResultVoid {
+    public addContent(cell: Cell): MsgVoid {
         const content = new TstContent(cell);
         this.content.push(content);
         return unit;
@@ -220,7 +220,7 @@ export class TstHeadedGrid extends TstEnclosure {
         super(cell, sibling);
     }
     
-    public setChild(newChild: TST): ResultVoid {
+    public setChild(newChild: TST): MsgVoid {
         throw new Error("TstHEadedGrids cannot have children");
     }
     
@@ -293,9 +293,9 @@ export abstract class TstBinary extends TstEnclosure {
         super(cell, sibling);
     }
 
-    public setChild(child: TST): ResultVoid {
+    public setChild(child: TST): MsgVoid {
 
-        const msgs: Msgs = [];
+        const msgs: Message[] = [];
 
         if (this.child instanceof TstEnclosure && 
                 child.pos !== undefined &&
@@ -481,7 +481,7 @@ export class TstCollection extends TstCellComponent {
         super(cell);
     }
     
-    public addChild(child: TST): ResultVoid {
+    public addChild(child: TST): MsgVoid {
         this.children.push(child);
         return unit;
     }

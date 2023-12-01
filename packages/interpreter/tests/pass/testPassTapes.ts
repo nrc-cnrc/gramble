@@ -48,29 +48,28 @@ export function testGrammarTapes({
             const opt = Options({optimizeAtomicity: atomicity});
             const env = new PassEnv(opt);
             const pass = new FlattenCollections().compose(new CalculateTapes());
-            grammar = pass.go(grammar, env).msgTo(THROWER);
+            grammar = pass.transform(grammar, env).msgTo(THROWER);
             
             if (symbol) {
                 const selectSymbol = new SelectSymbol(symbol);
-                grammar = selectSymbol.go(grammar, env).msgTo(THROWER); 
+                grammar = selectSymbol.transform(grammar, env).msgTo(THROWER); 
             }
-        
 
             it(`Tapes are resolved`, function() {
-                expect(grammar.tapeSet.tag).to.equal(Tapes.Tag.Lit);
+                expect(grammar.tapes.tag).to.equal(Tapes.Tag.Lit);
             });
 
-            if (grammar.tapeSet.tag !== Tapes.Tag.Lit) return;
+            if (grammar.tapes.tag !== Tapes.Tag.Lit) return;
 
             const expectedTapes = new Set(Object.keys(tapes));
-            const foundTapes = new Set(Object.keys(grammar.tapeSet.vocabMap))
+            const foundTapes = new Set(Object.keys(grammar.tapes.vocabMap))
             it(`Tapes should equal [${[...expectedTapes]}]`, function() {
                 expect(foundTapes).to.deep.equal(expectedTapes);
             });
 
             for (const [tapeName, wildList] of Object.entries(tapes)) {
                 const expectedVocab = Vocabs.Atomic(new Set(wildList));
-                const vocabMap = Vocabs.resolveAll(grammar.tapeSet.vocabMap);
+                const vocabMap = Vocabs.resolveAll(grammar.tapes.vocabMap);
 
                 const vocab = vocabMap[tapeName];
                 if (vocab === undefined) {

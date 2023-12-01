@@ -2,14 +2,15 @@ import {
     CounterStack, Expr
 } from "./exprs";
 import { 
-    Result, THROWER,
+    MsgFunc,
+    Msg, THROWER, msg,
 } from "./utils/msgs";
 
 import {
     renameTape,
     OldTape, 
     TapeNamespace,
-    Tape,
+    TapeSet,
 } from "./tapes";
 
 import * as Tapes from "./tapes";
@@ -37,8 +38,6 @@ export { CounterStack, Expr };
 
 export type StringPair = [string, string];
 export class StringPairSet extends ValueSet<StringPair> { }
-
-export class GrammarResult extends Result<Grammar> { }
 
 export type LengthRange = {
     null: boolean,
@@ -123,24 +122,24 @@ export type Grammar = EpsilonGrammar
 
 export abstract class AbstractGrammar extends Component {
 
-    public mapChildren(f: Pass<Grammar,Grammar>, env: PassEnv): GrammarResult {
-        return super.mapChildren(f, env) as GrammarResult;
+    public mapChildren(f: Pass<Grammar,Grammar>, env: PassEnv): Msg<Grammar> {
+        return super.mapChildren(f, env) as Msg<Grammar>;
     }
     
     public locate(pos: Pos | undefined): Grammar {
         return super.locate(pos) as Grammar;
     }
 
-    public tapeSet: Tape = Tapes.Unknown();
+    public tapes: TapeSet = Tapes.Unknown();
 
     //public _tapes: string[] | undefined = undefined;
 
     public get tapeNames(): string[] {
-        if (this.tapeSet.tag !== Tapes.Tag.Lit) {
+        if (this.tapes.tag !== Tapes.Tag.Lit) {
             throw new Error(`Grammar ${toStr(this)} references unresolved tapes: ` +
-                                `${Tapes.toStr(this.tapeSet)}`);
+                                `${Tapes.toStr(this.tapes)}`);
         }
-        return Object.keys(this.tapeSet.vocabMap);
+        return Object.keys(this.tapes.vocabMap);
     }
 
     public getChildren(): Grammar[] {
@@ -173,14 +172,14 @@ export abstract class AbstractGrammar extends Component {
         for (const tapeName of this.tapeNames) {
             //const atomic = determineAtomicity(this as Grammar, tapeName, env);
             
-            if (this.tapeSet.tag !== Tapes.Tag.Lit) throw new Error("Collecting vocab from a non-literal tape");
+            if (this.tapes.tag !== Tapes.Tag.Lit) throw new Error(`Collecting vocab from unresolved tape ${tapeName}`);
             
-            let vocabMap = this.tapeSet.vocabMap;
+            let vocabMap = this.tapes.vocabMap;
             vocabMap = Vocabs.resolveAll(vocabMap);
-            const vocab = this.tapeSet.vocabMap[tapeName];
+            const vocab = this.tapes.vocabMap[tapeName];
             
             if (vocab.tag !== Vocabs.Tag.Lit) 
-                throw new Error(`Non-literal vocab encountered on tape ${tapeName}: ${toStr(vocab)}`);
+                throw new Error(`Tape ${tapeName} has unresolved vocab: ${toStr(vocab)}`);
 
             const atomic = vocab.atomicity !== Vocabs.Atomicity.Tokenized;
             
@@ -553,7 +552,7 @@ export class CollectionGrammar extends AbstractGrammar {
         super();
     }
     
-    public mapChildren(f: Pass<Grammar,Grammar>, env: PassEnv): GrammarResult {
+    public mapChildren(f: Pass<Grammar,Grammar>, env: PassEnv): Msg<Grammar> {
         const newEnv = env.setSymbols(this.symbols);
         return super.mapChildren(f, newEnv);
     }

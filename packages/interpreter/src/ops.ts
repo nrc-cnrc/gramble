@@ -5,7 +5,7 @@ import {
     MPSequence, MPUnreserved 
 } from "./miniParser";
 import { exhaustive } from "./utils/func";
-import { Result } from "./utils/msgs";
+import { Msg } from "./utils/msgs";
 import { 
     REPLACE_PARAMS, REQUIRED_REPLACE_PARAMS, 
     ALL_RESERVED, RESERVED_SYMBOLS, 
@@ -149,7 +149,7 @@ const OP_EXPR = MPAlt(
     OP_SUBEXPR_WITH_COLON
 );
 
-export function parseOp(text: string): Result<Op> {
+export function parseOp(text: string): Msg<Op> {
     const trimmedText = text.trim();
 
     const env = new MiniParseEnv(RESERVED_SYMBOLS, ALL_RESERVED);

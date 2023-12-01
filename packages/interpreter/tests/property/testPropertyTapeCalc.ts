@@ -27,7 +27,7 @@ class TapeCalcTest implements PropertyTest {
             const pass = new FlattenCollections()
                             .compose(new CalculateTapes());
             const env = new PassEnv();
-            pass.go(this.grammar, env).msgTo([]);
+            pass.transform(this.grammar, env).msgTo([]);
         } catch (e) {
             const resultStrs: string[] = [`${e}`];
             resultStrs.push(toStr(this.grammar));

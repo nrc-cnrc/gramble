@@ -1,9 +1,8 @@
 import { Dict, StringDict, mapDict } from "../utils/func";
 import { constructCollection, Expr } from "../exprs";
-import { Msgs, Err, Success, THROWER } from "../utils/msgs";
+import { Message, Err, Success, THROWER, Msg } from "../utils/msgs";
 import { 
-    Grammar, 
-    GrammarResult, TestNotGrammar, 
+    Grammar, TestNotGrammar, 
     TestGrammar, 
     AbstractTestGrammar,
     JoinGrammar
@@ -25,11 +24,7 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
         super();
     }
 
-    public get desc(): string {
-        return "Running unit tests"
-    }
-
-    public transformAux(g: Grammar, env: PassEnv): GrammarResult {
+    public transformAux(g: Grammar, env: PassEnv): Msg<Grammar> {
         const result = g.mapChildren(this, env);
         return result.bind(g => {
             switch (g.tag) {
@@ -40,8 +35,8 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
         }).localize(g.pos);
     }
 
-    public handleTest(g: TestGrammar, env: PassEnv): GrammarResult {
-        const msgs: Msgs = [];
+    public handleTest(g: TestGrammar, env: PassEnv): Msg<Grammar> {
+        const msgs: Message[] = [];
 
         const childTapes = new Set(g.child.tapeNames);
         for (const testTape of g.test.tapeNames) {
@@ -83,8 +78,8 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
         return g.msg(msgs);
     }
 
-    public handleNegativeTest(g: TestNotGrammar, env: PassEnv): GrammarResult {
-        const msgs: Msgs = [];
+    public handleNegativeTest(g: TestNotGrammar, env: PassEnv): Msg<Grammar> {
+        const msgs: Message[] = [];
 
         const childTapes = new Set(g.child.tapeNames);
         for (const testTape of g.test.tapeNames) {
@@ -121,10 +116,10 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
         targetGrammar.collectAllVocab(this.tapeNS, env);        
         
         const createCursors = new CreateCursors();
-        targetGrammar = createCursors.go(targetGrammar, env).msgTo(THROWER);
+        targetGrammar = createCursors.transform(targetGrammar, env).msgTo(THROWER);
 
         const infinityProtection = new InfinityProtection();
-        targetGrammar = infinityProtection.go(targetGrammar, env).msgTo(THROWER);
+        targetGrammar = infinityProtection.transform(targetGrammar, env).msgTo(THROWER);
         
         let expr = constructExpr(env, targetGrammar);
         expr = constructCollection(env, expr, this.symbolTable);

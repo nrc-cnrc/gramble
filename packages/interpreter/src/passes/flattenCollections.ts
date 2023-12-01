@@ -1,9 +1,8 @@
-import { MissingSymbolError, Msgs } from "../utils/msgs";
+import { Msg, MissingSymbolError, Message } from "../utils/msgs";
 import { 
     EmbedGrammar,
     EpsilonGrammar,
     Grammar,
-    GrammarResult,
     CollectionGrammar
 } from "../grammars";
 import { Pass, PassEnv } from "../passes";
@@ -37,11 +36,11 @@ export class FlattenCollections extends Pass<Grammar,Grammar> {
         super();
     }
 
-    public transform(g: Grammar, env: PassEnv): GrammarResult {
+    public transformAux(g: Grammar, env: PassEnv): Grammar|Msg<Grammar> {
         switch(g.tag) {
             case "collection": return this.transformCollection(g, env);
             case "embed":      return this.transformEmbed(g, env);
-            default:           return g.mapChildren(this, env) as GrammarResult;
+            default:           return g.mapChildren(this, env);
         }
     }
     
@@ -49,8 +48,8 @@ export class FlattenCollections extends Pass<Grammar,Grammar> {
         return "Qualifying names";
     }
 
-    public transformCollection(g: CollectionGrammar, env: PassEnv): GrammarResult {
-        const msgs: Msgs = [];
+    public transformCollection(g: CollectionGrammar, env: PassEnv): Msg<Grammar> {
+        const msgs: Message[] = [];
         const qualifier = grammarToQualifier(g);
         const newCollectionStack: SymbolQualifier[] = [ ...this.qualifierStack, qualifier];
         for (const [k, v] of Object.entries(g.symbols)) {
@@ -73,7 +72,7 @@ export class FlattenCollections extends Pass<Grammar,Grammar> {
                     .msg(msgs);
     }
 
-    public transformEmbed(g: EmbedGrammar, env: PassEnv): GrammarResult {
+    public transformEmbed(g: EmbedGrammar, env: PassEnv): Grammar|Msg<Grammar> {
         const symbolPieces = g.symbol.split(".");
         for (let i = this.qualifierStack.length; i >=1; i--) {
             // we go down the stack asking each to try to find it
@@ -81,7 +80,7 @@ export class FlattenCollections extends Pass<Grammar,Grammar> {
             const subNameStack = this.nameStack.slice(0, i-1); 
             const resolution = qualifySymbolAux(subNsStack[i-1], symbolPieces, subNameStack);
             if (resolution !== undefined) {
-                return new EmbedGrammar(resolution).msg();
+                return new EmbedGrammar(resolution);
             }
         }
 

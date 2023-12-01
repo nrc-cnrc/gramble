@@ -11,13 +11,12 @@ import {
 } from "../grammars";
 import { renameTape } from "../tapes";
 import { Cursor } from "../grammarConvenience";
-import { Result } from "../utils/msgs";
 
 export class CreateCursors extends Pass<Grammar,Grammar> {
 
-    public transform(g: Grammar, env: PassEnv): Result<Grammar> {
+    public transformAux(g: Grammar, env: PassEnv): Grammar {
         const priorities = prioritizeTapes(g, env);
-        return Cursor(priorities, g).msg();
+        return Cursor(priorities, g);
     }
 }
 

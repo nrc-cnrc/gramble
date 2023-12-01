@@ -8,7 +8,7 @@ import {
     TST, 
 } from "../tsts";
 import { Pass, PassEnv } from "../passes";
-import { ContentMsg, Msgs, Result, Warn } from "../utils/msgs";
+import { ContentMsg, Message, Msg, Warn } from "../utils/msgs";
 import { backgroundColor, fontColor, paramName } from "../headers";
 import { DEFAULT_PARAM } from "../utils/constants";
 
@@ -24,7 +24,7 @@ export class AssociateHeaders extends Pass<TST,TST> {
         return "Parsing headers";
     }
 
-    public transform(t: TST, env: PassEnv): Result<TST> {
+    public transform(t: TST, env: PassEnv): Msg<TST> {
 
         return t.mapChildren(this, env).bind(t => {
             
@@ -33,7 +33,7 @@ export class AssociateHeaders extends Pass<TST,TST> {
             }
 
             const newRows: TstParams[] = [];
-            const msgs: Msgs = [];
+            const msgs: Message[] = [];
             for (const row of t.rows) {
                 const newRow = new TstParams(row.cell);
                 for (const content of row.content) {

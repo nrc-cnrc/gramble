@@ -1,4 +1,4 @@
-import { Result } from "../utils/msgs";
+import { Msg } from "../utils/msgs";
 import { 
     Grammar,
     CollectionGrammar,
@@ -23,19 +23,19 @@ export class SelectSymbol extends Pass<Grammar,Grammar> {
         super();
     }
     
-    public transform(g: Grammar, env: PassEnv): Result<Grammar> {
+    public transformAux(g: Grammar, env: PassEnv): Grammar {
         switch (g.tag) {
             case "collection": return this.selectSymbol(g, env);
-            default:           return g.err("Symbol not found", 
+            default:           throw g.err("Symbol not found", 
                                     `Cannot find symbol ${this.symbol} in ${g.tag} grammar`);
         }
     }
 
-    public selectSymbol(g: CollectionGrammar, env: PassEnv): Result<Grammar> {
+    public selectSymbol(g: CollectionGrammar, env: PassEnv): Grammar {
 
         const resolution = qualifySymbol(g, this.symbol);
         if (resolution == undefined) {
-            return g.err("Cannot resolve symbol", 
+            throw g.err("Cannot resolve symbol", 
                 `Cannot find symbol ${this.symbol} in grammar, candidates: ${Object.keys(g.symbols)}.`);
         }
 
@@ -47,8 +47,8 @@ export class SelectSymbol extends Pass<Grammar,Grammar> {
         }
 
         const result = new CollectionGrammar(g.symbols, resolution[0], g.qualifier);
-        result.tapeSet = referent.tapeSet;
-        return result.msg();
+        result.tapes = referent.tapes;
+        return result;
     }
 
 };

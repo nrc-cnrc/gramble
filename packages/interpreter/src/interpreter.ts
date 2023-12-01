@@ -14,7 +14,7 @@ import { TapeNamespace } from "./tapes";
 import { Expr, CollectionExpr } from "./exprs";
 import { DevEnvironment, SimpleDevEnvironment } from "./devEnv";
 import { generate } from "./generator";
-import { MissingSymbolError, Msg, THROWER, result } from "./utils/msgs";
+import { MissingSymbolError, Message, THROWER, msg } from "./utils/msgs";
 import { PassEnv } from "./passes";
 import { 
     SOURCE_PASSES,
@@ -79,8 +79,8 @@ export class Interpreter {
         // semantically impossible tape structures are massaged into well-formed ones, some 
         // scope problems adjusted, etc.
         const env = new PassEnv(this.opt);  
-        this.grammar = result(g)
-                        .bind(g => GRAMMAR_PASSES.go(g, env))
+        this.grammar = msg(g)
+                        .bind(g => GRAMMAR_PASSES.transform(g, env))
                         .msgTo(m => sendMsg(this.devEnv, m));
 
         // Next we collect the vocabulary on all tapes
@@ -118,7 +118,7 @@ export class Interpreter {
         logTime(passOpts.verbose, `Sheets loaded; ${elapsedTime}`);
         
         const env = new PassEnv(passOpts);
-        const grammar = SOURCE_PASSES.go(workbook, env)
+        const grammar = SOURCE_PASSES.transform(workbook, env)
                                   .msgTo(m => devEnv.message(m));
 
         const result = new Interpreter(devEnv, grammar, passOpts);
@@ -250,11 +250,11 @@ export class Interpreter {
 
         // qualify the name and select the symbol
         const selectSymbol = new SelectSymbol(symbol);
-        let targetGrammar: Grammar = selectSymbol.go(this.grammar, env).msgTo(THROWER);
+        let targetGrammar: Grammar = selectSymbol.transform(this.grammar, env).msgTo(THROWER);
         
         // join the client query to the grammar
         const createQuery = new CreateQuery(query);
-        targetGrammar = createQuery.go(targetGrammar, env).msgTo(THROWER);
+        targetGrammar = createQuery.transform(targetGrammar, env).msgTo(THROWER);
         
         // we have to re-collect the vocab in case it changed
         targetGrammar.collectAllVocab(this.tapeNS, env);
@@ -263,13 +263,13 @@ export class Interpreter {
         // to have a Cursor made for it, because otherwise that content will
         // never be handled during the generation loop.
         const createCursors = new CreateCursors();
-        targetGrammar = createCursors.go(targetGrammar, env).msgTo(THROWER);
+        targetGrammar = createCursors.transform(targetGrammar, env).msgTo(THROWER);
         
         // the client probably doesn't want an accidentally-infinite grammar
         // to generate infinitely.  this checks which tapes could potentially
         // generate infinitely and caps them to opt.maxChars.
         const infinityProtection = new InfinityProtection();
-        targetGrammar = infinityProtection.go(targetGrammar, env).msgTo(THROWER);
+        targetGrammar = infinityProtection.transform(targetGrammar, env).msgTo(THROWER);
         
         // turns the Grammars into Exprs
         return constructExpr(env, targetGrammar);  
@@ -288,7 +288,7 @@ export class Interpreter {
     }
 }
 
-function sendMsg(devEnv: DevEnvironment, msg: Msg): void {
+function sendMsg(devEnv: DevEnvironment, msg: Message): void {
     devEnv.message(msg);
 }
 
@@ -318,11 +318,11 @@ function addSheet(
     const sheet = new Worksheet(sheetName, cells);
     project.sheets[sheetName] = sheet;
     const transEnv = new PassEnv(opt);
-    const grammar = SOURCE_PASSES.go(project, transEnv)
+    const grammar = SOURCE_PASSES.transform(project, transEnv)
                                      .msgTo((_) => {});
     // check to see if any names didn't get qualified
     const [_, nameMsgs] =  new FlattenCollections()
-                                .go(grammar, transEnv)
+                                .transform(grammar, transEnv)
                                 .destructure();
 
     const unqualifiedSymbols: Set<string> = new Set(); 

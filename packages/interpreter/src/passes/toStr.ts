@@ -75,7 +75,7 @@ export function repeatToStr(g: RepeatGrammar): string {
 
 const EXCLUDED_FROM_STR = new Set([
     "tag",
-    "tapeSet",
+    "tapes",
     "qualifier",
     "pos"
 ]);

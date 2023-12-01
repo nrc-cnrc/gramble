@@ -4,13 +4,13 @@ import {
     EmbedGrammar,
     EpsilonGrammar,
     Grammar,
-    GrammarResult, 
     LiteralGrammar, 
     RenameGrammar, 
     SingleTapeGrammar
 } from "../grammars";
 import { DEFAULT_TAPE } from "../utils/constants";
 import * as Tapes from "../tapes";
+import { Msg } from "../utils/msgs";
 
 /**
  * Some environments require the grammar inside to only reveal 
@@ -35,13 +35,7 @@ export class HandleSingleTapes extends Pass<Grammar,Grammar> {
         return "Handling single-tape environments";
     }
 
-    
-    public transform(g: Grammar, env: PassEnv): GrammarResult {
-        return this.transformAux(g, env)
-                   .localize(g.pos);
-    }
-
-    public transformAux(g: Grammar, env: PassEnv): GrammarResult {
+    public transformAux(g: Grammar, env: PassEnv): Grammar|Msg<Grammar> {
         switch (g.tag) {
             case "singletape": return this.handleSingleTape(g, env);
             case "lit":        return this.handleLiteral(g, env);
@@ -51,66 +45,64 @@ export class HandleSingleTapes extends Pass<Grammar,Grammar> {
         }
     }
 
-    handleDefault(g: Grammar, env: PassEnv): GrammarResult {
-        
-        if (this.tapeName === undefined) {
-            return g.mapChildren(this, env);
-        }
+    handleDefault(g: Grammar, env: PassEnv): Msg<Grammar> {
+        const newG = g.mapChildren(this, env);
 
-        const [result, msgs] = g.mapChildren(this, env).destructure();
-        result.tapeSet = Tapes.Unknown();
-        return result.tapify(env).msg(msgs);
+        if (this.tapeName === undefined) return newG; // nothing to do
+
+        // otherwise, the tape structure has changed, recalculate it
+        return newG.bind(g => {
+            g.tapes = Tapes.Unknown();
+            return g.tapify(env);
+        });
     }
 
-    handleEmbed(g: EmbedGrammar, env: PassEnv): GrammarResult {
+    handleEmbed(g: EmbedGrammar, env: PassEnv): Grammar {
         
         if (this.tapeName === undefined) {
             // we're not in singleTape env
-            return g.mapChildren(this, env);
+            return g;
         }
 
         if (g.tapeNames.length == 0) {
-            return g.err("Embedding zero-field symbol",
+            throw new EpsilonGrammar().tapify(env)
+                .err("Embedding zero-field symbol",
                 `This embedded symbol has no fields (e.g. "text"), it should have exactly one.`)
-                .bind(_ => new EpsilonGrammar().tapify(env));
         }
 
         if (g.tapeNames.length > 1) {
-            return g.err("Embedding multi-field symbol",
+            throw new EpsilonGrammar().tapify(env)
+                .err("Embedding multi-field symbol",
                 `Only grammars with one field (e.g. just "text" but not any other fields) ` +
                 `can be embedded into a regex or rule context.`)
-                .bind(_ => new EpsilonGrammar().tapify(env));
         }
 
         const embedTapeName = g.tapeNames[0];
         if (this.tapeName != embedTapeName) {
             return new RenameGrammar(g, embedTapeName, this.tapeName)
-                        .tapify(env)
-                        .msg();
+                        .tapify(env);
         }
 
-        return g.msg();
+        return g;
     }
 
-    private handleDot(g: DotGrammar, env: PassEnv): GrammarResult {
+    private handleDot(g: DotGrammar, env: PassEnv): Grammar {
         if (g.tapeName == DEFAULT_TAPE && this.tapeName != undefined) {
             return new DotGrammar(this.tapeName)
-                        .tapify(env)
-                        .msg();
+                        .tapify(env);
         }
-        return g.msg();
+        return g;
     }
 
-    private handleLiteral(g: LiteralGrammar, env: PassEnv): GrammarResult {
+    private handleLiteral(g: LiteralGrammar, env: PassEnv): Grammar {
         if (g.tapeName == DEFAULT_TAPE && this.tapeName != undefined) {
             return new LiteralGrammar(this.tapeName, g.text)
-                        .tapify(env)
-                        .msg();
+                        .tapify(env);
         }
-        return g.msg();
+        return g;
     }
 
-    private handleSingleTape(g: SingleTapeGrammar, env: PassEnv): GrammarResult {
+    private handleSingleTape(g: SingleTapeGrammar, env: PassEnv): Msg<Grammar> {
         const newThis = new HandleSingleTapes(g.tapeName);
         return newThis.transform(g.child, env);
         // note that we're not returning a new SingleTapeGrammar, this pass eliminates them

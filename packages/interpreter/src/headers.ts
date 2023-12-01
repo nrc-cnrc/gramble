@@ -4,7 +4,7 @@ import {
     MPSequence, MPUnreserved 
 } from "./miniParser";
 
-import { Result } from "./utils/msgs";
+import { Msg } from "./utils/msgs";
 
 import { ALL_RESERVED, isValidSymbol, RESERVED_SYMBOLS } from "./utils/reserved";
 import { Component } from "./components";
@@ -333,7 +333,7 @@ const HP_CONTAINS = MPSequence<Header>(
 
 const HP_EXPR: MPParser<Header> = MPAlt(HP_COMMENT, HP_NON_COMMENT_EXPR);
 
-export function parseHeaderCell(text: string): Result<Header> {
+export function parseHeaderCell(text: string): Msg<Header> {
 
     const env = new MiniParseEnv(RESERVED_SYMBOLS, ALL_RESERVED);
     const results = miniParse(env, HP_EXPR, text);

@@ -5,7 +5,7 @@ import {
 import * as Vocabs from "./vocab";
 import { VocabDict } from "./vocab";
 
-export type TapeDict = Dict<Tape>;
+export type TapeDict = Dict<TapeSet>;
 
 /**
  * Tape
@@ -57,16 +57,14 @@ export const enum Tag {
     Unknown = "TapeUnknown"
 }
 
-export type Tape 
-    = Lit
-    | Ref
-    | Rename
-    | Sum
-    | Product
-    | Join
-    | Match
-    | Unknown; 
-
+export type TapeSet = Lit
+                    | Ref
+                    | Rename
+                    | Sum
+                    | Product
+                    | Join
+                    | Match
+                    | Unknown; 
 
 /** Lits are the actual tape information objects, containing
  * a map from tape names to vocabulary objects
@@ -87,17 +85,17 @@ export function Lit(tapes: VocabDict = {}): Lit {
  * future).  This will later be resolved to a TapeLit.
  */
 export type Ref = { tag: Tag.Ref, symbol: string };
-export function Ref(s: string): Tape {
+export function Ref(s: string): TapeSet {
     return { tag: Tag.Ref, symbol: s }
 };
 
 export type Sum = { 
     tag: Tag.Sum, 
-    c1: Tape, 
-    c2: Tape 
+    c1: TapeSet, 
+    c2: TapeSet 
 };
 
-export function Sum(c1: Tape, c2: Tape): Tape {
+export function Sum(c1: TapeSet, c2: TapeSet): TapeSet {
 
     if (c1.tag !== Tag.Lit || c2.tag !== Tag.Lit) 
         return { tag: Tag.Sum, c1, c2 };
@@ -121,11 +119,11 @@ export function Sum(c1: Tape, c2: Tape): Tape {
 
 export type Product = { 
     tag: Tag.Product, 
-    c1: Tape, 
-    c2: Tape 
+    c1: TapeSet, 
+    c2: TapeSet 
 };
 
-export function Product(c1: Tape, c2: Tape): Tape {
+export function Product(c1: TapeSet, c2: TapeSet): TapeSet {
 
     if (c1.tag !== Tag.Lit || c2.tag !== Tag.Lit) 
         return { tag: Tag.Product, c1, c2 };
@@ -148,11 +146,11 @@ export function Product(c1: Tape, c2: Tape): Tape {
 
 export type Join = { 
     tag: Tag.Join, 
-    c1: Tape, 
-    c2: Tape 
+    c1: TapeSet, 
+    c2: TapeSet 
 };
 
-export function Join(c1: Tape, c2: Tape): Tape {
+export function Join(c1: TapeSet, c2: TapeSet): TapeSet {
 
     if (c1.tag !== Tag.Lit || c2.tag !== Tag.Lit) 
         return { tag: Tag.Join, c1, c2 };
@@ -174,7 +172,7 @@ export function Join(c1: Tape, c2: Tape): Tape {
 }
 
 export type Unknown = { tag: Tag.Unknown };
-export function Unknown(): Tape {
+export function Unknown(): TapeSet {
     return { tag: Tag.Unknown };
 }
 
@@ -187,16 +185,16 @@ export function Unknown(): Tape {
  */
 export type Rename =  { 
     tag: Tag.Rename, 
-    child: Tape, 
+    child: TapeSet, 
     fromTape: string, 
     toTape: string 
 };
 
 export function Rename(
-    child: Tape, 
+    child: TapeSet, 
     fromTape: string, 
     toTape: string
-): Tape {
+): TapeSet {
     if (child.tag === Tag.Lit) {
         const renamedTapes: VocabDict = mapDict(child.vocabMap,
                         (_,v) => Vocabs.Rename(v, fromTape, toTape));
@@ -213,16 +211,16 @@ export function Rename(
 
 export type Match =  { 
     tag: Tag.Match, 
-    child: Tape, 
+    child: TapeSet, 
     fromTape: string, 
     toTape: string 
 };
 
 export function Match(
-    child: Tape, 
+    child: TapeSet, 
     fromTape: string, 
     toTape: string
-): Tape {
+): TapeSet {
     if (child.tag === Tag.Lit) {
         const newTapes = Object.assign({}, child.vocabMap);
         const fromVocab = newTapes[fromTape] || Vocabs.Atomic();
@@ -238,7 +236,7 @@ export function Match(
 /** 
  * Turning a [TapeInfo] to a string
  */ 
-export function toStr(t: Tape): string {
+export function toStr(t: TapeSet): string {
     switch (t.tag) {
         case Tag.Unknown: return "?";
         case Tag.Lit: return litToStr(t);
@@ -284,9 +282,9 @@ export function resolveAll(symbols: TapeDict): TapeDict {
 }
 
 function resolve(
-    t: Tape, 
+    t: TapeSet, 
     env: Env,
-): Tape {
+): TapeSet {
     switch (t.tag) {
         case Tag.Unknown: return Lit();
         case Tag.Lit:     return t;
@@ -296,8 +294,8 @@ function resolve(
 }
 
 function simplify(
-    t: Tape,
-): Tape {
+    t: TapeSet,
+): TapeSet {
     switch (t.tag) {
         case Tag.Rename:  return Rename(t.child, t.fromTape, t.toTape);
         case Tag.Sum:     return Sum(t.c1, t.c2);
@@ -311,7 +309,7 @@ function simplify(
 function resolveRef(
     t: Ref, 
     env: Env,
-): Tape {
+): TapeSet {
     if (env.visited.has(t.symbol)) {
         return Lit();
     }
@@ -327,10 +325,10 @@ function resolveRef(
 }
 
 function map(
-    v: Tape, 
-    f: (v: Tape, env: Env) => Tape,
+    v: TapeSet, 
+    f: (v: TapeSet, env: Env) => TapeSet,
     env: Env
-): Tape {
+): TapeSet {
     const clone = Object.create(Object.getPrototypeOf(v));
     for (const [k, child] of Object.entries(v)) {
         if (child.hasOwnProperty("tag")) {

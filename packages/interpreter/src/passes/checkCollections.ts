@@ -6,7 +6,7 @@ import {
     TST
 } from "../tsts";
 import { Component } from "../components";
-import { Result } from "../utils/msgs";
+import { Msg } from "../utils/msgs";
 
 /**
  * Make sure that collections are reasonably placed
@@ -23,7 +23,7 @@ export class CheckCollections extends Pass<TST,TST> {
         return "Creating collections";
     }
 
-    public transformAux(t: TST, env: PassEnv): Result<TST> {
+    public transformAux(t: TST, env: PassEnv): Msg<TST> {
         const newThis = new CheckCollections(t);
         return t.mapChildren(newThis, env).bind(t => {
             switch(t.tag) {

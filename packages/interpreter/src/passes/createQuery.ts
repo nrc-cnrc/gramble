@@ -1,4 +1,4 @@
-import { Result } from "../utils/msgs";
+import { Msg } from "../utils/msgs";
 import { 
     Grammar, JoinGrammar
 } from "../grammars";
@@ -22,20 +22,19 @@ export class CreateQuery extends Pass<Grammar,Grammar> {
         super();
     }
     
-    public transform(g: Grammar, env: PassEnv): Result<Grammar> {
+    public transformAux(g: Grammar, env: PassEnv): Grammar {
 
         // if it's an empty query there's nothing to do
         if (Array.isArray(this.query) && this.query.length === 0) 
-            return g.msg();
+            return g;
         
         if (!Array.isArray(this.query) && dictLen(this.query) == 0) 
-            return g.msg();
+            return g;
 
         // otherwise turn it into a product of literals and join it
         const querySeq = Query(this.query);
         return new JoinGrammar(g, querySeq)
-                        .tapify(env)
-                        .msg();
+                        .tapify(env);
     }
 }
 

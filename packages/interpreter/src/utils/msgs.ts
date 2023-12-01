@@ -1,11 +1,11 @@
 import { Dict, Func } from "./func";
 import { Pos } from "./cell";
 
-type MsgType = "error" | "warning" | "info" | 
+type Tag = "error" | "warning" | "info" | 
                 "command" | "header" | "comment" | "content";
 
 /**
- * Msg ("message") is a communication between the compiler and 
+ * Message is a communication between the compiler and 
  * the dev environment -- errors, unit test success and failure, 
  * etc.  
  * 
@@ -15,10 +15,10 @@ type MsgType = "error" | "warning" | "info" |
  * just look up msg["row"] or whatever, not have to know about the 
  * class hierarchy and such.
  */
-export class Msg {
+export class Message {
 
     constructor(
-        public type: MsgType,
+        public tag: Tag,
         public shortMsg: string,
         public longMsg: string,
         public pos: Pos | undefined = undefined
@@ -36,7 +36,7 @@ export class Msg {
         return this.pos?.col;
     }
 
-    public localize(pos?: Pos): Msg {
+    public localize(pos?: Pos): Message {
         if (this.pos != undefined) {
             return this;
         }
@@ -49,7 +49,7 @@ export class Msg {
      * and only consider the item, by providing a callback that
      * handles them as a side effect.
      */
-     public msgTo(f: Msgs | MsgCallback, pos?: Pos): void {
+     public msgTo(f: Message[] | MsgCallback, pos?: Pos): void {
         const msg = this.localize(pos);
         if (Array.isArray(f)) {
             f.push(msg);
@@ -57,12 +57,9 @@ export class Msg {
         }
         f(msg);
     }
-
 };
 
-export type Msgs = Msg[];
-
-export class MissingSymbolError extends Msg {
+export class MissingSymbolError extends Message {
     constructor(
         public symbol: string
     ) {
@@ -71,19 +68,19 @@ export class MissingSymbolError extends Msg {
     }
 }
 
-export class CommandMsg extends Msg  {
+export class CommandMsg extends Message  {
     constructor() {
         super("command", "", "");
     }
 }
 
-export class CommentMsg extends Msg  {
+export class CommentMsg extends Message  {
     constructor() {
         super("comment", "", "");
     }
 }
 
-export class ContentMsg extends Msg  {
+export class ContentMsg extends Message  {
     constructor(
         public color: string,
         public fontColor: string
@@ -92,7 +89,7 @@ export class ContentMsg extends Msg  {
     }
 }
 
-export class HeaderMsg extends Msg  {
+export class HeaderMsg extends Message  {
     constructor(
         public color: string
     ) {
@@ -100,74 +97,68 @@ export class HeaderMsg extends Msg  {
     }
 }
 
-export function Err(shortMsg: string, longMsg: string): Msg {
-    return new Msg("error", shortMsg, longMsg);
+export function Err(shortMsg: string, longMsg: string): Message {
+    return new Message("error", shortMsg, longMsg);
 }
 
-export function Warn(longMsg: string): Msg {
-    return new Msg("warning", "warning", longMsg);
+export function Warn(longMsg: string): Message {
+    return new Message("warning", "warning", longMsg);
 }
 
-export function Success(longMsg: string): Msg {
-    return new Msg("info", "success", longMsg);
+export function Success(longMsg: string): Message {
+    return new Message("info", "success", longMsg);
 }
 
-type MsgCallback = Func<Msg, void>;
-export type ResultFunc<T1,T2> = Func<T1,T2|Result<T2>>;
+type MsgCallback = Func<Message, void>;
+export type MsgFunc<T1,T2> = Func<T1,T2|Msg<T2>>;
 
-export class Result<T> {
+export class Msg<T> {
 
     constructor(
         protected item: T,
-        protected msgs: Msgs = []
+        protected msgs: Message[] = []
     ) { }
 
-    public destructure(): [T, Msgs] {
+    public destructure(): [T, Message[]] {
         return [this.item, this.msgs];
     }
 
-    public bind<T2>(f: ResultFunc<T,T2>): Result<T2> {
+    public bind<T2>(f: MsgFunc<T,T2>): Msg<T2> {
         let result = f(this.item);
-        if (!(result instanceof Result)) {
-            result = new Result(result);
+        if (!(result instanceof Msg)) {
+            result = new Msg(result);
         }
         return result.msg(this.msgs);
     }
 
-    public msg(m: Msg | Msgs | ResultVoid = []): Result<T> {
-        if (m instanceof Result) {
-            return new Result(this.item, this.msgs.concat(m.msgs));
+    public msg(m: Message | Message[] | MsgVoid = []): Msg<T> {
+        if (m instanceof Msg) {
+            return new Msg(this.item, this.msgs.concat(m.msgs));
         }
-        return new Result(this.item, this.msgs.concat(m));
+        return new Msg(this.item, this.msgs.concat(m));
     }
 
-    public err(shortMsg: string, longMsg: string): Result<T> {
+    public err(shortMsg: string, longMsg: string): Msg<T> {
         const e = Err(shortMsg, longMsg);
-        //if (isPositioned(this.item)) {
-        //    return this.msg(e.localize(this.item.pos));
-        //}
         return this.msg(e);
     }
     
-    public warn(longMsg: string): Result<T> {
+    public warn(longMsg: string): Msg<T> {
         const e = Warn(longMsg);
-        //if (isPositioned(this.item)) {
-        //    return this.msg(e.localize(this.item.pos));
-        //}
         return this.msg(e);
     }
 
-    public log(): Result<T> {
+    public log(): Msg<T> {
         for (const msg of this.msgs) {
             console.log(msg);
         }
         return this;
     }
 
-    public localize(pos: Pos | undefined): Result<T> {
+    public localize(pos: Pos | undefined): Msg<T> {
         const [item, msgs] = this.destructure();
-        const newMsgs = msgs.map(m => m.localize(pos));
-        return new Result(item, newMsgs);
+        const newMessages: Message[] = msgs.map(m => m.localize(pos));
+        return new Msg(item, newMessages);
     }
 
     /** 
@@ -175,7 +166,7 @@ export class Result<T> {
      * and only consider the item, by providing a callback that
      * handles them as a side effect.
      */
-    public msgTo(f: Msgs | MsgCallback): T {
+    public msgTo(f: Message[] | MsgCallback): T {
         if (Array.isArray(f)) {
             f.push(...this.msgs);
             return this.item;
@@ -189,91 +180,91 @@ export class Result<T> {
 }
 
 
-export class ResultList<T> extends Result<T[]> {
+export class MsgList<T> extends Msg<T[]> {
 
     constructor(
         items: T[],
-        msgs: Msgs = []
+        msgs: Message[] = []
     ) { 
         super(items, msgs);
     }
 
-    public map<T2>(f: ResultFunc<T,T2>): ResultList<T2> {
+    public map<T2>(f: MsgFunc<T,T2>): MsgList<T2> {
         const items: T2[] = [];
-        const msgs: Msgs = [];
+        const msgs: Message[] = [];
         for (const item of this.item) {
             let result = f(item);
-            if (!(result instanceof Result)) {
-                result = new Result(result);
+            if (!(result instanceof Msg)) {
+                result = new Msg(result);
             }
             const [newItem,newMsgs] = result.destructure();
             items.push(newItem);
             msgs.push(...newMsgs);
         }
-        return new ResultList(items, msgs);
+        return new MsgList(items, msgs);
     }
 }
 
-export class ResultDict<T> extends Result<Dict<T>> {
+export class MsgDict<T> extends Msg<Dict<T>> {
 
     constructor(
         items: Dict<T>,
-        msgs: Msgs = []
+        msgs: Message[] = []
     ) { 
         super(items, msgs);
     }
 
-    public map<T2>(f: ResultFunc<T,T2>): ResultDict<T2> {
+    public map<T2>(f: MsgFunc<T,T2>): MsgDict<T2> {
         const items: Dict<T2> = {};
-        const msgs: Msgs = [];
+        const msgs: Message[] = [];
         for (const [k,v] of Object.entries(this.item)) {
             let newV = f(v);
-            if (!(newV instanceof Result)) {
-                newV = new Result(newV);
+            if (!(newV instanceof Msg)) {
+                newV = new Msg(newV);
             }
             const [newItem,newMsgs] = newV.destructure();
             items[k] = newItem;
             msgs.push(...newMsgs);
         }
-        return new ResultDict(items, msgs);
+        return new MsgDict(items, msgs);
     }
 }
 
-export class ResultVoid extends Result<void> {
-    constructor(msgs: Msgs = []) { 
+export class MsgVoid extends Msg<void> {
+    constructor(msgs: Message[] = []) { 
         super(void(0), msgs);
     }
 }
 
-export function result<T>(
-    item: T|Result<T>
-): Result<T> {
-    if (item instanceof Result) {
+export function msg<T>(
+    item: T|Msg<T>
+): Msg<T> {
+    if (item instanceof Msg) {
         return item;
     }
-    return new Result(item);
+    return new Msg(item);
 }
 
-export function resultList<T>(xs: (T|Result<T>)[]): ResultList<T> {
-    const msgs: Msg[] = [];
+export function msgList<T>(xs: (T|Msg<T>)[]): MsgList<T> {
+    const msgs: Message[] = [];
     const items: T[] = [];
     for (const x of xs) {
-        if (!(x instanceof Result)) {
+        if (!(x instanceof Msg)) {
             items.push(x);
             continue;
         }
         const item = x.msgTo(msgs);
         items.push(item);
     }
-    return new ResultList(items, msgs);
+    return new MsgList(items, msgs);
 }
 
-export function resultDict<T>(items: Dict<T>): ResultDict<T> {
-    return new ResultDict(items);
+export function msgDict<T>(items: Dict<T>): MsgDict<T> {
+    return new MsgDict(items);
 }
 
-export const unit = new ResultVoid();
+export const unit = new MsgVoid();
 
-export function THROWER(m: Msg): void {
+export function THROWER(m: Message): void {
     throw m;
 }

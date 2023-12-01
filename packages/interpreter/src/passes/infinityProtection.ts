@@ -16,11 +16,11 @@ import { AlternationGrammar,
 import { renameTape } from "../tapes";
 import { Count } from "../grammarConvenience";
 import { exhaustive } from "../utils/func";
-import { Result } from "../utils/msgs";
+import { Msg } from "../utils/msgs";
 
 export class InfinityProtection extends Pass<Grammar,Grammar> {
 
-    public transform(g: Grammar, env: PassEnv): Result<Grammar> {
+    public transform(g: Grammar, env: PassEnv): Msg<Grammar> {
 
         if (env.opt.maxChars == Infinity) return g.msg();
 

@@ -87,11 +87,11 @@ class TapeCalcOrderTest implements PropertyTest {
             const pass = new FlattenCollections()
                             .compose(new CalculateTapes());
             const env = new PassEnv();
-            grammar = pass.go(grammar, env).msgTo([]);
+            grammar = pass.transform(grammar, env).msgTo([]);
             
             for (const symbol of getAllSymbols(grammar)) {
                 const selectSymbol = new SelectSymbol(symbol);
-                let ref = selectSymbol.go(grammar, env).msgTo(THROWER); 
+                let ref = selectSymbol.transform(grammar, env).msgTo(THROWER); 
                 tapes[symbol] = ref.tapeNames;
             }
 

@@ -16,14 +16,10 @@ import {
     StartsHeader
 } from "../headers";
 
-import { Err, Msgs } from "../utils/msgs";
+import { Err, Message } from "../utils/msgs";
 import { PassEnv, AutoPass } from "../passes";
 
 export class RescopeLeftBinders extends AutoPass<TST> {
-
-    public get desc(): string {
-        return "Rescoping left-binding headers";
-    }
 
     public postTransform(t: TST, env: PassEnv): TST {
         switch(t.tag) {
@@ -34,7 +30,7 @@ export class RescopeLeftBinders extends AutoPass<TST> {
     
     handleCellSequence(t: TstSequence): TST {
         
-        const msgs: Msgs = [];
+        const msgs: Message[] = [];
 
         const newChildren: TST[] = [];
         for (const child of t.children) {

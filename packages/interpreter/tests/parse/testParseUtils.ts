@@ -5,7 +5,7 @@ import { parseOp, autoID as opID } from "../../src/ops";
 import { PassEnv } from "../../src/passes";
 import { CombineLiterals } from "../../src/passes/combineLiterals";
 import { Grammar } from "../../src/grammars";
-import { Msgs } from "../../src/utils/msgs";
+import { Message } from "../../src/utils/msgs";
 import { toStr } from "../../src/passes/toStr";
 import { tokenizeUnicode } from "../../src/utils/strings";
 //import { autoID } from "../../src/components";
@@ -81,11 +81,10 @@ function testCellID(
     expectedID: string,
     numErrorsExpected: number = 0
 ): void {
-    const parseResult = parseContent(parseClass, text);
+    const msgs: Message[] = [];
     const env = new PassEnv();
-    const [result, msgs] = new CombineLiterals()
-                                .go(parseResult, env)
-                                .destructure() as [Grammar, Msgs];
+    const parseResult = parseContent(parseClass, text).msgTo(msgs)
+    const result = new CombineLiterals().transform(parseResult, env).msgTo(msgs);
     if (testPrefix != "") {
         testPrefix += '. ';
     }

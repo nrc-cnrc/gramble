@@ -1,5 +1,5 @@
 import { PassEnv, Pass } from "../passes";
-import { CommandMsg, CommentMsg, Err, Msgs, Result } from "../utils/msgs";
+import { CommandMsg, CommentMsg, Err, Message, Msg } from "../utils/msgs";
 import { 
     TstAssignment,
     TstEnclosure, 
@@ -25,7 +25,7 @@ export class ParseSource extends Pass<Source,TST> {
         return "Transforming source to TSTs";
     }
 
-    public transform(s: Source, env: PassEnv): Result<TST> {
+    public transform(s: Source, env: PassEnv): Msg<TST> {
 
         switch(s.tag) {
             case "workbook":  return this.handleWorkbook(s as Workbook, env);
@@ -34,11 +34,11 @@ export class ParseSource extends Pass<Source,TST> {
         }
     }
 
-    public handleWorkbook(s: Workbook, env: PassEnv): Result<TST> {
+    public handleWorkbook(s: Workbook, env: PassEnv): Msg<TST> {
 
         const projectCell = new Cell("", new Pos("", -1, -1));
         const project = new TstCollection(projectCell);
-        const msgs: Msgs = [];
+        const msgs: Message[] = [];
 
         for (const [sheetName, sheet] of Object.entries(s.sheets)) {
             
@@ -91,9 +91,9 @@ export class ParseSource extends Pass<Source,TST> {
      * felt that was information not relevant to the object itself.  It's only relevant to this algorithm,
      * so it should just stay here.
      */
-    public handleWorksheet(s: Worksheet, env: PassEnv): Result<TST> {
+    public handleWorksheet(s: Worksheet, env: PassEnv): Msg<TST> {
 
-        const msgs: Msgs = [];
+        const msgs: Message[] = [];
 
         // sheets are treated as having an invisible cell containing their names at 0, -1
         const startCell = new Cell(s.name, new Pos(s.name, 0, 0));

@@ -72,7 +72,7 @@
     "testPassTapes": "mocha -r ts-node/register tests/pass/testPassTapes.ts",
     "testPassVocab": "mocha -r ts-node/register tests/testPassVocab.ts",
 
-    "testProperty": "mocha -r ts-node/register tests/property/testProperty.ts",
+    "testProperty": "mocha -r ts-node/register tests/property/*.ts",
     "testPropertyEq": "mocha -r ts-node/register tests/property/testPropertyEq.ts",
     "testPropertyTapeCalc": "mocha -r ts-node/register tests/property/testPropertyTapeCalc.ts",
     "testPropertyTapeCalcOrder": "mocha -r ts-node/register tests/property/testPropertyTapeCalcOrder.ts",

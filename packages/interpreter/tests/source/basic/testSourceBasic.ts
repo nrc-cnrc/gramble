@@ -1,3 +1,4 @@
+import { VERBOSE_TIME } from "../../../src/utils/logging";
 import { testProject, ProjectTest, Error, Warning } from "../testSourceUtil";
 
 const DIR = "basic";
@@ -15,7 +16,7 @@ describe(`Source ${DIR}`, function() {
         results: [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
-        ]
+        ],
     }));
     
     describe('1b. Minimal grammar with no table: op', test({

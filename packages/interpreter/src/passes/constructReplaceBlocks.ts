@@ -12,7 +12,7 @@ import {
 import { INPUT_TAPE, OUTPUT_TAPE } from "../utils/constants";
 import { PassEnv, AutoPass } from "../passes";
 import { lengthRange } from "./infinityProtection";
-import { Result } from "../utils/msgs";
+import { Msg } from "../utils/msgs";
 
 /**
  * This pass handles the transformation of replacement rule blocks 

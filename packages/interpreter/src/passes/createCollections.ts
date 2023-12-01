@@ -1,5 +1,5 @@
 import { Pass, PassEnv } from "../passes";
-import { Msgs, Result, Warn } from "../utils/msgs";
+import { Message, Msg, Warn } from "../utils/msgs";
 import { 
     TstCollection, 
     TstOp, TstEmpty,
@@ -45,7 +45,7 @@ export class CreateCollections extends Pass<TST,TST> {
         return "Creating collections";
     }
 
-    public transform(t: TST, env: PassEnv): Result<TST> {
+    public transform(t: TST, env: PassEnv): Msg<TST> {
 
         switch(t.tag) {
             case "op": return this.handleOp(t, env);
@@ -53,9 +53,9 @@ export class CreateCollections extends Pass<TST,TST> {
         }
     }
 
-    public handleOp(t: TstOp, env: PassEnv): Result<TST> {
+    public handleOp(t: TstOp, env: PassEnv): Msg<TST> {
 
-        const msgs: Msgs = [];
+        const msgs: Message[] = [];
 
         if (!(t.op instanceof CollectionOp)) {
             return t.mapChildren(this, env);
@@ -142,7 +142,7 @@ export class CreateCollections extends Pass<TST,TST> {
         });
 
         const newCollection = new TstCollection(t.cell, evenMoreChildren);
-        return newCollection.mapChildren(this, env).msg(msgs) as Result<TST>;
+        return newCollection.mapChildren(this, env).msg(msgs) as Msg<TST>;
     }
 
 }

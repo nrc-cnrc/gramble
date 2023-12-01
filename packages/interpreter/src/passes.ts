@@ -1,5 +1,5 @@
 import { Grammar } from "./grammars";
-import { Msgs, Result, result } from "./utils/msgs";
+import { Message, Msg, msg } from "./utils/msgs";
 import { 
     Dict, update
 } from "./utils/func";
@@ -24,30 +24,13 @@ export class PassEnv extends Env {
 
 export abstract class Pass<T1,T2> {
 
-    public go(c: T1|Result<T1>, env: PassEnv): Result<T2> {
-
-        // unwrap any messages already present
-        const msgs: Msgs = [];
-        if (c instanceof Result) c = c.msgTo(msgs);
-        
-        // execute the transformation, printing the desc and elapsed
-        // time if requested
-        const verbose = (env.opt.verbose & VERBOSE_TIME) != 0;
-        return timeIt(() => this.transform(c as T1, env).msg(msgs), 
-               verbose, this.desc);
-    }
-
-    public get desc(): string { 
-        return "Pass base class";
-    }
-
-    public transform(c: T1, env: PassEnv): Result<T2> {
+    public transform(c: T1, env: PassEnv): Msg<T2> {
         let result = this.tryTransform(this.transformAux, c, env)
         if (hasPos(c)) return result.localize(c.pos);
         return result;
     }
 
-    public transformAux(c: T1, env: PassEnv): T2|Result<T2> {
+    public transformAux(c: T1, env: PassEnv): T2|Msg<T2> {
         throw new Error("not implemented");
     }
 
@@ -61,20 +44,38 @@ export abstract class Pass<T1,T2> {
      * messaging/localization system.
      */
     public tryTransform(
-        transform: (c: T1, env: PassEnv) => T2|Result<T2>,
+        transform: (c: T1, env: PassEnv) => T2|Msg<T2>,
         c: T1,
         env: PassEnv
-    ): Result<T2> {
+    ): Msg<T2> {
         try {
             const t = transform.bind(this);
-            let res = result(t(c, env));
+            let res = msg(t(c, env));
             if (hasPos(c)) return res.localize(c.pos);
             return res;
         } catch (e) {
-            if (!(e instanceof Result)) throw e;
+            if (!(e instanceof Msg)) throw e;
             if (hasPos(c)) return e.localize(c.pos);
             return e;
         }
+    }
+}
+
+export class TimerPass<T1,T2> extends Pass<T1,T2> {
+
+    constructor(
+        public desc: string,
+        public child: Pass<T1,T2>
+    ) { 
+        super();
+    }
+
+    public transform(c: T1, env: PassEnv): Msg<T2> {
+        // execute the transformation, printing the desc and elapsed
+        // time if requested
+        const verbose = (env.opt.verbose & VERBOSE_TIME) != 0;
+        return timeIt(() => this.child.transform(c, env), 
+               verbose, this.desc);
     }
 }
 
@@ -86,36 +87,28 @@ export class ComposedPass<T1,T2,T3> extends Pass<T1,T3> {
     ) { 
         super();
     }
-    
-    public static get desc(): string {
-        return 'Composed pass';
-    }
 
-    public go(t: T1, env: PassEnv): Result<T3> {
-        return new Result<T1>(t)
-                    .bind(t => this.child1.go(t, env))
-                    .bind(t => this.child2.go(t, env))
-    }
-
-    public transform(t: T1, env: PassEnv): Result<T3> {
-        throw new Error("calling transform on a composed pass");
+    public transform(t: T1, env: PassEnv): Msg<T3> {
+        return msg(t)
+                    .bind(t => this.child1.transform(t, env))
+                    .bind(t => this.child2.transform(t, env))
     }
 
 }
 
 export abstract class AutoPass<T extends Component> extends Pass<T,T> {
 
-    public transformAux(c: T, env: PassEnv): Result<T> {
+    public transformAux(c: T, env: PassEnv): Msg<T> {
         return this.tryTransform(this.preTransform, c, env)
-                   .bind(c => c.mapChildren(this, env).localize(c.pos) as Result<T>)
+                   .bind(c => c.mapChildren(this, env).localize(c.pos) as Msg<T>)
                    .bind(c => this.tryTransform(this.postTransform, c, env))
     }
 
-    public preTransform(g: T, env: PassEnv): T|Result<T> {
+    public preTransform(g: T, env: PassEnv): T|Msg<T> {
         return g;
     }
 
-    public postTransform(g: T, env: PassEnv): T|Result<T> {
+    public postTransform(g: T, env: PassEnv): T|Msg<T> {
         return g;
     }
 

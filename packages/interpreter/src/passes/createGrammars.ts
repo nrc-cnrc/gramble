@@ -12,7 +12,7 @@ import { Pass, PassEnv } from "../passes";
 import { 
     AlternationGrammar,
     EpsilonGrammar, 
-    Grammar, GrammarResult, 
+    Grammar, 
     HideGrammar,  
     ReplaceBlockGrammar, 
     TestNotGrammar, 
@@ -24,7 +24,7 @@ import {
     FilterGrammar
 } from "../grammars";
 import { parseClass, TapeHeader } from "../headers";
-import { Err, Msgs, resultList } from "../utils/msgs";
+import { Err, Msg, Message, msgList } from "../utils/msgs";
 import { HeaderToGrammar } from "./headerToGrammar";
 import { parseContent } from "../content";
 import { DEFAULT_PARAM } from "../utils/constants";
@@ -43,7 +43,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
         return "Creating grammar objects";
     }
 
-    public transform(t: TST, env: PassEnv): GrammarResult {
+    public transformAux(t: TST, env: PassEnv): Grammar|Msg<Grammar> {
 
         switch(t.tag) {
             case "headerpair": return this.handleHeaderPair(t, env);
@@ -65,7 +65,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
         }
     }
 
-    public handleHeaderPair(t: TstHeaderPair, env: PassEnv): GrammarResult {
+    public handleHeaderPair(t: TstHeaderPair, env: PassEnv): Msg<Grammar> {
         const pc = parseClass(t.header.header);
         return parseContent(pc, t.cell.text)
                 .bind(g => new HeaderToGrammar(g))
@@ -74,7 +74,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
                 .bind(g => g.locate(t.cell.pos));
     }
     
-    public handleRename(t: TstRename, env: PassEnv): GrammarResult {
+    public handleRename(t: TstRename, env: PassEnv): Msg<Grammar> {
         if (!(t.header.header instanceof TapeHeader)) {
             // TODO: This doesn't seem right
             return new EpsilonGrammar().err( "Renaming error",
@@ -87,7 +87,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
                     .bind(c => c.locate(t.cell.pos));
     }
     
-    public handleHide(t: TstHide, env: PassEnv): GrammarResult {
+    public handleHide(t: TstHide, env: PassEnv): Msg<Grammar> {
         let result = this.transform(t.prev, env);
         for (const tape of t.cell.text.split("/")) {
             result = result.bind(c => new HideGrammar(c, tape.trim()));
@@ -95,7 +95,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
         return result.bind(g => g.locate(t.pos));
     }
 
-    public handleFilter(t: TstFilter, env: PassEnv): GrammarResult {
+    public handleFilter(t: TstFilter, env: PassEnv): Msg<Grammar> {
         const [prevGrammar, prevMsgs] = this.transform(t.prev, env)
                                             .destructure();
 
@@ -111,37 +111,37 @@ export class CreateGrammars extends Pass<TST,Grammar> {
         return result.locate(t.cell.pos).msg(prevMsgs).msg(msgs);
     }
     
-    public handleEmpty(t: TstEmpty, env: PassEnv): GrammarResult {
-        return new EpsilonGrammar().msg();
+    public handleEmpty(t: TstEmpty, env: PassEnv): Grammar {
+        return new EpsilonGrammar();
     }
 
-    public handleTable(t: TstTable, env: PassEnv): GrammarResult {
-        return resultList(t.child.rows)
+    public handleTable(t: TstTable, env: PassEnv): Msg<Grammar> {
+        return msgList(t.child.rows)
                   .map(r => r.getParam(DEFAULT_PARAM))
                   .map(r => this.transform(r, env))
                   .bind(cs => new AlternationGrammar(cs))
                   .bind(c => c.locate(t.cell.pos));
     }
     
-    public handleOr(t: TstOr, env: PassEnv): GrammarResult {
-        return resultList([t.sibling, t.child])
+    public handleOr(t: TstOr, env: PassEnv): Msg<Grammar> {
+        return msgList([t.sibling, t.child])
                     .map(c => this.transform(c, env))
                     .bind(cs => new AlternationGrammar(cs))
                     .bind(c => c.locate(t.cell.pos));
     }
     
-    public handleJoin(t: TstJoin, env: PassEnv): GrammarResult {
-        return resultList([t.sibling, t.child])
+    public handleJoin(t: TstJoin, env: PassEnv): Msg<Grammar> {
+        return msgList([t.sibling, t.child])
                     .map(c => this.transform(c, env))
                     .bind(([c,s]) => new JoinGrammar(c, s))
                     .bind(c => c.locate(t.cell.pos));
     }
 
-    public handleReplace(t: TstReplace, env: PassEnv): GrammarResult {
+    public handleReplace(t: TstReplace, env: PassEnv): Msg<Grammar> {
 
         let [sibling, sibMsgs] = this.transform(t.sibling, env).destructure();
         const replaceRules: ReplaceGrammar[] = [];
-        const newMsgs: Msgs = [];
+        const newMsgs: Message[] = [];
 
         for (const params of t.child.rows) {
             const fromArg = this.transform(params.getParam("from"), env).msgTo(newMsgs);
@@ -174,10 +174,10 @@ export class CreateGrammars extends Pass<TST,Grammar> {
         return result.locate(t.cell.pos).msg(sibMsgs).msg(newMsgs);
     }
     
-    public handleTest(t: TstTest, env: PassEnv): GrammarResult {
+    public handleTest(t: TstTest, env: PassEnv): Msg<Grammar> {
         let result = this.transform(t.sibling, env);
 
-        const msgs: Msgs = [];
+        const msgs: Message[] = [];
         for (const params of t.child.rows) {
             const testInputs = this.transform(params.getParam(DEFAULT_PARAM), env).msgTo(msgs);
             const unique = this.transform(params.getParam("unique"), env).msgTo(msgs);
@@ -190,10 +190,10 @@ export class CreateGrammars extends Pass<TST,Grammar> {
                      .msg(msgs);
     }
     
-    public handleNegativeTest(t: TstTestNot, env: PassEnv): GrammarResult {
+    public handleNegativeTest(t: TstTestNot, env: PassEnv): Msg<Grammar> {
         let result = this.transform(t.sibling, env);
 
-        const msgs: Msgs = [];
+        const msgs: Message[] = [];
         for (const params of t.child.rows) {
             const testInputs = this.transform(params.getParam(DEFAULT_PARAM), env).msgTo(msgs);
             result = result.bind(c => new TestNotGrammar(c, testInputs))
@@ -204,19 +204,19 @@ export class CreateGrammars extends Pass<TST,Grammar> {
                      .msg(msgs);
     }
     
-    public handleSequence(t: TstSequence, env: PassEnv): GrammarResult {
-        return resultList(t.children)
+    public handleSequence(t: TstSequence, env: PassEnv): Msg<Grammar> {
+        return msgList(t.children)
                   .map(c => this.transform(c, env))
                   .bind(cs => new SequenceGrammar(cs));
     }
     
-    public handleAssignment(t: TstAssignment, env: PassEnv): GrammarResult {
+    public handleAssignment(t: TstAssignment, env: PassEnv): Msg<Grammar> {
         return this.transform(t.child, env);
     }
 
-    public handleCollection(t: TstCollection, env: PassEnv): GrammarResult {
+    public handleCollection(t: TstCollection, env: PassEnv): Msg<Grammar> {
         const newColl = new CollectionGrammar();
-        const msgs: Msgs = [];
+        const msgs: Message[] = [];
 
         for (const child of t.children) {
 
