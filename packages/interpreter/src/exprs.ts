@@ -797,6 +797,26 @@ class ConcatExpr extends BinaryExpr {
         yield* randomCutIter([c1wrapped, c2wrapped], env);
     }
 
+    public *forward(
+        env: DerivEnv
+    ): Gen<[boolean,Expr]> {
+        const [c1, c2] = env.opt.directionLTR ?
+                        [this.child1, this.child2] :
+                        [this.child2, this.child1];
+
+        for (const [c1Handled,c1Next] of c1.forward(env)) {
+            if (c1Handled) {
+                const wrapped = constructPrecede(env, c1Next, c2);
+                yield [c1Handled, wrapped];
+                continue;
+            } 
+            for (const [c2Handled,c2Next] of c2.forward(env)) {
+                const wrapped = constructPrecede(env, c1Next, c2Next);
+                yield [c2Handled, wrapped];
+            }
+        }
+    }
+
     public simplify(env: Env): Expr {
         if (this.child1 instanceof EpsilonExpr) return this.child2;
         if (this.child2 instanceof EpsilonExpr) return this.child1;

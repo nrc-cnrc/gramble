@@ -13,6 +13,7 @@ import {
     logTestSuite, VERBOSE_TEST_L2,
 } from "../testUtil";
 import { Grammar } from "../../src/grammars";
+import { VERBOSE_DEBUG, VERBOSE_GRAMMAR } from "../../src/utils/logging";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -368,6 +369,17 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         symbol: "inner2.x",
         results: [
             {t1: 'hello'},
+        ],
+    }));
+    
+    describe('22. Sequence of two embedded epsilons.', test({
+        grammar: Collection({
+            "a": Seq(Embed("b"), Embed("b")),
+            "b": Epsilon()
+        }),
+        symbol: "a",
+        results: [
+            {},
         ],
     }));
 

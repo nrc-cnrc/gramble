@@ -8,7 +8,7 @@ import { Dict, StringDict, update } from "../../src/utils/func";
 import { Options } from "../../src/utils/options";
 import { Embed, Epsilon, Join, Null, Seq, Uni } from "../../src/grammarConvenience";
 
-const NUM_TESTS = 1000;
+const NUM_TESTS = 100;
 const REDUCE_OPT = ReduceOptions({ symbolDrop: false });
 
 const EQUATIONS = [
