@@ -276,13 +276,9 @@ export class VocabEnv extends Env<Vocab> {
     }
 
     public update(v: Vocab): VocabEnv {
-        switch (v.tag) {
-            case Tag.Rename: return this.updateRename(v);
-            default:         return this;
-        }
-    }
-
-    updateRename(v: Rename): VocabEnv {
+        if (v.tag !== Tag.Rename) return this;
+        // we only care about Renames for this
+        
         const newTapes: Dict<Vocab> = Object.create(this.vocabMap);
         Object.assign(newTapes, this.vocabMap);
         newTapes[v.fromTape] = this.vocabMap[v.toTape];

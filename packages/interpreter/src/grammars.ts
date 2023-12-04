@@ -146,7 +146,8 @@ export abstract class AbstractGrammar extends Component {
      */
     public tapify(env: PassEnv): Grammar {
         const pass = new CalculateTapes();
-        return pass.transform(this as Grammar, env).msgTo(THROWER);
+        return pass.getEnvAndTransform(this as Grammar, {})
+                   .msgTo(THROWER);
     }
 
     /**
