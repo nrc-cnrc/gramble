@@ -30,10 +30,6 @@ export class CheckNamedParams extends Pass<TST,TST> {
         super();
     }
 
-    public get desc(): string {
-        return "Checking named params";
-    }
-
     public transformAux(t: TST, env: PassEnv): TST|Msg<TST> {
 
         switch(t.tag) {
@@ -132,13 +128,13 @@ export class CheckNamedParams extends Pass<TST,TST> {
             if (h.header instanceof UniqueHeader && this.permissibleParams.has(DEFAULT_PARAM)) {
                 // if we can easily remove the tag, try that
                 const newHeader = new TstHeader(h.cell, h.header.child);
-                throw newHeader.err("Invalid parameter",
+                return newHeader.err("Invalid parameter",
                         `The operator to the left does not expect ${param}`)
                         .localize(h.pos);
             }
 
             // otherwise return empty
-            throw new TstEmpty().err("Invalid parameter",
+            return new TstEmpty().err("Invalid parameter",
                 `The operator to the left does not expect ${param}`)
                 .localize(h.pos);
         }) as MsgFunc<TstHeader,TST>);

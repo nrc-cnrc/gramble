@@ -39,10 +39,6 @@ import { uniqueLiterals } from "./uniqueLiterals";
  */
 export class CreateGrammars extends Pass<TST,Grammar> {
 
-    public get desc(): string {
-        return "Creating grammar objects";
-    }
-
     public transformAux(t: TST, env: PassEnv): Grammar|Msg<Grammar> {
 
         switch(t.tag) {

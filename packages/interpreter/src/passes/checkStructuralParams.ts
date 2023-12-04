@@ -24,10 +24,6 @@ import {
 
 export class CheckStructuralParams extends Pass<TST,TST> {
 
-    public get desc(): string {
-        return "Checking structural params";
-    }
-
     public transformAux(t: TST, env: PassEnv): Msg<TST> {
         
         if (!(t instanceof TstOp)) {

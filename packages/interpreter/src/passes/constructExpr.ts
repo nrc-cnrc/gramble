@@ -1,15 +1,19 @@
 import { PassEnv } from "../passes";
 import {
     AlternationGrammar,
-    CollectionGrammar, CorrespondGrammar, CountGrammar, CursorGrammar, DotGrammar,
-    EmbedGrammar, Expr, Grammar, HideGrammar,
+    CollectionGrammar, CorrespondGrammar, 
+    CountGrammar, CursorGrammar, 
+    Grammar, HideGrammar,
     JoinGrammar, MatchGrammar,
-    NegationGrammar, PreTapeGrammar, RenameGrammar, RepeatGrammar,
-    ReplaceGrammar, SequenceGrammar, ShortGrammar,
+    NegationGrammar, PreTapeGrammar, 
+    RenameGrammar, RepeatGrammar,
+    ReplaceGrammar, SequenceGrammar, 
+    ShortGrammar,
 } from "../grammars";
 import { Dict } from "../utils/func";
 import { 
     CollectionExpr, EPSILON, EpsilonExpr, 
+    Expr, 
     NULL, constructAlternation, constructCollection, 
     constructCorrespond, constructCount, constructCursor, 
     constructDot, constructDotStar, constructEmbed, 

@@ -41,10 +41,6 @@ import { AUTO_SYMBOL, DEFAULT_SYMBOL } from "../utils/constants";
  */
 export class CreateCollections extends Pass<TST,TST> {
 
-    public get desc(): string {
-        return "Creating collections";
-    }
-
     public transform(t: TST, env: PassEnv): Msg<TST> {
 
         switch(t.tag) {

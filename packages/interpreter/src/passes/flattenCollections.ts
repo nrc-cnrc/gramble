@@ -43,10 +43,6 @@ export class FlattenCollections extends Pass<Grammar,Grammar> {
             default:           return g.mapChildren(this, env);
         }
     }
-    
-    public get desc(): string {
-        return "Qualifying names";
-    }
 
     public transformCollection(g: CollectionGrammar, env: PassEnv): Msg<Grammar> {
         const msgs: Message[] = [];

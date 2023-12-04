@@ -1,6 +1,7 @@
 import { Collection, Embed, Lit, Rename, Seq } from "../../src/grammarConvenience";
 import { CollectionGrammar, Grammar } from "../../src/grammars";
 import { Dict } from "../../src/utils/func";
+import { poisson, randomChoice } from "../../src/utils/random";
 
 export type RandOptions = {
     symbols: string[],
@@ -31,24 +32,6 @@ export function RandOptions(
 
 function decr(opt: RandOptions): RandOptions {
     return { ...opt, maxDepth: opt.maxDepth-1 };
-}
-
-export function randomChoice<T>(xs: T[]): T {
-    const i = Math.floor(Math.random() * xs.length);
-    return xs[i];
-}
-
-function poisson(mean: number): number {
-    const L = Math.exp(-mean);
-    let p = 1.0;
-    let k = 0;
-    
-    do {
-        k++;
-        p *= Math.random();
-    } while (p > L);
-    
-    return k - 1;
 }
 
 export function range(length: number): number[] {

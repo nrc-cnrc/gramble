@@ -21,10 +21,6 @@ import { exhaustive } from "../utils/func";
  */
 export class ParseSource extends Pass<Source,TST> {
 
-    public get desc(): string {
-        return "Transforming source to TSTs";
-    }
-
     public transform(s: Source, env: PassEnv): Msg<TST> {
 
         switch(s.tag) {

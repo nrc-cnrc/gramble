@@ -13,10 +13,6 @@ import {
 
  export class CreateOps extends AutoPass<TST> {
 
-    public get desc(): string {
-        return "Creating ops";
-    }
-
     public postTransform(t: TST, env: PassEnv): TST {
 
         if (!(t instanceof TstOp)) return t;

@@ -19,10 +19,6 @@ export class CheckCollections extends Pass<TST,TST> {
         super();
     }
 
-    public get desc(): string {
-        return "Creating collections";
-    }
-
     public transformAux(t: TST, env: PassEnv): Msg<TST> {
         const newThis = new CheckCollections(t);
         return t.mapChildren(newThis, env).bind(t => {

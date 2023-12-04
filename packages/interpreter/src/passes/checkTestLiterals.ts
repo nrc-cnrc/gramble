@@ -18,11 +18,7 @@ import { paramsMustBeLiteral } from "../ops";
  * of its child.  Otherwise, the fix is to remove the header entirely.
  */
 export class CheckTestLiterals extends AutoPass<TST> {
-
-    public get desc(): string {
-        return "Checking that all test content is literal";
-    }
-
+    
     public postTransform(t: TST, env: PassEnv): TST {
         switch(t.tag) {
             case "op": return this.handleOp(t);

@@ -31,10 +31,6 @@ export class HandleSingleTapes extends Pass<Grammar,Grammar> {
         super();
     }
 
-    public get desc(): string {
-        return "Handling single-tape environments";
-    }
-
     public transformAux(g: Grammar, env: PassEnv): Grammar|Msg<Grammar> {
         switch (g.tag) {
             case "singletape": return this.handleSingleTape(g, env);

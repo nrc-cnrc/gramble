@@ -1,7 +1,7 @@
 import { Pass, PassEnv } from "../passes";
 import { AlternationGrammar, 
     CollectionGrammar, 
-    CountGrammar, CounterStack, 
+    CountGrammar, 
     CursorGrammar, 
     EmbedGrammar, 
     Grammar, HideGrammar,
@@ -17,6 +17,7 @@ import { renameTape } from "../tapes";
 import { Count } from "../grammarConvenience";
 import { exhaustive } from "../utils/func";
 import { Msg } from "../utils/msgs";
+import { CounterStack } from "../utils/counter";
 
 export class InfinityProtection extends Pass<Grammar,Grammar> {
 

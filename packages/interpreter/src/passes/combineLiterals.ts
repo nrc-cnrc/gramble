@@ -16,10 +16,6 @@ import { PassEnv, AutoPass } from "../passes";
  */
 export class CombineLiterals extends AutoPass<Grammar> {
 
-    public get desc(): string {
-        return "Combining literals";
-    }
-
     public postTransform(g: Grammar, env: PassEnv): Grammar {
         switch(g.tag) {
             case "seq": return this.handleSequence(g, env);

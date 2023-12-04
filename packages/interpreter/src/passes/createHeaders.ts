@@ -15,10 +15,6 @@ import {
  */
 export class CreateHeaders extends Pass<TST,TST> {
 
-    public get desc(): string {
-        return "Parsing headers";
-    }
-
     public transform(t: TST, env: PassEnv): Msg<TST> {
 
         return t.mapChildren(this, env).bind(t => {

@@ -17,6 +17,8 @@ import { INPUT_TAPE, OUTPUT_TAPE } from "./utils/constants";
 import { VERBOSE_DEBUG, logDebug, logStates, logTime } from "./utils/logging";
 import { Namespace } from "./utils/namespace";
 import { Env, Options } from "./utils/options";
+import { CounterStack } from "./utils/counter";
+import { randomCut, randomCutIter } from "./utils/random";
 
 export type Query = TokenExpr | DotExpr;
 
@@ -258,64 +260,6 @@ function *wrap(
     }
 }
 
-export function *randomCut<T>(
-    gs: T[], 
-    env: DerivEnv
-): Gen<T> {
-    const offset = env.random 
-                     ? Math.floor(Math.random()*gs.length)
-                     : 0;
-    for (let i = 0; i < gs.length; i++) {
-        const mod_i = (i+offset) % gs.length;
-        yield gs[mod_i];
-    }
-}
-
-export function *randomCutIter<T>(
-    gs: Gen<T>[], 
-    env: DerivEnv
-): Gen<T> {
-    const offset = env.random 
-                     ? Math.floor(Math.random()*gs.length)
-                     : 0;
-    for (let i = 0; i < gs.length; i++) {
-        const mod_i = (i+offset) % gs.length;
-        yield *gs[mod_i];
-    }
-}
-
-
-export class CounterStack {
-
-    constructor(
-        public max: number = 4
-    ) { }
-
-    public stack: {[key: string]: number} = {};
-    public id: string = "ground";
-
-    public add(key: string) {
-        const result = new CounterStack(this.max);
-        result.stack[key] = 0;
-        Object.assign(result.stack, this.stack);
-        result.stack[key] += 1;
-        result.id = key + result.stack[key];
-        return result;
-    }
-
-    public get(key: string): number {
-        return (key in this.stack) ? this.stack[key] : 0;
-    }
-
-    public exceedsMax(key: string): boolean {
-        return this.get(key) >= this.max;
-    }
-
-    public tostring(): string {
-        return JSON.stringify(this.stack);
-    }
-}
-
 function *disjoin(
     ds: Iterable<Deriv>,
     env: DerivEnv,
@@ -529,7 +473,7 @@ class DotExpr extends Expr {
     ): Derivs { 
         if (query.tapeName != this.tapeName) return;
         const cs = [... query.expandStrings(env)];
-        const csCut = randomCut(cs, env);
+        const csCut = randomCut(cs, env.random);
         for (const c of csCut) {
             const token = constructToken(query.tapeName, c);
             yield new Deriv(token, EPSILON);
@@ -568,7 +512,7 @@ class DotStarExpr extends Expr {
         }
         
         const cs = [... query.expandStrings(env)];
-        const csCut = randomCut(cs, env);
+        const csCut = randomCut(cs, env.random);
         for (const c of csCut) {
             const token = constructToken(query.tapeName, c);
             yield new Deriv(token, this);
@@ -794,7 +738,7 @@ class ConcatExpr extends BinaryExpr {
         const c2derivs = c2.deriv(query, env);
         const c2wrapped = wrap(c2derivs, e => constructPrecede(env, c1next, e));
 
-        yield* randomCutIter([c1wrapped, c2wrapped], env);
+        yield* randomCutIter([c1wrapped, c2wrapped], env.random);
     }
 
     public *forward(
@@ -872,7 +816,7 @@ export class UnionExpr extends Expr {
         if (env.random) {
             const childDerivs = this.children.map(c => 
                                     c.deriv(query, env));
-            yield* randomCutIter(childDerivs, env);
+            yield* randomCutIter(childDerivs, env.random);
             return;
         }
 
@@ -887,7 +831,7 @@ export class UnionExpr extends Expr {
         if (env.random) {
             const childForwards = this.children.map(c => 
                 c.forward(env));
-            yield* randomCutIter(childForwards, env);
+            yield* randomCutIter(childForwards, env.random);
             return;
         }
 
@@ -1371,7 +1315,7 @@ export class CursorExpr extends UnaryExpr {
         const deltaGenerator = iterUnit(new Deriv(deltaToken, deltaNext));
         const derivQuery = constructDot(this.tape);
         const derivResults = disjoin(this.child.deriv(derivQuery, env), env);
-        const allResults = randomCutIter([deltaGenerator, derivResults], env);
+        const allResults = randomCutIter([deltaGenerator, derivResults], env.random);
 
         for (const d of allResults) {
             env.incrStates();
@@ -1813,7 +1757,7 @@ class NegationExpr extends UnaryExpr {
             results.push(remainderDeriv);
         }
 
-        yield* randomCut(results, env);
+        yield* randomCut(results, env.random);
     }
 
     public simplify(env: Env): Expr {

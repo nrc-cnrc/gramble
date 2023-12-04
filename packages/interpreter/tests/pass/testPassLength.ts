@@ -1,7 +1,5 @@
 import { expect } from 'chai';
 
-import { CounterStack } from '../../src/exprs';
-
 import {
     Count, Epsilon, 
     Join, Null, Rep, 
@@ -18,6 +16,7 @@ import {
 import { PassEnv } from '../../src/passes';
 import { lengthRange } from '../../src/passes/infinityProtection';
 import { Grammar } from '../../src/grammars';
+import { CounterStack } from '../../src/utils/counter';
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;

@@ -21,10 +21,6 @@ import {
 
 export class InsertTables extends AutoPass<TST> {
 
-    public get desc(): string {
-        return "Inserting tables";
-    }
-
     public postTransform(t: TST, env: PassEnv): TST {
         switch (t.tag) {
             case "op":         return this.handleOp(t);

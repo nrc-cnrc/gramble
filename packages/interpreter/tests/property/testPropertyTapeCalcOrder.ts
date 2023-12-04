@@ -11,6 +11,7 @@ import { Dict, arrayEquals } from "../../src/utils/func";
 import { THROWER } from "../../src/utils/msgs";
 import { PropertyTest, PropertyTestFailure, PropertyTestResult, PropertyTestSuccess, testToBreaking } from "./testPropertyUtil";
 import { ReduceOptions, reduceCollection } from "./reduceGrammar";
+import { fisherYates } from "../../src/utils/random";
 
 const NUM_TESTS = 10000;
 const OPT = RandOptions();
@@ -108,18 +109,6 @@ class TapeCalcOrderTest implements PropertyTest {
     public toStr(): string {
         return toStr(this.grammar) + `${this.scrambledKeys}`;
     }
-}
-
-
-function fisherYates<T>(a: T[]): T[] {
-    let current = a.length; 
-    let rand = 0;
-    while (current > 0) {
-        rand = Math.floor(Math.random() * current);
-        current--;
-        [a[current], a[rand]] = [a[rand], a[current]];
-    }
-    return a;
 }
 
 testToBreaking(

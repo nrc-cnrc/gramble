@@ -19,10 +19,6 @@ export class AssignDefaults extends AutoPass<Grammar> {
             default:           return g;
         }
     }
-    
-    public get desc(): string {
-        return "Assigning default symbols";
-    }
 
     public handleCollection(g: CollectionGrammar, env: PassEnv): Grammar {
         

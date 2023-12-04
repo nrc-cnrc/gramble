@@ -1,5 +1,4 @@
 import { 
-    CounterStack,
     PreTapeGrammar,
     Grammar, HideGrammar,
     JoinGrammar, ReplaceBlockGrammar, 
@@ -12,7 +11,7 @@ import {
 import { INPUT_TAPE, OUTPUT_TAPE } from "../utils/constants";
 import { PassEnv, AutoPass } from "../passes";
 import { lengthRange } from "./infinityProtection";
-import { Msg } from "../utils/msgs";
+import { CounterStack } from "../utils/counter";
 
 /**
  * This pass handles the transformation of replacement rule blocks 
@@ -21,10 +20,6 @@ import { Msg } from "../utils/msgs";
 export class ConstructReplaceBlocks extends AutoPass<Grammar> {
 
     public replaceIndex: number = 0;
-
-    public get desc(): string {
-        return "Transforming replace blocks";
-    }
     
     public postTransform(g: Grammar, env: PassEnv): Grammar {
         switch (g.tag) {

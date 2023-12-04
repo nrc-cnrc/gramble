@@ -35,10 +35,6 @@ import { HIDDEN_PREFIX } from "../utils/constants";
  * be) and wrap that in an equals rather than using starts/ends/contains.
  */
 export class CreateFilters extends AutoPass<Grammar> {
-    
-    public get desc(): string {
-        return "Adjusting filter scope";
-    }
 
     public preTransform(g: Grammar, env: PassEnv): Grammar {
         switch (g.tag) {

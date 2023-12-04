@@ -31,10 +31,6 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
         super()
     }
 
-    public get desc(): string {
-        return "Creating grammars from header/cell pairs";
-    }
-
     public transformAux(h: Header, env: PassEnv): Grammar|Msg<Grammar> {
         switch(h.tag) {
             case "embed":    return this.handleEmbed(h, env);
