@@ -17,7 +17,9 @@ import { AssignDefaults } from "./assignDefaults";
 import { HandleSingleTapes } from "./handleSingleTapes";
 import { CombineLiterals } from "./combineLiterals";
 import { CalculateTapes } from "./calculateTapes";
-import { TimerPass } from "../passes";
+import { Pass, TimerPass } from "../passes";
+import { Grammar } from "../grammars";
+import { TST } from "../tsts";
 
 /**
  * There are three main sequences of Passes.  
@@ -53,10 +55,12 @@ export const SOURCE_PASSES =
     // turn ops that represent collections into actual collections, 
     // rescope their children as necessary, and define default symbols
     // if necessary
-    new TimerPass(
+    new TimerPass<TST,TST>(
         "Creating collections",
         new CreateCollections()
-    ).compose(
+    )
+    
+    .compose(
         
     // in syntactic positions when there's an implicit table semantics,
     // insert a TstTable as appropriate
@@ -68,60 +72,60 @@ export const SOURCE_PASSES =
     // make sure ops have the right structural parameters (.sibling,
     // .children) to be interpreted, and that these parameters are 
     // the right kinds of syntactic objects.
-    new TimerPass(
+    new TimerPass<TST,TST>(
         "Checking structural commands",    
         new CheckStructuralParams()
     ).compose(
 
     // parse the first row of TstPreGrids into TstHeaders
-    new TimerPass(
+    new TimerPass<TST,TST>(
         "Parsing headers",    
         new CreateHeaders()
     ).compose(
 
     // make sure there aren't extraneous parameters that the ops
     // can't interpret
-    new TimerPass(
+    new TimerPass<TST,TST>(
         "Checking named commands",    
         new CheckNamedParams()
     ).compose(
         
     // make sure that all unit test content is literal (e.g. isn't
     // an embed, a regex, etc.)
-    new TimerPass(
+    new TimerPass<TST,TST>(
         "Making sure tests are literal",    
         new CheckTestLiterals()
     ).compose(
 
     // associate content cells below headers into TstHeadedCells
-    new TimerPass(
+    new TimerPass<TST,TST>(
         "Associating headers and cells", 
         new AssociateHeaders()
     ).compose(
 
     // transform the remaining placeholder ops into their 
     // appropriate syntactic structures
-    new TimerPass(
+    new TimerPass<TST,TST>(
         "Creating ops", 
         new CreateOps()
     ).compose(
 
     // check whether collections are in appropriate structural
     // positions
-    new TimerPass(
+    new TimerPass<TST,TST>(
         "Checking for spurious collections", 
         new CheckCollections()
     ).compose(
 
     // restructure content cells that scope only over the cell to
     // their left (e.g. equals, rename)
-    new TimerPass(
+    new TimerPass<TST,TST>(
         "Rescoping left-binders", 
         new RescopeLeftBinders()
     ).compose(
 
     // create grammar objects
-    new TimerPass(
+    new TimerPass<TST,Grammar>(
         "Creating grammar objects", 
         new CreateGrammars()
     ).compose(
@@ -133,6 +137,12 @@ export const SOURCE_PASSES =
         new CombineLiterals()
     )))))))))))));
 
+
+const x = new TimerPass("x", new AssignDefaults())
+const y = new TimerPass("y", new FlattenCollections())
+const xy = x.compose(y);
+const z = new TimerPass<Grammar,Grammar>("z", new CalculateTapes());
+const yz = y.compose(z);
 
 export const GRAMMAR_PASSES = 
 
@@ -154,13 +164,13 @@ export const GRAMMAR_PASSES =
 
     // Replace the .tapeSet member (which by default is TapeUnknown)
     // with a TapeLit (a concrete set of tape names)
-    new TimerPass(
+    new TimerPass<Grammar,Grammar>(
         "Calculating tapes", 
         new CalculateTapes()
     ).compose(
 
     // handles some local tape renaming for plaintext/regex
-    new TimerPass(
+    new TimerPass<Grammar,Grammar>(
         "Handling single-tape environments", 
         new HandleSingleTapes()
     ).compose(

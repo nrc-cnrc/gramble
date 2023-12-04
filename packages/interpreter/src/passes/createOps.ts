@@ -3,13 +3,14 @@ import {
     ReplaceOp,
     SymbolOp, 
 } from "../ops";
-import { PassEnv, AutoPass } from "../passes";
+import { AutoPass } from "../passes";
 import { 
     TstOp, 
     TstTest, 
     TstTable, TstTestNot, TstReplace, 
     TstOr, TstAssignment, TstParamList, TstJoin, TST
 } from "../tsts";
+import { PassEnv } from "../components";
 
  export class CreateOps extends AutoPass<TST> {
 

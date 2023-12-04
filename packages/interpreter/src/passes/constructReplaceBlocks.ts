@@ -9,9 +9,10 @@ import {
 } from "../grammars";
 
 import { INPUT_TAPE, OUTPUT_TAPE } from "../utils/constants";
-import { PassEnv, AutoPass } from "../passes";
+import { AutoPass, SymbolEnv } from "../passes";
 import { lengthRange } from "./infinityProtection";
 import { CounterStack } from "../utils/counter";
+import { Options } from "../utils/options";
 
 /**
  * This pass handles the transformation of replacement rule blocks 
@@ -21,7 +22,11 @@ export class ConstructReplaceBlocks extends AutoPass<Grammar> {
 
     public replaceIndex: number = 0;
     
-    public postTransform(g: Grammar, env: PassEnv): Grammar {
+    public getEnv(opt: Partial<Options>): SymbolEnv {
+        return new SymbolEnv(opt);
+    }
+    
+    public postTransform(g: Grammar, env: SymbolEnv): Grammar {
         switch (g.tag) {
             case "replaceblock": return this.handleReplaceBlock(g, env);
             case "replace":      return this.handleReplace(g, env);
@@ -29,7 +34,7 @@ export class ConstructReplaceBlocks extends AutoPass<Grammar> {
         }
     }
 
-    public handleReplaceBlock(g: ReplaceBlockGrammar, env: PassEnv): Grammar {
+    public handleReplaceBlock(g: ReplaceBlockGrammar, env: SymbolEnv): Grammar {
 
         // it's possible for rule transformation to result in a non
         // rule (due to errors), so we filter those out
@@ -61,7 +66,7 @@ export class ConstructReplaceBlocks extends AutoPass<Grammar> {
         return new RenameGrammar(newG, OUTPUT_TAPE, g.inputTape).tapify(env);
     }
 
-    public handleReplace(g: ReplaceGrammar, env: PassEnv): Grammar {
+    public handleReplace(g: ReplaceGrammar, env: SymbolEnv): Grammar {
 
         const stack = new CounterStack(2);
 

@@ -3,8 +3,9 @@ import {
     Grammar,
     CollectionGrammar,
 } from "../grammars";
-import { Pass, PassEnv } from "../passes";
+import { Pass } from "../passes";
 import { qualifySymbol } from "./qualifySymbols";
+import { PassEnv } from "../components";
 
 /**
  * CollectionGrammars have a "selectedSymbol" member that determines

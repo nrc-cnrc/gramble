@@ -1,4 +1,4 @@
-import { Pass, PassEnv } from "../passes";
+import { Pass } from "../passes";
 import { 
     DotGrammar,
     EmbedGrammar,
@@ -11,6 +11,7 @@ import {
 import { DEFAULT_TAPE } from "../utils/constants";
 import * as Tapes from "../tapes";
 import { Msg } from "../utils/msgs";
+import { PassEnv } from "../components";
 
 /**
  * Some environments require the grammar inside to only reveal 

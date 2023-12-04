@@ -16,7 +16,8 @@ import {
 } from "./utils/msgs";
 import { Op } from "./ops";
 import { Component } from "./components";
-import { Pass, PassEnv } from "./passes";
+import { Pass } from "./passes";
+import { Env } from "./utils/options";
 
 export type TST = TstHeader
          | TstContent
@@ -43,7 +44,7 @@ export type TST = TstHeader
 
 export abstract class AbstractTST extends Component {
 
-    public mapChildren(f: Pass<TST,TST>, env: PassEnv): Msg<TST> {
+    public mapChildren(f: Pass<TST,TST>, env: Env<TST>): Msg<TST> {
         return super.mapChildren(f, env) as Msg<TST>;
     }
 

@@ -10,11 +10,12 @@ import {
 
 import { TapeNamespace} from "../tapes";
 import { generate } from "../generator";
-import { Pass, PassEnv } from "../passes";
+import { Pass, SymbolEnv } from "../passes";
 import { constructExpr } from "./constructExpr";
 import { CreateCursors } from "./createCursors";
 import { InfinityProtection } from "./infinityProtection";
 import { ResolveVocab } from "./resolveVocab";
+import { Options, Env } from "../utils/options";
 
 export class ExecuteTests extends Pass<Grammar,Grammar> {
 
@@ -24,8 +25,12 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
     ) {
         super();
     }
+    
+    public getEnv(opt: Partial<Options>): Env<Grammar> {
+        return new SymbolEnv(opt);
+    }
 
-    public transformAux(g: Grammar, env: PassEnv): Msg<Grammar> {
+    public transformAux(g: Grammar, env: SymbolEnv): Msg<Grammar> {
         const result = g.mapChildren(this, env);
         return result.bind(g => {
             switch (g.tag) {
@@ -36,7 +41,7 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
         }).localize(g.pos);
     }
 
-    public handleTest(g: TestGrammar, env: PassEnv): Msg<Grammar> {
+    public handleTest(g: TestGrammar, env: SymbolEnv): Msg<Grammar> {
         const msgs: Message[] = [];
 
         const childTapes = new Set(g.child.tapeNames);
@@ -79,7 +84,7 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
         return g.msg(msgs);
     }
 
-    public handleNegativeTest(g: TestNotGrammar, env: PassEnv): Msg<Grammar> {
+    public handleNegativeTest(g: TestNotGrammar, env: SymbolEnv): Msg<Grammar> {
         const msgs: Message[] = [];
 
         const childTapes = new Set(g.child.tapeNames);
@@ -104,7 +109,7 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
     
     public executeTest(
         test: AbstractTestGrammar, 
-        env: PassEnv
+        env: SymbolEnv
     ): StringDict[] {
 
         // create a filter for each test

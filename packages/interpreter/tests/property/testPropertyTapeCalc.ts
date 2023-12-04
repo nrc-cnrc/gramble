@@ -1,6 +1,5 @@
 import { CollectionGrammar } from "../../src/grammars";
 import { CalculateTapes } from "../../src/passes/calculateTapes";
-import { PassEnv } from "../../src/passes";
 import { FlattenCollections } from "../../src/passes/flattenCollections";
 import { RandOptions, randomCollection } from "./randomGrammar";
 import { PropertyTest, PropertyTestFailure, PropertyTestResult, PropertyTestSuccess, padZeros, testToBreaking } from "./testPropertyUtil";
@@ -26,8 +25,7 @@ class TapeCalcTest implements PropertyTest {
         try {
             const pass = new FlattenCollections()
                             .compose(new CalculateTapes());
-            const env = new PassEnv();
-            pass.transform(this.grammar, env).msgTo([]);
+            pass.getEnvAndTransform(this.grammar, {}).msgTo([]);
         } catch (e) {
             const resultStrs: string[] = [`${e}`];
             resultStrs.push(toStr(this.grammar));

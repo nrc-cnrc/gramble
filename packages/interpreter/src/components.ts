@@ -4,9 +4,12 @@ import {
     msg, Msg, 
     MsgVoid,
 } from "./utils/msgs";
-import { Pass, PassEnv } from "./passes";
+import { Pass } from "./passes";
 import { Dict, update } from "./utils/func";
 import { Pos } from "./utils/cell";
+import { Env } from "./utils/options";
+
+export class PassEnv extends Env<Component> { }
 
 export abstract class Component {
     public abstract readonly tag: string;
@@ -14,10 +17,11 @@ export abstract class Component {
     public pos: Pos | undefined = undefined;
 
     public mapChildren(f: Pass<Component,Component>, env: PassEnv): Msg<Component> {
+        const newEnv = env.update(this);
         const clone = Object.create(Object.getPrototypeOf(this));
         const msgs: Message[] = [];
         for (const [k, v] of Object.entries(this)) {
-            clone[k] = mapChildrenAny(v, f, env).msgTo(msgs);
+            clone[k] = mapChildrenAny(v, f, newEnv).msgTo(msgs);
         }
         const newMessage: Message[] = msgs.map(m => m.localize(this.pos));
         return clone.msg(newMessage);

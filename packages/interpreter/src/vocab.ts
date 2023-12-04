@@ -1,5 +1,6 @@
 import { VOCAB_MAX_TOKENS } from "./utils/constants";
 import { Dict, Func, flatmapSet, union, update } from "./utils/func";
+import { Env } from "./utils/options";
 import { tokenizeUnicode } from "./utils/strings";
 
 /**
@@ -265,16 +266,36 @@ export function toStr(v: Vocab): string {
 * turn causing the collapse of the suspensions into TapeLits.
 */
 
-export type Env = {
-    vocabMap: Dict<Vocab>,
-    visited: Set<string>
+export class VocabEnv extends Env<Vocab> {
+    
+    constructor(
+        public vocabMap: Dict<Vocab>,
+        public visited: Set<string>
+    ) { 
+        super({});
+    }
+
+    public update(v: Vocab): VocabEnv {
+        switch (v.tag) {
+            case Tag.Rename: return this.updateRename(v);
+            default:         return this;
+        }
+    }
+
+    updateRename(v: Rename): VocabEnv {
+        const newTapes: Dict<Vocab> = Object.create(this.vocabMap);
+        Object.assign(newTapes, this.vocabMap);
+        newTapes[v.fromTape] = this.vocabMap[v.toTape];
+        delete newTapes[v.toTape];
+        return update(this, { vocabMap: newTapes });
+    }
+
 }
 
 export function resolveAll(vocabMap: Dict<Vocab>): Dict<Vocab> {
     let current = vocabMap;
     for (const [tapeName, vocab] of Object.entries(vocabMap)) {
-        const env = { vocabMap: current, 
-                      visited: new Set(tapeName)};
+        const env = new VocabEnv(current, new Set(tapeName));
         const newVocab = resolve(vocab, env);
         current[tapeName] = newVocab;
     }
@@ -283,12 +304,12 @@ export function resolveAll(vocabMap: Dict<Vocab>): Dict<Vocab> {
 
 export function resolve(
     v: Vocab, 
-    env: Env
+    env: VocabEnv
 ): Vocab {
-    switch (v.tag) {
-        case Tag.Ref:        return resolveRef(v, env);
-        case Tag.Rename:     return resolveRename(v, env);
-        default:             return map(v, resolve, env);
+    const newV = map(v, resolve, env);
+    switch (newV.tag) {
+        case Tag.Ref:        return resolveRef(newV, env);
+        default:             return newV;
     }
 }
 
@@ -304,7 +325,7 @@ function simplify(v: Vocab): Vocab {
 
 function resolveRef(
     v: Ref, 
-    env: Env
+    env: VocabEnv
 ): Vocab {
     if (env.visited.has(v.tape)) {
         return Atomic();
@@ -319,29 +340,17 @@ function resolveRef(
     return resolve(referent, newEnv);
 }
 
-function resolveRename(
-    v: Rename, 
-    env: Env
-): Vocab {
-    const newTapes: Dict<Vocab> = Object.create(env.vocabMap);
-    Object.assign(newTapes, env.vocabMap);
-    newTapes[v.fromTape] = env.vocabMap[v.toTape];
-    delete newTapes[v.toTape];
-    const newEnv = update(env, { vocabMap: newTapes });
-    const newChild = resolve(v.child, newEnv);
-    return Rename(newChild, v.fromTape, v.toTape);
-}
-
 function map(
     v: Vocab, 
-    f: (v: Vocab, env: Env) => Vocab,
-    env: Env
+    f: (v: Vocab, env: VocabEnv) => Vocab,
+    env: VocabEnv
 ): Vocab {
+    const newEnv = env.update(v);
     const clone = Object.create(Object.getPrototypeOf(v));
     for (const [k, child] of Object.entries(v)) {
         if (child.hasOwnProperty("tag")) {
             // it's a vocab
-            clone[k] = f(child, env);
+            clone[k] = f(child, newEnv);
             continue;
         }
         clone[k] = child;

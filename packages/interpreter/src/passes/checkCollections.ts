@@ -1,11 +1,11 @@
-import { Pass, PassEnv } from "../passes";
+import { Pass } from "../passes";
 import { 
     TstCollection, 
     TstEmpty, 
     TstAssignment,
     TST
 } from "../tsts";
-import { Component } from "../components";
+import { Component, PassEnv } from "../components";
 import { Msg } from "../utils/msgs";
 
 /**

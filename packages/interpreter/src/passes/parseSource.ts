@@ -1,4 +1,4 @@
-import { PassEnv, Pass } from "../passes";
+import { Pass } from "../passes";
 import { CommandMsg, CommentMsg, Err, Message, Msg } from "../utils/msgs";
 import { 
     TstAssignment,
@@ -13,6 +13,7 @@ import { Cell, Pos } from "../utils/cell";
 import { CollectionOp, parseOp } from "../ops";
 import { RESERVED_WORDS } from "../utils/reserved";
 import { exhaustive } from "../utils/func";
+import { Env } from "../utils/options";
 
 /**
  * This takes grids of cells (Worksheets) and collections of them
@@ -21,7 +22,7 @@ import { exhaustive } from "../utils/func";
  */
 export class ParseSource extends Pass<Source,TST> {
 
-    public transform(s: Source, env: PassEnv): Msg<TST> {
+    public transform(s: Source, env: Env<Source>): Msg<TST> {
 
         switch(s.tag) {
             case "workbook":  return this.handleWorkbook(s as Workbook, env);
@@ -30,7 +31,7 @@ export class ParseSource extends Pass<Source,TST> {
         }
     }
 
-    public handleWorkbook(s: Workbook, env: PassEnv): Msg<TST> {
+    public handleWorkbook(s: Workbook, env: Env<Source>): Msg<TST> {
 
         const projectCell = new Cell("", new Pos("", -1, -1));
         const project = new TstCollection(projectCell);
@@ -87,7 +88,7 @@ export class ParseSource extends Pass<Source,TST> {
      * felt that was information not relevant to the object itself.  It's only relevant to this algorithm,
      * so it should just stay here.
      */
-    public handleWorksheet(s: Worksheet, env: PassEnv): Msg<TST> {
+    public handleWorksheet(s: Worksheet, env: Env<Source>): Msg<TST> {
 
         const msgs: Message[] = [];
 

@@ -5,8 +5,10 @@ import {
     Grammar,
     CollectionGrammar
 } from "../grammars";
-import { Pass, PassEnv } from "../passes";
+import { Pass, SymbolEnv } from "../passes";
 import { SymbolQualifier, grammarToQualifier, qualifySymbolAux } from "./qualifySymbols";
+import { PassEnv } from "../components";
+import { Options } from "../utils/options";
 
 /**
  * Goes through the tree and 
@@ -35,8 +37,12 @@ export class FlattenCollections extends Pass<Grammar,Grammar> {
     ) {
         super();
     }
+    
+    public getEnv(opt: Partial<Options>): SymbolEnv {
+        return new SymbolEnv(opt);
+    }
 
-    public transformAux(g: Grammar, env: PassEnv): Grammar|Msg<Grammar> {
+    public transformAux(g: Grammar, env: SymbolEnv): Grammar|Msg<Grammar> {
         switch(g.tag) {
             case "collection": return this.transformCollection(g, env);
             case "embed":      return this.transformEmbed(g, env);
@@ -44,7 +50,7 @@ export class FlattenCollections extends Pass<Grammar,Grammar> {
         }
     }
 
-    public transformCollection(g: CollectionGrammar, env: PassEnv): Msg<Grammar> {
+    public transformCollection(g: CollectionGrammar, env: SymbolEnv): Msg<Grammar> {
         const msgs: Message[] = [];
         const qualifier = grammarToQualifier(g);
         const newCollectionStack: SymbolQualifier[] = [ ...this.qualifierStack, qualifier];

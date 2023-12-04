@@ -3,12 +3,13 @@ import {
     TstHeadedGrid, 
     TstHeader, TstGrid, TST
 } from "../tsts";
-import { Pass, PassEnv } from "../passes";
+import { Pass } from "../passes";
 import { HeaderMsg, Message, Msg } from "../utils/msgs";
 import { 
     DEFAULT_VALUE, ErrorHeader, 
     backgroundColor, parseHeaderCell 
 } from "../headers";
+import { PassEnv } from "../components";
 
 /**
  * 

@@ -8,7 +8,7 @@ import {
     TstReplace, TstSequence, 
     TstTable, TstTest, TstJoin, TST 
 } from "../tsts";
-import { Pass, PassEnv } from "../passes";
+import { Pass } from "../passes";
 import { 
     AlternationGrammar,
     EpsilonGrammar, 
@@ -29,6 +29,7 @@ import { HeaderToGrammar } from "./headerToGrammar";
 import { parseContent } from "../content";
 import { DEFAULT_PARAM } from "../utils/constants";
 import { uniqueLiterals } from "./uniqueLiterals";
+import { PassEnv } from "../components";
 
 /**
  * This is the workhorse of grammar creation, turning the 

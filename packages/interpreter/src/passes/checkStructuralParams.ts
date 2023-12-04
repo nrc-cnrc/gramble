@@ -5,13 +5,14 @@ import {
     siblingRequired,
 } from "../ops";
 import { Err, Message, Msg, Warn } from "../utils/msgs";
-import { Pass, PassEnv } from "../passes";
+import { Pass } from "../passes";
 import { 
     TstOp, 
     TstEmpty,
     TstGrid,
     TST
 } from "../tsts";
+import { PassEnv } from "../components";
 
 /**
  * This pass goes through and make sure that TstOps have 

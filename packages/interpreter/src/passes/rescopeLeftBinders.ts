@@ -17,7 +17,8 @@ import {
 } from "../headers";
 
 import { Err, Message } from "../utils/msgs";
-import { PassEnv, AutoPass } from "../passes";
+import { AutoPass } from "../passes";
+import { PassEnv } from "../components";
 
 export class RescopeLeftBinders extends AutoPass<TST> {
 

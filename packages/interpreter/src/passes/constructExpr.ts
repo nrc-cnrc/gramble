@@ -1,4 +1,3 @@
-import { PassEnv } from "../passes";
 import {
     AlternationGrammar,
     CollectionGrammar, CorrespondGrammar, 
@@ -26,6 +25,7 @@ import { INPUT_TAPE } from "../utils/constants";
 import { Env } from "../utils/options";
 import * as Tapes from "../tapes";
 import * as Vocab from "../vocab";
+import { PassEnv } from "../components";
 
 export function constructExpr(
     env: PassEnv,
@@ -139,6 +139,7 @@ function constructExprCursor(
     g: CursorGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
+    /*
     if (g.tapes.tag !== Tapes.Tag.Lit)
         throw new Error(`Constructing cursor with unresolved tapes: ${g.tapes.tag}`);
     const vocab = g.tapes.vocabMap[g.tapeName];
@@ -148,7 +149,8 @@ function constructExprCursor(
         throw new Error(`Constructing cursor with unresolved vocab: ${g.tapeName}, vocab is ${Vocab.toStr(vocab)}`);
     const atomic = vocab.atomicity === Vocab.Atomicity.Atomic || 
                    vocab.atomicity === Vocab.Atomicity.Concatenated;
-    return constructCursor(env, g.tapeName, childExpr, vocab.tokens, atomic);
+    */
+    return constructCursor(env, g.tapeName, childExpr, new Set(), false);
 }
 
 function constructExprPreTape(

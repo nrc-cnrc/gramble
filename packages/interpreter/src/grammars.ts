@@ -10,14 +10,14 @@ import {
 
 import * as Tapes from "./tapes";
 
-import { Pass, PassEnv } from "./passes";
+import { Pass } from "./passes";
 
 import {
     Dict,
     ValueSet
 } from "./utils/func";
 
-import { Component, children } from "./components";
+import { Component, PassEnv, children } from "./components";
 import { DEFAULT_SYMBOL,  HIDDEN_PREFIX, INPUT_TAPE, OUTPUT_TAPE } from "./utils/constants";
 import { tokenizeUnicode } from "./utils/strings";
 import { Pos } from "./utils/cell";
@@ -426,11 +426,6 @@ export class CollectionGrammar extends AbstractGrammar {
         super();
     }
     
-    public mapChildren(f: Pass<Grammar,Grammar>, env: PassEnv): Msg<Grammar> {
-        const newEnv = env.setSymbols(this.symbols);
-        return super.mapChildren(f, newEnv);
-    }
-
     /**
      * Looks up a symbol name and returns the referent (if any) 
      */

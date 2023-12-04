@@ -1,10 +1,11 @@
+import { PassEnv } from "../components";
 import { 
     Grammar,
     SequenceGrammar,
     LiteralGrammar,
     EpsilonGrammar
 } from "../grammars";
-import { PassEnv, AutoPass } from "../passes";
+import { AutoPass } from "../passes";
 
 /**
  * Plaintext/regex parsing results in a lot of single-character

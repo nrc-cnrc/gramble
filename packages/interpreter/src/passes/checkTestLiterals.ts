@@ -2,10 +2,11 @@ import {
     TstHeader, 
     TstOp, TstHeadedGrid, TST 
 } from "../tsts";
-import { Pass, PassEnv, AutoPass } from "../passes";
+import { AutoPass } from "../passes";
 import { Err, Message, Msg } from "../utils/msgs";
 import { Header, UniqueHeader, TapeHeader } from "../headers";
 import { paramsMustBeLiteral } from "../ops";
+import { PassEnv } from "../components";
 
 /**
  * This pass checks whether named parameters in headers
@@ -18,7 +19,7 @@ import { paramsMustBeLiteral } from "../ops";
  * of its child.  Otherwise, the fix is to remove the header entirely.
  */
 export class CheckTestLiterals extends AutoPass<TST> {
-    
+
     public postTransform(t: TST, env: PassEnv): TST {
         switch(t.tag) {
             case "op": return this.handleOp(t);

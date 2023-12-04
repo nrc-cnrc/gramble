@@ -1,4 +1,4 @@
-import { PassEnv, AutoPass } from "../passes";
+import { AutoPass } from "../passes";
 import { 
     AlternationGrammar, ContainsGrammar, 
     DotGrammar, EndsGrammar, Grammar,
@@ -9,6 +9,7 @@ import {
     JoinGrammar
 } from "../grammars";
 import { HIDDEN_PREFIX } from "../utils/constants";
+import { PassEnv } from "../components";
 
 /**
  * This pass creates Joins out of filters and handles a semantic 

@@ -1,7 +1,8 @@
 import { Epsilon, Seq } from "../../src/grammarConvenience";
 import { CollectionGrammar, EpsilonGrammar, Grammar, RenameGrammar, SequenceGrammar } from "../../src/grammars";
 import { update } from "../../src/utils/func";
-import { randomChoice, range } from "./randomGrammar";
+import { randomChoice } from "../../src/utils/random";
+import { range } from "./randomGrammar";
 
 export type ReduceOptions = {
     "symbolDrop": boolean

@@ -2,7 +2,7 @@ import {
     TstEmpty, TstHeader, 
     TstOp, TstHeadedGrid, TST 
 } from "../tsts";
-import { Pass, PassEnv } from "../passes";
+import { Pass } from "../passes";
 import { Err, Message, MsgFunc, Msg, Warn } from "../utils/msgs";
 import { UniqueHeader, paramName } from "../headers";
 import {
@@ -11,6 +11,7 @@ import {
     requiredParams 
 } from "../ops";
 import { DEFAULT_PARAM } from "../utils/constants";
+import { PassEnv } from "../components";
 
 /**
  * This pass checks whether named parameters in headers

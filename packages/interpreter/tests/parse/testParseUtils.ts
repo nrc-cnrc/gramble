@@ -2,9 +2,7 @@ import { expect } from "chai";
 import { parseContent } from "../../src/content";
 import { ParseClass, parseHeaderCell } from "../../src/headers";
 import { parseOp, autoID as opID } from "../../src/ops";
-import { PassEnv } from "../../src/passes";
 import { CombineLiterals } from "../../src/passes/combineLiterals";
-import { Grammar } from "../../src/grammars";
 import { Message } from "../../src/utils/msgs";
 import { toStr } from "../../src/passes/toStr";
 import { tokenizeUnicode } from "../../src/utils/strings";
@@ -82,9 +80,9 @@ function testCellID(
     numErrorsExpected: number = 0
 ): void {
     const msgs: Message[] = [];
-    const env = new PassEnv();
     const parseResult = parseContent(parseClass, text).msgTo(msgs)
-    const result = new CombineLiterals().transform(parseResult, env).msgTo(msgs);
+
+    const result = new CombineLiterals().getEnvAndTransform(parseResult, {}).msgTo(msgs);
     if (testPrefix != "") {
         testPrefix += '. ';
     }

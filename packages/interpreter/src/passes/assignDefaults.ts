@@ -1,10 +1,11 @@
+import { PassEnv } from "../components";
 import { 
     EmbedGrammar,
     Grammar,
     CollectionGrammar,
     AlternationGrammar
 } from "../grammars";
-import { PassEnv, AutoPass } from "../passes";
+import { AutoPass } from "../passes";
 import { ALL_SYMBOL } from "../utils/constants";
 
 /**

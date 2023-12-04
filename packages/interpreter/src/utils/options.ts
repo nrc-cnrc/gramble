@@ -26,7 +26,7 @@ export function Options(opt: Partial<Options> = {}): Options {
     return {...DEFAULT_OPTIONS, ...opt};
 }
 
-export class Env {
+export class Env<T = any> {
 
     public opt: Options;
 
@@ -34,6 +34,10 @@ export class Env {
         opt: Partial<Options> = {}
     ) { 
         this.opt = Options(opt);
+    }
+
+    public update(t: T): Env<T> {
+        return this;
     }
 
 }

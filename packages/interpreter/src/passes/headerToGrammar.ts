@@ -1,4 +1,4 @@
-import { Pass, PassEnv } from "../passes";
+import { Pass } from "../passes";
 import { 
     AlternationGrammar, ContainsGrammar, 
     EndsGrammar, 
@@ -21,6 +21,7 @@ import {
 } from "../headers";
 import { INPUT_TAPE, OUTPUT_TAPE } from "../utils/constants";
 import { exhaustive } from "../utils/func";
+import { PassEnv } from "../components";
 
 
 export class HeaderToGrammar extends Pass<Header, Grammar> {

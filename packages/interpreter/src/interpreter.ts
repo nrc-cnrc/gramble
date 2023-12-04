@@ -15,7 +15,6 @@ import { Expr, CollectionExpr } from "./exprs";
 import { DevEnvironment, SimpleDevEnvironment } from "./devEnv";
 import { generate } from "./generator";
 import { MissingSymbolError, Message, THROWER, msg } from "./utils/msgs";
-import { PassEnv } from "./passes";
 import { 
     SOURCE_PASSES,
     GRAMMAR_PASSES
@@ -34,6 +33,8 @@ import { FlattenCollections } from "./passes/flattenCollections";
 import { CreateQuery } from "./passes/createQuery";
 import { InfinityProtection, infinityProtection } from "./passes/infinityProtection";
 import { ResolveVocab } from "./passes/resolveVocab";
+import { PassEnv } from "./components";
+import { Pass, SymbolEnv } from "./passes";
 
 /**
  * An interpreter object is responsible for applying the passes in between sheets
@@ -81,7 +82,7 @@ export class Interpreter {
         // scope problems adjusted, etc.
         const env = new PassEnv(this.opt);  
         this.grammar = msg(g)
-                        .bind(g => GRAMMAR_PASSES.transform(g, env))
+                        .bind(g => GRAMMAR_PASSES.getEnvAndTransform(g, opt))
                         .msgTo(m => sendMsg(this.devEnv, m));
 
         // Next we collect the vocabulary on all tapes
@@ -109,20 +110,19 @@ export class Interpreter {
         opt: Partial<Options> = {}
     ): Interpreter {
 
-        const passOpts = Options(opt);
+        const opts = Options(opt);
 
         // First, load all the sheets
         let startTime = Date.now();
         const workbook = new Workbook(mainSheetName);
-        addSheet(workbook, mainSheetName, devEnv, passOpts);
+        addSheet(workbook, mainSheetName, devEnv, opts);
         let elapsedTime = msToTime(Date.now() - startTime);
-        logTime(passOpts.verbose, `Sheets loaded; ${elapsedTime}`);
+        logTime(opts.verbose, `Sheets loaded; ${elapsedTime}`);
         
-        const env = new PassEnv(passOpts);
-        const grammar = SOURCE_PASSES.transform(workbook, env)
+        const grammar = SOURCE_PASSES.getEnvAndTransform(workbook, opts)
                                   .msgTo(m => devEnv.message(m));
 
-        const result = new Interpreter(devEnv, grammar, passOpts);
+        const result = new Interpreter(devEnv, grammar, opts);
         result.workbook = workbook;
         return result;
     }
@@ -247,33 +247,38 @@ export class Interpreter {
         symbol: string = "",
         query: StringDict | StringDict[] = {}
     ): Expr {
-        const env = new PassEnv(this.opt);
 
         // qualify the name and select the symbol
-        const selectSymbol = new SelectSymbol(symbol);
-        let targetGrammar: Grammar = selectSymbol.transform(this.grammar, env).msgTo(THROWER);
+        let targetGrammar: Grammar = new SelectSymbol(symbol)
+                                       .getEnvAndTransform(this.grammar, this.opt)
+                                       .msgTo(THROWER);
         
         // join the client query to the grammar
-        const createQuery = new CreateQuery(query);
-        targetGrammar = createQuery.transform(targetGrammar, env).msgTo(THROWER);
+        targetGrammar = new CreateQuery(query)
+                         .getEnvAndTransform(targetGrammar, this.opt)
+                         .msgTo(THROWER);
         
         // we have to re-collect the vocab in case it changed
-        //targetGrammar.collectAllVocab(this.tapeNS, env);
+        const env = new PassEnv(this.opt);
+        targetGrammar.collectAllVocab(this.tapeNS, env);
         
         // any tape that isn't already inside a Cursor or PreTape needs
         // to have a Cursor made for it, because otherwise that content will
         // never be handled during the generation loop.
-        const createCursors = new CreateCursors();
-        targetGrammar = createCursors.transform(targetGrammar, env).msgTo(THROWER);
+        targetGrammar = new CreateCursors()
+                             .getEnvAndTransform(targetGrammar, this.opt)
+                             .msgTo(THROWER);
         
-        const resolveVocab = new ResolveVocab();
-        targetGrammar = resolveVocab.transform(targetGrammar, env).msgTo(THROWER);
+        targetGrammar = new ResolveVocab()
+                             .getEnvAndTransform(targetGrammar, this.opt)
+                             .msgTo(THROWER);
 
         // the client probably doesn't want an accidentally-infinite grammar
         // to generate infinitely.  this checks which tapes could potentially
         // generate infinitely and caps them to opt.maxChars.
-        const infinityProtection = new InfinityProtection();
-        targetGrammar = infinityProtection.transform(targetGrammar, env).msgTo(THROWER);
+        targetGrammar = new InfinityProtection()
+                              .getEnvAndTransform(targetGrammar, this.opt)
+                              .msgTo(THROWER);
         
         // turns the Grammars into Exprs
         return constructExpr(env, targetGrammar);  
@@ -287,7 +292,7 @@ export class Interpreter {
                       : {};
         const pass = new ExecuteTests(this.tapeNS, symbols);
         
-        pass.transform(this.grammar, env)
+        pass.getEnvAndTransform(this.grammar, this.opt)
             .msgTo(m => this.devEnv.message(m));
     }
 }
@@ -300,7 +305,7 @@ function addSheet(
     project: Workbook, 
     sheetName: string,
     devEnv: DevEnvironment,
-    opt: Options
+    opt: Partial<Options>
 ): void {
 
     if (project.hasSheet(sheetName)) {
@@ -321,12 +326,11 @@ function addSheet(
 
     const sheet = new Worksheet(sheetName, cells);
     project.sheets[sheetName] = sheet;
-    const transEnv = new PassEnv(opt);
-    const grammar = SOURCE_PASSES.transform(project, transEnv)
+    const grammar = SOURCE_PASSES.getEnvAndTransform(project, opt)
                                      .msgTo((_) => {});
     // check to see if any names didn't get qualified
     const [_, nameMsgs] =  new FlattenCollections()
-                                .transform(grammar, transEnv)
+                                .getEnvAndTransform(grammar, opt)
                                 .destructure();
 
     const unqualifiedSymbols: Set<string> = new Set(); 

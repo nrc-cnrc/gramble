@@ -1,7 +1,6 @@
 import { CollectionGrammar, Grammar } from "../../src/grammars";
 import { assert } from "chai";
 import { CalculateTapes } from "../../src/passes/calculateTapes";
-import { PassEnv } from "../../src/passes";
 import { FlattenCollections } from "../../src/passes/flattenCollections";
 import { toStr } from "../../src/passes/toStr";
 import { RandOptions, randomCollection } from "./randomGrammar";
@@ -87,12 +86,11 @@ class TapeCalcOrderTest implements PropertyTest {
         try {
             const pass = new FlattenCollections()
                             .compose(new CalculateTapes());
-            const env = new PassEnv();
-            grammar = pass.transform(grammar, env).msgTo([]);
+            grammar = pass.getEnvAndTransform(grammar, {}).msgTo([]);
             
             for (const symbol of getAllSymbols(grammar)) {
                 const selectSymbol = new SelectSymbol(symbol);
-                let ref = selectSymbol.transform(grammar, env).msgTo(THROWER); 
+                let ref = selectSymbol.getEnvAndTransform(grammar, {}).msgTo(THROWER); 
                 tapes[symbol] = ref.tapeNames;
             }
 

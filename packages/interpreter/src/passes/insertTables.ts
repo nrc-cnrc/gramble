@@ -1,7 +1,8 @@
+import { PassEnv } from "../components";
 import { 
     TableOp, childMustBeGrid, 
 } from "../ops";
-import { PassEnv, AutoPass } from "../passes";
+import { AutoPass } from "../passes";
 import { 
     TstOp, 
     TstEmpty,

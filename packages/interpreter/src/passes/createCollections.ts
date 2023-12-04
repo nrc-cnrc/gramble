@@ -1,4 +1,4 @@
-import { Pass, PassEnv } from "../passes";
+import { Pass } from "../passes";
 import { Message, Msg, Warn } from "../utils/msgs";
 import { 
     TstCollection, 
@@ -7,6 +7,7 @@ import {
 } from "../tsts";
 import { CollectionOp, SymbolOp, siblingRequired } from "../ops";
 import { AUTO_SYMBOL, DEFAULT_SYMBOL } from "../utils/constants";
+import { PassEnv } from "../components";
 
 /**
  * Collections work somewhat differently from other operators,

@@ -1,9 +1,10 @@
 import * as Tapes from "../tapes";
-import { CollectionGrammar, CursorGrammar, Grammar } from "../grammars";
-import { AutoPass, Pass, PassEnv } from "../passes";
+import { CursorGrammar, Grammar } from "../grammars";
+import { Pass } from "../passes";
 import { Msg } from "../utils/msgs";
 import { VocabDict } from "../vocab";
 import * as Vocab from "../vocab";
+import { PassEnv } from "../components";
 
 /**
  * While there are a lot of vocab objects throughout the
@@ -40,7 +41,7 @@ export class ResolveVocab extends Pass<Grammar,Grammar> {
         
         // add your tape to the known vocab and use that for
         // resolution in this scope
-        console.log(`adding ${g.tapeName} = ${Vocab.toStr(vocab)} to env`);
+        //console.log(`adding ${g.tapeName} = ${Vocab.toStr(vocab)} to env`);
         newVocab[g.tapeName] = vocab;
         const newThis = new ResolveVocab(newVocab);
 
@@ -49,11 +50,10 @@ export class ResolveVocab extends Pass<Grammar,Grammar> {
             if (g.tapes.tag !== Tapes.Tag.Lit)
                 throw new Error(`Resolving vocab of unresolved tape: ${Tapes.toStr(g.tapes)}`);
             
-            console.log(`resolving ${g.tapeName} = ${Vocab.toStr(vocab)}, using ${Object.keys(newVocab)}`);
-            const env: Vocab.Env = { vocabMap: newVocab, 
-                    visited: new Set(g.tapeName)};
+            //console.log(`resolving ${g.tapeName} = ${Vocab.toStr(vocab)}, using ${Object.keys(newVocab)}`);
+            const env: Vocab.VocabEnv = new Vocab.VocabEnv(newVocab, new Set(g.tapeName));
             const resolved = Vocab.resolve(vocab, env);
-            console.log(`resolved to ${Vocab.toStr(resolved)}`);
+            //console.log(`resolved to ${Vocab.toStr(resolved)}`);
             g.tapes.vocabMap[g.tapeName] = resolved;
             return g;
         });

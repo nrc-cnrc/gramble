@@ -17,7 +17,6 @@ import {
     SingleTape, Starts, Uni
 } from "../../src/grammarConvenience";
 import { CalculateTapes } from "../../src/passes/calculateTapes";
-import { PassEnv } from "../../src/passes";
 import { THROWER } from "../../src/utils/msgs";
 import { SelectSymbol } from "../../src/passes/selectSymbol";
 import { FlattenCollections } from "../../src/passes/flattenCollections";
@@ -25,6 +24,7 @@ import { Dict } from "../../src/utils/func";
 import { Options } from "../../src/utils/options";
 import * as Vocabs from "../../src/vocab";
 import * as Tapes from "../../src/tapes";
+import { SymbolEnv } from "../../src/passes";
 
 type GrammarIDTest = {
     desc: string,
@@ -46,13 +46,12 @@ export function testGrammarTapes({
 
         try {
             const opt = Options({optimizeAtomicity: atomicity});
-            const env = new PassEnv(opt);
             const pass = new FlattenCollections().compose(new CalculateTapes());
-            grammar = pass.transform(grammar, env).msgTo(THROWER);
+            grammar = pass.getEnvAndTransform(grammar, opt).msgTo(THROWER);
             
             if (symbol) {
                 const selectSymbol = new SelectSymbol(symbol);
-                grammar = selectSymbol.transform(grammar, env).msgTo(THROWER); 
+                grammar = selectSymbol.getEnvAndTransform(grammar, opt).msgTo(THROWER); 
             }
 
             it(`Tapes are resolved`, function() {

@@ -7,10 +7,11 @@ import {
     TstSequence,
     TST, 
 } from "../tsts";
-import { Pass, PassEnv } from "../passes";
+import { Pass } from "../passes";
 import { ContentMsg, Message, Msg, Warn } from "../utils/msgs";
 import { backgroundColor, fontColor, paramName } from "../headers";
 import { DEFAULT_PARAM } from "../utils/constants";
+import { PassEnv } from "../components";
 
 /**
  * Before this, headers and their associated content cells aren't

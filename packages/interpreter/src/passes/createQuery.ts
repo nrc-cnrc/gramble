@@ -2,9 +2,10 @@ import { Msg } from "../utils/msgs";
 import { 
     Grammar, JoinGrammar
 } from "../grammars";
-import { Pass, PassEnv } from "../passes";
+import { Pass } from "../passes";
 import { StringDict, dictLen } from "../utils/func";
 import { Query } from "../grammarConvenience";
+import { PassEnv } from "../components";
 
 /**
  * The user can specify a query like `{ class: "v2", subj: "1SG" }`,

@@ -7,8 +7,9 @@ import { VERBOSE_TIME, timeIt } from "./utils/logging";
 import { Env, Options } from "./utils/options";
 import { hasPos } from "./utils/cell";
 import { Component } from "./components";
+import { Op } from "./ops";
 
-export class PassEnv extends Env {
+export class SymbolEnv extends Env<Grammar> {
 
     constructor(
         opt: Partial<Options> = {},
@@ -17,20 +18,36 @@ export class PassEnv extends Env {
         super(opt);
     }
 
-    public setSymbols(d: Dict<Grammar>): PassEnv {
+    /*
+    public setSymbols(d: Dict<Grammar>): SymbolEnv {
         return update(this, {symbolNS: d});
+    } */
+
+    public update(t: Grammar): SymbolEnv {
+        if (t.tag !== "collection") return this;
+        return update(this, {symbolNS: t.symbols});
+        
     }
 }
 
 export abstract class Pass<T1,T2> {
 
-    public transform(c: T1, env: PassEnv): Msg<T2> {
+    public getEnv(opt: Partial<Options>): Env<T1> {
+        return new Env<T1>(opt);
+    }
+
+    public getEnvAndTransform(c: T1, opt: Partial<Options>): Msg<T2> {
+        const env = this.getEnv(opt);
+        return this.transform(c, env);
+    }
+
+    public transform(c: T1, env: Env<T1>): Msg<T2> {
         let result = this.tryTransform(this.transformAux, c, env)
         if (hasPos(c)) return result.localize(c.pos);
         return result;
     }
 
-    public transformAux(c: T1, env: PassEnv): T2|Msg<T2> {
+    public transformAux(c: T1, env: Env<T1>): T2|Msg<T2> {
         throw new Error("not implemented");
     }
 
@@ -44,9 +61,9 @@ export abstract class Pass<T1,T2> {
      * messaging/localization system.
      */
     public tryTransform(
-        transform: (c: T1, env: PassEnv) => T2|Msg<T2>,
+        transform: (c: T1, env: Env<T1>) => T2|Msg<T2>,
         c: T1,
-        env: PassEnv
+        env: Env<T1>
     ): Msg<T2> {
         try {
             const t = transform.bind(this);
@@ -70,11 +87,12 @@ export class TimerPass<T1,T2> extends Pass<T1,T2> {
         super();
     }
 
-    public transform(c: T1, env: PassEnv): Msg<T2> {
+    public transform(c: T1, env: Env<T1>): Msg<T2> {
         // execute the transformation, printing the desc and elapsed
         // time if requested
         const verbose = (env.opt.verbose & VERBOSE_TIME) != 0;
-        return timeIt(() => this.child.transform(c, env), 
+        const childEnv = this.child.getEnv(env.opt);
+        return timeIt(() => this.child.transform(c, childEnv), 
                verbose, this.desc);
     }
 }
@@ -88,27 +106,31 @@ export class ComposedPass<T1,T2,T3> extends Pass<T1,T3> {
         super();
     }
 
-    public transform(t: T1, env: PassEnv): Msg<T3> {
-        return msg(t)
-                    .bind(t => this.child1.transform(t, env))
-                    .bind(t => this.child2.transform(t, env))
+    public getEnvAndTransform(t: T1, opt: Partial<Options>): Msg<T3> {
+        return this.child1.getEnvAndTransform(t, opt)
+                   .bind(t => this.child2.getEnvAndTransform(t, opt))
+    }
+
+    
+    public transform(c: T1, env: Env<T1>): Msg<T3> {
+        throw new Error("Calling transform on a composed pass");
     }
 
 }
 
 export abstract class AutoPass<T extends Component> extends Pass<T,T> {
 
-    public transformAux(c: T, env: PassEnv): T|Msg<T> {
+    public transformAux(c: T, env: Env<T>): T|Msg<T> {
         return this.tryTransform(this.preTransform, c, env)
                    .bind(c => c.mapChildren(this, env).localize(c.pos) as Msg<T>)
                    .bind(c => this.tryTransform(this.postTransform, c, env))
     }
 
-    public preTransform(g: T, env: PassEnv): T|Msg<T> {
+    public preTransform(g: T, env: Env<T>): T|Msg<T> {
         return g;
     }
 
-    public postTransform(g: T, env: PassEnv): T|Msg<T> {
+    public postTransform(g: T, env: Env<T>): T|Msg<T> {
         return g;
     }
 

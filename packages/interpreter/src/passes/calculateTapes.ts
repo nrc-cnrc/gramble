@@ -24,7 +24,7 @@ import {
     CorrespondGrammar,
     CursorGrammar,
 } from "../grammars";
-import { AutoPass, Pass, PassEnv } from "../passes";
+import { AutoPass } from "../passes";
 import { 
     mapValues, 
     exhaustive, update, 
@@ -41,7 +41,7 @@ import { TapeSet, TapeDict } from "../tapes";
 import * as Tapes from "../tapes";
 import { VocabDict } from "../vocab";
 import * as Vocabs from "../vocab";
-import { children } from "../components";
+import { PassEnv, children } from "../components";
 
 /**
  * Goes through the tree and 
@@ -57,7 +57,7 @@ export class CalculateTapes extends AutoPass<Grammar> {
 
     constructor(
         public recalculate: boolean = false,
-        public knownTapes: TapeDict = {}
+        public tapeMap: TapeDict = {}
     ) {
         super();
     }
@@ -110,7 +110,7 @@ export class CalculateTapes extends AutoPass<Grammar> {
             case "repeat":      return getTapesRepeat(g);
 
             // something special
-            case "embed":        return getTapesEmbed(g, this.knownTapes);
+            case "embed":        return getTapesEmbed(g, this.tapeMap);
             case "collection":   return getTapesCollection(g, env);
             case "rename":       return getTapesRename(g);
             case "hide":         return getTapesHide(g);
@@ -504,6 +504,6 @@ function getTapesCondition(
 function getTapesCursor(
     g: CursorGrammar
 ): Grammar {
-    console.log(`tapecalc for cursor ${g.tapeName}, child tapes are ${Tapes.toStr(g.child.tapes)}`);
+    //console.log(`tapecalc for cursor ${g.tapeName}, child tapes are ${Tapes.toStr(g.child.tapes)}`);
     return getTapesDefault(g);
 }

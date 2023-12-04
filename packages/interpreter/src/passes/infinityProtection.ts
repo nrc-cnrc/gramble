@@ -1,4 +1,4 @@
-import { Pass, PassEnv } from "../passes";
+import { Pass, SymbolEnv } from "../passes";
 import { AlternationGrammar, 
     CollectionGrammar, 
     CountGrammar, 
@@ -18,14 +18,20 @@ import { Count } from "../grammarConvenience";
 import { exhaustive } from "../utils/func";
 import { Msg } from "../utils/msgs";
 import { CounterStack } from "../utils/counter";
+import { Options } from "../utils/options";
 
 export class InfinityProtection extends Pass<Grammar,Grammar> {
 
-    public transform(g: Grammar, env: PassEnv): Msg<Grammar> {
+    public getEnv(opt: Partial<Options>): SymbolEnv {
+        return new SymbolEnv(opt);
+    }
+
+    public transform(g: Grammar, env: SymbolEnv): Msg<Grammar> {
 
         if (env.opt.maxChars == Infinity) return g.msg();
 
-        const mapped = g.mapChildren(this, env);
+        const newEnv = env.update(g);
+        const mapped = g.mapChildren(this, newEnv);
         return mapped.bind(g => {
             switch (g.tag) {
                 case "cursor": return this.transformCursor(g, env);
@@ -34,7 +40,7 @@ export class InfinityProtection extends Pass<Grammar,Grammar> {
         });
     }
 
-    public transformCursor(g: CursorGrammar, env: PassEnv): Grammar {
+    public transformCursor(g: CursorGrammar, env: SymbolEnv): Grammar {
         const stack = new CounterStack(2);
         const len = lengthRange(g.child, g.tapeName, stack, env);
 
@@ -51,7 +57,7 @@ export class InfinityProtection extends Pass<Grammar,Grammar> {
 export function infinityProtection(
     grammar: Grammar,
     tapes: string[],
-    env: PassEnv
+    env: SymbolEnv
 ): Grammar {
 
     let foundInfinite = false;
@@ -92,7 +98,7 @@ export function lengthRange(
     g: Grammar,
     tapeName: string, 
     stack: CounterStack, 
-    env: PassEnv
+    env: SymbolEnv
 ): LengthRange {
     switch (g.tag) {
 
@@ -150,15 +156,18 @@ export function lengthRange(
     }
 }
 
-function lengthEmbed(g: EmbedGrammar, tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+function lengthEmbed(g: EmbedGrammar, tapeName: string, stack: CounterStack, env: SymbolEnv): LengthRange {
     if (stack.get(g.symbol) >= 1)
         return { null: false, min: 0, max: Infinity };
     const newStack = stack.add(g.symbol);
     const referent = env.symbolNS[g.symbol];
+    if (referent === undefined) {
+        throw new Error(`undefined referent ${g.symbol}, candidates are [${Object.keys(env.symbolNS)}]`);
+    }
     return lengthRange(referent, tapeName, newStack, env);
 }
 
-function lengthSeq(g: SequenceGrammar, tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+function lengthSeq(g: SequenceGrammar, tapeName: string, stack: CounterStack, env: SymbolEnv): LengthRange {
     let min = 0;
     let max = 0;
     for (const child of g.children) {
@@ -170,7 +179,7 @@ function lengthSeq(g: SequenceGrammar, tapeName: string, stack: CounterStack, en
     return { null: false, min: min, max: max };  
 }
 
-function lengthAlt(g: AlternationGrammar, tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+function lengthAlt(g: AlternationGrammar, tapeName: string, stack: CounterStack, env: SymbolEnv): LengthRange {
     let min = Infinity;
     let max = 0;
     if (g.children.length == 0) {
@@ -185,7 +194,7 @@ function lengthAlt(g: AlternationGrammar, tapeName: string, stack: CounterStack,
     return { null: false, min: min, max: max };
 }
 
-function lengthJoin(g: JoinGrammar, tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+function lengthJoin(g: JoinGrammar, tapeName: string, stack: CounterStack, env: SymbolEnv): LengthRange {
     const child1Length = lengthRange(g.child1, tapeName, stack, env);
     const child2Length = lengthRange(g.child2, tapeName, stack, env);
 
@@ -205,7 +214,7 @@ function lengthJoin(g: JoinGrammar, tapeName: string, stack: CounterStack, env: 
     }
 }
 
-function lengthMatch(g: MatchGrammar, tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+function lengthMatch(g: MatchGrammar, tapeName: string, stack: CounterStack, env: SymbolEnv): LengthRange {
     if (tapeName === g.toTape) {
         // also collect as a rename
         let newTapeName = renameTape(tapeName, g.toTape, g.fromTape);
@@ -214,7 +223,7 @@ function lengthMatch(g: MatchGrammar, tapeName: string, stack: CounterStack, env
     return lengthRange(g.child, tapeName, stack, env);
 }
 
-function lengthCount(g: CountGrammar, tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+function lengthCount(g: CountGrammar, tapeName: string, stack: CounterStack, env: SymbolEnv): LengthRange {
     const childLength = lengthRange(g.child, tapeName, stack, env);
     if (tapeName !== g.tapeName) return childLength;
     return {
@@ -224,7 +233,7 @@ function lengthCount(g: CountGrammar, tapeName: string, stack: CounterStack, env
     }
 }
 
-function lengthRename(g: RenameGrammar, tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+function lengthRename(g: RenameGrammar, tapeName: string, stack: CounterStack, env: SymbolEnv): LengthRange {
     if (tapeName != g.toTape && tapeName == g.fromTape) {
         return { null: false, min: 0, max: 0 };
     }
@@ -233,7 +242,7 @@ function lengthRename(g: RenameGrammar, tapeName: string, stack: CounterStack, e
     return lengthRange(g.child, newTapeName, stack, env);
 }
 
-function lengthHide(g: HideGrammar, tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+function lengthHide(g: HideGrammar, tapeName: string, stack: CounterStack, env: SymbolEnv): LengthRange {
     if (tapeName != g.toTape && tapeName == g.tapeName) {
         return { null: false, min: 0, max: 0 };
     }
@@ -241,7 +250,7 @@ function lengthHide(g: HideGrammar, tapeName: string, stack: CounterStack, env: 
     return lengthRange(g.child, newTapeName, stack, env);
 }
 
-function lengthRepeat(g: RepeatGrammar, tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+function lengthRepeat(g: RepeatGrammar, tapeName: string, stack: CounterStack, env: SymbolEnv): LengthRange {
     const childLength = lengthRange(g.child, tapeName, stack, env);
     return {
         null: childLength.null,
@@ -260,7 +269,7 @@ function multAux(n1: number, n2: number) {
     return n1 * n2;
 }
 
-function lengthNot(g: NegationGrammar, tapeName: string, stack: CounterStack, env: PassEnv): LengthRange {
+function lengthNot(g: NegationGrammar, tapeName: string, stack: CounterStack, env: SymbolEnv): LengthRange {
     const childTapes = new Set(g.child.tapeNames);
     if (childTapes.has(tapeName)) 
         return { null: false, min: 0, max: Infinity };
@@ -271,9 +280,9 @@ function lengthCollection(
     g: CollectionGrammar, 
     tapeName: string, 
     stack: CounterStack, 
-    env: PassEnv
+    env: SymbolEnv
 ): LengthRange {
-    const newEnv = env.setSymbols(g.symbols);
+    const newEnv = env.update(g);
     const referent = g.getSymbol(g.selectedSymbol);
     if (referent === undefined) { 
         // without a valid symbol, collections are epsilon,
