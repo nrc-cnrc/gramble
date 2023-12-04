@@ -41,7 +41,8 @@ export function* generate(
 ): Gen<StringDict> {
     const stack = new CounterStack(opt.maxRecursion);
     const stats = new DerivStats();
-    const env = new DerivEnv(opt, tapeNS, {}, stack, random, stats);
+    const env = new DerivEnv(opt, tapeNS, {}, stack, 
+                    new Set(), false, random, stats);
 
     const NEXTS_TO_TAKE = random ? 1 : Infinity;
     const startingTime = Date.now();

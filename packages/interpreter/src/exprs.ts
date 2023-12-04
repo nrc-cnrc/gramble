@@ -59,6 +59,8 @@ export class DerivEnv extends Env {
         public tapeNS: TapeNamespace,
         public symbols: Dict<Expr>,
         public stack: CounterStack,
+        public vocab: Set<string>,
+        public atomic: boolean,
         public random: boolean,
         public stats: DerivStats
     ) { 
@@ -66,13 +68,13 @@ export class DerivEnv extends Env {
     }
 
     public renameTape(fromKey: string, toKey: string): DerivEnv {
-        const newTapeNS = this.tapeNS.rename(fromKey, toKey);
-        return update(this, { tapeNS: newTapeNS });
+        const tapeNS = this.tapeNS.rename(fromKey, toKey);
+        return update(this, {tapeNS});
     }
 
     public addTapes(tapes: Dict<OldTape>): DerivEnv {
-        const newTapeNS = new TapeNamespace(tapes, this.tapeNS);
-        return update(this, { tapeNS: newTapeNS });
+        const tapeNS = new TapeNamespace(tapes, this.tapeNS);
+        return update(this, {tapeNS});
     }
 
     public getTape(tapeName: string): OldTape {
@@ -84,12 +86,12 @@ export class DerivEnv extends Env {
     }
     
     public setSymbols(symbols: Dict<Expr>): DerivEnv {
-        return new DerivEnv(this.opt, this.tapeNS, symbols, this.stack, this.random, this.stats);
+        return update(this, {symbols});
     }
 
     public addSymbol(symbol: string): DerivEnv {
-        const newStack = this.stack.add(symbol);
-        return new DerivEnv(this.opt, this.tapeNS, this.symbols, newStack, this.random, this.stats);
+        const stack = this.stack.add(symbol);
+        return update(this, {stack});
     }
 
     public incrStates(): void {
@@ -1267,6 +1269,8 @@ export class CursorExpr extends UnaryExpr {
     constructor(
         public tape: string,
         child: Expr,
+        public vocab: Set<string>,
+        public atomic: boolean,
         public output: OutputExpr = new OutputExpr(EPSILON),
         public finished: boolean = false
     ) {
@@ -1286,7 +1290,8 @@ export class CursorExpr extends UnaryExpr {
                 // tapes inside and outside Cursor("X", child)
 
         const cNext = this.child.delta(tapeName, env);
-        return constructCursor(env, this.tape, cNext, this.output, this.finished);
+        return constructCursor(env, this.tape, cNext, this.vocab, 
+                    this.atomic, this.output, this.finished);
     }
 
     public *deriv(query: Query, env: DerivEnv): Derivs {
@@ -1295,7 +1300,8 @@ export class CursorExpr extends UnaryExpr {
                 // tapes inside and outside Cursor("X", child)
 
         for (const d of this.child.deriv(query, env)) {
-            yield d.wrap(c => constructCursor(env, this.tape, c, this.output, this.finished));
+            yield d.wrap(c => constructCursor(env, this.tape, c, 
+                    this.vocab, this.atomic, this.output, this.finished));
         }
     }
 
@@ -1304,7 +1310,7 @@ export class CursorExpr extends UnaryExpr {
         if (this.finished) {
             for (const [cHandled, cNext] of this.child.forward(env)) {
                 const wrapped = constructCursor(env, this.tape, cNext, 
-                                            this.output, true);
+                                this.vocab, this.atomic, this.output, true);
                 yield [cHandled, wrapped];
             }
             return;
@@ -1325,7 +1331,7 @@ export class CursorExpr extends UnaryExpr {
             for (const [_, nNext] of d.next.forward(env)) {
                 const finished = (d.result instanceof TokenExpr && d.result.text == "");
                 const wrapped = constructCursor(env, this.tape, nNext, 
-                                newOutput, finished);
+                                this.vocab, this.atomic, newOutput, finished);
                 yield [true, wrapped];
             }
             env.indentLog(-1);
@@ -1353,10 +1359,13 @@ export function constructCursor(
     env: Env,
     tape: string, 
     child: Expr, 
+    vocab: Set<string>,
+    atomic: boolean,
     output?: OutputExpr,
     finished: boolean = false
 ): Expr {
-    return new CursorExpr(tape, child, output, finished).simplify(env);
+    return new CursorExpr(tape, child, vocab, 
+                atomic, output, finished).simplify(env);
 }
 
 export class PreTapeExpr extends UnaryExpr {

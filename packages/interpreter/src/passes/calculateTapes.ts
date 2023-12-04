@@ -21,6 +21,7 @@ import {
     RepeatGrammar,
     ShortGrammar,
     NegationGrammar,
+    CorrespondGrammar,
 } from "../grammars";
 import { AutoPass, Pass, PassEnv } from "../passes";
 import { 
@@ -39,6 +40,7 @@ import { TapeSet, TapeDict } from "../tapes";
 import * as Tapes from "../tapes";
 import { VocabDict } from "../vocab";
 import * as Vocabs from "../vocab";
+import { children } from "../components";
 
 /**
  * Goes through the tree and 
@@ -85,7 +87,6 @@ export class CalculateTapes extends AutoPass<Grammar> {
             case "count": 
             case "test":
             case "testnot":
-            case "correspond":
             case "context":
             case "cursor":
             case "pretape": return getTapesDefault(g);
@@ -113,6 +114,8 @@ export class CalculateTapes extends AutoPass<Grammar> {
             case "match":    return getTapesMatch(g);
             case "replace":    return getTapesReplace(g, env);
             case "replaceblock": return getTapesReplaceBlock(g);
+            
+            case "correspond": return getTapesCorrespond(g, env);
 
             default: exhaustive(g);
             //default: throw new Error(`unhandled grammar in getTapes: ${g.tag}`);
@@ -126,7 +129,7 @@ function updateTapes(g: Grammar, tapes: TapeSet): Grammar {
 }
 
 function getChildTapes(g: Grammar): TapeSet {
-    const childTapes = g.getChildren().map(c => c.tapes);
+    const childTapes = children(g).map(c => c.tapes);
     if (childTapes.length === 0) return Tapes.Lit();
     return foldRight(childTapes.slice(1), Tapes.Sum, childTapes[0]);
 }
@@ -152,6 +155,26 @@ function getTapesShort(g: ShortGrammar): Grammar {
     tapes = Tapes.Sum(stringifiers, tapes);
     return updateTapes(g, tapes);
 }
+
+function getTapesCorrespond(
+    g: CorrespondGrammar, 
+    env: PassEnv
+): Grammar | Msg<Grammar> {
+    let tapes = getChildTapes(g);
+    if (tapes.tag !== Tapes.Tag.Lit) {
+        // nothing we can do at the moment
+        return updateTapes(g, tapes);
+    }
+
+    const stringifiers = Tapes.Lit();
+    stringifiers.vocabMap[INPUT_TAPE] = Vocabs.Tokenized(); 
+    stringifiers.vocabMap[OUTPUT_TAPE] = Vocabs.Tokenized(); 
+    tapes = Tapes.Sum(stringifiers, tapes);
+    return updateTapes(g, tapes);
+
+}
+
+
 
 function getTapesNot(g: NegationGrammar): Grammar {
     let tapes = getChildTapes(g);

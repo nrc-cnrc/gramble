@@ -17,7 +17,7 @@ import {
     ValueSet
 } from "./utils/func";
 
-import { Component, getChildren } from "./components";
+import { Component, children } from "./components";
 import { DEFAULT_SYMBOL,  HIDDEN_PREFIX, INPUT_TAPE, OUTPUT_TAPE } from "./utils/constants";
 import { tokenizeUnicode } from "./utils/strings";
 import { Pos } from "./utils/cell";
@@ -131,10 +131,6 @@ export abstract class AbstractGrammar extends Component {
                                 `${Tapes.toStr(this.tapes)}`);
         }
         return Object.keys(this.tapes.vocabMap);
-    }
-
-    public getChildren(): Grammar[] {
-        return getChildren(this as Grammar);
     }
 
     /**
@@ -495,8 +491,8 @@ export class CorrespondGrammar extends UnaryGrammar {
     
     constructor(
         child: Grammar,
-        public tape1: string = INPUT_TAPE,
-        public tape2: string = OUTPUT_TAPE
+        public inputTape: string = INPUT_TAPE,
+        public outputTape: string = OUTPUT_TAPE
     ) {
         super(child);
     }

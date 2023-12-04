@@ -3,7 +3,6 @@ import {
     Message, 
     msg, Msg, 
     MsgVoid,
-    MsgFunc
 } from "./utils/msgs";
 import { Pass, PassEnv } from "./passes";
 import { Dict, update } from "./utils/func";
@@ -91,26 +90,26 @@ export function mapChildrenObj<T extends Component>(x: any, f: Pass<T,T>, env: P
 
 /// GETTING CHILDREN
 
-export function getChildren<T extends Component>(c: T): T[] {
+export function children<T extends Component>(c: T): T[] {
     const children: T[] = [];
     for (const [k,v] of Object.entries(c)) {
-        if (k == "tag") continue;
+        if (k === "tag") continue;
         if (Array.isArray(v)) {
-            children.push(...getChildrenFromArray<T>(v));
+            children.push(...childrenFromArray<T>(v));
         } else if (v instanceof Component) {
             children.push(v as T);
         } else if (v instanceof Object) {
-            children.push(...getChildrenObj<T>(v));
+            children.push(...childrenFromObj<T>(v));
         }
     }
     return children;
 }
 
-function getChildrenFromArray<T extends Component>(c: any[]): T[] {
+function childrenFromArray<T extends Component>(c: any[]): T[] {
     return c.filter(v => v instanceof Component);
 }
 
-function getChildrenObj<T extends Component>(c: Object): T[] {
+function childrenFromObj<T extends Component>(c: Object): T[] {
     const children: T[] = [];
     for (const [k,v] of Object.entries(c)) {
         if (v instanceof Component) {

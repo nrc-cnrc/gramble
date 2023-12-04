@@ -11,12 +11,13 @@ import {
 } from "../grammars";
 import { renameTape } from "../tapes";
 import { Cursor } from "../grammarConvenience";
+import { children } from "../components";
 
 export class CreateCursors extends Pass<Grammar,Grammar> {
 
     public transformAux(g: Grammar, env: PassEnv): Grammar {
         const priorities = prioritizeTapes(g, env);
-        return Cursor(priorities, g);
+        return Cursor(priorities, g).tapify(env);
     }
 }
 
@@ -94,7 +95,7 @@ function getTapePriorityDefault(
     env: PassEnv
 ): number {
     const priorities: number[] = [0];
-    for (const child of g.getChildren()) {
+    for (const child of children(g)) {
         const childPriority = getTapePriority(child, tape, symbolsVisited, env);
         if (childPriority < 0) {
             return childPriority;

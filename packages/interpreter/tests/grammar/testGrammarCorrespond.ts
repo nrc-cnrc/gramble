@@ -60,7 +60,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'hello', $o: 'bye'},
         ],
     }));
-
+    
     describe('2a. o equal length to i, priority i>o', test({
         grammar: Cursor(["$i", "$o"], 
                     Correspond(Seq(i("hello"), o("world")))),
@@ -165,6 +165,13 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
     
+    describe('8a. epsilon input, default priority', test({
+        grammar: Correspond(Seq(Epsilon(), o("sayonara"))),
+        results: [
+            {$o: 'sayonara'},
+        ],
+    }));
+
     describe('8a. epsilon input, priority i>o', test({
         grammar: Cursor(["$i", "$o"], 
                     Correspond(Seq(Epsilon(), o("sayonara")))),
@@ -232,5 +239,4 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'hello'},
         ],
     }));
-    
 });
