@@ -172,7 +172,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
 
-    describe('8a. epsilon input, priority i>o', test({
+    describe('8b. epsilon input, priority i>o', test({
         grammar: Cursor(["$i", "$o"], 
                     Correspond(Seq(Epsilon(), o("sayonara")))),
         results: [
@@ -180,33 +180,51 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
     
-    describe('8b. epsilon input, priority i<o', test({
+    describe('8c. epsilon input, priority i<o', test({
         grammar: Cursor(["$o", "$i"], 
                     Correspond(Seq(Epsilon(), o("sayonara")))),
         results: [
             {$o: 'sayonara'},
         ],
     }));
-    
-    describe('9a. optional input, priority i>o', test({
-        grammar: Cursor(["$i", "$o"], 
-                    Correspond(Seq(Uni(i("hello"), Epsilon()), o("sayonara")))),
-        results: [
-            {$i: 'hello', $o: 'sayonara'},
-            {$o: 'sayonara'},
-        ],
-    }));
-    
-    describe('9b. optional input, priority i<o', test({
-        grammar: Cursor(["$o", "$i"], 
-                    Correspond(Seq(Uni(i("hello"), Epsilon()), o("sayonara")))),
+
+    describe('9a. optional input, default priority', test({
+        grammar: Correspond(Seq(Uni(i("hello"), Epsilon()), 
+                        o("sayonara"))),
         results: [
             {$i: 'hello', $o: 'sayonara'},
             {$o: 'sayonara'},
         ],
     }));
 
-    describe('10a. epsilon output, priority i>o', test({
+    describe('9b. optional input, priority i>o', test({
+        grammar: Cursor(["$i", "$o"], 
+                    Correspond(Seq(Uni(i("hello"), Epsilon()), 
+                        o("sayonara")))),
+        results: [
+            {$i: 'hello', $o: 'sayonara'},
+            {$o: 'sayonara'},
+        ],
+    }));
+    
+    describe('9c. optional input, priority i<o', test({
+        grammar: Cursor(["$o", "$i"], 
+                    Correspond(Seq(Uni(i("hello"), Epsilon()), 
+                        o("sayonara")))),
+        results: [
+            {$i: 'hello', $o: 'sayonara'},
+            {$o: 'sayonara'},
+        ],
+    }));
+
+    describe('10a. epsilon output, default priority', test({
+        grammar: Correspond(Seq(i("hello"), Epsilon())),
+        results: [
+            {$i: 'hello'},
+        ],
+    }));
+
+    describe('10b. epsilon output, priority i>o', test({
         grammar: Cursor(["$i", "$o"], 
                     Correspond(Seq(i("hello"), Epsilon()))),
         results: [
@@ -214,7 +232,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
     
-    describe('10b. epsilon output, priority i<o', test({
+    describe('10c. epsilon output, priority i<o', test({
         grammar: Cursor(["$o", "$i"], 
                     Correspond(Seq(i("hello"), Epsilon()))),
         results: [
@@ -222,18 +240,29 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
     
-    describe('10a. optional output, priority i>o', test({
+    describe('10a. optional output, default priority', test({
+        grammar: Correspond(Seq(i("hello"), 
+                            Uni(o("bye"), Epsilon()))),
+        results: [
+            {$i: 'hello', $o: 'bye'},
+            {$i: 'hello'},
+        ],
+    }));
+
+    describe('10b. optional output, priority i>o', test({
         grammar: Cursor(["$i", "$o"], 
-                    Correspond(Seq(i("hello"), Uni(o("bye"), Epsilon())))),
+                    Correspond(Seq(i("hello"), 
+                                Uni(o("bye"), Epsilon())))),
         results: [
             {$i: 'hello', $o: 'bye'},
             {$i: 'hello'},
         ],
     }));
     
-    describe('10b. optional output, priority i<o', test({
+    describe('10c. optional output, priority i<o', test({
         grammar: Cursor(["$o", "$i"], 
-                    Correspond(Seq(i("hello"), Uni(o("bye"), Epsilon())))),
+                    Correspond(Seq(i("hello"), 
+                                Uni(o("bye"), Epsilon())))),
         results: [
             {$i: 'hello', $o: 'bye'},
             {$i: 'hello'},
