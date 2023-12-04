@@ -145,7 +145,7 @@ function constructExprCursor(
     if (vocab === undefined)
         throw new Error(`Tape ${g.tapeName} does not exist`);
     if (vocab.tag !== Vocab.Tag.Lit) 
-        throw new Error(`Constructing cursor with unresolved vocab: ${g.tapeName}`);
+        throw new Error(`Constructing cursor with unresolved vocab: ${g.tapeName}, vocab is ${Vocab.toStr(vocab)}`);
     const atomic = vocab.atomicity === Vocab.Atomicity.Atomic || 
                    vocab.atomicity === Vocab.Atomicity.Concatenated;
     return constructCursor(env, g.tapeName, childExpr, vocab.tokens, atomic);

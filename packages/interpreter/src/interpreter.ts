@@ -33,6 +33,7 @@ import { qualifySymbol } from "./passes/qualifySymbols";
 import { FlattenCollections } from "./passes/flattenCollections";
 import { CreateQuery } from "./passes/createQuery";
 import { InfinityProtection, infinityProtection } from "./passes/infinityProtection";
+import { ResolveVocab } from "./passes/resolveVocab";
 
 /**
  * An interpreter object is responsible for applying the passes in between sheets
@@ -257,7 +258,7 @@ export class Interpreter {
         targetGrammar = createQuery.transform(targetGrammar, env).msgTo(THROWER);
         
         // we have to re-collect the vocab in case it changed
-        targetGrammar.collectAllVocab(this.tapeNS, env);
+        //targetGrammar.collectAllVocab(this.tapeNS, env);
         
         // any tape that isn't already inside a Cursor or PreTape needs
         // to have a Cursor made for it, because otherwise that content will
@@ -265,6 +266,9 @@ export class Interpreter {
         const createCursors = new CreateCursors();
         targetGrammar = createCursors.transform(targetGrammar, env).msgTo(THROWER);
         
+        const resolveVocab = new ResolveVocab();
+        targetGrammar = resolveVocab.transform(targetGrammar, env).msgTo(THROWER);
+
         // the client probably doesn't want an accidentally-infinite grammar
         // to generate infinitely.  this checks which tapes could potentially
         // generate infinitely and caps them to opt.maxChars.

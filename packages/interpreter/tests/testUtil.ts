@@ -201,8 +201,6 @@ export function testGenerate(
     shortDesc: string = "",
 ): void {
     timeIt(() => {
-        //testNumErrors(interpreter, numErrors);
-
         const outputs: StringDict[] =
             generateOutputs(interpreter, symbol,
                                 query, stripHidden, false);
@@ -301,17 +299,13 @@ export function testNumErrors(
     interpreter: Interpreter,
     numErrors: number
 ): void {
-
-    // In case there are any tests, we want to run them so their errors accumulate
-    interpreter.runTests();
-
-    const devEnv = interpreter.devEnv;
     it(`should have ${numErrors} errors/warnings`, function() {
         try {
-            expect(devEnv.numErrors("any")).to.equal(numErrors);
+            interpreter.runTests();
+            expect(interpreter.devEnv.numErrors("any")).to.equal(numErrors);
         } catch (e) {
             console.log(`[${this.test?.fullTitle()}]`);
-            console.log(`outputs: ${JSON.stringify(devEnv.getErrorMessages())}`);
+            console.log(`outputs: ${JSON.stringify(interpreter.devEnv.getErrorMessages())}`);
             throw e;
         }
     });

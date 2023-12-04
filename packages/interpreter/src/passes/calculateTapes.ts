@@ -22,6 +22,7 @@ import {
     ShortGrammar,
     NegationGrammar,
     CorrespondGrammar,
+    CursorGrammar,
 } from "../grammars";
 import { AutoPass, Pass, PassEnv } from "../passes";
 import { 
@@ -88,9 +89,11 @@ export class CalculateTapes extends AutoPass<Grammar> {
             case "test":
             case "testnot":
             case "context":
-            case "cursor":
             case "pretape": return getTapesDefault(g);
 
+            
+            case "cursor":  return getTapesCursor(g);
+            
             // union of children's tapes but always String vocab
             case "short":      return getTapesShort(g);
             case "not":        return getTapesNot(g);
@@ -100,19 +103,19 @@ export class CalculateTapes extends AutoPass<Grammar> {
             case "filter":     return getTapesFilter(g);
             case "starts":
             case "ends":
-            case "contains": return getTapesCondition(g);
+            case "contains":   return getTapesCondition(g);
 
             // seq and repeat involve products
             case "seq":         return getTapesSeq(g);
             case "repeat":      return getTapesRepeat(g);
 
             // something special
-            case "embed":      return getTapesEmbed(g, this.knownTapes);
-            case "collection": return getTapesCollection(g, env);
-            case "rename":     return getTapesRename(g);
-            case "hide":       return getTapesHide(g);
-            case "match":    return getTapesMatch(g);
-            case "replace":    return getTapesReplace(g, env);
+            case "embed":        return getTapesEmbed(g, this.knownTapes);
+            case "collection":   return getTapesCollection(g, env);
+            case "rename":       return getTapesRename(g);
+            case "hide":         return getTapesHide(g);
+            case "match":        return getTapesMatch(g);
+            case "replace":      return getTapesReplace(g, env);
             case "replaceblock": return getTapesReplaceBlock(g);
             
             case "correspond": return getTapesCorrespond(g, env);
@@ -496,4 +499,11 @@ function getTapesCondition(
     const tapes = Tapes.Sum(g.child.tapes, Tapes.Lit(extras));
     return updateTapes(g, tapes);
     
+}
+
+function getTapesCursor(
+    g: CursorGrammar
+): Grammar {
+    console.log(`tapecalc for cursor ${g.tapeName}, child tapes are ${Tapes.toStr(g.child.tapes)}`);
+    return getTapesDefault(g);
 }

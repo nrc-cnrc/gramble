@@ -98,7 +98,7 @@ export class ComposedPass<T1,T2,T3> extends Pass<T1,T3> {
 
 export abstract class AutoPass<T extends Component> extends Pass<T,T> {
 
-    public transformAux(c: T, env: PassEnv): Msg<T> {
+    public transformAux(c: T, env: PassEnv): T|Msg<T> {
         return this.tryTransform(this.preTransform, c, env)
                    .bind(c => c.mapChildren(this, env).localize(c.pos) as Msg<T>)
                    .bind(c => this.tryTransform(this.postTransform, c, env))

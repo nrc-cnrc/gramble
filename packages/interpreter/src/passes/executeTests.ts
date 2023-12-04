@@ -14,6 +14,7 @@ import { Pass, PassEnv } from "../passes";
 import { constructExpr } from "./constructExpr";
 import { CreateCursors } from "./createCursors";
 import { InfinityProtection } from "./infinityProtection";
+import { ResolveVocab } from "./resolveVocab";
 
 export class ExecuteTests extends Pass<Grammar,Grammar> {
 
@@ -117,6 +118,9 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
         
         const createCursors = new CreateCursors();
         targetGrammar = createCursors.transform(targetGrammar, env).msgTo(THROWER);
+
+        const resolveVocab = new ResolveVocab();
+        targetGrammar = resolveVocab.transform(targetGrammar, env).msgTo(THROWER);
 
         const infinityProtection = new InfinityProtection();
         targetGrammar = infinityProtection.transform(targetGrammar, env).msgTo(THROWER);

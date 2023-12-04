@@ -9,7 +9,9 @@ import {
     RenameGrammar, 
     StringPairSet 
 } from "../grammars";
-import { renameTape } from "../tapes";
+import { 
+    renameTape
+} from "../tapes";
 import { Cursor } from "../grammarConvenience";
 import { children } from "../components";
 

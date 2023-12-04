@@ -265,7 +265,7 @@ export function toStr(v: Vocab): string {
 * turn causing the collapse of the suspensions into TapeLits.
 */
 
-type VocabEnv = {
+export type Env = {
     vocabMap: Dict<Vocab>,
     visited: Set<string>
 }
@@ -281,9 +281,9 @@ export function resolveAll(vocabMap: Dict<Vocab>): Dict<Vocab> {
     return current;
 }
 
-function resolve(
+export function resolve(
     v: Vocab, 
-    env: VocabEnv
+    env: Env
 ): Vocab {
     switch (v.tag) {
         case Tag.Ref:        return resolveRef(v, env);
@@ -304,7 +304,7 @@ function simplify(v: Vocab): Vocab {
 
 function resolveRef(
     v: Ref, 
-    env: VocabEnv
+    env: Env
 ): Vocab {
     if (env.visited.has(v.tape)) {
         return Atomic();
@@ -321,7 +321,7 @@ function resolveRef(
 
 function resolveRename(
     v: Rename, 
-    env: VocabEnv
+    env: Env
 ): Vocab {
     const newTapes: Dict<Vocab> = Object.create(env.vocabMap);
     Object.assign(newTapes, env.vocabMap);
@@ -334,8 +334,8 @@ function resolveRename(
 
 function map(
     v: Vocab, 
-    f: (v: Vocab, env: VocabEnv) => Vocab,
-    env: VocabEnv
+    f: (v: Vocab, env: Env) => Vocab,
+    env: Env
 ): Vocab {
     const clone = Object.create(Object.getPrototypeOf(v));
     for (const [k, child] of Object.entries(v)) {
