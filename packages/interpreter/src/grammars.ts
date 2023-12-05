@@ -146,7 +146,7 @@ export abstract class AbstractGrammar extends Component {
      */
     public tapify(env: PassEnv): Grammar {
         const pass = new CalculateTapes();
-        return pass.getEnvAndTransform(this as Grammar, {})
+        return pass.getEnvAndTransform(this as Grammar, env.opt)
                    .msgTo(THROWER);
     }
 
@@ -158,8 +158,6 @@ export abstract class AbstractGrammar extends Component {
         env: PassEnv
     ): void {
         for (const tapeName of this.tapeNames) {
-            //const atomic = determineAtomicity(this as Grammar, tapeName, env);
-            
             if (this.tapes.tag !== Tapes.Tag.Lit) throw new Error(`Collecting vocab from unresolved tape ${tapeName}`);
             
             let vocabMap = this.tapes.vocabMap;
@@ -170,7 +168,7 @@ export abstract class AbstractGrammar extends Component {
                 throw new Error(`Tape ${tapeName} has unresolved vocab: ${toStr(vocab)}`);
 
             const atomic = vocab.atomicity !== Vocabs.Atomicity.Tokenized;
-            
+
             let tape = tapeNS.attemptGet(tapeName);
             if (tape == undefined) {
                 // make a new one if it doesn't exist

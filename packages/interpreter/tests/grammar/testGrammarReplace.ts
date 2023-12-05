@@ -63,7 +63,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     // Note: # denotes a word boundary, i.e. starts with or ends with
 
-    /*
     testGrammar({
         desc: '1. Replace e by a in hello: e -> a {1+} || #h_llo#',
         grammar: Replace("e", "a", "h", "llo", EMPTY_CONTEXT, true, true, 1),
@@ -1817,7 +1816,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         query: inputs(io_31c),
         results: outputs(io_31c),
     });
-*/
+
     const io_32: StringDict[] = [
         // Some Valid Inputs - Copy through
         {$i: 'hl', $o: 'hl', t3: '[1SG]'},
@@ -1882,7 +1881,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: outputs(io_32),
     });
 
-    /*
     testGrammar({
         desc: '33a. Replace ε by e: Cnt_4 ε -> e {1} || #_ ($o:ehl)',
         grammar: Count({$i:4, $o:4},
@@ -2644,5 +2642,4 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'ii', $o: 'ii'},
         ],
     });
-    */
 });

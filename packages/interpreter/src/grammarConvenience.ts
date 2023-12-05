@@ -17,6 +17,7 @@ import {
 } from "./grammars";
 import { Dict, StringDict } from "./utils/func";
 import { INPUT_TAPE, OUTPUT_TAPE, DEFAULT_TAPE } from "./utils/constants";
+import { toStr } from "./passes/toStr";
 
 export function SingleTape(
     tapeName: string,
@@ -120,7 +121,8 @@ export function Query(
             value = value.normalize("NFD");
             return new LiteralGrammar(key, value);
         });
-        queries.push(new SequenceGrammar(queryLiterals));
+        const seq = new SequenceGrammar(queryLiterals)
+        queries.push(seq);
     }
     if (queries.length == 1) {
         return queries[0];

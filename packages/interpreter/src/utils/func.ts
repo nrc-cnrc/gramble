@@ -169,7 +169,7 @@ export function concatStringDict(d1: StringDict, d2: StringDict): StringDict {
 export function stringDictToStr(d: StringDict): string {
     const keys = Object.keys(d).sort();
     const strs = keys.map(k => `${k}:${d[k]}`);
-    return strs.join("+");
+    return strs.join(", ");
 }
 
 export function outputProduct(ds1: StringDict[], ds2: StringDict[]): StringDict[] {

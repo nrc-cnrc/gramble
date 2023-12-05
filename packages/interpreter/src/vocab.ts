@@ -255,7 +255,7 @@ export function toStr(v: Vocab): string {
         case Tag.Rename:
             return `R(${v.fromTape}>${v.toTape})(${toStr(v.child)})`
         default:
-            return "{" + [...v.tokens].join(",") + "}";
+            return `${v.atomicity}{` + [...v.tokens].join(",") + "}";
     }
 }
 
@@ -278,7 +278,7 @@ export class VocabEnv extends Env<Vocab> {
     public update(v: Vocab): VocabEnv {
         if (v.tag !== Tag.Rename) return this;
         // we only care about Renames for this
-        
+
         const newTapes: Dict<Vocab> = Object.create(this.vocabMap);
         Object.assign(newTapes, this.vocabMap);
         newTapes[v.fromTape] = this.vocabMap[v.toTape];

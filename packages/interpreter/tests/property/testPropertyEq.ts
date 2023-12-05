@@ -180,7 +180,7 @@ class EquationTest implements PropertyTest {
 function outputsToStr(ds: StringDict[]): string {
     const strs = ds.map(d => stringDictToStr(d));
     strs.sort();
-    return "[" + strs.join(", ") + "]";
+    return strs.join("|");
 }
 
 for (const eq of EQUATIONS) {
