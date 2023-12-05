@@ -691,7 +691,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     testGrammarTapes({
-        desc: "12e",
+        desc: "12f",
         grammar: Join(Seq(t1("hello"), Dot("t1"), t3("kitty")), 
                       Seq(t1("goodbye"), Dot("t1"), t2("world"))),
         tapes: {
