@@ -1,10 +1,11 @@
+import { PassEnv } from "../components";
 import { 
     Grammar,
     SequenceGrammar,
     LiteralGrammar,
     EpsilonGrammar
 } from "../grammars";
-import { PassEnv, AutoPass } from "../passes";
+import { AutoPass } from "../passes";
 
 /**
  * Plaintext/regex parsing results in a lot of single-character
@@ -15,10 +16,6 @@ import { PassEnv, AutoPass } from "../passes";
  * atomicity.
  */
 export class CombineLiterals extends AutoPass<Grammar> {
-
-    public get desc(): string {
-        return "Combining literals";
-    }
 
     public postTransform(g: Grammar, env: PassEnv): Grammar {
         switch(g.tag) {

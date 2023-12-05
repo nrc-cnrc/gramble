@@ -4,14 +4,15 @@ import {
     childMustBeGrid,
     siblingRequired,
 } from "../ops";
-import { Err, Msgs, Result, Warn } from "../utils/msgs";
-import { Pass, PassEnv } from "../passes";
+import { Err, Message, Msg, Warn } from "../utils/msgs";
+import { Pass } from "../passes";
 import { 
     TstOp, 
     TstEmpty,
     TstGrid,
     TST
 } from "../tsts";
+import { PassEnv } from "../components";
 
 /**
  * This pass goes through and make sure that TstOps have 
@@ -24,20 +25,16 @@ import {
 
 export class CheckStructuralParams extends Pass<TST,TST> {
 
-    public get desc(): string {
-        return "Checking structural params";
-    }
-
-    public transformAux(t: TST, env: PassEnv): Result<TST> {
+    public transformAux(t: TST, env: PassEnv): Msg<TST> {
         
         if (!(t instanceof TstOp)) {
             return t.mapChildren(this, env);
         }
         
-        const mapped = t.mapChildren(this, env) as Result<TstOp>;
+        const mapped = t.mapChildren(this, env) as Msg<TstOp>;
         return mapped.bind(t => {
     
-            const msgs: Msgs = [];
+            const msgs: Message[] = [];
 
             // no ops allow assignments as siblings or child, so 
             // if it's going to be an assignment, create an error 
@@ -75,9 +72,9 @@ export class CheckStructuralParams extends Pass<TST,TST> {
         });
     }
 
-    public handleAssignment(t: TstOp): Result<TST> {
+    public handleAssignment(t: TstOp): Msg<TST> {
         
-        const msgs: Msgs = [];
+        const msgs: Message[] = [];
 
         // siblings of assignments don't get assigned to anything
         if (!(t.sibling instanceof TstEmpty)) {

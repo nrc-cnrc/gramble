@@ -1,4 +1,4 @@
-import { Err, Msgs, Result } from "../utils/msgs";
+import { Err, Message, Msg } from "../utils/msgs";
 import { 
     Grammar,
     CollectionGrammar,
@@ -19,21 +19,54 @@ import {
     ContainsGrammar,
     SequenceGrammar,
     RepeatGrammar,
+    ShortGrammar,
+    NegationGrammar,
+    CorrespondGrammar,
+    CursorGrammar,
 } from "../grammars";
-import { Pass, PassEnv } from "../passes";
+import { AutoPass } from "../passes";
 import { 
-    Dict, mapValues, 
+    mapValues, 
     exhaustive, update, 
-    foldRight, union, dictLen 
+    foldRight, dictLen, mapDict 
 } from "../utils/func";
 import { 
-    TapeInfo, TapeSum, 
-    TapeLit, TapeRef, 
-    TapeRename, tapeToStr, TapeJoin, TapeProduct 
-} from "../tapes";
-import { DEFAULT_TAPE, INPUT_TAPE, OUTPUT_TAPE } from "../utils/constants";
-import { VocabAtomic, VocabInfo, VocabString, WILDCARD } from "../vocab";
+    DEFAULT_TAPE, 
+    INPUT_TAPE, 
+    OUTPUT_TAPE 
+} from "../utils/constants";
 import { toStr } from "./toStr";
+
+import { TapeSet, TapeDict } from "../tapes";
+import * as Tapes from "../tapes";
+import { VocabDict } from "../vocab";
+import * as Vocabs from "../vocab";
+import { PassEnv, children } from "../components";
+import { Env, Options } from "../utils/options";
+
+
+class TapesEnv extends Env<Grammar> {
+
+    constructor(
+        opt: Partial<Options>,
+        public recalculate: boolean = false,
+        public tapeMap: TapeDict | undefined = undefined
+    ) {
+        super(opt);
+    }
+
+    public update(t: Grammar): TapesEnv {
+        if (t.tag !== "collection") 
+            return this; // we only care about collections here
+        
+        if (this.tapeMap !== undefined) 
+            return this; // don't destroy an existing tapemap
+
+        const tapeMap = mapDict(t.symbols, (k,_) => Tapes.Ref(k));
+        return update(this, {tapeMap});
+    }
+
+}
 
 /**
  * Goes through the tree and 
@@ -45,31 +78,26 @@ import { toStr } from "./toStr";
  * (2) replaces unqualified symbol references (like "VERB") to 
  * fully-qualified names (like "MainSheet.VERB")
  */
-export class CalculateTapes extends Pass<Grammar,Grammar> {
+export class CalculateTapes extends AutoPass<Grammar> {
 
-    constructor(
-        public recalculate: boolean = false,
-        public knownTapes: Dict<TapeInfo> = {}
-    ) {
-        super();
+    public getEnv(opt: Partial<Options>): TapesEnv {
+        return new TapesEnv(opt);
     }
 
-    public transform(g: Grammar, env: PassEnv): Result<Grammar> {
-        if (g.tapeSet.tag !== "TapeUnknown" && !this.recalculate) {
+    public transform(g: Grammar, env: TapesEnv): Msg<Grammar> {
+        if (g.tapes.tag !== Tapes.Tag.Unknown && !env.recalculate) {
             return g.msg();
         }
-
-        return g.mapChildren(this, env)
-                .bind(g => this.transformAux(g, env))
-                .localize(g.pos);
+        
+        return super.transform(g, env);
     }
 
-    public transformAux(g: Grammar, env: PassEnv): Grammar|Result<Grammar> {
+    public postTransform(g: Grammar, env: TapesEnv): Grammar|Msg<Grammar> {
         switch (g.tag) {
 
             // have no tapes
             case "epsilon":
-            case "null": return updateTapes(g, TapeLit());
+            case "null": return updateTapes(g, Tapes.Lit());
 
             // have their own tape name as tapes
             case "lit": return getTapesLit(g, env);
@@ -79,46 +107,118 @@ export class CalculateTapes extends Pass<Grammar,Grammar> {
 
             // just the union of children's tapes
             case "alt":
-            case "short": 
             case "count": 
-            case "not":
             case "test":
             case "testnot":
-            case "correspond":
             case "context":
-            case "cursor":
             case "pretape": return getTapesDefault(g);
+
+            
+            case "cursor":  return getTapesCursor(g);
+            
+            // union of children's tapes but always String vocab
+            case "short":      return getTapesShort(g);
+            case "not":        return getTapesNot(g);
 
             // join and filter are special w.r.t. vocabs and wildcards
             case "join":       return getTapesJoin(g);
             case "filter":     return getTapesFilter(g);
             case "starts":
             case "ends":
-            case "contains": return getTapesCondition(g);
+            case "contains":   return getTapesCondition(g);
 
             // seq and repeat involve products
             case "seq":         return getTapesSeq(g);
             case "repeat":      return getTapesRepeat(g);
 
             // something special
-            case "embed":      return getTapesEmbed(g, this.knownTapes);
-            case "collection": return getTapesCollection(g, env);
-            case "rename":     return getTapesRename(g);
-            case "hide":       return getTapesHide(g);
-            case "match":    return getTapesMatch(g);
-            case "replace":    return getTapesReplace(g, env);
+            case "embed":        return getTapesEmbed(g, env);
+            case "collection":   return this.getTapesCollection(g, env);
+            case "rename":       return getTapesRename(g);
+            case "hide":         return getTapesHide(g);
+            case "match":        return getTapesMatch(g);
+            case "replace":      return getTapesReplace(g, env);
             case "replaceblock": return getTapesReplaceBlock(g);
+            
+            case "correspond": return getTapesCorrespond(g, env);
 
             default: exhaustive(g);
             //default: throw new Error(`unhandled grammar in getTapes: ${g.tag}`);
         }
 
     }
+    
+    getTapesCollection(g: CollectionGrammar, env: TapesEnv): Msg<Grammar> {
+        const msgs: Message[] = [];
+        
+        while (true) {
+            const newMsgs: Message[] = [];
+
+            // first get the initial tapes for each symbol
+            let tapeIDs: TapeDict = mapValues(g.symbols, v => v.tapes);
+
+            tapeIDs = Tapes.resolveAll(tapeIDs);
+
+            // check for unresolved content, and throw an exception immediately.
+            // otherwise we have to puzzle it out from exceptions elsewhere.
+            for (const [k,v] of Object.entries(tapeIDs)) {
+                if (v.tag !== Tapes.Tag.Lit) {
+                    throw new Error(`Unresolved tape structure in ${k}: ${toStr(v)}`);
+                }
+            }
+
+            // now feed those back into the structure so that every
+            // grammar node has only literal tapes
+            //const tapePusher = new CalculateTapes(true, tapeIDs);
+
+            const tapePushEnv = new TapesEnv(env.opt, true, tapeIDs);
+            g.symbols = mapValues(g.symbols, v => 
+                    this.transform(v, tapePushEnv).msgTo(newMsgs));
+
+            msgs.push(...newMsgs);
+
+            if (newMsgs.length === 0) break;
+            
+            // if there are any errors, the graph may have changed.  we
+            // need to restart the process from scratch.
+            //const TapeRefresher = new CalculateTapes(true);
+            const tapeRefreshEnv = new TapesEnv(env.opt, true).update(g);
+                            // update resets the references
+            g.symbols = mapValues(g.symbols, v => 
+                this.transform(v, tapeRefreshEnv).msgTo(newMsgs));
+        }
+
+        // TODO: The following interpretation of tapes is incorrect,
+        // but matches what we've been doing previously.  I'm going to
+        // get it "working" exactly like the old way, before fixing it to be
+        // semantically sound.
+        return getTapesDefault(g).msg(msgs);
+
+        /*
+        // TODO: This is the correct interpretation, restore it eventually
+
+        // if a symbol is selected, we share its tape set
+        const selectedSymbol = g.getSymbol(g.selectedSymbol);
+        if (selectedSymbol === undefined) {
+            // if there's no selected symbol, the collection as a whole
+            // has the semantics of epsilon, and thus its tapes are
+            // an empty TapeSet rather than TapeUnknown.   
+            return updateTapes(g, TapeSet()).msg(msgs);
+        }
+        return updateTapes(g, selectedSymbol.tapeSet).msg(msgs);
+        */
+
+    }
 }
 
+function updateTapes(g: Grammar, tapes: TapeSet): Grammar {
+    return update(g, { tapes });
+}
 
-function updateTapes(g: Grammar, tapes: TapeInfo): Grammar {
-    return update(g, { tapeSet: tapes });
+function getChildTapes(g: Grammar): TapeSet {
+    const childTapes = children(g).map(c => c.tapes);
+    if (childTapes.length === 0) return Tapes.Lit();
+    return foldRight(childTapes.slice(1), Tapes.Sum, childTapes[0]);
 }
 
 function getTapesDefault(
@@ -127,15 +227,66 @@ function getTapesDefault(
     return updateTapes(g, getChildTapes(g));
 }
 
+function getTapesShort(g: ShortGrammar): Grammar {
+    let tapes = getChildTapes(g);
+    if (tapes.tag !== Tapes.Tag.Lit) {
+        // nothing we can do at the moment
+        return updateTapes(g, tapes);
+    }
+
+    const stringifiers = Tapes.Lit();
+    for (const tape of Object.keys(tapes.vocabMap)) {
+        // dummy vocab ensures the atomicity is tokenized
+        stringifiers.vocabMap[tape] = Vocabs.Tokenized(); 
+    }
+    tapes = Tapes.Sum(stringifiers, tapes);
+    return updateTapes(g, tapes);
+}
+
+function getTapesCorrespond(
+    g: CorrespondGrammar, 
+    env: TapesEnv
+): Grammar | Msg<Grammar> {
+    let tapes = getChildTapes(g);
+    if (tapes.tag !== Tapes.Tag.Lit) {
+        // nothing we can do at the moment
+        return updateTapes(g, tapes);
+    }
+
+    const stringifiers = Tapes.Lit();
+    stringifiers.vocabMap[INPUT_TAPE] = Vocabs.Tokenized(); 
+    stringifiers.vocabMap[OUTPUT_TAPE] = Vocabs.Tokenized(); 
+    tapes = Tapes.Sum(stringifiers, tapes);
+    return updateTapes(g, tapes);
+
+}
+
+
+
+function getTapesNot(g: NegationGrammar): Grammar {
+    let tapes = getChildTapes(g);
+    if (tapes.tag !== Tapes.Tag.Lit) {
+        // nothing we can do at the moment
+        return updateTapes(g, tapes);
+    }
+
+    const stringifiers = Tapes.Lit();
+    for (const tape of Object.keys(tapes.vocabMap)) {
+        stringifiers.vocabMap[tape] = Vocabs.Wildcard(tape);
+    }
+    tapes = Tapes.Sum(stringifiers, tapes);
+    return updateTapes(g, tapes);
+}
+
 function getTapesSeq(
     g: SequenceGrammar
 ): Grammar {
-    const childTapes = g.children.map(c => c.tapeSet);
+    const childTapes = g.children.map(c => c.tapes);
     if (childTapes.length === 0) 
-        return updateTapes(g, TapeLit());
+        return updateTapes(g, Tapes.Lit());
     if (childTapes.length === 1)
         return updateTapes(g, childTapes[0]);
-    const tapes = foldRight(childTapes.slice(1), TapeProduct, childTapes[0]);
+    const tapes = foldRight(childTapes.slice(1), Tapes.Product, childTapes[0]);
     return updateTapes(g, tapes);
 }
 
@@ -143,99 +294,95 @@ function getTapesRepeat(
     g: RepeatGrammar
 ): Grammar {
     // (child⋅child) will give the right atomicity answer for 
-    // maxReps > 1.  It's not really worth it to do the correct
-    // atomicity answer for degerate repeats, we don't really use
-    // those.
-    const tapes = TapeProduct(g.child.tapeSet, g.child.tapeSet); 
+    // maxReps > 1.  For <= 1 it'll potentially claim non-atomicity
+    // for things that could be atomic, but it doesn't matter, we 
+    // don't actually use those.
+    const tapes = Tapes.Product(g.child.tapes, g.child.tapes); 
     return updateTapes(g, tapes);
 }
 
-function getChildTapes(g: Grammar): TapeInfo {
-    const childTapes = g.getChildren().map(c => c.tapeSet);
-    if (childTapes.length === 0) return TapeLit();
-    return foldRight(childTapes.slice(1), TapeSum, childTapes[0]);
-}
-
-function getTapesLit(g: LiteralGrammar, env: PassEnv): Grammar {
+function getTapesLit(g: LiteralGrammar, env: TapesEnv): Grammar {
     const vocab = env.opt.optimizeAtomicity
-                        ? VocabAtomic(new Set([g.text]))
-                        : VocabString(new Set(g.tokens));
+                        ? Vocabs.Atomic(new Set([g.text]))
+                        : Vocabs.Tokenized(new Set(g.tokens));
     const tapes = { [g.tapeName]: vocab };
-    return updateTapes(g, TapeLit(tapes));
+    return updateTapes(g, Tapes.Lit(tapes));
 }
 
-function getTapesSingleTape(g: SingleTapeGrammar): Grammar|Result<Grammar> {
+function getTapesSingleTape(g: SingleTapeGrammar): Grammar {
 
-    if (g.child.tapeSet.tag !== "TapeLit") {
+    if (g.child.tapes.tag !== Tapes.Tag.Lit) {
         // we know there should be a single tape, but we don't
         // yet know what it is.  let it be the dummy tape for now,
         // we'll be back later to fix it
-        const tapes = TapeRename(g.child.tapeSet, DEFAULT_TAPE, g.tapeName);
+        const tapes = Tapes.Rename(g.child.tapes, DEFAULT_TAPE, g.tapeName);
         return updateTapes(g, tapes);
     }
 
-    if (dictLen(g.child.tapeSet.tapes) > 1) {
+    if (dictLen(g.child.tapes.vocabMap) > 1) {
         // shouldn't be possible in real source grammars
         const result = new EpsilonGrammar();
-        return updateTapes(result, TapeLit())
+        throw updateTapes(result, Tapes.Lit())
             .err("Multiple fields not allowed in this context",
-                `Only grammars with one field (e.g. just "text" but not any other fields) ` +
+                `Only grammars with one field (e.g. just "text" but not Tapes.Any other fields) ` +
                 `can be embedded into a regex or rule context.`)
             .localize(g.pos);
     }
 
-    if (dictLen(g.child.tapeSet.tapes) === 0) {
+    if (dictLen(g.child.tapes.vocabMap) === 0) {
         return g.child;
     }
 
     // there's just one tape, rename it
-    const tapeToRename = Object.keys(g.child.tapeSet.tapes)[0];
-    const tapes = TapeRename(g.child.tapeSet, tapeToRename, g.tapeName);
+    const tapeToRename = Object.keys(g.child.tapes.vocabMap)[0];
+    const tapes = Tapes.Rename(g.child.tapes, tapeToRename, g.tapeName);
     return updateTapes(g, tapes);
 
 }
 
 function getTapesDot(g: DotGrammar): Grammar {
-    const tapes = TapeLit({ [g.tapeName]: WILDCARD });
+    const tapes = Tapes.Lit({ [g.tapeName]: Vocabs.Wildcard(g.tapeName) });
     return updateTapes(g, tapes);
 }
 
 function getTapesEmbed(
     g: EmbedGrammar, 
-    knownTapes:Dict<TapeInfo>
+    env: TapesEnv,
 ): Grammar {
-    if (!(g.symbol in knownTapes)) return updateTapes(g, TapeRef(g.symbol));
-    return updateTapes(g, knownTapes[g.symbol]);
+    if (env.tapeMap === undefined || !(g.symbol in env.tapeMap)) 
+        throw new Error(`Unknown symbol during tapecalc: ${g.symbol}`);
+        // should already be in there
+        //return updateTapes(g, Tapes.Ref(g.symbol));
+    return updateTapes(g, env.tapeMap[g.symbol]);
 }
 
 function getTapesMatch(g: MatchGrammar): Grammar {
-    const matchTapes = TapeRename(g.child.tapeSet, g.fromTape, g.toTape);
-    const tapes = TapeSum(g.child.tapeSet, matchTapes);
+    const tapes = Tapes.Match(g.child.tapes, g.fromTape, g.toTape);
     return updateTapes(g, tapes);
 }
 
 function getTapesJoin(g: JoinGrammar | FilterGrammar): Grammar {
-    const tapes = TapeJoin(g.child1.tapeSet, g.child2.tapeSet);
+    const tapes = Tapes.Join(g.child1.tapes, g.child2.tapes);
     return updateTapes(g, tapes);
 }
 
-function getTapesRename(g: RenameGrammar): Result<Grammar> {
+function getTapesRename(g: RenameGrammar): Grammar {
 
-    const tapes = TapeRename(g.child.tapeSet, g.fromTape, g.toTape);
-    const result = updateTapes(g, tapes).msg();
+    const tapes = Tapes.Rename(g.child.tapes, g.fromTape, g.toTape);
+    const result = updateTapes(g, tapes);
 
-    if (g.child.tapeSet.tag !== "TapeLit") {
+    if (g.child.tapes.tag !== Tapes.Tag.Lit) {
         return result;
     }
 
-    if (g.child.tapeSet.tapes[g.fromTape] === undefined) {
-        return g.child.err("Renaming missing tape",
+    if (g.child.tapes.vocabMap[g.fromTape] === undefined) {
+        throw g.child.err("Renaming missing tape",
             `The grammar to undergo renaming does not contain the tape ${g.fromTape}. ` +
-            `Available tapes: [${[...g.child.tapes]}]`);
+            `Available tapes: [${[...g.child.tapeNames]}]`);
     }
 
-    if (g.fromTape !== g.toTape && g.child.tapeSet.tapes[g.toTape] !== undefined) {
-        return g.child.err("Destination tape already exists",
+    if (g.fromTape !== g.toTape && g.child.tapes.vocabMap[g.toTape] !== undefined) {
+        throw g.child.err("Destination tape already exists",
                   `Trying to rename ${g.fromTape}->${g.toTape} but the grammar ` +
                   `to the left already contains the tape ${g.toTape}.`)
     }
@@ -244,16 +391,16 @@ function getTapesRename(g: RenameGrammar): Result<Grammar> {
 
 }
 
-function getTapesHide(g: HideGrammar): Result<Grammar> {
-    if (g.child.tapeSet.tag === "TapeLit" &&
-        g.child.tapeSet.tapes[g.tapeName] === undefined) {
-        return g.child.err("Hiding missing tape",
+function getTapesHide(g: HideGrammar): Grammar {
+    if (g.child.tapes.tag === Tapes.Tag.Lit &&
+        g.child.tapes.vocabMap[g.tapeName] === undefined) {
+        throw g.child.err("Hiding missing tape",
                     `The grammar being hidden does not contain the tape ${g.tapeName}. ` +
-                    ` Available tapes: [${[...g.child.tapes]}]`);
+                    ` Available tapes: [${[...g.child.tapeNames]}]`);
     }
 
-    const tapes = TapeRename(g.child.tapeSet, g.tapeName, g.toTape);
-    return updateTapes(g, tapes).msg();
+    const tapes = Tapes.Rename(g.child.tapes, g.tapeName, g.toTape);
+    return updateTapes(g, tapes);
 }
 
 /**
@@ -262,34 +409,34 @@ function getTapesHide(g: HideGrammar): Result<Grammar> {
  * too but handling it specially lets us return a clearer error message. 
  * If we fail, we return the left child and an error message.
  */
-function getTapesFilter(g: FilterGrammar): Result<Grammar> {
+function getTapesFilter(g: FilterGrammar): Grammar {
 
-    if (g.child1.tapeSet.tag !== "TapeLit" || 
-            g.child2.tapeSet.tag !== "TapeLit") {
+    if (g.child1.tapes.tag !== Tapes.Tag.Lit || 
+            g.child2.tapes.tag !== Tapes.Tag.Lit) {
         // there's nothing we can check right now
-        return getTapesJoin(g).msg();
+        return getTapesJoin(g);
     }
 
-    if (dictLen(g.child2.tapeSet.tapes) === 0) {
+    if (dictLen(g.child2.tapes.vocabMap) === 0) {
         // it's an epsilon or failure caught elsewhere
-        return getTapesJoin(g).msg();
+        return getTapesJoin(g);
     }
 
-    if (dictLen(g.child2.tapeSet.tapes) > 1) {
-        return g.child1.err("Filters must be single-tape", 
+    if (dictLen(g.child2.tapes.vocabMap) > 1) {
+        throw g.child1.err("Filters must be single-tape", 
         `A filter like equals, starts, etc. should only reference a single tape.`);
     }
 
-    const t2 = g.child2.tapes[0];
-    if (g.child1.tapeSet.tapes[t2] === undefined) {
-        return g.child1.err("Filtering non-existent tape", 
+    const t2 = g.child2.tapeNames[0];
+    if (g.child1.tapes.vocabMap[t2] === undefined) {
+        throw g.child1.err("Filtering non-existent tape", 
         `This filter references a tape ${t2} that does not exist`);
     }
 
-    return getTapesJoin(g).msg();
+    return getTapesJoin(g);
 }
 
-function getTapesReplace(g: ReplaceGrammar, env: PassEnv): Result<Grammar> {
+function getTapesReplace(g: ReplaceGrammar, env: TapesEnv): Grammar {
 
     // during normal construction it shouldn't be possible to construct
     // multitape rules, but just in case...
@@ -300,232 +447,89 @@ function getTapesReplace(g: ReplaceGrammar, env: PassEnv): Result<Grammar> {
         ["post", g.postContext]
     ];
 
-    const msgs: Msgs = [];
+    const msgs: Message[] = [];
     for (const [childName, child] of childrenToCheck) {
-        if (child.tapeSet.tag !== "TapeLit") continue; // nothing to check
-        if (dictLen(child.tapeSet.tapes) <= 1) continue;
+        if (child.tapes.tag !== Tapes.Tag.Lit) continue; // nothing to check
+        if (dictLen(child.tapes.vocabMap) <= 1) continue;
         msgs.push(Err( "Multitape rule", 
                     "This rule has the wrong number of tapes " +
-                    ` in ${childName}: ${tapeToStr(child.tapeSet)}`));
+                    ` in ${childName}: ${toStr(child.tapes)}`));
     }
 
     if (msgs.length > 0)
-        return new EpsilonGrammar().tapify(env).msg(msgs);
+        throw new EpsilonGrammar().tapify(env).msg(msgs);
 
-    const wild = TapeLit({ 
-        [INPUT_TAPE]: WILDCARD,
-        [OUTPUT_TAPE]: WILDCARD 
+    let tapes = getChildTapes(g);
+    const wildcard: TapeSet = Tapes.Lit({ 
+        [INPUT_TAPE]: Vocabs.Wildcard(INPUT_TAPE),
     });
-    const tapes = TapeSum(wild, getChildTapes(g));
-    return updateTapes(g, tapes).msg(msgs);
-
+    tapes = Tapes.Sum(wildcard, tapes);
+    tapes = Tapes.Match(tapes, INPUT_TAPE, OUTPUT_TAPE);
+    return updateTapes(g, tapes);
 }
                 
-function getTapesReplaceBlock(g: ReplaceBlockGrammar): Result<Grammar> {
+function getTapesReplaceBlock(g: ReplaceBlockGrammar): Grammar {
 
     // make sure the tape we're replacing exists, otherwise
     // we generate infinitely
-    if (g.child.tapeSet.tag === "TapeLit" &&
-        g.child.tapeSet.tapes[g.inputTape] === undefined) {
-        return g.child.err("Replacing non-existent tape",
+    if (g.child.tapes.tag === Tapes.Tag.Lit &&
+        g.child.tapes.vocabMap[g.inputTape] === undefined) {
+        throw g.child.err("Replacing non-existent tape",
                     `The grammar above does not have a tape ` +
                     `${g.inputTape} to replace on`);
     }
 
-    // filter out any non-rules caused by children disappearing
+    // filter out Tapes.Any non-rules caused by children disappearing
     const isReplace = (r: Grammar): r is ReplaceGrammar => 
                         r instanceof ReplaceGrammar;
     g.rules = g.rules.filter(isReplace);
 
     if (g.rules.length == 0) {
-        return g.child.warn("This replace has no valid rules");
+        throw g.child.warn("This replace has no valid rules");
     }
 
-    let current = g.child.tapeSet;
+    let current = g.child.tapes;
     let currentTape = g.inputTape;
     for (const r of g.rules) {
-        current = TapeRename(current, currentTape, INPUT_TAPE);
+        current = Tapes.Rename(current, currentTape, INPUT_TAPE);
         currentTape = OUTPUT_TAPE;
-        const inputStar = TapeLit({[INPUT_TAPE]: WILDCARD}); 
-        current = TapeJoin(current, inputStar);
-        const vocabFromInput = TapeRename(current, INPUT_TAPE, OUTPUT_TAPE);
-        const outputVocab = TapeSum(r.toGrammar.tapeSet, vocabFromInput);
-        current = TapeJoin(current, outputVocab);
-        current = TapeRename(current, INPUT_TAPE, r.hiddenTapeName);
+        current = Tapes.Join(current, r.tapes);
+        current = Tapes.Rename(current, INPUT_TAPE, r.hiddenTapeName);
     }
-    current = TapeRename(current, OUTPUT_TAPE, g.inputTape);
-    return updateTapes(g, current).msg();
+    current = Tapes.Rename(current, OUTPUT_TAPE, g.inputTape);
+    return updateTapes(g, current);
 }
 
-function getTapesCollection(g: CollectionGrammar, env: PassEnv): Result<Grammar> {
-    const msgs: Msgs = [];
-    
-    while (true) {
-        const newMsgs: Msgs = [];
-
-        // first get the initial tapes for each symbol
-        let tapeIDs: Dict<TapeInfo> = mapValues(g.symbols, v => v.tapeSet);
-
-        tapeIDs = unifySymbols(tapeIDs);
-
-        // check for unresolved content, and throw an exception immediately.
-        // otherwise we have to puzzle it out from exceptions elsewhere.
-        for (const [k,v] of Object.entries(tapeIDs)) {
-            if (v.tag !== "TapeLit") {
-                throw new Error(`Unresolved tape structure in ${k}: ${tapeToStr(v)}`);
-            }
-        }
-
-        // now feed those back into the structure so that every
-        // grammar node has only literal tapes
-        const tapePusher = new CalculateTapes(true, tapeIDs);
-        g.symbols = mapValues(g.symbols, v => 
-                tapePusher.transform(v, env).msgTo(newMsgs));
-
-        msgs.push(...newMsgs);
-
-        if (newMsgs.length === 0) break;
-        
-        // if there are any errors, the graph may have changed.  we
-        // need to restart the process from scratch.
-        const tapeRefresher = new CalculateTapes(true);
-        g.symbols = mapValues(g.symbols, v => 
-            tapeRefresher.transform(v, env).msgTo(newMsgs));
-    }
-
-    // TODO: The following interpretation of tapes is incorrect,
-    // but matches what we've been doing previously.  I'm going to
-    // get it "working" exactly like the old way, before fixing it to be
-    // semantically sound.
-    return getTapesDefault(g).msg(msgs);
-
-    /*
-    // TODO: This is the correct interpretation, restore it eventually
-
-    // if a symbol is selected, we share its tape set
-    const selectedSymbol = g.getSymbol(g.selectedSymbol);
-    if (selectedSymbol === undefined) {
-        // if there's no selected symbol, the collection as a whole
-        // has the semantics of epsilon, and thus its tapes are
-        // an empty TapeSet rather than TapeUnknown.   
-        return updateTapes(g, TapeSet()).msg(msgs);
-    }
-    return updateTapes(g, selectedSymbol.tapeSet).msg(msgs);
-    */
-
-}
-
-
-/* RESOLVING 
-*
-* Resolving tapes is the process of replacing TapeRefs
-* inside TapeIDs into their corresponding TapeLits and sets thereof
-*/
-
-export function unifySymbols(symbols: Dict<TapeInfo>): Dict<TapeInfo> {
-    let currentSymbols = symbols;
-    for (const [symbol, ref] of Object.entries(symbols)) {
-        const visited = new Set(symbol);
-        const newRef = unify(ref, currentSymbols, visited);
-        currentSymbols[symbol] = newRef;
-    }
-    return currentSymbols;
-}
-
-function unify(
-    t: TapeInfo, 
-    symbols: Dict<TapeInfo>,
-    visited: Set<string>
-): TapeInfo {
-    switch (t.tag) {
-        case "TapeUnknown": return TapeLit();
-        case "TapeLit":     return t;
-        case "TapeRef":     return unifyRef(t, symbols, visited);
-        case "TapeRename":  return unifyRename(t, symbols, visited);
-        case "TapeSum":     return unifySum(t, symbols, visited);
-        case "TapeProduct": return unifyProduct(t, symbols, visited);
-        case "TapeJoin":    return unifyJoin(t, symbols, visited);
-    }
-}
-
-function unifyRef(
-    t: TapeRef, 
-    symbols: Dict<TapeInfo>,
-    visited: Set<string>
-): TapeInfo {
-    if (visited.has(t.symbol)) {
-        return TapeLit();
-    }
-    const referent = symbols[t.symbol];
-    if (referent === undefined) {
-        // should never happen so long as FlattenCollections has been run
-        throw new Error(`Unknown symbol ${t} in tape unification`);
-    }
-    const newVisited = union(visited, [t.symbol]);
-    return unify(referent, symbols, newVisited);
-}
-
-function unifyRename(
-    t: TapeRename, 
-    symbols: Dict<TapeInfo>,
-    visited: Set<string>
-): TapeInfo {
-    const newChild = unify(t.child, symbols, visited);
-    return TapeRename(newChild, t.fromTape, t.toTape);
-}
-
-function unifySum(
-    t: TapeSum, 
-    symbols: Dict<TapeInfo>,
-    visited: Set<string>
-): TapeInfo {
-    const newC1 = unify(t.c1, symbols, visited);
-    const newC2 = unify(t.c2, symbols, visited);
-    return TapeSum(newC1, newC2);
-}
-
-function unifyProduct(
-    t: TapeProduct, 
-    symbols: Dict<TapeInfo>,
-    visited: Set<string>
-): TapeInfo {
-    const newC1 = unify(t.c1, symbols, visited);
-    const newC2 = unify(t.c2, symbols, visited);
-    return TapeProduct(newC1, newC2);
-}
-
-function unifyJoin(
-    t: TapeJoin, 
-    symbols: Dict<TapeInfo>,
-    visited: Set<string>
-): TapeInfo {
-    const newC1 = unify(t.c1, symbols, visited);
-    const newC2 = unify(t.c2, symbols, visited);
-    return TapeJoin(newC1, newC2);
-}
 
 /**
  * Starts/Ends/Contains have the tapes of their child AND a wildcard
  * on its tape (for the dot-star).  Sometimes because of scope adjustment
- * this tape might not actually be on the child anymore, so in that case
+ * this tape might not actually be on the child Tapes.Anymore, so in that case
  * it's store in .extraTapes.
  */
 function getTapesCondition(
     g: StartsGrammar | EndsGrammar | ContainsGrammar
 ): Grammar {
-    const extras: Dict<VocabInfo> = {}
+    const extras: VocabDict = {}
     for (const t of g.extraTapes) {
-        extras[t] = WILDCARD;
+        extras[t] = Vocabs.Wildcard(t);
     }
     
-    if (g.child.tapeSet.tag === "TapeLit") {
+    if (g.child.tapes.tag === Tapes.Tag.Lit) {
     // if we know what the child tapes are, add those wildcards too
-        for (const t of Object.keys(g.child.tapeSet.tapes)) {
-            extras[t] = WILDCARD;
+        for (const t of Object.keys(g.child.tapes.vocabMap)) {
+            extras[t] = Vocabs.Wildcard(t);
         }
     }
 
-    const tapes = TapeSum(g.child.tapeSet, TapeLit(extras));
+    const tapes = Tapes.Sum(g.child.tapes, Tapes.Lit(extras));
     return updateTapes(g, tapes);
     
+}
+
+function getTapesCursor(
+    g: CursorGrammar
+): Grammar {
+    //console.log(`tapecalc for cursor ${g.tapeName}, child tapes are ${Tapes.toStr(g.child.tapes)}`);
+    return getTapesDefault(g);
 }

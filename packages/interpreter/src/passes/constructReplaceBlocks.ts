@@ -1,5 +1,4 @@
 import { 
-    CounterStack,
     PreTapeGrammar,
     Grammar, HideGrammar,
     JoinGrammar, ReplaceBlockGrammar, 
@@ -10,9 +9,10 @@ import {
 } from "../grammars";
 
 import { INPUT_TAPE, OUTPUT_TAPE } from "../utils/constants";
-import { PassEnv, AutoPass } from "../passes";
+import { AutoPass, SymbolEnv } from "../passes";
 import { lengthRange } from "./infinityProtection";
-import { Result } from "../utils/msgs";
+import { CounterStack } from "../utils/counter";
+import { Options } from "../utils/options";
 
 /**
  * This pass handles the transformation of replacement rule blocks 
@@ -21,12 +21,12 @@ import { Result } from "../utils/msgs";
 export class ConstructReplaceBlocks extends AutoPass<Grammar> {
 
     public replaceIndex: number = 0;
-
-    public get desc(): string {
-        return "Transforming replace blocks";
+    
+    public getEnv(opt: Partial<Options>): SymbolEnv {
+        return new SymbolEnv(opt);
     }
     
-    public postTransform(g: Grammar, env: PassEnv): Grammar {
+    public postTransform(g: Grammar, env: SymbolEnv): Grammar {
         switch (g.tag) {
             case "replaceblock": return this.handleReplaceBlock(g, env);
             case "replace":      return this.handleReplace(g, env);
@@ -34,7 +34,7 @@ export class ConstructReplaceBlocks extends AutoPass<Grammar> {
         }
     }
 
-    public handleReplaceBlock(g: ReplaceBlockGrammar, env: PassEnv): Grammar {
+    public handleReplaceBlock(g: ReplaceBlockGrammar, env: SymbolEnv): Grammar {
 
         // it's possible for rule transformation to result in a non
         // rule (due to errors), so we filter those out
@@ -66,23 +66,23 @@ export class ConstructReplaceBlocks extends AutoPass<Grammar> {
         return new RenameGrammar(newG, OUTPUT_TAPE, g.inputTape).tapify(env);
     }
 
-    public handleReplace(g: ReplaceGrammar, env: PassEnv): Grammar {
+    public handleReplace(g: ReplaceGrammar, env: SymbolEnv): Grammar {
 
         const stack = new CounterStack(2);
 
         // first handle the "from" material (i.e. pre/from/post)
         const fromMaterial = new SequenceGrammar([g.preContext, g.fromGrammar, g.postContext]).tapify(env);
-        if (fromMaterial.tapes.length != 1) {
+        if (fromMaterial.tapeNames.length != 1) {
             // I don't think this is actually possible with 
             // new-style rules, but just in case
             throw new EpsilonGrammar()
                         .tapify(env)
                         .err( "Multitape rule", 
                             "This rule has the wrong number of tapes " +
-                              ` in "pre/from/post": ${fromMaterial.tapes}`);
+                              ` in "pre/from/post": ${fromMaterial.tapeNames}`);
         }
 
-        const fromTape = fromMaterial.tapes[0];
+        const fromTape = fromMaterial.tapeNames[0];
         const fromLength = lengthRange(fromMaterial, fromTape, stack, env);
         if (fromLength.null == false && fromLength.min == 0 && 
                     !g.optional && !g.beginsWith && !g.endsWith) {
@@ -92,7 +92,7 @@ export class ConstructReplaceBlocks extends AutoPass<Grammar> {
                         "(i.e. can trigger on an empty input).");
         }
 
-        const toTape = g.toGrammar.tapes[0];
+        const toTape = g.toGrammar.tapeNames[0];
         const toLength = lengthRange(g.toGrammar, toTape, stack, env);
         if (toLength.null == false && toLength.max == Infinity) {
             // this shouldn't be syntactically possible to express in sheets, but if

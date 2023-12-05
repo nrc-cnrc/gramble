@@ -40,7 +40,7 @@ export const t5 = (s: string) => Lit("t5", s);
 export interface GrammarTestAux extends Options {
     grammar: Grammar,
     tapes: string[],
-    vocab: {[tape: string]: number},
+    vocab: {[tape: string]: number|string[]},
     results: StringDict[],
     symbol: string,
     query: StringDict | StringDict[],

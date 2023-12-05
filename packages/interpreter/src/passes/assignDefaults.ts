@@ -1,10 +1,11 @@
+import { PassEnv } from "../components";
 import { 
     EmbedGrammar,
     Grammar,
     CollectionGrammar,
     AlternationGrammar
 } from "../grammars";
-import { PassEnv, AutoPass } from "../passes";
+import { AutoPass } from "../passes";
 import { ALL_SYMBOL } from "../utils/constants";
 
 /**
@@ -18,10 +19,6 @@ export class AssignDefaults extends AutoPass<Grammar> {
             case "collection": return this.handleCollection(g as CollectionGrammar, env);
             default:           return g;
         }
-    }
-    
-    public get desc(): string {
-        return "Assigning default symbols";
     }
 
     public handleCollection(g: CollectionGrammar, env: PassEnv): Grammar {

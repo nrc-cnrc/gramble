@@ -60,11 +60,11 @@ export class SimpleDevEnvironment implements DevEnvironment {
     }
 
     public message(msg: any): void {
-        if (msg["type"] == "error") {
+        if (msg.tag == "error") {
             this.markError(msg["sheet"], msg["row"],
                 msg["col"], msg["shortMsg"], msg["longMsg"],
                 "error");
-        } else if (msg["type"] == "warning") {
+        } else if (msg.tag == "warning") {
             this.markError(msg["sheet"], msg["row"],
                 msg["col"], msg["shortMsg"], msg["longMsg"],
                 "warning");

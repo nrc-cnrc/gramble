@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { assert, expect } from 'chai';
 import { dirname, basename } from "path";
 import { existsSync } from "fs";
 
@@ -15,6 +15,7 @@ import { SILENT } from "../../interpreter/src/utils/logging";
 import { Options } from "../../interpreter/src/utils/options";
 
 import { testErrors, testGenerate } from '../testUtil';
+import { Epsilon } from '../../interpreter/src/grammarConvenience';
 
 const TEST_DIR = dirname(module.filename);
 
@@ -97,5 +98,15 @@ export function sheetFromFile(
     const dir = dirname(path);
     const sheetName = basename(path, ".csv");
     const devEnv = new TextDevEnvironment(dir);
-    return Interpreter.fromSheet(devEnv, sheetName, opt);
+    try {
+        return Interpreter.fromSheet(devEnv, sheetName, opt);
+    } catch (e) {
+        it("Unexpected Exception", function() {
+            console.log("");
+            console.log(`[${this.test?.fullTitle()}]`);
+            console.log(e);
+            assert.fail(JSON.stringify(e));
+        });
+    }
+    return Interpreter.fromGrammar(Epsilon(), opt);
 }

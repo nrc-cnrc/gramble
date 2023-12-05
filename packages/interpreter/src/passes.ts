@@ -1,5 +1,5 @@
 import { Grammar } from "./grammars";
-import { Msgs, Result, result } from "./utils/msgs";
+import { Message, Msg, msg } from "./utils/msgs";
 import { 
     Dict, update
 } from "./utils/func";
@@ -7,8 +7,9 @@ import { VERBOSE_TIME, timeIt } from "./utils/logging";
 import { Env, Options } from "./utils/options";
 import { hasPos } from "./utils/cell";
 import { Component } from "./components";
+import { Op } from "./ops";
 
-export class PassEnv extends Env {
+export class SymbolEnv extends Env<Grammar> {
 
     constructor(
         opt: Partial<Options> = {},
@@ -17,37 +18,36 @@ export class PassEnv extends Env {
         super(opt);
     }
 
-    public setSymbols(d: Dict<Grammar>): PassEnv {
+    /*
+    public setSymbols(d: Dict<Grammar>): SymbolEnv {
         return update(this, {symbolNS: d});
+    } */
+
+    public update(t: Grammar): SymbolEnv {
+        if (t.tag !== "collection") return this;
+        return update(this, {symbolNS: t.symbols});
+        
     }
 }
 
 export abstract class Pass<T1,T2> {
 
-    public go(c: T1|Result<T1>, env: PassEnv): Result<T2> {
-
-        // unwrap any messages already present
-        const msgs: Msgs = [];
-        if (c instanceof Result) c = c.msgTo(msgs);
-        
-        // execute the transformation, printing the desc and elapsed
-        // time if requested
-        const verbose = (env.opt.verbose & VERBOSE_TIME) != 0;
-        return timeIt(() => this.transform(c as T1, env).msg(msgs), 
-               verbose, this.desc);
+    public getEnv(opt: Partial<Options>): Env<T1> {
+        return new Env<T1>(opt);
     }
 
-    public get desc(): string { 
-        return "Pass base class";
+    public getEnvAndTransform(c: T1, opt: Partial<Options>): Msg<T2> {
+        const env = this.getEnv(opt);
+        return this.transform(c, env);
     }
 
-    public transform(c: T1, env: PassEnv): Result<T2> {
+    public transform(c: T1, env: Env<T1>): Msg<T2> {
         let result = this.tryTransform(this.transformAux, c, env)
         if (hasPos(c)) return result.localize(c.pos);
         return result;
     }
 
-    public transformAux(c: T1, env: PassEnv): T2|Result<T2> {
+    public transformAux(c: T1, env: Env<T1>): T2|Msg<T2> {
         throw new Error("not implemented");
     }
 
@@ -61,20 +61,39 @@ export abstract class Pass<T1,T2> {
      * messaging/localization system.
      */
     public tryTransform(
-        transform: (c: T1, env: PassEnv) => T2|Result<T2>,
+        transform: (c: T1, env: Env<T1>) => T2|Msg<T2>,
         c: T1,
-        env: PassEnv
-    ): Result<T2> {
+        env: Env<T1>
+    ): Msg<T2> {
         try {
             const t = transform.bind(this);
-            let res = result(t(c, env));
+            let res = msg(t(c, env));
             if (hasPos(c)) return res.localize(c.pos);
             return res;
         } catch (e) {
-            if (!(e instanceof Result)) throw e;
+            if (!(e instanceof Msg)) throw e;
             if (hasPos(c)) return e.localize(c.pos);
             return e;
         }
+    }
+}
+
+export class TimerPass<T1,T2> extends Pass<T1,T2> {
+
+    constructor(
+        public desc: string,
+        public child: Pass<T1,T2>
+    ) { 
+        super();
+    }
+
+    public transform(c: T1, env: Env<T1>): Msg<T2> {
+        // execute the transformation, printing the desc and elapsed
+        // time if requested
+        const verbose = (env.opt.verbose & VERBOSE_TIME) != 0;
+        const childEnv = this.child.getEnv(env.opt);
+        return timeIt(() => this.child.transform(c, childEnv), 
+               verbose, this.desc);
     }
 }
 
@@ -86,36 +105,32 @@ export class ComposedPass<T1,T2,T3> extends Pass<T1,T3> {
     ) { 
         super();
     }
+
+    public getEnvAndTransform(t: T1, opt: Partial<Options>): Msg<T3> {
+        return this.child1.getEnvAndTransform(t, opt)
+                   .bind(t => this.child2.getEnvAndTransform(t, opt))
+    }
+
     
-    public static get desc(): string {
-        return 'Composed pass';
-    }
-
-    public go(t: T1, env: PassEnv): Result<T3> {
-        return new Result<T1>(t)
-                    .bind(t => this.child1.go(t, env))
-                    .bind(t => this.child2.go(t, env))
-    }
-
-    public transform(t: T1, env: PassEnv): Result<T3> {
-        throw new Error("calling transform on a composed pass");
+    public transform(c: T1, env: Env<T1>): Msg<T3> {
+        throw new Error("Calling transform on a composed pass");
     }
 
 }
 
 export abstract class AutoPass<T extends Component> extends Pass<T,T> {
 
-    public transformAux(c: T, env: PassEnv): Result<T> {
+    public transformAux(c: T, env: Env<T>): T|Msg<T> {
         return this.tryTransform(this.preTransform, c, env)
-                   .bind(c => c.mapChildren(this, env).localize(c.pos) as Result<T>)
+                   .bind(c => c.mapChildren(this, env).localize(c.pos) as Msg<T>)
                    .bind(c => this.tryTransform(this.postTransform, c, env))
     }
 
-    public preTransform(g: T, env: PassEnv): T|Result<T> {
+    public preTransform(g: T, env: Env<T>): T|Msg<T> {
         return g;
     }
 
-    public postTransform(g: T, env: PassEnv): T|Result<T> {
+    public postTransform(g: T, env: Env<T>): T|Msg<T> {
         return g;
     }
 

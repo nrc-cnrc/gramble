@@ -1,11 +1,10 @@
 import { basename } from "path";
 import { assert, expect } from "chai";
 
-import { Lit } from "../interpreter/src/grammarConvenience";
+import { Epsilon, Lit } from "../interpreter/src/grammarConvenience";
 import { Grammar } from "../interpreter/src/grammars";
 import { Interpreter } from "../interpreter/src/interpreter";
-import { Tape } from "../interpreter/src/tapes";
-import { StringDict } from "../interpreter/src/utils/func";
+import { StringDict, stringDictToStr } from "../interpreter/src/utils/func";
 import { HIDDEN_PREFIX } from "../interpreter/src/utils/constants";
 import { Options } from "../interpreter/src/utils/options";
 
@@ -15,6 +14,7 @@ import {
     SILENT,
     VERBOSE_DEBUG,
 } from "../interpreter/src/utils/logging";
+import { OldTape } from "../interpreter/src/tapes";
 
 // Permit global control over verbose output in tests.
 // To limit verbose output to a specific test file, set VERBOSE_TEST_L2
@@ -112,24 +112,27 @@ export function testMatchOutputs(
     // seconds (2000ms) to 10 seconds (10000ms) in order to allow us to keep the
     // comparison blocks quite large. 
 
-    let incr: number = Math.max(expected_outputs.length, outputs.length, 1);
+    const outputStrs = outputs.map(o => stringDictToStr(o)).sort();
+    const expectedStrs = expected_outputs.map(o => stringDictToStr(o)).sort();
+
+    let incr: number = Math.max(expectedStrs.length, outputStrs.length, 1);
     if (incr > 2500) {
         incr = 2500;
     }
 
     // For running the "it" tests, we cannot use a simple loop incrementing start
     // because start would get incremented before the test started. 
-    let starts: number[] = new Array(Math.ceil(expected_outputs.length / incr));
+    let starts: number[] = new Array(Math.ceil(expectedStrs.length / incr));
     for (let i=0, start=0; i < starts.length; ++i, start+=incr)
         starts[i] = start;
 
     starts.forEach(function(start) {
-        const end_expected: number = Math.min(expected_outputs.length, start+incr);
+        const end_expected: number = Math.min(expectedStrs.length, start+incr);
         let end_outputs: number = end_expected;
-        if (end_expected == expected_outputs.length)
-            end_outputs = Math.min(outputs.length, start + incr);
+        if (end_expected == expectedStrs.length)
+            end_outputs = Math.min(outputStrs.length, start + incr);
         const expected_outputs_str = 
-                    JSON.stringify(expected_outputs.slice(start, Math.min(end_expected, start+20))) + 
+                    JSON.stringify(expectedStrs.slice(start, Math.min(end_expected, start+20))) + 
                     (end_expected > start+20 ? "..." : "");
         if (symbol !== "") symbol = symbol + " ";
         const testName = `${symbol}should match items ${start}-${end_expected-1}: ` +
@@ -137,12 +140,12 @@ export function testMatchOutputs(
         it(`${testName}`, function() {
             this.timeout(10000);
             try {
-                expect(outputs).to.deep.include.members(expected_outputs.slice(start, end_expected));
-                expect(expected_outputs).to.deep.include.members(outputs.slice(start, end_outputs));
+                expect(outputStrs).to.deep.include.members(expectedStrs.slice(start, end_expected));
+                expect(expectedStrs).to.deep.include.members(outputStrs.slice(start, end_outputs));
             } catch (e) {
                 console.log("");
                 console.log(`[${this.test?.fullTitle()}]`);
-                console.log(`${outputs.length} outputs: ${JSON.stringify(outputs)}`);
+                console.log(`${outputStrs.length} outputs: ${JSON.stringify(outputStrs)}`);
                 throw e;
             }
         });
@@ -153,12 +156,22 @@ export function prepareInterpreter(
     grammar: Grammar | Interpreter,
     opt: Partial<Options> = {},
 ): Interpreter {
-    opt = Options(opt);
-    const interpreter = (grammar instanceof Interpreter) ?
-                        grammar :
-                        Interpreter.fromGrammar(grammar, opt);
+    try {
+        opt = Options(opt);
+        const interpreter = (grammar instanceof Interpreter) ?
+                            grammar :
+                            Interpreter.fromGrammar(grammar, opt);
 
-    return interpreter;
+        return interpreter;
+    } catch (e) {
+        it("Unexpected Exception", function() {
+            console.log("");
+            console.log(`[${this.test?.fullTitle()}]`);
+            console.log(e);
+            assert.fail(JSON.stringify(e));
+        });
+    }
+    return Interpreter.fromGrammar(Epsilon(), opt);
 }
 
 export function generateOutputs(
@@ -195,8 +208,6 @@ export function testGenerate(
     shortDesc: string = "",
 ): void {
     timeIt(() => {
-        //testNumErrors(interpreter, numErrors);
-
         const outputs: StringDict[] =
             generateOutputs(interpreter, symbol,
                                 query, stripHidden, false);
@@ -225,11 +236,11 @@ export function testHasTapes(
         }
         let tapes: string[] = [];
         try {
-            tapes = referent.tapes;
+            tapes = referent.tapeNames;
             if (stripHidden) {
                 // for the purpose of this comparison, leave out any internal-only
                 // tapes, like those created by a Hide().
-                tapes = referent.tapes.filter(t => !t.startsWith(HIDDEN_PREFIX));
+                tapes = referent.tapeNames.filter(t => !t.startsWith(HIDDEN_PREFIX));
             }
             expect(tapes.length).to.equal(bSet.size);
             for (const a of tapes) {
@@ -246,12 +257,12 @@ export function testHasTapes(
 
 export function testHasVocab(
     grammar: Grammar | Interpreter,
-    expectedVocab: {[tape: string]: number}
+    expectedVocab: {[tape: string]: number|string[]}
 ): void {
     const interpreter = prepareInterpreter(grammar, {optimizeAtomicity: false});
 
     for (const tapeName in expectedVocab) {
-        let tape: Tape;
+        let tape: OldTape;
         try {
             tape = interpreter.tapeNS.get(tapeName);
         } catch (e) {
@@ -260,14 +271,27 @@ export function testHasVocab(
             });
             continue;
         }
-        const expectedNum = expectedVocab[tapeName];
-        it(`should have ${expectedNum} tokens in the ${tapeName} vocab`, function() {
-            expect(tape).to.not.be.undefined;
-            if (tape == undefined) {
-                return;
-            }
-            expect(tape.vocab.size).to.equal(expectedNum);
-        });
+        const vocab = expectedVocab[tapeName];
+        if (Array.isArray(vocab)) {
+            // it's a string[]
+            it(`vocab of ${tapeName} should be ${vocab}`, function() {
+                expect(tape).to.not.be.undefined;
+                if (tape == undefined) {
+                    return;
+                }
+                const expectedSet = new Set(vocab);
+                expect(tape.vocab).to.deep.equal(expectedSet);
+            });
+        } else {
+            // it's a number
+            it(`should have ${vocab} tokens in the ${tapeName} vocab`, function() {
+                expect(tape).to.not.be.undefined;
+                if (tape == undefined) {
+                    return;
+                }
+                expect(tape.vocab.size).to.equal(vocab);
+            });
+        }
     }
 }
 
@@ -295,17 +319,13 @@ export function testNumErrors(
     interpreter: Interpreter,
     numErrors: number
 ): void {
-
-    // In case there are any tests, we want to run them so their errors accumulate
-    interpreter.runTests();
-
-    const devEnv = interpreter.devEnv;
     it(`should have ${numErrors} errors/warnings`, function() {
         try {
-            expect(devEnv.numErrors("any")).to.equal(numErrors);
+            interpreter.runTests();
+            expect(interpreter.devEnv.numErrors("any")).to.equal(numErrors);
         } catch (e) {
             console.log(`[${this.test?.fullTitle()}]`);
-            console.log(`outputs: ${JSON.stringify(devEnv.getErrorMessages())}`);
+            console.log(`outputs: ${JSON.stringify(interpreter.devEnv.getErrorMessages())}`);
             throw e;
         }
     });

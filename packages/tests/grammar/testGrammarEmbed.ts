@@ -371,6 +371,17 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'hello'},
         ],
     }));
+    
+    describe('22. Sequence of two embedded epsilons.', test({
+        grammar: Collection({
+            "a": Seq(Embed("b"), Embed("b")),
+            "b": Epsilon()
+        }),
+        symbol: "a",
+        results: [
+            {},
+        ],
+    }));
 
     describe('E1. Missing symbol', test({
         grammar: Collection({

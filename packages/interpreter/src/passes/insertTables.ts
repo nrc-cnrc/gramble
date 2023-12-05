@@ -1,7 +1,8 @@
+import { PassEnv } from "../components";
 import { 
     TableOp, childMustBeGrid, 
 } from "../ops";
-import { PassEnv, AutoPass } from "../passes";
+import { AutoPass } from "../passes";
 import { 
     TstOp, 
     TstEmpty,
@@ -20,10 +21,6 @@ import {
  */
 
 export class InsertTables extends AutoPass<TST> {
-
-    public get desc(): string {
-        return "Inserting tables";
-    }
 
     public postTransform(t: TST, env: PassEnv): TST {
         switch (t.tag) {

@@ -1,7 +1,7 @@
 import { 
     AlternationGrammar, DotGrammar, 
     EmbedGrammar, EpsilonGrammar, 
-    Grammar, GrammarResult, 
+    Grammar, 
     LiteralGrammar, NegationGrammar, 
     RepeatGrammar, RuleContextGrammar, 
     SequenceGrammar 
@@ -30,6 +30,7 @@ import {
     RESERVED_WORDS 
 } from "./utils/reserved";
 import { DEFAULT_TAPE } from "./utils/constants";
+import { Msg } from "./utils/msgs";
 
 export type RegexParser = MPParser<Grammar>;
 
@@ -280,7 +281,7 @@ const parseParams = {
 export function parseContent(
     parseClass: ParseClass,
     text: string
-): GrammarResult {
+): Msg<Grammar> {
     if (parseClass == "none" || parseClass == "comment") {
         return new EpsilonGrammar().msg();
     }

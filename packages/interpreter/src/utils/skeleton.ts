@@ -1,7 +1,8 @@
-import { Pass, PassEnv } from "../passes";
+import { Pass } from "../passes";
 import { Component } from "../components";
 import { Dict } from "./func";
-import { Msgs, Result, result } from "./msgs";
+import { Message, Msg, msg } from "./msgs";
+import { Env } from "./options";
 
 export type Skeleton<G extends Component, T> = {
     [K in keyof G]: G[K] extends Component ? T : 
@@ -14,10 +15,10 @@ export type Skeleton<G extends Component, T> = {
 export function skeletize<T1 extends Component,T2 extends T1,T3>(
     o: T2, 
     f: Pass<T1,T3>,
-    env: PassEnv,
-): Result<Skeleton<T2,T3>> {
+    env: Env<T2>,
+): Msg<Skeleton<T2,T3>> {
     const results: any = { };
-    const msgs: Msgs = [];
+    const msgs: Message[] = [];
     for (const [k,v] of Object.entries(o)) {
         if (v instanceof Component) {
             results[k] = f.transform(v as T1, env)
@@ -25,5 +26,5 @@ export function skeletize<T1 extends Component,T2 extends T1,T3>(
         }
         results[k] = v;
     }
-    return result(results as Skeleton<T2,T3>).msg(msgs);
+    return msg(results as Skeleton<T2,T3>).msg(msgs);
 }

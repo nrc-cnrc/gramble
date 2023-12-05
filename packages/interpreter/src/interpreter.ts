@@ -14,8 +14,7 @@ import { TapeNamespace } from "./tapes";
 import { Expr, CollectionExpr } from "./exprs";
 import { DevEnvironment, SimpleDevEnvironment } from "./devEnv";
 import { generate } from "./generator";
-import { MissingSymbolError, Msg, THROWER, result } from "./utils/msgs";
-import { PassEnv } from "./passes";
+import { MissingSymbolError, Message, THROWER, msg } from "./utils/msgs";
 import { 
     SOURCE_PASSES,
     GRAMMAR_PASSES
@@ -33,6 +32,9 @@ import { qualifySymbol } from "./passes/qualifySymbols";
 import { FlattenCollections } from "./passes/flattenCollections";
 import { CreateQuery } from "./passes/createQuery";
 import { InfinityProtection, infinityProtection } from "./passes/infinityProtection";
+import { ResolveVocab } from "./passes/resolveVocab";
+import { PassEnv } from "./components";
+import { Pass, SymbolEnv } from "./passes";
 
 /**
  * An interpreter object is responsible for applying the passes in between sheets
@@ -79,8 +81,8 @@ export class Interpreter {
         // semantically impossible tape structures are massaged into well-formed ones, some 
         // scope problems adjusted, etc.
         const env = new PassEnv(this.opt);  
-        this.grammar = result(g)
-                        .bind(g => GRAMMAR_PASSES.go(g, env))
+        this.grammar = msg(g)
+                        .bind(g => GRAMMAR_PASSES.getEnvAndTransform(g, opt))
                         .msgTo(m => sendMsg(this.devEnv, m));
 
         // Next we collect the vocabulary on all tapes
@@ -108,20 +110,19 @@ export class Interpreter {
         opt: Partial<Options> = {}
     ): Interpreter {
 
-        const passOpts = Options(opt);
+        const opts = Options(opt);
 
         // First, load all the sheets
         let startTime = Date.now();
         const workbook = new Workbook(mainSheetName);
-        addSheet(workbook, mainSheetName, devEnv, passOpts);
+        addSheet(workbook, mainSheetName, devEnv, opts);
         let elapsedTime = msToTime(Date.now() - startTime);
-        logTime(passOpts.verbose, `Sheets loaded; ${elapsedTime}`);
+        logTime(opts.verbose, `Sheets loaded; ${elapsedTime}`);
         
-        const env = new PassEnv(passOpts);
-        const grammar = SOURCE_PASSES.go(workbook, env)
+        const grammar = SOURCE_PASSES.getEnvAndTransform(workbook, opts)
                                   .msgTo(m => devEnv.message(m));
 
-        const result = new Interpreter(devEnv, grammar, passOpts);
+        const result = new Interpreter(devEnv, grammar, opts);
         result.workbook = workbook;
         return result;
     }
@@ -163,9 +164,9 @@ export class Interpreter {
             throw new Error(`Cannot find symbol ${symbol}`);
         }
         if (stripHidden) {
-            return referent.tapes.filter(t => !t.startsWith(HIDDEN_PREFIX));
+            return referent.tapeNames.filter(t => !t.startsWith(HIDDEN_PREFIX));
         }
-        return referent.tapes;
+        return referent.tapeNames;
     }
 
     public getTapeColor(
@@ -246,30 +247,38 @@ export class Interpreter {
         symbol: string = "",
         query: StringDict | StringDict[] = {}
     ): Expr {
-        const env = new PassEnv(this.opt);
 
         // qualify the name and select the symbol
-        const selectSymbol = new SelectSymbol(symbol);
-        let targetGrammar: Grammar = selectSymbol.go(this.grammar, env).msgTo(THROWER);
+        let targetGrammar: Grammar = new SelectSymbol(symbol)
+                                       .getEnvAndTransform(this.grammar, this.opt)
+                                       .msgTo(THROWER);
         
         // join the client query to the grammar
-        const createQuery = new CreateQuery(query);
-        targetGrammar = createQuery.go(targetGrammar, env).msgTo(THROWER);
+        targetGrammar = new CreateQuery(query)
+                         .getEnvAndTransform(targetGrammar, this.opt)
+                         .msgTo(THROWER);
         
         // we have to re-collect the vocab in case it changed
+        const env = new PassEnv(this.opt);
         targetGrammar.collectAllVocab(this.tapeNS, env);
         
         // any tape that isn't already inside a Cursor or PreTape needs
         // to have a Cursor made for it, because otherwise that content will
         // never be handled during the generation loop.
-        const createCursors = new CreateCursors();
-        targetGrammar = createCursors.go(targetGrammar, env).msgTo(THROWER);
+        targetGrammar = new CreateCursors()
+                             .getEnvAndTransform(targetGrammar, this.opt)
+                             .msgTo(THROWER);
         
+        targetGrammar = new ResolveVocab()
+                             .getEnvAndTransform(targetGrammar, this.opt)
+                             .msgTo(THROWER);
+
         // the client probably doesn't want an accidentally-infinite grammar
         // to generate infinitely.  this checks which tapes could potentially
         // generate infinitely and caps them to opt.maxChars.
-        const infinityProtection = new InfinityProtection();
-        targetGrammar = infinityProtection.go(targetGrammar, env).msgTo(THROWER);
+        targetGrammar = new InfinityProtection()
+                              .getEnvAndTransform(targetGrammar, this.opt)
+                              .msgTo(THROWER);
         
         // turns the Grammars into Exprs
         return constructExpr(env, targetGrammar);  
@@ -283,12 +292,12 @@ export class Interpreter {
                       : {};
         const pass = new ExecuteTests(this.tapeNS, symbols);
         
-        pass.transform(this.grammar, env)
+        pass.getEnvAndTransform(this.grammar, this.opt)
             .msgTo(m => this.devEnv.message(m));
     }
 }
 
-function sendMsg(devEnv: DevEnvironment, msg: Msg): void {
+function sendMsg(devEnv: DevEnvironment, msg: Message): void {
     devEnv.message(msg);
 }
 
@@ -296,7 +305,7 @@ function addSheet(
     project: Workbook, 
     sheetName: string,
     devEnv: DevEnvironment,
-    opt: Options
+    opt: Partial<Options>
 ): void {
 
     if (project.hasSheet(sheetName)) {
@@ -317,12 +326,11 @@ function addSheet(
 
     const sheet = new Worksheet(sheetName, cells);
     project.sheets[sheetName] = sheet;
-    const transEnv = new PassEnv(opt);
-    const grammar = SOURCE_PASSES.go(project, transEnv)
+    const grammar = SOURCE_PASSES.getEnvAndTransform(project, opt)
                                      .msgTo((_) => {});
     // check to see if any names didn't get qualified
     const [_, nameMsgs] =  new FlattenCollections()
-                                .go(grammar, transEnv)
+                                .getEnvAndTransform(grammar, opt)
                                 .destructure();
 
     const unqualifiedSymbols: Set<string> = new Set(); 

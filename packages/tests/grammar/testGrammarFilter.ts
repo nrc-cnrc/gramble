@@ -698,5 +698,4 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Contains(t1("world"), Uni(t1("he"), Not(t1("r")))),
         results: [],
     });
-
 });

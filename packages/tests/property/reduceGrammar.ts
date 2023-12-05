@@ -9,8 +9,9 @@ import {
 } from "../../interpreter/src/grammars";
 
 import { update } from "../../interpreter/src/utils/func";
+import { randomChoice } from "../../interpreter/src/utils/random";
 
-import { randomChoice, range } from "./randomGrammar";
+import { range } from "./randomGrammar";
 
 export type ReduceOptions = {
     "symbolDrop": boolean

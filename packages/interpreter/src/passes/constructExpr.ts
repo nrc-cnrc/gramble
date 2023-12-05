@@ -1,15 +1,18 @@
-import { PassEnv } from "../passes";
 import {
     AlternationGrammar,
-    CollectionGrammar, CorrespondGrammar, CountGrammar, CursorGrammar, DotGrammar,
-    EmbedGrammar, Expr, Grammar, HideGrammar,
+    CollectionGrammar, CorrespondGrammar, 
+    CountGrammar, CursorGrammar, 
+    Grammar, HideGrammar,
     JoinGrammar, MatchGrammar,
-    NegationGrammar, PreTapeGrammar, RenameGrammar, RepeatGrammar,
-    ReplaceGrammar, SequenceGrammar, ShortGrammar,
+    NegationGrammar, PreTapeGrammar, 
+    RenameGrammar, RepeatGrammar,
+    ReplaceGrammar, SequenceGrammar, 
+    ShortGrammar,
 } from "../grammars";
 import { Dict } from "../utils/func";
 import { 
     CollectionExpr, EPSILON, EpsilonExpr, 
+    Expr, 
     NULL, constructAlternation, constructCollection, 
     constructCorrespond, constructCount, constructCursor, 
     constructDot, constructDotStar, constructEmbed, 
@@ -20,6 +23,9 @@ import {
 } from "../exprs";
 import { INPUT_TAPE } from "../utils/constants";
 import { Env } from "../utils/options";
+import * as Tapes from "../tapes";
+import * as Vocab from "../vocab";
+import { PassEnv } from "../components";
 
 export function constructExpr(
     env: PassEnv,
@@ -90,8 +96,8 @@ function constructExprJoin(
 ): Expr {
     return constructJoin(env, constructExpr(env, g.child1),
         constructExpr(env, g.child2),
-        new Set(g.child1.tapes),
-        new Set(g.child2.tapes));
+        new Set(g.child1.tapeNames),
+        new Set(g.child2.tapeNames));
 }
 
 
@@ -125,7 +131,7 @@ function constructExprNot(
     g: NegationGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
-    return constructNegation(env, childExpr, new Set(g.child.tapes));
+    return constructNegation(env, childExpr, new Set(g.child.tapeNames));
 }
 
 function constructExprCursor(
@@ -133,7 +139,18 @@ function constructExprCursor(
     g: CursorGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
-    return constructCursor(env, g.tape, childExpr);
+    /*
+    if (g.tapes.tag !== Tapes.Tag.Lit)
+        throw new Error(`Constructing cursor with unresolved tapes: ${g.tapes.tag}`);
+    const vocab = g.tapes.vocabMap[g.tapeName];
+    if (vocab === undefined)
+        throw new Error(`Tape ${g.tapeName} does not exist`);
+    if (vocab.tag !== Vocab.Tag.Lit) 
+        throw new Error(`Constructing cursor with unresolved vocab: ${g.tapeName}, vocab is ${Vocab.toStr(vocab)}`);
+    const atomic = vocab.atomicity === Vocab.Atomicity.Atomic || 
+                   vocab.atomicity === Vocab.Atomicity.Concatenated;
+    */
+    return constructCursor(env, g.tapeName, childExpr, new Set(), false);
 }
 
 function constructExprPreTape(
@@ -188,7 +205,7 @@ function constructExprCorrespond(
     g: CorrespondGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
-    return constructCorrespond(env, childExpr, g.tape1, g.tape2);
+    return constructCorrespond(env, childExpr, g.inputTape, g.outputTape);
 }
 
 function constructExprReplace(
@@ -254,7 +271,7 @@ function constructExprReplace(
         let copyExpr: Expr = matchAnythingElse(true);
         if (! (otherContextExpr instanceof EpsilonExpr)) {
             let negatedOtherContext: Expr = 
-                constructNegation(env, otherContextExpr, new Set(g.otherContext.tapes));
+                constructNegation(env, otherContextExpr, new Set(g.otherContext.tapeNames));
             const matchDotStar: Expr =
                 constructMatch(env, constructDotStar(INPUT_TAPE));
             copyExpr = constructAlternation(env, constructSequence(env, matchAnythingElse(true), otherContextExpr),

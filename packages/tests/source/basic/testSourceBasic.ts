@@ -15,7 +15,7 @@ describe(`Source ${DIR}`, function() {
         results: [
             { text: "foo", gloss: "run" },
             { text: "moo", gloss: "jump" }
-        ]
+        ],
     }));
     
     describe('1b. Minimal grammar with no table: op', test({

@@ -1,7 +1,6 @@
 import { assert } from "chai";
 
 import { CollectionGrammar, Grammar } from "../../interpreter/src/grammars";
-import { PassEnv } from "../../interpreter/src/passes";
 import { CalculateTapes } from "../../interpreter/src/passes/calculateTapes";
 import { FlattenCollections } from "../../interpreter/src/passes/flattenCollections";
 import { getAllSymbols } from "../../interpreter/src/passes/getAllSymbols";
@@ -20,6 +19,7 @@ import {
     PropertyTestSuccess,
     testToBreaking
 } from "./testPropertyUtil";
+import { fisherYates } from "../../interpreter/src/utils/random";
 
 const NUM_TESTS = 10000;
 const OPT = RandOptions();
@@ -95,13 +95,12 @@ class TapeCalcOrderTest implements PropertyTest {
         try {
             const pass = new FlattenCollections()
                             .compose(new CalculateTapes());
-            const env = new PassEnv();
-            grammar = pass.go(grammar, env).msgTo([]);
+            grammar = pass.getEnvAndTransform(grammar, {}).msgTo([]);
             
             for (const symbol of getAllSymbols(grammar)) {
                 const selectSymbol = new SelectSymbol(symbol);
-                let ref = selectSymbol.go(grammar, env).msgTo(THROWER); 
-                tapes[symbol] = ref.tapes;
+                let ref = selectSymbol.getEnvAndTransform(grammar, {}).msgTo(THROWER); 
+                tapes[symbol] = ref.tapeNames;
             }
 
         } catch (e) {
@@ -117,17 +116,6 @@ class TapeCalcOrderTest implements PropertyTest {
     public toStr(): string {
         return toStr(this.grammar) + `${this.scrambledKeys}`;
     }
-}
-
-function fisherYates<T>(a: T[]): T[] {
-    let current = a.length; 
-    let rand = 0;
-    while (current > 0) {
-        rand = Math.floor(Math.random() * current);
-        current--;
-        [a[current], a[rand]] = [a[rand], a[current]];
-    }
-    return a;
 }
 
 testToBreaking(

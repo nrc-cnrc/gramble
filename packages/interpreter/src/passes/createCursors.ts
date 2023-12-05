@@ -1,4 +1,4 @@
-import { Pass, PassEnv } from "../passes";
+import { Pass, SymbolEnv } from "../passes";
 import { 
     CollectionGrammar,
     CursorGrammar, DotGrammar, 
@@ -9,23 +9,30 @@ import {
     RenameGrammar, 
     StringPairSet 
 } from "../grammars";
-import { renameTape } from "../tapes";
+import { 
+    renameTape
+} from "../tapes";
 import { Cursor } from "../grammarConvenience";
-import { Result } from "../utils/msgs";
+import { children } from "../components";
+import { Options } from "../utils/options";
 
 export class CreateCursors extends Pass<Grammar,Grammar> {
 
-    public transform(g: Grammar, env: PassEnv): Result<Grammar> {
+    public getEnv(opt: Partial<Options>): SymbolEnv {
+        return new SymbolEnv(opt);
+    }
+
+    public transformAux(g: Grammar, env: SymbolEnv): Grammar {
         const priorities = prioritizeTapes(g, env);
-        return Cursor(priorities, g).msg();
+        return Cursor(priorities, g).tapify(env);
     }
 }
 
 export function prioritizeTapes(
     g: Grammar,
-    env: PassEnv
+    env: SymbolEnv
 ): string[] {
-    const priorities: [string, number][] = g.tapes.map(t => {
+    const priorities: [string, number][] = g.tapeNames.map(t => {
         const joinWeight = getTapePriority(g, t, new StringPairSet(), env);
         
         /* TODO: temporarily removing vocab size from
@@ -48,7 +55,7 @@ function getTapePriority(
     g: Grammar,
     tape: string,
     symbolsVisited: StringPairSet,
-    env: PassEnv
+    env: SymbolEnv
 ): number {
     switch (g.tag) {
         case "epsilon": 
@@ -92,10 +99,10 @@ function getTapePriorityDefault(
     g: Grammar,
     tape: string,
     symbolsVisited: StringPairSet,
-    env: PassEnv
+    env: SymbolEnv
 ): number {
     const priorities: number[] = [0];
-    for (const child of g.getChildren()) {
+    for (const child of children(g)) {
         const childPriority = getTapePriority(child, tape, symbolsVisited, env);
         if (childPriority < 0) {
             return childPriority;
@@ -109,7 +116,7 @@ function getTapePriorityLeaf(
     g: LiteralGrammar | DotGrammar,
     tape: string,
     symbolsVisited: StringPairSet,
-    env: PassEnv
+    env: SymbolEnv
 ): number {
     return (tape == g.tapeName) ? 1 : 0;
 }
@@ -118,9 +125,9 @@ function getTapePriorityCollection(
     g: CollectionGrammar,
     tape: string,
     symbolsVisited: StringPairSet,
-    env: PassEnv  
+    env: SymbolEnv  
 ): number {
-    const newEnv = env.setSymbols(g.symbols);
+    const newEnv = env.update(g);
     const referent = g.getSymbol(g.selectedSymbol);
     if (referent === undefined) { 
         // without a valid symbol, collections are epsilon,
@@ -134,13 +141,16 @@ function getTapePriorityEmbed(
     g: EmbedGrammar,
     tape: string,
     symbolsVisited: StringPairSet,
-    env: PassEnv
+    env: SymbolEnv
 ): number {
     if (symbolsVisited.has([g.symbol, tape])) { 
         return 0;
     }
     symbolsVisited.add([g.symbol, tape]);
     const referent = env.symbolNS[g.symbol];
+    if (referent === undefined) {
+        throw new Error(`undefined referent ${g.symbol}, candidates are [${Object.keys(env.symbolNS)}]`);
+    }
     return getTapePriority(referent, tape, symbolsVisited, env);
 }
 
@@ -148,7 +158,7 @@ function getTapePriorityHide(
     g: HideGrammar,
     tape: string,
     symbolsVisited: StringPairSet,
-    env: PassEnv
+    env: SymbolEnv
 ): number {
     if (tape != g.toTape && tape == g.tapeName) {
         return 0;
@@ -161,7 +171,7 @@ function getTapePriorityPreTape(
     g: PreTapeGrammar,
     tape: string,
     symbolsVisited: StringPairSet,
-    env: PassEnv
+    env: SymbolEnv
 ): number {
     if (tape == g.fromTape) return -1;
     return getTapePriorityDefault(g, tape, symbolsVisited, env);
@@ -171,9 +181,9 @@ function getTapePriorityCursor(
     g: CursorGrammar,
     tapeName: string,
     symbolsVisited: StringPairSet,
-    env: PassEnv
+    env: SymbolEnv
 ): number {
-    if (tapeName == g.tape) return -1;
+    if (tapeName == g.tapeName) return -1;
     return getTapePriorityDefault(g, tapeName, symbolsVisited, env);
 }
 
@@ -181,7 +191,7 @@ function getTapePriorityRename(
     g: RenameGrammar,
     tapeName: string,
     symbolsVisited: StringPairSet,
-    env: PassEnv
+    env: SymbolEnv
 ): number {
     if (tapeName != g.toTape && tapeName == g.fromTape) {
         return 0;
@@ -194,10 +204,10 @@ function getTapePriorityJoin(
     g: JoinGrammar,
     tapeName: string,
     symbolsVisited: StringPairSet,
-    env: PassEnv
+    env: SymbolEnv
 ): number {
-    const c1tapes = new Set(g.child1.tapes);
-    const c2tapes = new Set(g.child2.tapes);
+    const c1tapes = new Set(g.child1.tapeNames);
+    const c2tapes = new Set(g.child2.tapeNames);
     const c1priority = getTapePriority(g.child1, tapeName, symbolsVisited, env);
     const c2priority = getTapePriority(g.child2, tapeName, symbolsVisited, env);
     if (c1tapes.has(tapeName) && c2tapes.has(tapeName)) {

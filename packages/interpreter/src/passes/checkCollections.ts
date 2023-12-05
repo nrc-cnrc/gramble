@@ -1,12 +1,12 @@
-import { Pass, PassEnv } from "../passes";
+import { Pass } from "../passes";
 import { 
     TstCollection, 
     TstEmpty, 
     TstAssignment,
     TST
 } from "../tsts";
-import { Component } from "../components";
-import { Result } from "../utils/msgs";
+import { Component, PassEnv } from "../components";
+import { Msg } from "../utils/msgs";
 
 /**
  * Make sure that collections are reasonably placed
@@ -19,11 +19,7 @@ export class CheckCollections extends Pass<TST,TST> {
         super();
     }
 
-    public get desc(): string {
-        return "Creating collections";
-    }
-
-    public transformAux(t: TST, env: PassEnv): Result<TST> {
+    public transformAux(t: TST, env: PassEnv): Msg<TST> {
         const newThis = new CheckCollections(t);
         return t.mapChildren(newThis, env).bind(t => {
             switch(t.tag) {

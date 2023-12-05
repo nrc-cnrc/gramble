@@ -4,11 +4,10 @@ import { parseContent } from "../../interpreter/src/content";
 import { Grammar } from "../../interpreter/src/grammars";
 import { ParseClass, parseHeaderCell } from "../../interpreter/src/headers";
 import { parseOp, autoID as opID } from "../../interpreter/src/ops";
-import { PassEnv } from "../../interpreter/src/passes";
 import { CombineLiterals } from "../../interpreter/src/passes/combineLiterals";
 import { toStr } from "../../interpreter/src/passes/toStr";
-import { Msgs } from "../../interpreter/src/utils/msgs";
 import { tokenizeUnicode } from "../../interpreter/src/utils/strings";
+import { Message } from "../../interpreter/src/utils/msgs";
 //import { autoID } from "../../interpreter/src/components";
 
 export function testHeaderID(
@@ -82,11 +81,10 @@ function testCellID(
     expectedID: string,
     numErrorsExpected: number = 0
 ): void {
-    const parseResult = parseContent(parseClass, text);
-    const env = new PassEnv();
-    const [result, msgs] = new CombineLiterals()
-                                .go(parseResult, env)
-                                .destructure() as [Grammar, Msgs];
+    const msgs: Message[] = [];
+    const parseResult = parseContent(parseClass, text).msgTo(msgs)
+
+    const result = new CombineLiterals().getEnvAndTransform(parseResult, {}).msgTo(msgs);
     if (testPrefix != "") {
         testPrefix += '. ';
     }

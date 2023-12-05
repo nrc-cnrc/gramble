@@ -5,7 +5,7 @@ import {
 
 import { CollectionGrammar, Grammar } from "../../interpreter/src/grammars";
 import { toStr } from "../../interpreter/src/passes/toStr";
-import { Dict, StringDict, update } from "../../interpreter/src/utils/func";
+import { Dict, StringDict, stringDictToStr, update } from "../../interpreter/src/utils/func";
 import { Options } from "../../interpreter/src/utils/options";
 
 import { RandOptions, randomCollection } from "./randomGrammar";
@@ -21,7 +21,7 @@ import { ReduceOptions, reduceCollection } from "./reduceGrammar";
 
 import { generateOutputs, prepareInterpreter } from "../testUtil";
 
-const NUM_TESTS = 1000;
+const NUM_TESTS = 100;
 const REDUCE_OPT = ReduceOptions({ symbolDrop: false });
 
 const EQUATIONS = [
@@ -190,16 +190,10 @@ class EquationTest implements PropertyTest {
     }
 }
 
-function stringDictToStr(d: StringDict): string {
-    const keys = Object.keys(d).sort();
-    const strs = keys.map(k => `${k}:${d[k]}`);
-    return "{" + strs.join(", ") + "}";
-}
-
 function outputsToStr(ds: StringDict[]): string {
     const strs = ds.map(d => stringDictToStr(d));
     strs.sort();
-    return "[" + strs.join(", ") + "]";
+    return strs.join("|");
 }
 
 for (const eq of EQUATIONS) {

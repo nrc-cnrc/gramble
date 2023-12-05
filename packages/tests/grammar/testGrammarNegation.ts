@@ -1,7 +1,7 @@
 import {
     Any, Count, Dot, Join, 
     Not, Rep, Seq, Short,
-    Uni,Vocab,
+    Uni, WithVocab,
 } from "../../interpreter/src/grammarConvenience";
 
 import {
@@ -428,7 +428,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '36. ~(t1:.) (vocab hi)',
         grammar: Count({t1:2},
-        		     Vocab({t1:'hi'},
+        		     WithVocab({t1:'hi'},
                  	     Not(Any('t1')))),
         tapes: ['t1'],
         vocab: {t1:2},
@@ -442,7 +442,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '37. ~(t1:.i)) (vocab hi)',
         grammar: Count({t1:2},
-        		     Vocab({t1:'hi'},
+        		     WithVocab({t1:'hi'},
                  	     Not(Seq(Any('t1'), t1('i'))))),
         // tapes: ['t1'],
         // vocab: {t1:2},
@@ -456,7 +456,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '38. ~(t1:.i) (vocab hi)',
         grammar: Count({t1:2},
-        		     Vocab({t1:'hi'},
+        		     WithVocab({t1:'hi'},
                  	     Not(Seq(Dot('t1'), t1('i'))))),
         // tapes: ['t1'],
         // vocab: {t1:2},
@@ -470,7 +470,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '39. ~(t1:.{0,1} + t1:i) (vocab hi)',
         grammar: Count({t1:3},
-        		     Vocab({t1:'hi'},
+        		     WithVocab({t1:'hi'},
                  	     Not(Seq(Rep(Dot('t1'), 0, 1), t1('i'))))),
         // tapes: ['t1'],
         // vocab: {t1:2},
@@ -486,7 +486,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '40. ~(t1:.{0,3} + t1:i) (vocab hi)',
         grammar: Count({t1:3},
-        		     Vocab({t1:'hi'},
+        		     WithVocab({t1:'hi'},
                  	     Not(Seq(Rep(Dot('t1'), 0, 3), t1('i'))))),
         // tapes: ['t1'],
         // vocab: {t1:2},
@@ -501,7 +501,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '41. ~(t1:.*i) (vocab hi)',
         grammar: Count({t1:3},
-        		     Vocab({t1:'hi'},
+        		     WithVocab({t1:'hi'},
                  	     Not(Seq(Rep(Dot('t1')), t1('i'))))),
         // tapes: ['t1'],
         // vocab: {t1:2},
@@ -517,7 +517,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '42-ltr. Does not contain a: ' +
             '~(Short(t1:.*a) + t1:.*) (vocab ab)',
         grammar: Count({t1:3},
-                    Vocab({t1:'ab'},
+                    WithVocab({t1:'ab'},
                         Not(Seq(Short(Seq(Rep(Any("t1")), t1("a"))),
                                 Rep(Any("t1")))))),
         results: [
@@ -530,7 +530,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '42-rtl. Does not contain a: ' +
             '~(t1:.* + Short(t1:a.*)) (vocab ab)',
         grammar: Count({t1:3},
-                    Vocab({t1:'ab'},
+                    WithVocab({t1:'ab'},
                         Not(Seq(Rep(Any("t1")), 
                             Short(Seq(t1("a"), Rep(Any("t1")))))))),
         results: [

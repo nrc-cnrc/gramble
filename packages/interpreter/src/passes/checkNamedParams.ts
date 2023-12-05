@@ -2,8 +2,8 @@ import {
     TstEmpty, TstHeader, 
     TstOp, TstHeadedGrid, TST 
 } from "../tsts";
-import { Pass, PassEnv } from "../passes";
-import { Err, ResultFunc, Msgs, Result, Warn } from "../utils/msgs";
+import { Pass } from "../passes";
+import { Err, Message, MsgFunc, Msg, Warn } from "../utils/msgs";
 import { UniqueHeader, paramName } from "../headers";
 import {
     allowedParams, 
@@ -11,6 +11,7 @@ import {
     requiredParams 
 } from "../ops";
 import { DEFAULT_PARAM } from "../utils/constants";
+import { PassEnv } from "../components";
 
 /**
  * This pass checks whether named parameters in headers
@@ -30,11 +31,7 @@ export class CheckNamedParams extends Pass<TST,TST> {
         super();
     }
 
-    public get desc(): string {
-        return "Checking named params";
-    }
-
-    public transform(t: TST, env: PassEnv): Result<TST> {
+    public transformAux(t: TST, env: PassEnv): TST|Msg<TST> {
 
         switch(t.tag) {
             case "op":          return this.handleOp(t, env);
@@ -46,15 +43,15 @@ export class CheckNamedParams extends Pass<TST,TST> {
         }
     }
 
-    public handleHeadedGrid(t: TstHeadedGrid, env: PassEnv): Result<TST> {
-        const result = t.mapChildren(this, env) as Result<TstHeadedGrid>;
+    public handleHeadedGrid(t: TstHeadedGrid, env: PassEnv): Msg<TST> {
+        const result = t.mapChildren(this, env) as Msg<TstHeadedGrid>;
         return result.bind(t => {
             t.headers = t.headers.filter(h => h instanceof TstHeader);
             return t;
         });
     }
 
-    public handleOp(t: TstOp, env: PassEnv): Result<TST> {
+    public handleOp(t: TstOp, env: PassEnv): Msg<TST> {
         const [sib, sibMsgs] = this.transform(t.sibling, env).destructure();
         const newPass = new CheckNamedParams(allowedParams(t.op));
         const [child, childMsgs] = newPass.transform(t.child, env)
@@ -75,9 +72,9 @@ export class CheckNamedParams extends Pass<TST,TST> {
                    .msg(sibMsgs).msg(childMsgs);
     }
 
-    public checkRequiredParams(t: TstOp): Result<TST> {
+    public checkRequiredParams(t: TstOp): Msg<TST> {
 
-        const msgs: Msgs = [];
+        const msgs: Message[] = [];
         
         // now check that the required params are present.  if the
         // child is a TstGrid, we have to check more closely.  if the
@@ -117,12 +114,12 @@ export class CheckNamedParams extends Pass<TST,TST> {
         return t.msg(msgs);
     }
     
-    public handleHeader(t: TstHeader, env: PassEnv): Result<TST> {
-        const mapped = t.mapChildren(this, env) as Result<TstHeader>;
+    public handleHeader(t: TstHeader, env: PassEnv): TST|Msg<TST> {
+        const mapped = t.mapChildren(this, env) as Msg<TstHeader>;
         return mapped.bind((h => {
             const tag = paramName(h.header);
             if (this.permissibleParams.has(tag)) {
-                return h.msg(); // we're good
+                return h; // we're good
             }
             // it's an unexpected header
             const param = (tag == DEFAULT_PARAM) ?
@@ -141,6 +138,6 @@ export class CheckNamedParams extends Pass<TST,TST> {
             return new TstEmpty().err("Invalid parameter",
                 `The operator to the left does not expect ${param}`)
                 .localize(h.pos);
-        }) as ResultFunc<TstHeader,TST>);
+        }) as MsgFunc<TstHeader,TST>);
     }
 }

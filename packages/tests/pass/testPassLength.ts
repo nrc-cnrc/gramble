@@ -7,9 +7,8 @@ import {
     Rename, Hide, Match, ReplaceBlock, Replace
 } from '../../interpreter/src/grammarConvenience';
 
-import { CounterStack } from '../../interpreter/src/exprs';
 import { Grammar } from '../../interpreter/src/grammars';
-import { PassEnv } from '../../interpreter/src/passes';
+import { SymbolEnv } from '../../interpreter/src/passes';
 import { lengthRange } from '../../interpreter/src/passes/infinityProtection';
 
 import {
@@ -17,6 +16,7 @@ import {
     VERBOSE_TEST_L2,
     t1, t2
 } from "../testUtil";
+import { CounterStack } from '../../interpreter/src/utils/counter';
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -26,7 +26,7 @@ function testLength(
     tape: string, 
     expectedLength: [number, number] | null,
 ): void {
-    const env: PassEnv = new PassEnv();
+    const env = new SymbolEnv();
     grammar = grammar.tapify(env);
     const length = lengthRange(grammar, tape, new CounterStack(2), env);
     

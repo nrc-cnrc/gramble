@@ -10,13 +10,15 @@ import {
     Func,
 } from "./utils/func";
 import { 
-    Tape, TapeNamespace, 
+    OldTape, TapeNamespace, 
     renameTape
 } from "./tapes";
 import { INPUT_TAPE, OUTPUT_TAPE } from "./utils/constants";
 import { VERBOSE_DEBUG, logDebug, logStates, logTime } from "./utils/logging";
 import { Namespace } from "./utils/namespace";
 import { Env, Options } from "./utils/options";
+import { CounterStack } from "./utils/counter";
+import { randomCut, randomCutIter } from "./utils/random";
 
 export type Query = TokenExpr | DotExpr;
 
@@ -57,6 +59,8 @@ export class DerivEnv extends Env {
         public tapeNS: TapeNamespace,
         public symbols: Dict<Expr>,
         public stack: CounterStack,
+        public vocab: Set<string>,
+        public atomic: boolean,
         public random: boolean,
         public stats: DerivStats
     ) { 
@@ -64,16 +68,16 @@ export class DerivEnv extends Env {
     }
 
     public renameTape(fromKey: string, toKey: string): DerivEnv {
-        const newTapeNS = this.tapeNS.rename(fromKey, toKey);
-        return update(this, { tapeNS: newTapeNS });
+        const tapeNS = this.tapeNS.rename(fromKey, toKey);
+        return update(this, {tapeNS});
     }
 
-    public addTapes(tapes: Dict<Tape>): DerivEnv {
-        const newTapeNS = new TapeNamespace(tapes, this.tapeNS);
-        return update(this, { tapeNS: newTapeNS });
+    public addTapes(tapes: Dict<OldTape>): DerivEnv {
+        const tapeNS = new TapeNamespace(tapes, this.tapeNS);
+        return update(this, {tapeNS});
     }
 
-    public getTape(tapeName: string): Tape {
+    public getTape(tapeName: string): OldTape {
         return this.tapeNS.get(tapeName);
     }
 
@@ -82,12 +86,12 @@ export class DerivEnv extends Env {
     }
     
     public setSymbols(symbols: Dict<Expr>): DerivEnv {
-        return new DerivEnv(this.opt, this.tapeNS, symbols, this.stack, this.random, this.stats);
+        return update(this, {symbols});
     }
 
     public addSymbol(symbol: string): DerivEnv {
-        const newStack = this.stack.add(symbol);
-        return new DerivEnv(this.opt, this.tapeNS, this.symbols, newStack, this.random, this.stats);
+        const stack = this.stack.add(symbol);
+        return update(this, {stack});
     }
 
     public incrStates(): void {
@@ -255,64 +259,6 @@ function *wrap(
 ): Derivs {
     for (const d of ds) {
         yield d.wrap(f);
-    }
-}
-
-export function *randomCut<T>(
-    gs: T[], 
-    env: DerivEnv
-): Gen<T> {
-    const offset = env.random 
-                     ? Math.floor(Math.random()*gs.length)
-                     : 0;
-    for (let i = 0; i < gs.length; i++) {
-        const mod_i = (i+offset) % gs.length;
-        yield gs[mod_i];
-    }
-}
-
-export function *randomCutIter<T>(
-    gs: Gen<T>[], 
-    env: DerivEnv
-): Gen<T> {
-    const offset = env.random 
-                     ? Math.floor(Math.random()*gs.length)
-                     : 0;
-    for (let i = 0; i < gs.length; i++) {
-        const mod_i = (i+offset) % gs.length;
-        yield *gs[mod_i];
-    }
-}
-
-
-export class CounterStack {
-
-    constructor(
-        public max: number = 4
-    ) { }
-
-    public stack: {[key: string]: number} = {};
-    public id: string = "ground";
-
-    public add(key: string) {
-        const result = new CounterStack(this.max);
-        result.stack[key] = 0;
-        Object.assign(result.stack, this.stack);
-        result.stack[key] += 1;
-        result.id = key + result.stack[key];
-        return result;
-    }
-
-    public get(key: string): number {
-        return (key in this.stack) ? this.stack[key] : 0;
-    }
-
-    public exceedsMax(key: string): boolean {
-        return this.get(key) >= this.max;
-    }
-
-    public tostring(): string {
-        return JSON.stringify(this.stack);
     }
 }
 
@@ -529,7 +475,7 @@ class DotExpr extends Expr {
     ): Derivs { 
         if (query.tapeName != this.tapeName) return;
         const cs = [... query.expandStrings(env)];
-        const csCut = randomCut(cs, env);
+        const csCut = randomCut(cs, env.random);
         for (const c of csCut) {
             const token = constructToken(query.tapeName, c);
             yield new Deriv(token, EPSILON);
@@ -568,7 +514,7 @@ class DotStarExpr extends Expr {
         }
         
         const cs = [... query.expandStrings(env)];
-        const csCut = randomCut(cs, env);
+        const csCut = randomCut(cs, env.random);
         for (const c of csCut) {
             const token = constructToken(query.tapeName, c);
             yield new Deriv(token, this);
@@ -794,7 +740,27 @@ class ConcatExpr extends BinaryExpr {
         const c2derivs = c2.deriv(query, env);
         const c2wrapped = wrap(c2derivs, e => constructPrecede(env, c1next, e));
 
-        yield* randomCutIter([c1wrapped, c2wrapped], env);
+        yield* randomCutIter([c1wrapped, c2wrapped], env.random);
+    }
+
+    public *forward(
+        env: DerivEnv
+    ): Gen<[boolean,Expr]> {
+        const [c1, c2] = env.opt.directionLTR ?
+                        [this.child1, this.child2] :
+                        [this.child2, this.child1];
+
+        for (const [c1Handled,c1Next] of c1.forward(env)) {
+            if (c1Handled) {
+                const wrapped = constructPrecede(env, c1Next, c2);
+                yield [c1Handled, wrapped];
+                continue;
+            } 
+            for (const [c2Handled,c2Next] of c2.forward(env)) {
+                const wrapped = constructPrecede(env, c1Next, c2Next);
+                yield [c2Handled, wrapped];
+            }
+        }
     }
 
     public simplify(env: Env): Expr {
@@ -852,7 +818,7 @@ export class UnionExpr extends Expr {
         if (env.random) {
             const childDerivs = this.children.map(c => 
                                     c.deriv(query, env));
-            yield* randomCutIter(childDerivs, env);
+            yield* randomCutIter(childDerivs, env.random);
             return;
         }
 
@@ -867,7 +833,7 @@ export class UnionExpr extends Expr {
         if (env.random) {
             const childForwards = this.children.map(c => 
                 c.forward(env));
-            yield* randomCutIter(childForwards, env);
+            yield* randomCutIter(childForwards, env.random);
             return;
         }
 
@@ -1303,6 +1269,8 @@ export class CursorExpr extends UnaryExpr {
     constructor(
         public tape: string,
         child: Expr,
+        public vocab: Set<string>,
+        public atomic: boolean,
         public output: OutputExpr = new OutputExpr(EPSILON),
         public finished: boolean = false
     ) {
@@ -1322,7 +1290,8 @@ export class CursorExpr extends UnaryExpr {
                 // tapes inside and outside Cursor("X", child)
 
         const cNext = this.child.delta(tapeName, env);
-        return constructCursor(env, this.tape, cNext, this.output, this.finished);
+        return constructCursor(env, this.tape, cNext, this.vocab, 
+                    this.atomic, this.output, this.finished);
     }
 
     public *deriv(query: Query, env: DerivEnv): Derivs {
@@ -1331,7 +1300,8 @@ export class CursorExpr extends UnaryExpr {
                 // tapes inside and outside Cursor("X", child)
 
         for (const d of this.child.deriv(query, env)) {
-            yield d.wrap(c => constructCursor(env, this.tape, c, this.output, this.finished));
+            yield d.wrap(c => constructCursor(env, this.tape, c, 
+                    this.vocab, this.atomic, this.output, this.finished));
         }
     }
 
@@ -1340,7 +1310,7 @@ export class CursorExpr extends UnaryExpr {
         if (this.finished) {
             for (const [cHandled, cNext] of this.child.forward(env)) {
                 const wrapped = constructCursor(env, this.tape, cNext, 
-                                            this.output, true);
+                                this.vocab, this.atomic, this.output, true);
                 yield [cHandled, wrapped];
             }
             return;
@@ -1351,7 +1321,7 @@ export class CursorExpr extends UnaryExpr {
         const deltaGenerator = iterUnit(new Deriv(deltaToken, deltaNext));
         const derivQuery = constructDot(this.tape);
         const derivResults = disjoin(this.child.deriv(derivQuery, env), env);
-        const allResults = randomCutIter([deltaGenerator, derivResults], env);
+        const allResults = randomCutIter([deltaGenerator, derivResults], env.random);
 
         for (const d of allResults) {
             env.incrStates();
@@ -1361,7 +1331,7 @@ export class CursorExpr extends UnaryExpr {
             for (const [_, nNext] of d.next.forward(env)) {
                 const finished = (d.result instanceof TokenExpr && d.result.text == "");
                 const wrapped = constructCursor(env, this.tape, nNext, 
-                                newOutput, finished);
+                                this.vocab, this.atomic, newOutput, finished);
                 yield [true, wrapped];
             }
             env.indentLog(-1);
@@ -1389,10 +1359,13 @@ export function constructCursor(
     env: Env,
     tape: string, 
     child: Expr, 
+    vocab: Set<string>,
+    atomic: boolean,
     output?: OutputExpr,
     finished: boolean = false
 ): Expr {
-    return new CursorExpr(tape, child, output, finished).simplify(env);
+    return new CursorExpr(tape, child, vocab, 
+                atomic, output, finished).simplify(env);
 }
 
 export class PreTapeExpr extends UnaryExpr {
@@ -1793,7 +1766,7 @@ class NegationExpr extends UnaryExpr {
             results.push(remainderDeriv);
         }
 
-        yield* randomCut(results, env);
+        yield* randomCut(results, env.random);
     }
 
     public simplify(env: Env): Expr {

@@ -1,4 +1,4 @@
-import { Msgs, Result, result, resultList } from "./utils/msgs";
+import { Message, Msg, msg, msgList } from "./utils/msgs";
 import { Gen } from "./utils/func";
 
 /**
@@ -107,7 +107,7 @@ export class MiniParseEnv {
 }
 
 export type MPParser<T> = (input: string[], env: MiniParseEnv) => 
-                                        Gen<[Result<T>, string[]]>
+                                        Gen<[Msg<T>, string[]]>
 
 /**
  * Delay the evaluation of a parser X to allow reference to a parser before it's defined (e.g. for
@@ -125,12 +125,12 @@ function tryConstr<T1,T2>(
     constr: (args: T1) => T2,
     args: T1,
     remainder: string[],
-    msgs: Msgs = []
-): [Result<T2>, string[]] { 
+    msgs: Message[] = []
+): [Msg<T2>, string[]] { 
     try {
-        return [result(constr(args)).msg(msgs), remainder];
+        return [msg(constr(args)).msg(msgs), remainder];
     } catch (e) {
-        if (!(e instanceof Result)) {
+        if (!(e instanceof Msg)) {
             //console.log(`non-result thrown: ${JSON.stringify(e)}`);
             throw e;
         }
@@ -262,10 +262,10 @@ export function MPSequence<T>(
 ): MPParser<T> {
     return function*(input: string[], env: MiniParseEnv) {
 
-        let results: [Result<T>[], string[]][] = [[[], input]];
+        let results: [Msg<T>[], string[]][] = [[[], input]];
 
         for (const child of children) {
-            let newResults: [Result<T>[], string[]][] = [];
+            let newResults: [Msg<T>[], string[]][] = [];
             for (const [existingOutputs, existingRemnant] of results) {
                 if (typeof child == "string") {
                     if (existingRemnant.length == 0) {
@@ -283,7 +283,7 @@ export function MPSequence<T>(
                 }
     
                 for (const [output2, remnant2] of child(existingRemnant, env)) {
-                    const newOutput: Result<T>[] = [...existingOutputs, output2];
+                    const newOutput: Msg<T>[] = [...existingOutputs, output2];
                     newResults.push([newOutput, remnant2]);
                 }
             }
@@ -291,7 +291,7 @@ export function MPSequence<T>(
         }  
 
         for (const [outputResult, remainder] of results) {
-            const [output, outputMsgs] = resultList(outputResult).destructure();
+            const [output, outputMsgs] = msgList(outputResult).destructure();
             yield tryConstr(constr, output, remainder, outputMsgs);
         }
     }
@@ -304,16 +304,16 @@ export function MPRepetition<T>(
     maxReps: number = Infinity
 ): MPParser<T> {
     return function*(input: string[], env: MiniParseEnv) {
-        let results: [Result<T>[], string[]][] = [[[], input]];
+        let results: [Msg<T>[], string[]][] = [[[], input]];
         for (let reps = 0; reps <= maxReps && results.length > 0; reps++) {
-            let newResults: [Result<T>[], string[]][] = [];
+            let newResults: [Msg<T>[], string[]][] = [];
             for (const [existingResults, existingRemnant] of results) {
                 if (reps >= minReps) {
-                    const [outputs, msgs] = resultList(existingResults).destructure();
+                    const [outputs, msgs] = msgList(existingResults).destructure();
                     yield tryConstr(constr, outputs, existingRemnant, msgs);
                 }
                 for (const [output2, remnant2] of child(existingRemnant, env)) {
-                    const newOutput: Result<T>[] = [...existingResults, output2];
+                    const newOutput: Msg<T>[] = [...existingResults, output2];
                     newResults.push([newOutput, remnant2]);
                 }
             }
@@ -345,7 +345,7 @@ export function miniParse<T>(
     env: MiniParseEnv,
     grammar: MPParser<T>,
     text: string
-): Result<T>[] {
+): Msg<T>[] {
     const pieces = env.tokenize(text);
     let results = [... grammar(pieces, env)];
     // result is a list of [header, remaining_tokens] pairs.  

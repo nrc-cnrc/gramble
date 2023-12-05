@@ -1,13 +1,13 @@
 import { 
-    CounterStack, DerivEnv, 
-    EpsilonExpr, Expr, ExprNamespace, 
+    DerivEnv, 
+    EpsilonExpr, Expr,
     NullExpr, 
     DerivStats,
     OutputExpr,
-    ForwardGen,
-    randomCut
+    ForwardGen
 } from "./exprs";
 import { TapeNamespace } from "./tapes";
+import { CounterStack } from "./utils/counter";
 import { 
     Gen,
     iterTake,
@@ -15,6 +15,7 @@ import {
 } from "./utils/func";
 import { msToTime } from "./utils/logging";
 import { Options } from "./utils/options";
+import { randomCut } from "./utils/random";
 
 /**
  * Performs a breadth-first traversal of the graph.  This will be the function that most 
@@ -40,7 +41,8 @@ export function* generate(
 ): Gen<StringDict> {
     const stack = new CounterStack(opt.maxRecursion);
     const stats = new DerivStats();
-    const env = new DerivEnv(opt, tapeNS, {}, stack, random, stats);
+    const env = new DerivEnv(opt, tapeNS, {}, stack, 
+                    new Set(), false, random, stats);
 
     const NEXTS_TO_TAKE = random ? 1 : Infinity;
     const startingTime = Date.now();
@@ -63,7 +65,7 @@ export function* generate(
         if (prev instanceof EpsilonExpr || prev instanceof OutputExpr) {
             env.logDebugOutput("YIELD", prev);
             const outputs = prev.getOutputs(env);
-            yield* randomCut(outputs, env);
+            yield* randomCut(outputs, env.random);
             continue;
         }
         
