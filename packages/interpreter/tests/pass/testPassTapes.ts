@@ -1490,7 +1490,7 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     testGrammarTapes({
-        desc: "38",
+        desc: "38a",
         grammar: Replace("e", "a", "h", "llo", t3("1SG")),
         tapes: {
             "$i": ["h","e","l","o"],
@@ -1500,13 +1500,25 @@ describe(`${testSuiteName(module)}`, function() {
     });
 
     testGrammarTapes({
-        desc: "39",
+        desc: "38a-atom",
+        atomicity: true,
+        grammar: Replace("e", "a", "h", "llo", t3("1SG")),
+        tapes: {
+            "$i": ["h","e","l","o"],
+            "$o": ["h","e","l","o","a"],
+            "t3": ["1SG"],
+        },
+    });
+
+    testGrammarTapes({
+        desc: "38b-atom",
+        atomicity: true,
         grammar: ReplaceBlock("t1", t1("hello"), 
                 NamedReplace("R1", "e", "","","", t3("1SG"))),
         tapes: {
             "t1": ["h","e","l","o"],
             ".R1": ["h","e","l","o"],
-            "t3": ["1","S","G"],
+            "t3": ["1SG"],
         },
     });
 });

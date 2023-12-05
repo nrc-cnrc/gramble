@@ -460,11 +460,13 @@ function getTapesReplace(g: ReplaceGrammar, env: TapesEnv): Grammar {
         throw new EpsilonGrammar().tapify(env).msg(msgs);
 
     let tapes = getChildTapes(g);
+    console.log(Tapes.toStr(tapes));
     const wildcard: TapeSet = Tapes.Lit({ 
         [INPUT_TAPE]: Vocabs.Wildcard(INPUT_TAPE),
     });
     tapes = Tapes.Sum(wildcard, tapes);
     tapes = Tapes.Match(tapes, INPUT_TAPE, OUTPUT_TAPE);
+    console.log(Tapes.toStr(tapes));
     return updateTapes(g, tapes);
 }
                 
