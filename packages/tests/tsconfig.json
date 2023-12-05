@@ -6,12 +6,14 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "paths": {
-        "*": [ "src/@types/*"]
+        "*": [ "../interpreter/src/@types/*"]
     },
     "sourceMap": true,
     "composite": true,
-    "tsBuildInfoFile": "../../.build-cache/interpreter.tsbuildinfo",
+    "tsBuildInfoFile": "../../.build-cache/tests.tsbuildinfo",
     "types": [
+      "chai",
+      "mocha",
       "node"
     ]
   },
@@ -22,5 +24,8 @@
     "es2017",
     "dom",
     "es6"
+  ],
+  "references": [
+	  { "path": "../interpreter" }
   ]
 }

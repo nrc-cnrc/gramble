@@ -33,75 +33,12 @@
   "scripts": {
     "build": "tsc --build --verbose",
     "prepare": "npm run build",
-
-    "test": "mocha -r ts-node/register tests/*.ts tests/grammar/*.ts tests/parse/*.ts tests/source/*/*.ts tests/pass/*.ts",
-    
-    "testGrammar": "mocha -r ts-node/register tests/grammar/*.ts",
-    "testGrammarBasic": "mocha -r ts-node/register tests/grammar/testGrammarBasic.ts",
-    "testGrammarCorrespond": "mocha -r ts-node/register tests/grammar/testGrammarCorrespond.ts",
-    "testGrammarCount": "mocha -r ts-node/register tests/grammar/testGrammarCount.ts",
-    "testGrammarCursor": "mocha -r ts-node/register tests/grammar/testGrammarCursor.ts",
-    "testGrammarDot": "mocha -r ts-node/register tests/grammar/testGrammarDot.ts",
-    "testGrammarEmbed": "mocha -r ts-node/register tests/grammar/testGrammarEmbed.ts",
-    "testGrammarFilter": "mocha -r ts-node/register tests/grammar/testGrammarFilter.ts",
-    "testGrammarHide": "mocha -r ts-node/register tests/grammar/testGrammarHide.ts",
-    "testGrammarInfinity": "mocha -r ts-node/register tests/grammar/testGrammarInfinity.ts",
-    "testGrammarJoin": "mocha -r ts-node/register tests/grammar/testGrammarJoin.ts",
-    "testGrammarReplaceBlock": "mocha -r ts-node/register tests/grammar/testGrammarReplaceBlock.ts",
-    "testGrammarMatch": "mocha -r ts-node/register tests/grammar/testGrammarMatch.ts",
-    "testGrammarNegation": "mocha -r ts-node/register tests/grammar/testGrammarNegation.ts",
-    "testGrammarNotMatch": "mocha -r ts-node/register tests/grammar/testGrammarNotMatch.ts",
-    "testGrammarRename": "mocha -r ts-node/register tests/grammar/testGrammarRename.ts",
-    "testGrammarRepeat": "mocha -r ts-node/register tests/grammar/testGrammarRepeat.ts",
-    "testGrammarReplace": "mocha -r ts-node/register tests/grammar/testGrammarReplace.ts",
-    "testGrammarRecursion": "mocha -r ts-node/register tests/grammar/testGrammarRecursion.ts",
-    "testGrammarShort": "mocha -r ts-node/register tests/grammar/testGrammarShort.ts",
-    "testGrammarSingleTape": "mocha -r ts-node/register tests/grammar/testGrammarSingleTape.ts",
-    
-    "testParse": "mocha -r ts-node/register tests/parse/*.ts",
-    "testParseHeader": "mocha -r ts-node/register tests/parse/testParseHeader.ts",
-    "testParseOp": "mocha -r ts-node/register tests/parse/testParseOp.ts",
-    "testParsePlaintext": "mocha -r ts-node/register tests/parse/testParsePlaintext.ts",
-    "testParseRegex": "mocha -r ts-node/register tests/parse/testParseRegex.ts",
-    "testParseRuleContext": "mocha -r ts-node/register tests/parse/testParseRuleContext.ts",
-    "testParseSymbol": "mocha -r ts-node/register tests/parse/testParseSymbol.ts",
-    "testParseTokenize": "mocha -r ts-node/register tests/parse/testParseTokenize.ts",
-
-    "testPassID": "mocha -r ts-node/register tests/pass/testPassID.ts",
-    "testPassLength": "mocha -r ts-node/register tests/testPassLength.ts",
-    "testPassTapes": "mocha -r ts-node/register tests/pass/testPassTapes.ts",
-    "testPassVocab": "mocha -r ts-node/register tests/testPassVocab.ts",
-
-    "testProperty": "mocha -r ts-node/register tests/property/testProperty.ts",
-    "testPropertyEq": "mocha -r ts-node/register tests/property/testPropertyEq.ts",
-    "testPropertyTapeCalc": "mocha -r ts-node/register tests/property/testPropertyTapeCalc.ts",
-    "testPropertyTapeCalcOrder": "mocha -r ts-node/register tests/property/testPropertyTapeCalcOrder.ts",
-
-    "testSource": "mocha -r ts-node/register tests/source/*/*.ts",
-    "testSourceBare": "mocha -r ts-node/register tests/source/bare/*.ts",
-    "testSourceBasic": "mocha -r ts-node/register tests/source/basic/*.ts",
-    "testSourceCase": "mocha -r ts-node/register tests/source/case/*.ts",
-    "testSourceCollection": "mocha -r ts-node/register tests/source/collection/*.ts",
-    "testSourceError": "mocha -r ts-node/register tests/source/error/*.ts",
-    "testSourceFilter": "mocha -r ts-node/register tests/source/filter/*.ts",
-    "testSourceHide": "mocha -r ts-node/register tests/source/hide/*.ts",
-    "testSourceMulti": "mocha -r ts-node/register tests/source/multi/*.ts",
-    "testSourceOp": "mocha -r ts-node/register tests/source/op/*.ts",
-    "testSourceCell": "mocha -r ts-node/register tests/source/cell/*.ts",
-    "testSourceRename": "mocha -r ts-node/register tests/source/rename/*.ts",
-    "testSourceRule": "mocha -r ts-node/register tests/source/rule/*.ts",
-    "testSourceTest": "mocha -r ts-node/register tests/source/test/*.ts",
-
-    "testSampling": "mocha -r ts-node/register tests/sampling/*.ts"
+    "test": ":"
   },
   "bugs": {
     "url": "https://github.com/nrc-cnrc/gramble/issues"
   },
   "devDependencies": {
-    "@types/chai": "^4.3.10",
-    "@types/mocha": "^10.0.4",
-    "chai": "^4.3.10",
-    "mocha": "^10.2.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"
   },

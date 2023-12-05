@@ -5,11 +5,12 @@
   "private": true,
   "scripts": {
     "build": "npm run build --workspaces",
-    "test": "npm test --workspaces",
     "postinstall": "node ./libexec/postinstall.js",
+    "test": "npm test --workspaces",
+    "tests": "npm run --workspace packages/tests",
+    "gramble": "gramble",
     "clasp": "clasp",
-    "deploy": "npm run deploy --workspace packages/sheets_addon",
-    "gramble": "gramble"
+    "deploy": "npm run deploy --workspace packages/sheets_addon"
   },
   "workspaces": [
     "packages/*"

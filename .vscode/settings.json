@@ -1,10 +1,10 @@
 {
     "python.testing.autoTestDiscoverOnSaveEnabled": false,
     "python.testing.promptToConfigure": false,
-    "mochaExplorer.files": "tests/{,grammar/,parse/,source/**/,pass/}*.ts",
+    "mochaExplorer.files": "{,grammar/,parse/,source/**/,pass/}*.ts",
     "mochaExplorer.require": "ts-node/register",
     "mochaExplorer.logpanel": true,
-    "mochaExplorer.cwd": "./packages/interpreter",
+    "mochaExplorer.cwd": "./packages/tests",
     "[csv]": {
         "editor.acceptSuggestionOnEnter": "off",
         "editor.inlineSuggest.enabled": false,

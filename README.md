@@ -44,7 +44,7 @@ After the initial install of all dependencies, you can recompile the Gramble int
 
 ### Running from the command line
 
-At this point you should consider adding the path to `node_modules/.bin` to your system `PATH`.
+At this point, consider adding the path to `node_modules/.bin` to your system `PATH`.
 
 For help info, try:
 
@@ -76,7 +76,21 @@ If your grammar is large, generating can be correspondingly slow, so if you just
 
 ### Running the Gramble tests
 
+To run the tests for all packages:
+    
     npm test
+
+To run all the interpreter tests in the tests package:
+
+    npm run tests test
+
+To run a specific interpeter test suite, for example:
+
+    npm run tests testGrammarBasic
+
+To get a list of all scripts available in the tests package:
+
+    npm run tests
 
 Copyright
 ---------
