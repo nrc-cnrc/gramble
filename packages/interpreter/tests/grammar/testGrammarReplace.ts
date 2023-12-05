@@ -1872,7 +1872,11 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", "l", t3("[1SG]"),
                          false, false, 0, 3
                      )),
-        vocab: {$i:3, $o:4, t3:5},
+        vocab: {
+            $i:["h","e","l"], 
+            $o:["h","e","l","a"], 
+            t3:["[","1","S","G","]"]
+        },
         query: inputs(io_32),
         results: outputs(io_32),
     });

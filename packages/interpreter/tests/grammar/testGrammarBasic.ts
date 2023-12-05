@@ -28,7 +28,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     describe('1. Literal t1:hello', test({
         grammar: t1("hello"),
         tapes: ["t1"],
-        // vocab: {t1: 4},
+        vocab: {t1: ["h","e","l","o"]},
         results: [
             {t1: 'hello'},
         ],

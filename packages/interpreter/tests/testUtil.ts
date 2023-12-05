@@ -250,7 +250,7 @@ export function testHasTapes(
 
 export function testHasVocab(
     grammar: Grammar | Interpreter,
-    expectedVocab: {[tape: string]: number}
+    expectedVocab: {[tape: string]: number|string[]}
 ): void {
     const interpreter = prepareInterpreter(grammar, {optimizeAtomicity: false});
 
@@ -264,14 +264,27 @@ export function testHasVocab(
             });
             continue;
         }
-        const expectedNum = expectedVocab[tapeName];
-        it(`should have ${expectedNum} tokens in the ${tapeName} vocab`, function() {
-            expect(tape).to.not.be.undefined;
-            if (tape == undefined) {
-                return;
-            }
-            expect(tape.vocab.size).to.equal(expectedNum);
-        });
+        const vocab = expectedVocab[tapeName];
+        if (Array.isArray(vocab)) {
+            // it's a string[]
+            it(`vocab of ${tapeName} should be ${vocab}`, function() {
+                expect(tape).to.not.be.undefined;
+                if (tape == undefined) {
+                    return;
+                }
+                const expectedSet = new Set(vocab);
+                expect(tape.vocab).to.deep.equal(expectedSet);
+            });
+        } else {
+            // it's a number
+            it(`should have ${vocab} tokens in the ${tapeName} vocab`, function() {
+                expect(tape).to.not.be.undefined;
+                if (tape == undefined) {
+                    return;
+                }
+                expect(tape.vocab.size).to.equal(vocab);
+            });
+        }
     }
 }
 

@@ -106,8 +106,9 @@ function NamedReplace(
     o: string,
     pre: string = "",
     post: string = "",
+    other?: Grammar
 ): ReplaceGrammar {
-    return Replace(i, o, pre, post, undefined, undefined,
+    return Replace(i, o, pre, post, other, undefined,
             undefined, undefined, undefined, name, false)
 }
 
@@ -1488,4 +1489,24 @@ describe(`${testSuiteName(module)}`, function() {
         }
     });
 
+    testGrammarTapes({
+        desc: "38",
+        grammar: Replace("e", "a", "h", "llo", t3("1SG")),
+        tapes: {
+            "$i": ["h","e","l","o"],
+            "$o": ["h","e","l","o","a"],
+            "t3": ["1","S","G"],
+        },
+    });
+
+    testGrammarTapes({
+        desc: "39",
+        grammar: ReplaceBlock("t1", t1("hello"), 
+                NamedReplace("R1", "e", "","","", t3("1SG"))),
+        tapes: {
+            "t1": ["h","e","l","o"],
+            ".R1": ["h","e","l","o"],
+            "t3": ["1","S","G"],
+        },
+    });
 });
