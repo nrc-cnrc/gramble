@@ -459,11 +459,11 @@ function getTapesReplace(g: ReplaceGrammar, env: TapesEnv): Grammar {
     if (msgs.length > 0)
         throw new EpsilonGrammar().tapify(env).msg(msgs);
 
-    const childTapes = getChildTapes(g);
-    let tapes: TapeSet = Tapes.Lit({ 
+    let tapes = getChildTapes(g);
+    const wildcard: TapeSet = Tapes.Lit({ 
         [INPUT_TAPE]: Vocabs.Wildcard(INPUT_TAPE),
     });
-    tapes = Tapes.Sum(tapes, childTapes);
+    tapes = Tapes.Sum(wildcard, tapes);
     tapes = Tapes.Match(tapes, INPUT_TAPE, OUTPUT_TAPE);
     return updateTapes(g, tapes);
 }
@@ -493,11 +493,7 @@ function getTapesReplaceBlock(g: ReplaceBlockGrammar): Grammar {
     for (const r of g.rules) {
         current = Tapes.Rename(current, currentTape, INPUT_TAPE);
         currentTape = OUTPUT_TAPE;
-        const inputStar = Tapes.Lit({[INPUT_TAPE]: Vocabs.Wildcard(INPUT_TAPE)}); 
-        current = Tapes.Join(current, inputStar);
-        const vocabFromInput = Tapes.Rename(current, INPUT_TAPE, OUTPUT_TAPE);
-        const outputVocab = Tapes.Sum(r.toGrammar.tapes, vocabFromInput);
-        current = Tapes.Join(current, outputVocab);
+        current = Tapes.Join(current, r.tapes);
         current = Tapes.Rename(current, INPUT_TAPE, r.hiddenTapeName);
     }
     current = Tapes.Rename(current, OUTPUT_TAPE, g.inputTape);

@@ -287,7 +287,6 @@ function resolve(
 ): TapeSet {
     switch (t.tag) {
         case Tag.Unknown: return Lit();
-        case Tag.Lit:     return t;
         case Tag.Ref:     return resolveRef(t, env);
         default:          return map(t, resolve, env);
     }
