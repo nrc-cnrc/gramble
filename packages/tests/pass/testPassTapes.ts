@@ -1509,6 +1509,7 @@ describe(`${testSuiteName(module)}`, function() {
         },
     });
 
+    
     testGrammarTapes({
         desc: "38b-atom",
         atomicity: true,
@@ -1518,6 +1519,17 @@ describe(`${testSuiteName(module)}`, function() {
             "t1": ["h","e","l","o"],
             ".R1": ["h","e","l","o"],
             "t3": ["1SG"],
+        },
+    });
+
+    testGrammarTapes({
+        desc: "38b",
+        grammar: ReplaceBlock("t1", t1("hello"), 
+                NamedReplace("R1", "e", "","","", t3("1SG"))),
+        tapes: {
+            "t1": ["h","e","l","o"],
+            ".R1": ["h","e","l","o"],
+            "t3": ["1","S","G"]
         },
     });
 });

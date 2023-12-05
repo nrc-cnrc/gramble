@@ -34,10 +34,10 @@ export class ResolveVocab extends Pass<Grammar,Grammar> {
         const newVocab = Object.create(this.knownVocab);
         Object.assign(newVocab, this.knownVocab);
         if (g.tapes.tag !== Tapes.Tag.Lit)
-            throw new Error(`Resolving vocab of an unresolved tape: ${Tapes.toStr(g.tapes)}`);
+            throw new Error(`Resolving vocab when tapes are unresolved: ${Tapes.toStr(g.tapes)}`);
         const vocab = g.tapes.vocabMap[g.tapeName];
         if (vocab === undefined)
-            throw new Error(`Resolving of unknown tape: ${g.tapeName}`);
+            throw new Error(`Resolving vocab of unknown tape: ${g.tapeName}`);
         
         // add your tape to the known vocab and use that for
         // resolution in this scope

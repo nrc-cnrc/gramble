@@ -59,8 +59,8 @@ class TapesEnv extends Env<Grammar> {
         if (t.tag !== "collection") 
             return this; // we only care about collections here
         
-        if (this.tapeMap !== undefined) 
-            return this; // don't destroy an existing tapemap
+        //if (this.tapeMap !== undefined) 
+        //    return this; // don't destroy an existing tapemap
 
         const tapeMap = mapDict(t.symbols, (k,_) => Tapes.Ref(k));
         return update(this, {tapeMap});
