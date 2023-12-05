@@ -166,6 +166,12 @@ export function concatStringDict(d1: StringDict, d2: StringDict): StringDict {
     return result;
 }
 
+export function stringDictToStr(d: StringDict): string {
+    const keys = Object.keys(d).sort();
+    const strs = keys.map(k => `${k}:${d[k]}`);
+    return strs.join("+");
+}
+
 export function outputProduct(ds1: StringDict[], ds2: StringDict[]): StringDict[] {
     const results: StringDict[] = [];
     for (const d1 of ds1) {

@@ -6,7 +6,7 @@ import { Interpreter } from "../src/interpreter";
 import { Grammar } from "../src/grammars";
 import { OldTape } from "../src/tapes";
 import {
-    StringDict
+    StringDict, stringDictToStr
 } from "../src/utils/func";
 import { HIDDEN_PREFIX } from "../src/utils/constants";
 import { SILENT, VERBOSE_DEBUG, logDebug, timeIt } from "../src/utils/logging";
@@ -108,24 +108,27 @@ export function testMatchOutputs(
     // seconds (2000ms) to 10 seconds (10000ms) in order to allow us to keep the
     // comparison blocks quite large. 
 
-    let incr: number = Math.max(expected_outputs.length, outputs.length, 1);
+    const outputStrs = outputs.map(o => stringDictToStr(o)).sort();
+    const expectedStrs = expected_outputs.map(o => stringDictToStr(o)).sort();
+
+    let incr: number = Math.max(expectedStrs.length, outputStrs.length, 1);
     if (incr > 2500) {
         incr = 2500;
     }
 
     // For running the "it" tests, we cannot use a simple loop incrementing start
     // because start would get incremented before the test started. 
-    let starts: number[] = new Array(Math.ceil(expected_outputs.length / incr));
+    let starts: number[] = new Array(Math.ceil(expectedStrs.length / incr));
     for (let i=0, start=0; i < starts.length; ++i, start+=incr)
         starts[i] = start;
 
     starts.forEach(function(start) {
-        const end_expected: number = Math.min(expected_outputs.length, start+incr);
+        const end_expected: number = Math.min(expectedStrs.length, start+incr);
         let end_outputs: number = end_expected;
-        if (end_expected == expected_outputs.length)
-            end_outputs = Math.min(outputs.length, start + incr);
+        if (end_expected == expectedStrs.length)
+            end_outputs = Math.min(outputStrs.length, start + incr);
         const expected_outputs_str = 
-                    JSON.stringify(expected_outputs.slice(start, Math.min(end_expected, start+20))) + 
+                    JSON.stringify(expectedStrs.slice(start, Math.min(end_expected, start+20))) + 
                     (end_expected > start+20 ? "..." : "");
         if (symbol !== "") symbol = symbol + " ";
         const testName = `${symbol}should match items ${start}-${end_expected-1}: ` +
@@ -133,12 +136,12 @@ export function testMatchOutputs(
         it(`${testName}`, function() {
             this.timeout(10000);
             try {
-                expect(outputs).to.deep.include.members(expected_outputs.slice(start, end_expected));
-                expect(expected_outputs).to.deep.include.members(outputs.slice(start, end_outputs));
+                expect(outputStrs).to.deep.include.members(expectedStrs.slice(start, end_expected));
+                expect(expectedStrs).to.deep.include.members(outputStrs.slice(start, end_outputs));
             } catch (e) {
                 console.log("");
                 console.log(`[${this.test?.fullTitle()}]`);
-                console.log(`${outputs.length} outputs: ${JSON.stringify(outputs)}`);
+                console.log(`${outputStrs.length} outputs: ${JSON.stringify(outputStrs)}`);
                 throw e;
             }
         });

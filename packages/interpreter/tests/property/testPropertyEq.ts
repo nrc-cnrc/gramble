@@ -4,7 +4,7 @@ import { PropertyTest, PropertyTestFailure, PropertyTestResult, PropertyTestSucc
 import { toStr } from "../../src/passes/toStr";
 import { ReduceOptions, reduceCollection } from "./reduceGrammar";
 import { generateOutputs, prepareInterpreter } from "../testUtil";
-import { Dict, StringDict, update } from "../../src/utils/func";
+import { Dict, StringDict, stringDictToStr, update } from "../../src/utils/func";
 import { Options } from "../../src/utils/options";
 import { Embed, Epsilon, Join, Null, Seq, Uni } from "../../src/grammarConvenience";
 
@@ -175,12 +175,6 @@ class EquationTest implements PropertyTest {
     public toStr(): string {
         return toStr(this.grammar);
     }
-}
-
-function stringDictToStr(d: StringDict): string {
-    const keys = Object.keys(d).sort();
-    const strs = keys.map(k => `${k}:${d[k]}`);
-    return "{" + strs.join(", ") + "}";
 }
 
 function outputsToStr(ds: StringDict[]): string {
