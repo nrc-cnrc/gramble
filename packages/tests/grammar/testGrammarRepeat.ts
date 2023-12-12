@@ -34,6 +34,10 @@ function vb(verbosity: number): number {
     return VERBOSE ? verbosity : SILENT;
 }
 
+// Some tests can be skipped.
+// Set SKIP_GENERATION to false to force running of those tests.
+const SKIP_GENERATION = true;
+
 // Note: tests involving * repeats ({0,Inf}) are denoted with * in the number.
 
 describe(`${grammarTestSuiteName(module)}`, function() {
@@ -1357,7 +1361,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'h', t2: 'eeh'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     // skip
@@ -1371,7 +1375,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'h', t2: 'ehe'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     // skip
@@ -1384,7 +1388,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t2: 'ee'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     testGrammar({
@@ -1410,7 +1414,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'h', t2: 'ehe'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     testGrammar({
@@ -1437,7 +1441,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'x', t2: 'ee'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     testGrammar({
@@ -1463,7 +1467,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hx', t2: 'ehe'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     // skip
@@ -1477,7 +1481,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'x', t2: 'ee'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     // skip
@@ -1491,7 +1495,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hx', t2: 'eeh'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     testGrammar({
@@ -1530,7 +1534,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t2: 'eex'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     testGrammar({
@@ -1556,7 +1560,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'h', t2: 'ehex'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     testGrammar({
@@ -1582,7 +1586,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'h', t2: 'eehx'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     // skip
@@ -1596,7 +1600,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'h', t2: 'ehex'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     testGrammar({
@@ -1628,7 +1632,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t2: 'eeee'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     // skip
@@ -1643,7 +1647,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hh', t2: 'eeheeh'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     testGrammar({
@@ -1684,7 +1688,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hh', t2: 'eeheeh'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     // skip
@@ -1699,7 +1703,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hh', t2: 'eheehe'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     testGrammar({
@@ -1727,7 +1731,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hh', t2: 'eeheeh'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     // skip
@@ -1742,7 +1746,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hh', t2: 'eheehe'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     // skip
@@ -1757,7 +1761,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t2: 'eeee'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     testGrammar({
@@ -1785,7 +1789,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hh', t2: 'eheehe'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     function repeat2_2_t2eNullableMatchGrammar(): Grammar {
@@ -1820,7 +1824,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t2: 'eeee'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     testGrammar({
@@ -1846,7 +1850,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hh', t2: 'eheehe'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     // skip
@@ -1860,7 +1864,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t2: 'eeee'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     // skip
@@ -1874,7 +1878,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hh', t2: 'eeheeh'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     testGrammar({
@@ -1938,7 +1942,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hh', t2: 'eeheeh'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     // skip
@@ -1952,7 +1956,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hh', t2: 'eheehe'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     // skip
@@ -1966,7 +1970,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t2: 'eeee'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     testGrammar({
@@ -1992,7 +1996,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hh', t2: 'eheehe'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     function repeatStar2_t2eNullableMatchGrammar(): Grammar {
@@ -2038,7 +2042,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t2: 'eeee'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     // skip
@@ -2052,7 +2056,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hh', t2: 'eeheeh'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     testGrammar({
@@ -2090,7 +2094,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hh', t2: 'eeheeh'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     // skip
@@ -2104,7 +2108,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hh', t2: 'eheehe'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     // Testing sequences of simple repeats of nullable matches

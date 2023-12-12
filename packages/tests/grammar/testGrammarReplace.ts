@@ -26,6 +26,10 @@ function vb(verbosity: number): number {
 
 const EMPTY: string = '';
 
+// Some tests can be skipped.
+// Set SKIP_GENERATION to false to force running of those tests.
+const SKIP_GENERATION = true;
+
 function inputs(expectedOutputs: StringDict[]): StringDict[] {
     let inputs: StringDict[] = [];
     for (const item of expectedOutputs) {
@@ -212,7 +216,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'hhello', $o: 'hhallo'},   {$i: 'lhello', $o: 'lhallo'},
             {$i: 'ohello', $o: 'ohallo'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     // skip generation - this test takes ~5 seconds to run.
@@ -228,7 +232,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'hhello', $o: 'hhallo'},   {$i: 'lhello', $o: 'lhallo'},
             {$i: 'ohello', $o: 'ohallo'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     // skip generation - this test takes more than 20 seconds to run.
@@ -271,7 +275,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'ohhello', $o: 'ohhallo'}, {$i: 'olhello', $o: 'olhallo'},
             {$i: 'oohello', $o: 'oohallo'},
         ],
-        skipGeneration: true,
+        skipGeneration: SKIP_GENERATION,
     });
 
     testGrammar({
