@@ -14,7 +14,7 @@ import {
 } from "../../interpreter/src/utils/constants";
 
 import { StringDict } from "../../interpreter/src/utils/func";
-import { SILENT } from "../../interpreter/src/utils/logging";
+import { SILENT, timeIt, } from "../../interpreter/src/utils/logging";
 import { Options } from "../../interpreter/src/utils/options";
 
 import {
@@ -25,6 +25,7 @@ import {
     testMatchOutputs,
     prepareInterpreter,
     testNumErrors,
+    VERBOSE_TEST_L2    
 } from '../testUtil';
 
 export function grammarTestSuiteName(mod: NodeModule): string {
@@ -176,15 +177,19 @@ export function testGrammarEqual({
     stripHidden = true,
     allowDuplicateOutputs = false,
 }: GrammarEqualTest): void {
+    const shortDesc = (desc !== undefined) ? desc.split(" ")[0] : "";
+
     describe(desc, function() {
         const interpreter1 = prepareInterpreter(grammar, opt);
         const interpreter2 = prepareInterpreter(grammar2, opt2);
-        const outputs1 = generateOutputs(interpreter1, symbol, 
-                                query, stripHidden, false);
-        const outputs2 = generateOutputs(interpreter2, symbol, 
-                                query, stripHidden, false);
-        testNumOutputs(outputs1, outputs2.length,
-                       allowDuplicateOutputs, symbol);
-        testMatchOutputs(outputs1, outputs2, symbol);
+        timeIt(() => {
+            const outputs1 = generateOutputs(interpreter1, symbol, 
+                                             query, stripHidden, false);
+            const outputs2 = generateOutputs(interpreter2, symbol, 
+                                             query, stripHidden, false);
+            testNumOutputs(outputs1, outputs2.length,
+                           allowDuplicateOutputs, symbol);
+            testMatchOutputs(outputs1, outputs2, symbol);
+        }, VERBOSE_TEST_L2, `${shortDesc} testGrammarEqual`);
     });
 }
