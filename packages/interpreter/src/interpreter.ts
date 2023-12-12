@@ -274,7 +274,6 @@ export class Interpreter {
                               .getEnvAndTransform(targetGrammar, this.opt)
                               .msgTo(THROWER);
         
-        console.log(`grammar = ${toStr(targetGrammar)}`);
         const tapeRefreshEnv = new TapesEnv(this.opt, true);
         targetGrammar = new CalculateTapes()
                             .transform(targetGrammar, tapeRefreshEnv)

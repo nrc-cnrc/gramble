@@ -70,7 +70,6 @@ export class TapesEnv extends Env<Grammar> {
     }
     
     updateCursor(g: CursorGrammar): TapesEnv {
-        console.log(`adding ${g.tapeName} to vocab map`);
         const vocabMap = {...this.vocabMap};
         if (g.tapes.tag === Tapes.Tag.Lit &&
             g.tapeName in g.tapes.vocabMap) {
@@ -363,7 +362,6 @@ function getTapesDot(g: DotGrammar, env: TapesEnv): Grammar {
         return updateTapes(g, tapes);
     }
 
-    console.log(`not found, vocab map is ${JSON.stringify(env.vocabMap)}`);
     const tapes = Tapes.Lit({ [g.tapeName]: Vocabs.Wildcard(g.tapeName) });
     return updateTapes(g, tapes);
 }
@@ -556,29 +554,22 @@ function getTapesCursor(
 ): Grammar {
     g = getTapesDefault(g) as CursorGrammar;
 
-    console.log(`tapecalc for cursor ${g.tapeName}, tapes are ${Tapes.toStr(g.tapes)}`);
     if (g.tapes.tag !== Tapes.Tag.Lit) {
-        console.log(`can't do anything`);
         return g;  // can't do anything right now
     }
 
     if (!(g.tapeName in g.tapes.vocabMap)) {
-        console.log(`spurious cursor`);
         throw g.child.err("Spurious cursor",
             `Cursor for ${g.tapeName}, but no such tape in its scope.`)
     }
 
     if (env.vocabMap === undefined) {
-        console.log(`no vocab map`);
         throw new Error("Undefined vocab map");
     }
 
-    console.log(`env.vocabMap is ${JSON.stringify(env.vocabMap)}`);
     Object.assign(env.vocabMap, g.tapes.vocabMap);
     const vocabEnv = new Vocabs.VocabEnv(env.vocabMap, new Set([g.tapeName]));
     const tape = Vocabs.resolve(g.tapes.vocabMap[g.tapeName], vocabEnv);
-    console.log(`${g.tapeName} resolved to ${Vocabs.toStr(tape)}`);
-    console.log();
 
     g.tapes.vocabMap[g.tapeName] = tape;
     return g;

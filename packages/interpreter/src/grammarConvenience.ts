@@ -231,7 +231,8 @@ export function Embed(symbol: string): EmbedGrammar {
     return new EmbedGrammar(symbol);
 }
 
-export function Dot(...tapes: string[]): SequenceGrammar {
+export function Dot(...tapes: string[]): Grammar {
+    if (tapes.length == 1) return new DotGrammar(tapes[0]);
     return Seq(...tapes.map(t => new DotGrammar(t)));
 }
 

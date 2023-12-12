@@ -149,7 +149,6 @@ function constructExprCursor(
         throw new Error(`Constructing cursor with unresolved vocab: ${g.tapeName}, vocab is ${Vocab.toStr(vocab)}`);
     const atomic = vocab.atomicity === Vocab.Atomicity.Atomic || 
                    vocab.atomicity === Vocab.Atomicity.Concatenated;
-    console.log(`cursor ${g.tapeName} constructed with vocab [${[...vocab.tokens]}]`);
     return constructCursor(env, g.tapeName, childExpr, vocab.tokens, atomic);
 }
 
