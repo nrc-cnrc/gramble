@@ -31,10 +31,11 @@ import { getAllSymbols } from "./passes/getAllSymbols";
 import { qualifySymbol } from "./passes/qualifySymbols";
 import { FlattenCollections } from "./passes/flattenCollections";
 import { CreateQuery } from "./passes/createQuery";
-import { InfinityProtection, infinityProtection } from "./passes/infinityProtection";
+import { InfinityProtection } from "./passes/infinityProtection";
 import { ResolveVocab } from "./passes/resolveVocab";
 import { PassEnv } from "./components";
 import { Pass, SymbolEnv } from "./passes";
+import { CalculateTapes, TapesEnv } from "./passes/calculateTapes";
 
 /**
  * An interpreter object is responsible for applying the passes in between sheets
@@ -258,9 +259,6 @@ export class Interpreter {
                          .getEnvAndTransform(targetGrammar, this.opt)
                          .msgTo(THROWER);
         
-        // we have to re-collect the vocab in case it changed
-        const env = new PassEnv(this.opt);
-        targetGrammar.collectAllVocab(this.tapeNS, env);
         
         // any tape that isn't already inside a Cursor or PreTape needs
         // to have a Cursor made for it, because otherwise that content will
@@ -269,6 +267,15 @@ export class Interpreter {
                              .getEnvAndTransform(targetGrammar, this.opt)
                              .msgTo(THROWER);
         
+        const tapeRefreshEnv = new TapesEnv(this.opt, true);
+        targetGrammar = new CalculateTapes()
+                            .transform(targetGrammar, tapeRefreshEnv)
+                            .msgTo(THROWER);
+                            
+        // we have to re-collect the vocab in case it changed
+        const env = new PassEnv(this.opt);
+        targetGrammar.collectAllVocab(this.tapeNS, env);
+
         targetGrammar = new ResolveVocab()
                              .getEnvAndTransform(targetGrammar, this.opt)
                              .msgTo(THROWER);

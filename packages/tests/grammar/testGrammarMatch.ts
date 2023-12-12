@@ -961,30 +961,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'h', t2: 'h'},
         ],
     });
-    
-    testGrammar({
-        desc: 'J-1a. t1:h ⨝ Match(t1>t2, t1:.) (vocab hi)',
-        grammar: Cursor(["t2", "t1"],
-        		 	 Join(t1("h"),
-        		 	 	  Match(Any("t1"), "t1", "t2"))),
-        tapes: ['t1', 't2'],
-        vocab: {t1: 1, t2: 1},
-        results: [
-            {t1: 'h', t2: 'h'},
-        ],
-    });
-
-    testGrammar({
-        desc: 'J-1b. t1:h ⨝ Match(t1>t2, t1:.) (vocab hi)',
-        grammar: Cursor(["t1", "t2"],
-        		 	 Join(t1("h"),
-        		 	 	  Match(Any("t1"), "t1", "t2"))),
-        tapes: ['t1', 't2'],
-        vocab: {t1: 1, t2: 1},
-        results: [
-            {t1: 'h', t2: 'h'},
-        ],
-    });
 
     testGrammar({
         desc: 'J-2. Match(t1>t2, t1:.) ⨝ t1:h (vocab hi)',

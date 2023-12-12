@@ -162,7 +162,7 @@ export abstract class AbstractGrammar extends Component {
             
             let vocabMap = this.tapes.vocabMap;
             vocabMap = Vocabs.resolveAll(vocabMap);
-            const vocab = this.tapes.vocabMap[tapeName];
+            const vocab = vocabMap[tapeName];
             
             if (vocab.tag !== Vocabs.Tag.Lit) 
                 throw new Error(`Tape ${tapeName} has unresolved vocab: ${toStr(vocab)}`);

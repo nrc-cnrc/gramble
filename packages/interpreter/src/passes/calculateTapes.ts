@@ -45,25 +45,41 @@ import { PassEnv, children } from "../components";
 import { Env, Options } from "../utils/options";
 
 
-class TapesEnv extends Env<Grammar> {
+export class TapesEnv extends Env<Grammar> {
 
     constructor(
         opt: Partial<Options>,
         public recalculate: boolean = false,
-        public tapeMap: TapeDict | undefined = undefined
+        public tapeMap: TapeDict | undefined = undefined,
+        public vocabMap: VocabDict = {}
     ) {
         super(opt);
     }
 
-    public update(t: Grammar): TapesEnv {
-        if (t.tag !== "collection") 
-            return this; // we only care about collections here
-        
-        //if (this.tapeMap !== undefined) 
-        //    return this; // don't destroy an existing tapemap
+    public update(g: Grammar): TapesEnv {
+        switch (g.tag) {
+            case "collection": return this.updateCollection(g);
+            case "cursor":     return this.updateCursor(g);
+            default: return this;
+        }
+    }
 
-        const tapeMap = mapDict(t.symbols, (k,_) => Tapes.Ref(k));
+    updateCollection(g: CollectionGrammar): TapesEnv {
+        const tapeMap = mapDict(g.symbols, (k,_) => Tapes.Ref(k));
         return update(this, {tapeMap});
+    }
+    
+    updateCursor(g: CursorGrammar): TapesEnv {
+        console.log(`adding ${g.tapeName} to vocab map`);
+        const vocabMap = {...this.vocabMap};
+        if (g.tapes.tag === Tapes.Tag.Lit &&
+            g.tapeName in g.tapes.vocabMap) {
+            vocabMap[g.tapeName] = g.tapes.vocabMap[g.tapeName];
+        } else {
+            // if tapes aren't resolved, we can only push a placeholder
+            vocabMap[g.tapeName] = Vocabs.Ref(g.tapeName);
+        }
+        return update(this, {vocabMap});
     }
 
 }
@@ -101,7 +117,7 @@ export class CalculateTapes extends AutoPass<Grammar> {
 
             // have their own tape name as tapes
             case "lit": return getTapesLit(g, env);
-            case "dot": return getTapesDot(g);
+            case "dot": return getTapesDot(g, env);
             
             case "singletape": return getTapesSingleTape(g);
 
@@ -112,9 +128,8 @@ export class CalculateTapes extends AutoPass<Grammar> {
             case "testnot":
             case "context":
             case "pretape": return getTapesDefault(g);
-
             
-            case "cursor":  return getTapesCursor(g);
+            case "cursor":  return getTapesCursor(g, env);
             
             // union of children's tapes but always String vocab
             case "short":      return getTapesShort(g);
@@ -340,7 +355,15 @@ function getTapesSingleTape(g: SingleTapeGrammar): Grammar {
 
 }
 
-function getTapesDot(g: DotGrammar): Grammar {
+function getTapesDot(g: DotGrammar, env: TapesEnv): Grammar {
+    if (env.vocabMap !== undefined && g.tapeName in env.vocabMap) {
+        const wildcard = env.vocabMap[g.tapeName];    
+        const vocab = Vocabs.Sum(wildcard, Vocabs.Tokenized());
+        const tapes = Tapes.Lit({ [g.tapeName]: vocab });
+        return updateTapes(g, tapes);
+    }
+
+    console.log(`not found, vocab map is ${JSON.stringify(env.vocabMap)}`);
     const tapes = Tapes.Lit({ [g.tapeName]: Vocabs.Wildcard(g.tapeName) });
     return updateTapes(g, tapes);
 }
@@ -528,8 +551,35 @@ function getTapesCondition(
 }
 
 function getTapesCursor(
-    g: CursorGrammar
+    g: CursorGrammar,
+    env: TapesEnv
 ): Grammar {
-    //console.log(`tapecalc for cursor ${g.tapeName}, child tapes are ${Tapes.toStr(g.child.tapes)}`);
-    return getTapesDefault(g);
+    g = getTapesDefault(g) as CursorGrammar;
+
+    console.log(`tapecalc for cursor ${g.tapeName}, tapes are ${Tapes.toStr(g.tapes)}`);
+    if (g.tapes.tag !== Tapes.Tag.Lit) {
+        console.log(`can't do anything`);
+        return g;  // can't do anything right now
+    }
+
+    if (!(g.tapeName in g.tapes.vocabMap)) {
+        console.log(`spurious cursor`);
+        throw g.child.err("Spurious cursor",
+            `Cursor for ${g.tapeName}, but no such tape in its scope.`)
+    }
+
+    if (env.vocabMap === undefined) {
+        console.log(`no vocab map`);
+        throw new Error("Undefined vocab map");
+    }
+
+    console.log(`env.vocabMap is ${JSON.stringify(env.vocabMap)}`);
+    Object.assign(env.vocabMap, g.tapes.vocabMap);
+    const vocabEnv = new Vocabs.VocabEnv(env.vocabMap, new Set([g.tapeName]));
+    const tape = Vocabs.resolve(g.tapes.vocabMap[g.tapeName], vocabEnv);
+    console.log(`${g.tapeName} resolved to ${Vocabs.toStr(tape)}`);
+    console.log();
+
+    g.tapes.vocabMap[g.tapeName] = tape;
+    return g;
 }

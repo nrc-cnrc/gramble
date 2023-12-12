@@ -7,13 +7,9 @@ import * as Vocab from "../vocab";
 import { PassEnv } from "../components";
 
 /**
- * While there are a lot of vocab objects throughout the
- * system, we don't actually have to resolve ones we don't
- * use.  The only ones we actually have to resolve are those 
- * associated with the Cursors that are actually going to 
- * undergo evaluation.
- * 
- * Cursors do two things, they resolve their 
+ * This pass doesn't currently do anything but check 
+ * whether vocabs have resolved, it's only for error checking
+ * and we won't need it once these refactorings complete
  */
 export class ResolveVocab extends Pass<Grammar,Grammar> {
 
@@ -50,11 +46,18 @@ export class ResolveVocab extends Pass<Grammar,Grammar> {
             if (g.tapes.tag !== Tapes.Tag.Lit)
                 throw new Error(`Resolving vocab of unresolved tape: ${Tapes.toStr(g.tapes)}`);
             
+            const vocab = g.tapes.vocabMap[g.tapeName];
+            if (vocab === undefined)
+                    throw new Error(`Resolving vocab of unknown tape: ${g.tapeName}`);
+                
+            if (vocab.tag !== Vocab.Tag.Lit)
+                throw new Error(`Unresolved vocab: ${Vocab.toStr(vocab)}`);
+
             //console.log(`resolving ${g.tapeName} = ${Vocab.toStr(vocab)}, using ${Object.keys(newVocab)}`);
             const env: Vocab.VocabEnv = new Vocab.VocabEnv(newVocab, new Set(g.tapeName));
-            const resolved = Vocab.resolve(vocab, env);
+            //const resolved = Vocab.resolve(vocab, env);
             //console.log(`resolved to ${Vocab.toStr(resolved)}`);
-            g.tapes.vocabMap[g.tapeName] = resolved;
+            //g.tapes.vocabMap[g.tapeName] = resolved;
             return g;
         });
     }

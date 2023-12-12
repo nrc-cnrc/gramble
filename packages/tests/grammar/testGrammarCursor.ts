@@ -1,9 +1,12 @@
 import { 
+    Any,
     Collection,
     Cursor,
+    Dot,
     Embed,
     Epsilon,
     Join,
+    Match,
     Rename,
     Seq,
     Uni,
@@ -39,8 +42,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Cursor("t1", t1("hello")),
         tapes: ["t1"],
         results: [{t1: "hello"}]
-    });
-            
+    }); 
+    
     testGrammar({
         desc: '2a. Empty string: T_t1(t1:"")',
         grammar: Cursor("t1", t1("")),
@@ -51,6 +54,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '2b. Epsilon alone',
         grammar: Cursor("t1", Epsilon()),
+        numErrors: 1,
         results: [{}]
     });
 
@@ -162,7 +166,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         tapes: ["t1"],
         results: [{t1: "hello"}]
     });    
-    
+
     testGrammar({
         desc: '7b. Cursor inside an embed, used in multi-tape context',
         symbol: "b",
@@ -173,7 +177,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         tapes: ["t1", "t2"],
         results: [{t1: 'hello', t2: 'world'}]
     });
-
 
     testGrammar({
         desc: '8. Cursors around alternations',
@@ -204,6 +207,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '10. Irrelevant cursor',
         grammar: Cursor("t2", (Cursor("t1", t1("hello")))),
         tapes: ["t1"],
+        numErrors: 1,
         results: [
             {t1: 'hello'}, 
         ]
@@ -305,4 +309,75 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ]
     });   
 
+    testGrammar({
+        desc: '15a. Cursor with a dot',
+        grammar: Cursor("t1", Seq(t1("hi"), Dot("t1"))),
+        tapes: ["t1"],
+        results: [
+            {t1: "hih"},
+            {t1: "hii"}
+        ]
+    });
+
+    testGrammar({
+        desc: '15b. Cursor with an embedded dot',
+        grammar: Collection({
+                    "a": Cursor("t1", Seq(t1("hi"), Embed("b"))),
+                    "b": Dot("t1")
+        }),
+        symbol: "a",
+        tapes: ["t1"],
+        results: [
+            {t1: "hih"},
+            {t1: "hii"}
+        ]
+    });
+
+    testGrammar({
+        desc: '16a. Cursor with a dot and a query',
+        grammar: Cursor("t1", Seq(t1("hi"), Dot("t1"))),
+        tapes: ["t1"],
+        query: { t1: "hip" },
+        results: [
+            {t1: "hip"}
+        ]
+    });
+    
+    testGrammar({
+        desc: '16b. Cursor with an embedded dot and a query',
+        grammar: Collection({
+                    "a": Cursor("t1", Seq(t1("hi"), Embed("b"))),
+                    "b": Dot("t1")
+        }),
+        symbol: "a",
+        query: { t1: "hip" },
+        tapes: ["t1"],
+        results: [
+            {t1: "hip"}
+        ]
+    });
+    
+    testGrammar({
+        desc: '18a. Cursor around a join-match',
+        grammar: Cursor(["t2", "t1"],
+        		 	 Join(t1("h"),
+        		 	 	  Match(Any("t1"), "t1", "t2"))),
+        //tapes: ['t1', 't2'],
+        //vocab: {t1: 1, t2: 1},
+        results: [
+            {t1: 'h', t2: 'h'},
+        ],
+    });
+
+    testGrammar({
+        desc: '18b. Cursor around a join-match, opposite direction',
+        grammar: Cursor(["t1", "t2"],
+        		 	 Join(t1("h"),
+        		 	 	  Match(Any("t1"), "t1", "t2"))),
+        tapes: ['t1', 't2'],
+        vocab: {t1: 1, t2: 1},
+        results: [
+            {t1: 'h', t2: 'h'},
+        ],
+    }); 
 });
