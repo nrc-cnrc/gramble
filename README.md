@@ -56,7 +56,7 @@ Alternatively, if you did not add `node_modules/.bin` to your `PATH`, you can in
 
 or:
 
-    npm run gramble help
+    npm run -- gramble help
 
 or even (if, on Windows, you lack administrator privileges to install the `gramble` command):
 

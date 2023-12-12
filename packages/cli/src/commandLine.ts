@@ -276,11 +276,17 @@ const sections = [
 
 /* second - parse the generate command options */
 if (command.command in commands) {
-    const cmd = commands[command.command];
-    const options = commandLineArgs(cmd.options, { argv });
-    commands[command.command].run(options);
+    try {    
+        const cmd = commands[command.command];
+        const options = commandLineArgs(cmd.options, { argv });
+        commands[command.command].run(options);
+    } catch (e) {
+        const msg = (e instanceof Error) ? e.message : String(e);
+        console.error(`${programName}: unknown ${command.command} option: ${msg}`);
+        console.error(`For usage info, try: ${programName} help ${command.command}`);
+    }
 } else {
-    console.error(`${programName}: invalid command: ${command.command}`);
+    console.error(`${programName}: unknown command: ${command.command}`);
     printUsage();
     process.exit(EXIT_USAGE);
 }
