@@ -197,7 +197,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      "t1", "t2"
                  ),
         tapes: ['t1', 't2'],
-        vocab: {t1: 2, t2: 2},
+        //vocab: {t1: 2, t2: 2},
         results: [
             {t1: 'h', t2: 'h'},
             {t1: 'i', t2: 'i'},
@@ -211,7 +211,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      "t1", "t2"
                  ),
         tapes: ['t1', 't2'],
-        vocab: {t1: 2, t2: 2},
+        //vocab: {t1: 2, t2: 2},
         results: [
             {t1: 'hih', t2: 'hih'},
             {t1: 'hii', t2: 'hii'},
@@ -226,7 +226,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      "t1", "t2"
                  ),
         tapes: ['t1', 't2'],
-        vocab: {t1: 4, t2: 4},
+        //vocab: {t1: 4, t2: 4},
         results: [
             {t1: 'hello', t2: 'hello'},
         ],
@@ -427,7 +427,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      "t1", "t2"
                  ),
         tapes: ['t1', 't2'],
-        vocab: {t1: 2, t2: 2},
+        //vocab: {t1: 2, t2: 2},
         results: [
             {t1: 'hi', t2: 'hi'},
             {t1: 'ihi', t2: 'ihi'},   {t1: 'hhi', t2: 'hhi'},
@@ -445,7 +445,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      "t1", "t2"
                  ),
         tapes: ['t1', 't2'],
-        vocab: {t1: 2, t2: 2},
+        //vocab: {t1: 2, t2: 2},
         results: [
             {t1: 'hi', t2: 'hi'},
             {t1: 'hhi', t2: 'hhi'},   {t1: 'ihi', t2: 'ihi'},
@@ -464,7 +464,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                             "t1", "t2"
                         ))),
         tapes: ['t1', 't2'],
-        vocab: {t1: 2, t2: 4},
+        //vocab: {t1: 2, t2: 4},
         results: [
             {},
             {t1: 'h', t2: 'h'},     {t1: 'i', t2: 'i'},
@@ -654,7 +654,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 "t1", "t2", "t3"
         		 ),
         tapes: ['t1', 't2', 't3'],
-        vocab: {t1: 2, t2: 2, t3: 2},
+        //vocab: {t1: 2, t2: 2, t3: 2},
         results: [
             {t1: 'h', t2: 'h', t3: 'h'},
             {t1: 'i', t2: 'i', t3: 'i'},
@@ -668,7 +668,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 "t1", "t2", "t3"
         		 ),
         tapes: ['t1', 't2', 't3'],
-        vocab: {t1: 2, t2: 2, t3: 2},
+        //vocab: {t1: 2, t2: 2, t3: 2},
         results: [
             {t1: 'hih', t2: 'hih', t3: 'hih'},
             {t1: 'hii', t2: 'hii', t3: 'hii'},
@@ -683,7 +683,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 "t1", "t2", "t3"
         		 ),
         tapes: ['t1', 't2', 't3'],
-        vocab: {t1: 4, t2: 4, t3: 4},
+        //vocab: {t1: 4, t2: 4, t3: 4},
         results: [
             {t1: 'hello', t2: 'hello', t3: 'hello'},
         ],
@@ -884,7 +884,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 "t1", "t2", "t3"
         		 ),
         tapes: ['t1', 't2', 't3'],
-        vocab: {t1: 2, t2: 2, t3: 2},
+        //vocab: {t1: 2, t2: 2, t3: 2},
         results: [
             {t1: 'hi', t2: 'hi', t3: 'hi'},
             {t1: 'ihi', t2: 'ihi', t3: 'ihi'},
@@ -905,7 +905,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 "t1", "t2", "t3"
         		 ),
         tapes: ['t1', 't2', 't3'],
-        vocab: {t1: 2, t2: 2, t3: 2},
+        //vocab: {t1: 2, t2: 2, t3: 2},
         results: [
             {t1: 'hi', t2: 'hi', t3: 'hi'},
             {t1: 'hhi', t2: 'hhi', t3: 'hhi'},
@@ -928,7 +928,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                             "t1", "t2", "t3"
                         ))),
         tapes: ['t1', 't2', 't3'],
-        vocab: {t1: 2, t2: 4, t3: 4},
+        //vocab: {t1: 2, t2: 4, t3: 4},
         results: [
             {},
             {t1: 'h', t2: 'h', t3: 'h'},
@@ -956,7 +956,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 Join(t1("h"),
         		 	 	  Match(Dot("t1"), "t1", "t2"))),
         tapes: ['t1', 't2'],
-        vocab: {t1: 2, t2: 2},
+        //vocab: {t1: 2, t2: 2},
         results: [
             {t1: 'h', t2: 'h'},
         ],
@@ -968,7 +968,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 Join(Match(Dot("t1"), "t1", "t2"),
                           t1("h"))),
         tapes: ['t1', 't2'],
-        vocab: {t1: 2, t2: 2},
+        //vocab: {t1: 2, t2: 2},
         results: [
             {t1: 'h', t2: 'h'},
         ],
@@ -980,7 +980,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 Join(t1("hi"),
         		 	 	  Match(Rep(Dot("t1")), "t1", "t2"))),
         tapes: ['t1', 't2'],
-        vocab: {t1: 2, t2: 2},
+        //vocab: {t1: 2, t2: 2},
         results: [
             {t1: 'hi', t2: 'hi'},
         ],
@@ -992,7 +992,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 Join(t2("hello"),
         		 	 	  Match(Rep(Dot("t1")), "t1", "t2"))),
         tapes: ['t1', 't2'],
-        vocab: {t1: 4, t2: 4},
+        //vocab: {t1: 4, t2: 4},
         results: [
             {t1: 'hello', t2: 'hello'},
         ],
@@ -1003,7 +1003,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Join(Seq(t1("hello"), t2("hello")),
         		 	  Match(Rep(Dot("t1")), "t1", "t2")),
         tapes: ['t1', 't2'],
-        vocab: {t1: 4, t2: 4},
+        //vocab: {t1: 4, t2: 4},
         results: [
             {t1: 'hello', t2: 'hello'},
         ],

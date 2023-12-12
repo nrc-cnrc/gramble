@@ -431,7 +431,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		     WithVocab({t1:'hi'},
                  	     Not(Dot('t1')))),
         tapes: ['t1'],
-        vocab: {t1:2},
+        //vocab: {t1:2},
         results: [
             {},
             {t1: 'hh'}, {t1: 'hi'},

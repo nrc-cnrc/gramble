@@ -6,7 +6,6 @@ import {
     OutputExpr,
     ForwardGen
 } from "./exprs";
-import { TapeNamespace } from "./tapes";
 import { CounterStack } from "./utils/counter";
 import { 
     Gen,
@@ -35,13 +34,12 @@ import { randomCut } from "./utils/random";
  */
 export function* generate(
     expr: Expr,
-    tapeNS: TapeNamespace,
     random: boolean,
     opt: Options
 ): Gen<StringDict> {
     const stack = new CounterStack(opt.maxRecursion);
     const stats = new DerivStats();
-    const env = new DerivEnv(opt, tapeNS, {}, stack, 
+    const env = new DerivEnv(opt, {}, stack, 
                     new Set(), false, random, stats);
 
     const NEXTS_TO_TAKE = random ? 1 : Infinity;

@@ -10,21 +10,17 @@ import {
 } from "./utils/func";
 import { Worksheet, Workbook } from "./sources";
 import { backgroundColor, parseHeaderCell } from "./headers";
-import { TapeNamespace } from "./tapes";
 import { Expr, CollectionExpr } from "./exprs";
 import { DevEnvironment, SimpleDevEnvironment } from "./devEnv";
 import { generate } from "./generator";
 import { MissingSymbolError, Message, THROWER, msg } from "./utils/msgs";
-import { 
-    SOURCE_PASSES,
-    GRAMMAR_PASSES
-} from "./passes/allPasses";
+import { SOURCE_PASSES, GRAMMAR_PASSES } from "./passes/allPasses";
 import { ExecuteTests } from "./passes/executeTests";
 import { CreateCursors } from "./passes/createCursors";
 import { constructExpr } from "./passes/constructExpr";
 import { toStr } from "./passes/toStr";
 import { DEFAULT_PROJECT_NAME, DEFAULT_SYMBOL, HIDDEN_PREFIX } from "./utils/constants";
-import { VERBOSE_GRAMMAR, VERBOSE_TIME, logTime, msToTime, timeIt } from "./utils/logging";
+import { VERBOSE_GRAMMAR, VERBOSE_TIME, logTime, msToTime } from "./utils/logging";
 import { INDICES, Options } from "./utils/options";
 import { SelectSymbol } from "./passes/selectSymbol";
 import { getAllSymbols } from "./passes/getAllSymbols";
@@ -32,9 +28,7 @@ import { qualifySymbol } from "./passes/qualifySymbols";
 import { FlattenCollections } from "./passes/flattenCollections";
 import { CreateQuery } from "./passes/createQuery";
 import { InfinityProtection } from "./passes/infinityProtection";
-import { ResolveVocab } from "./passes/resolveVocab";
 import { PassEnv } from "./components";
-import { Pass, SymbolEnv } from "./passes";
 import { CalculateTapes, TapesEnv } from "./passes/calculateTapes";
 
 /**
@@ -58,8 +52,6 @@ export class Interpreter {
     public grammar: Grammar;
 
     public opt: Options;
-
-    public tapeNS: TapeNamespace = new TapeNamespace();
 
     // for convenience, rather than parse it as a header every time
     public tapeColors: Dict<string> = {};
@@ -85,13 +77,6 @@ export class Interpreter {
         this.grammar = msg(g)
                         .bind(g => GRAMMAR_PASSES.getEnvAndTransform(g, opt))
                         .msgTo(m => sendMsg(this.devEnv, m));
-
-        // Next we collect the vocabulary on all tapes
-        timeIt(() => {
-            // collect vocabulary
-            this.tapeNS = new TapeNamespace();
-            this.grammar.collectAllVocab(this.tapeNS, env);
-        }, timeVerbose, "Collected vocab");
 
         logGrammar(this.opt.verbose, this.grammar);
     }
@@ -201,11 +186,11 @@ export class Interpreter {
         const expr = this.prepareExpr(symbol, query);
 
         if (stripHidden) {
-            yield* stripHiddenTapes(generate(expr, this.tapeNS, false, this.opt));
+            yield* stripHiddenTapes(generate(expr, false, this.opt));
             return;
         }
 
-        yield* generate(expr, this.tapeNS, false, this.opt);
+        yield* generate(expr, false, this.opt);
     }
     
     public sample(
@@ -227,7 +212,7 @@ export class Interpreter {
 
         const expr = this.prepareExpr(symbol, query);
         for (let i = 0; i < numSamples; i++) {
-            let gen = generate(expr, this.tapeNS, true, this.opt);
+            let gen = generate(expr, true, this.opt);
             if (stripHidden) {
                 gen = stripHiddenTapes(gen);
             }
@@ -279,15 +264,8 @@ export class Interpreter {
                             .transform(targetGrammar, tapeRefreshEnv)
                             .msgTo(THROWER);
                             
-        // we have to re-collect the vocab in case it changed
-        const env = new PassEnv(this.opt);
-        targetGrammar.collectAllVocab(this.tapeNS, env);
-
-        targetGrammar = new ResolveVocab()
-                             .getEnvAndTransform(targetGrammar, this.opt)
-                             .msgTo(THROWER);
-
         // turns the Grammars into Exprs
+        const env = new PassEnv(this.opt);
         return constructExpr(env, targetGrammar);  
     }
 
@@ -297,7 +275,7 @@ export class Interpreter {
         const symbols = expr instanceof CollectionExpr
                       ? expr.symbols
                       : {};
-        const pass = new ExecuteTests(this.tapeNS, symbols);
+        const pass = new ExecuteTests(symbols);
         
         pass.getEnvAndTransform(this.grammar, this.opt)
             .msgTo(m => this.devEnv.message(m));

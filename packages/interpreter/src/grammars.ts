@@ -2,22 +2,12 @@ import {
     Msg, THROWER,
 } from "./utils/msgs";
 
-import {
-    OldTape, 
-    TapeNamespace,
-    TapeSet,
-} from "./tapes";
-
+import { TapeSet } from "./tapes";
 import * as Tapes from "./tapes";
-
 import { Pass } from "./passes";
+import { Dict, ValueSet } from "./utils/func";
 
-import {
-    Dict,
-    ValueSet
-} from "./utils/func";
-
-import { Component, PassEnv, children } from "./components";
+import { Component, PassEnv } from "./components";
 import { DEFAULT_SYMBOL,  HIDDEN_PREFIX, INPUT_TAPE, OUTPUT_TAPE } from "./utils/constants";
 import { tokenizeUnicode } from "./utils/strings";
 import { Pos } from "./utils/cell";
@@ -25,7 +15,6 @@ import { CalculateTapes } from "./passes/calculateTapes";
 import { SymbolQualifier } from "./passes/qualifySymbols";
 import { toStr } from "./passes/toStr";
 import { INDICES } from "./utils/options";
-import * as Vocabs from "./vocab";
 
 export type StringPair = [string, string];
 export class StringPairSet extends ValueSet<StringPair> { }
@@ -149,41 +138,6 @@ export abstract class AbstractGrammar extends Component {
         return pass.getEnvAndTransform(this as Grammar, env.opt)
                    .msgTo(THROWER);
     }
-
-    /**
-     * Collects all explicitly mentioned characters in the grammar for all tapes.
-     */
-    public collectAllVocab(
-        tapeNS: TapeNamespace,
-        env: PassEnv
-    ): void {
-        for (const tapeName of this.tapeNames) {
-            if (this.tapes.tag !== Tapes.Tag.Lit) throw new Error(`Collecting vocab from unresolved tape ${tapeName}`);
-            
-            let vocabMap = this.tapes.vocabMap;
-            vocabMap = Vocabs.resolveAll(vocabMap);
-            const vocab = vocabMap[tapeName];
-            
-            if (vocab.tag !== Vocabs.Tag.Lit) 
-                throw new Error(`Tape ${tapeName} has unresolved vocab: ${toStr(vocab)}`);
-
-            const atomic = vocab.atomicity !== Vocabs.Atomicity.Tokenized;
-
-            let tape = tapeNS.attemptGet(tapeName);
-            if (tape == undefined) {
-                // make a new one if it doesn't exist
-                const newTape = new OldTape(tapeName, atomic);
-                tapeNS.set(tapeName, newTape);
-            } 
-            tape = tapeNS.get(tapeName); 
-            tape.atomic = atomic;
-
-            const strs = vocab.tokens;
-            
-            tape.registerTokens([...strs]);
-        }
-    }
-
 }
 
 abstract class AtomicGrammar extends AbstractGrammar { }
