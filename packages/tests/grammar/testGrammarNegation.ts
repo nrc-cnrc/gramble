@@ -1,5 +1,5 @@
 import {
-    Any, Count, Dot, Join, 
+    Count, Dot, Join, 
     Not, Rep, Seq, Short,
     Uni, WithVocab,
 } from "../../interpreter/src/grammarConvenience";
@@ -418,7 +418,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '35. ~(t1:.i)',
         grammar: Count({t1:3},
-                 	   Not(Seq(Any('t1'), t1('i')))),
+                 	   Not(Seq(Dot('t1'), t1('i')))),
         // vocab: {t1:1},
         results: [
             {}, {t1: 'i'}, {t1: 'iii'},
@@ -429,7 +429,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '36. ~(t1:.) (vocab hi)',
         grammar: Count({t1:2},
         		     WithVocab({t1:'hi'},
-                 	     Not(Any('t1')))),
+                 	     Not(Dot('t1')))),
         tapes: ['t1'],
         vocab: {t1:2},
         results: [
@@ -443,7 +443,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '37. ~(t1:.i)) (vocab hi)',
         grammar: Count({t1:2},
         		     WithVocab({t1:'hi'},
-                 	     Not(Seq(Any('t1'), t1('i'))))),
+                 	     Not(Seq(Dot('t1'), t1('i'))))),
         // tapes: ['t1'],
         // vocab: {t1:2},
         results: [
@@ -518,8 +518,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             '~(Short(t1:.*a) + t1:.*) (vocab ab)',
         grammar: Count({t1:3},
                     WithVocab({t1:'ab'},
-                        Not(Seq(Short(Seq(Rep(Any("t1")), t1("a"))),
-                                Rep(Any("t1")))))),
+                        Not(Seq(Short(Seq(Rep(Dot("t1")), t1("a"))),
+                                Rep(Dot("t1")))))),
         results: [
             {}, {t1: 'b'}, {t1: 'bb'}, {t1: 'bbb'},
         ],
@@ -531,8 +531,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             '~(t1:.* + Short(t1:a.*)) (vocab ab)',
         grammar: Count({t1:3},
                     WithVocab({t1:'ab'},
-                        Not(Seq(Rep(Any("t1")), 
-                            Short(Seq(t1("a"), Rep(Any("t1")))))))),
+                        Not(Seq(Rep(Dot("t1")), 
+                            Short(Seq(t1("a"), Rep(Dot("t1")))))))),
         results: [
             {}, {t1: 'b'}, {t1: 'bb'}, {t1: 'bbb'},
         ],

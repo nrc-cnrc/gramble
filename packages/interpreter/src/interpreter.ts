@@ -267,6 +267,14 @@ export class Interpreter {
                              .getEnvAndTransform(targetGrammar, this.opt)
                              .msgTo(THROWER);
         
+        // the client probably doesn't want an accidentally-infinite grammar
+        // to generate infinitely.  this checks which tapes could potentially
+        // generate infinitely and caps them to opt.maxChars.
+        targetGrammar = new InfinityProtection()
+                              .getEnvAndTransform(targetGrammar, this.opt)
+                              .msgTo(THROWER);
+        
+        console.log(`grammar = ${toStr(targetGrammar)}`);
         const tapeRefreshEnv = new TapesEnv(this.opt, true);
         targetGrammar = new CalculateTapes()
                             .transform(targetGrammar, tapeRefreshEnv)
@@ -280,13 +288,6 @@ export class Interpreter {
                              .getEnvAndTransform(targetGrammar, this.opt)
                              .msgTo(THROWER);
 
-        // the client probably doesn't want an accidentally-infinite grammar
-        // to generate infinitely.  this checks which tapes could potentially
-        // generate infinitely and caps them to opt.maxChars.
-        targetGrammar = new InfinityProtection()
-                              .getEnvAndTransform(targetGrammar, this.opt)
-                              .msgTo(THROWER);
-        
         // turns the Grammars into Exprs
         return constructExpr(env, targetGrammar);  
     }

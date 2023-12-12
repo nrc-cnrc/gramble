@@ -1,11 +1,11 @@
 import { 
-    Any, Count, Cursor, Epsilon, 
+    Count, Cursor, Dot, Epsilon, 
     Join, Match, Rep, 
     Seq, Uni, WithVocab,
 } from "../../interpreter/src/grammarConvenience";
 
 import {
-    SILENT, VERBOSE_DEBUG, VERBOSE_STATES
+    SILENT, VERBOSE_STATES
 } from "../../interpreter/src/utils/logging";
 
 import { Grammar } from "../../interpreter/src/grammars";
@@ -909,7 +909,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '44. Rep(Any): t1:hi + t1:.{0,3}',
-        grammar: Seq(t1("hi"), Rep(Any("t1"), 0, 3)),
+        grammar: Seq(t1("hi"), Rep(Dot("t1"), 0, 3)),
         results: [
             {t1: 'hi'},
             {t1: 'hii'},   {t1: 'hih'},
@@ -925,7 +925,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '44*. Rep(Any): Count_t1:5 (t1:hi + t1:.*)',
         grammar: Count({t1: 5},
-                 	   Seq(t1("hi"), Rep(Any("t1")))),
+                 	   Seq(t1("hi"), Rep(Dot("t1")))),
         results: [
             {t1: 'hi'},
             {t1: 'hii'},   {t1: 'hih'},
@@ -940,7 +940,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '45. Rep(Any): t1:.{0,3} + t1:hi',
-        grammar: Seq(Rep(Any("t1"), 0, 3), t1("hi")),
+        grammar: Seq(Rep(Dot("t1"), 0, 3), t1("hi")),
         results: [
             {t1: 'hi'},
             {t1: 'hhi'},   {t1: 'ihi'},
@@ -956,7 +956,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '45*. Rep(Any): Count_t1:5 (t1:.* + t1:hi)',
         grammar: Count({t1: 5},
-                 	   Seq(Rep(Any("t1")), t1("hi"))),
+                 	   Seq(Rep(Dot("t1")), t1("hi"))),
         results: [
             {t1: 'hi'},
             {t1: 'hhi'},   {t1: 'ihi'},
@@ -971,9 +971,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '46. Rep(Any): t1:.{0,1} + t1:hi + t1:.{0,1}',
-        grammar: Seq(Rep(Any("t1"), 0, 1),
+        grammar: Seq(Rep(Dot("t1"), 0, 1),
                      t1("hi"),
-                     Rep(Any("t1"), 0, 1)),
+                     Rep(Dot("t1"), 0, 1)),
         results: [
             {t1: 'hi'},
             {t1: 'hih'},  {t1: 'hii'},
@@ -985,9 +985,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '46-1*. Rep(Any): (Count_t1:1 t1:.*) + t1:hi + (Count_t1:1 t1:.*)',
-        grammar: Seq(Count({t1: 1}, Rep(Any("t1"))),
+        grammar: Seq(Count({t1: 1}, Rep(Dot("t1"))),
                      t1("hi"),
-                     Count({t1: 1}, Rep(Any("t1")))),
+                     Count({t1: 1}, Rep(Dot("t1")))),
         results: [
             {t1: 'hi'},
             {t1: 'hih'},  {t1: 'hii'},
@@ -1000,7 +1000,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '46-2*. Rep(Any): Count_t1:4 (t1:.* + t1:hi + t1:.*)',
         grammar: Count({t1: 4},
-                 	   Seq(Rep(Any("t1")), t1("hi"), Rep(Any("t1")))),
+                 	   Seq(Rep(Dot("t1")), t1("hi"), Rep(Dot("t1")))),
         results: [
             {t1: 'hi'},
             {t1: 'hih'},  {t1: 'hii'},
@@ -1017,8 +1017,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '46-3. Rep(Any): Count_t1:2 t1:.{0,1} + t1:.{0,1} (vocab hi)',
         grammar: WithVocab({t1: "hi"},
-        			Seq(Rep(Any("t1"), 0, 1),
-                        Rep(Any("t1"), 0, 1))),
+        			Seq(Rep(Dot("t1"), 0, 1),
+                        Rep(Dot("t1"), 0, 1))),
         results: [
             {},
             {t1: 'h'},  {t1: 'i'},
@@ -1031,8 +1031,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '46-4*. Rep(Any): Count_t1:2 (t1:.* + t1:.{0,1}) (vocab hi)',
         grammar: WithVocab({t1: "hi"},
                     Count({t1: 2},
-        				Seq(Rep(Any("t1")),
-                            Rep(Any("t1"), 0, 1)))),
+        				Seq(Rep(Dot("t1")),
+                            Rep(Dot("t1"), 0, 1)))),
         results: [
             {},
             {t1: 'h'},  {t1: 'i'},
@@ -1045,8 +1045,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '46-5*. Rep(Any): Count_t1:2 (t1:.{0,1} + t1:.*) (vocab hi)',
         grammar: WithVocab({t1: "hi"},
                     Count({t1: 2},
-        				Seq(Rep(Any("t1"), 0, 1),
-                            Rep(Any("t1"))))),
+        				Seq(Rep(Dot("t1"), 0, 1),
+                            Rep(Dot("t1"))))),
         results: [
             {},
             {t1: 'h'},  {t1: 'i'},
@@ -1057,7 +1057,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '47. Join t1:h ⨝ t1:.{0,1}',
-        grammar: Join(t1("h"), Rep(Any("t1"), 0, 1)),
+        grammar: Join(t1("h"), Rep(Dot("t1"), 0, 1)),
         results: [
             {t1: 'h'},
         ],
@@ -1065,7 +1065,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '47*. Join t1:h ⨝ t1:.*',
-        grammar: Join(t1("h"), Rep(Any("t1"))),
+        grammar: Join(t1("h"), Rep(Dot("t1"))),
         results: [
             {t1: 'h'},
         ],
@@ -1073,7 +1073,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '50. Join t1:.{0,2} ⨝ ε',
-        grammar: Join(Rep(Any("t1"), 0, 2), Epsilon()),
+        grammar: Join(Rep(Dot("t1"), 0, 2), Epsilon()),
         results: [
             {}
         ],
@@ -1081,7 +1081,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '50*. Join t1:.* ⨝ ε',
-        grammar: Join(Rep(Any("t1")), Epsilon()),
+        grammar: Join(Rep(Dot("t1")), Epsilon()),
         results: [
             {}
         ],
@@ -1089,7 +1089,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '51. Join ε ⨝ t1:.{0,2}',
-        grammar: Join(Epsilon(), Rep(Any("t1"), 0, 2)),
+        grammar: Join(Epsilon(), Rep(Dot("t1"), 0, 2)),
         results: [
             {}
         ],
@@ -1097,7 +1097,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '51*. Join ε ⨝ t1:.*',
-        grammar: Join(Epsilon(), Rep(Any("t1"))),
+        grammar: Join(Epsilon(), Rep(Dot("t1"))),
         results: [
             {}
         ],

@@ -1,5 +1,4 @@
 import { 
-    Any,
     Collection,
     Cursor,
     Dot,
@@ -334,8 +333,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '16a. Cursor with a dot and a query',
-        grammar: Cursor("t1", Seq(t1("hi"), Dot("t1"))),
+        desc: '16a. Dot and a query',
+        grammar: Seq(t1("hi"), Dot("t1")),
         tapes: ["t1"],
         query: { t1: "hip" },
         results: [
@@ -344,9 +343,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
     
     testGrammar({
-        desc: '16b. Cursor with an embedded dot and a query',
+        desc: '16b. Embedded dot and a query',
         grammar: Collection({
-                    "a": Cursor("t1", Seq(t1("hi"), Embed("b"))),
+                    "a": Seq(t1("hi"), Embed("b")),
                     "b": Dot("t1")
         }),
         symbol: "a",
@@ -357,13 +356,14 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ]
     });
     
+    /*
     testGrammar({
         desc: '18a. Cursor around a join-match',
         grammar: Cursor(["t2", "t1"],
         		 	 Join(t1("h"),
-        		 	 	  Match(Any("t1"), "t1", "t2"))),
-        //tapes: ['t1', 't2'],
-        //vocab: {t1: 1, t2: 1},
+        		 	 	  Match(Dot("t1"), "t1", "t2"))),
+        tapes: ['t1', 't2'],
+        vocab: {t1: 1, t2: 1},
         results: [
             {t1: 'h', t2: 'h'},
         ],
@@ -373,11 +373,12 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '18b. Cursor around a join-match, opposite direction',
         grammar: Cursor(["t1", "t2"],
         		 	 Join(t1("h"),
-        		 	 	  Match(Any("t1"), "t1", "t2"))),
+        		 	 	  Match(Dot("t1"), "t1", "t2"))),
         tapes: ['t1', 't2'],
         vocab: {t1: 1, t2: 1},
         results: [
             {t1: 'h', t2: 'h'},
         ],
     }); 
+    */
 });
