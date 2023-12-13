@@ -4,6 +4,9 @@ import {
 
 import { TapeSet } from "./tapes";
 import * as Tapes from "./tapes";
+import { Vocab } from "./vocab";
+import * as Vocabs from "./vocab";
+
 import { Pass } from "./passes";
 import { Dict, ValueSet } from "./utils/func";
 
@@ -321,7 +324,8 @@ export class CursorGrammar extends UnaryGrammar {
 
     constructor(
         public tapeName: string,
-        child: Grammar
+        child: Grammar,
+        public vocab: Vocab = Vocabs.Ref(tapeName)
     ) {
         super(child);
     }

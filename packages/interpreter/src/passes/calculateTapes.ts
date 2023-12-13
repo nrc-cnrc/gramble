@@ -50,8 +50,7 @@ export class TapesEnv extends Env<Grammar> {
     constructor(
         opt: Partial<Options>,
         public recalculate: boolean = false,
-        public tapeMap: TapeDict | undefined = undefined,
-        public vocabMap: VocabDict = {}
+        public tapeMap: TapeDict | undefined = undefined
     ) {
         super(opt);
     }
@@ -59,7 +58,6 @@ export class TapesEnv extends Env<Grammar> {
     public update(g: Grammar): TapesEnv {
         switch (g.tag) {
             case "collection": return this.updateCollection(g);
-            case "cursor":     return this.updateCursor(g);
             default: return this;
         }
     }
@@ -69,18 +67,6 @@ export class TapesEnv extends Env<Grammar> {
         return update(this, {tapeMap});
     }
     
-    updateCursor(g: CursorGrammar): TapesEnv {
-        const vocabMap = {...this.vocabMap};
-        if (g.tapes.tag === Tapes.Tag.Lit &&
-            g.tapeName in g.tapes.vocabMap) {
-            vocabMap[g.tapeName] = g.tapes.vocabMap[g.tapeName];
-        } else {
-            // if tapes aren't resolved, we can only push a placeholder
-            vocabMap[g.tapeName] = Vocabs.Ref(g.tapeName);
-        }
-        return update(this, {vocabMap});
-    }
-
 }
 
 /**
@@ -177,7 +163,7 @@ export class CalculateTapes extends AutoPass<Grammar> {
             // otherwise we have to puzzle it out from exceptions elsewhere.
             for (const [k,v] of Object.entries(tapeIDs)) {
                 if (v.tag !== Tapes.Tag.Lit) {
-                    throw new Error(`Unresolved tape structure in ${k}: ${toStr(v)}`);
+                    throw new Error(`Unresolved tape structure in ${k}: ${Tapes.toStr(v)}`);
                 }
             }
 
@@ -185,6 +171,7 @@ export class CalculateTapes extends AutoPass<Grammar> {
             // grammar node has only literal tapes
             //const tapePusher = new CalculateTapes(true, tapeIDs);
 
+            console.log(`refeeding tapes into tree`);
             const tapePushEnv = new TapesEnv(env.opt, true, tapeIDs);
             g.symbols = mapValues(g.symbols, v => 
                     this.transform(v, tapePushEnv).msgTo(newMsgs));
@@ -355,13 +342,6 @@ function getTapesSingleTape(g: SingleTapeGrammar): Grammar {
 }
 
 function getTapesDot(g: DotGrammar, env: TapesEnv): Grammar {
-    if (env.vocabMap !== undefined && g.tapeName in env.vocabMap) {
-        const wildcard = env.vocabMap[g.tapeName];    
-        const vocab = Vocabs.Sum(wildcard, Vocabs.Tokenized());
-        const tapes = Tapes.Lit({ [g.tapeName]: vocab });
-        return updateTapes(g, tapes);
-    }
-
     const tapes = Tapes.Lit({ [g.tapeName]: Vocabs.Wildcard(g.tapeName) });
     return updateTapes(g, tapes);
 }
@@ -552,25 +532,33 @@ function getTapesCursor(
     g: CursorGrammar,
     env: TapesEnv
 ): Grammar {
-    g = getTapesDefault(g) as CursorGrammar;
+    console.log(`tapecalc for cursor ${g.tapeName}`);
+    console.log(`child tapes are ${Tapes.toStr(g.child.tapes)}`);
 
-    if (g.tapes.tag !== Tapes.Tag.Lit) {
-        return g;  // can't do anything right now
+    if (g.child.tapes.tag !== Tapes.Tag.Lit) {
+        // can't do anything right now
+        console.log(`can't do anything`);
+        const tapes = Tapes.Cursor(g.child.tapes, g.tapeName);
+        return updateTapes(g, tapes);
     }
-
-    if (!(g.tapeName in g.tapes.vocabMap)) {
+    
+    if (!(g.tapeName in g.child.tapes.vocabMap)) {
         throw g.child.err("Spurious cursor",
             `Cursor for ${g.tapeName}, but no such tape in its scope.`)
     }
+    
+    let vocab = g.child.tapes.vocabMap[g.tapeName];
+    const vocabEnv = new Vocabs.VocReplaceEnv(g.tapeName, vocab, new Set());
+    
+    const vocabs = mapDict(g.child.tapes.vocabMap, (k,v) => {
+        return Vocabs.vocReplace(v, vocabEnv);
+    });
 
-    if (env.vocabMap === undefined) {
-        throw new Error("Undefined vocab map");
-    }
+    vocab = vocabs[g.tapeName];
 
-    Object.assign(env.vocabMap, g.tapes.vocabMap);
-    const vocabEnv = new Vocabs.VocabEnv(env.vocabMap, new Set([g.tapeName]));
-    const tape = Vocabs.resolve(g.tapes.vocabMap[g.tapeName], vocabEnv);
-
-    g.tapes.vocabMap[g.tapeName] = tape;
-    return g;
+    let tapes: TapeSet = Tapes.Lit(vocabs);
+    console.log(`cursor ${g.tapeName} tapes are ${Tapes.toStr(tapes)}`);
+    console.log();
+    tapes = Tapes.Cursor(tapes, g.tapeName) // this handles deleting for us
+    return update(g, {tapes, vocab});
 }

@@ -1326,8 +1326,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                     Count({t1: 3, t2: 3},
                         WithVocab({t1: "hx", t2: "hex"},
                               repeat2_t2eNullableMatchGrammar()))),
-        tapes: ['t1', 't2'],
-        vocab: {t1: 2, t2: 3},
+        //tapes: ['t1', 't2'],
+        //vocab: {t1: 2, t2: 3},
         results: [
             {t2: 'ee'},
             {t1: 'h', t2: 'ehe'},

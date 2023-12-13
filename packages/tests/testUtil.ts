@@ -273,6 +273,12 @@ export function testHasVocab(
         }
 
         const v = interpreter.grammar.tapes.vocabMap[tapeName];
+        if (v === undefined) {
+            it(`vocab for ${tapeName} should exist`, function() {
+                assert.fail();
+            });
+            continue;
+        }
 
         if (v.tag !== Vocab.Tag.Lit) {
             it(`vocab for ${tapeName} should be resolved`, function() {

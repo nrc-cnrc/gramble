@@ -15,7 +15,7 @@ import { AlternationGrammar,
 } from "../grammars";
 import { renameTape } from "../tapes";
 import { Count } from "../grammarConvenience";
-import { exhaustive } from "../utils/func";
+import { exhaustive, update } from "../utils/func";
 import { Msg } from "../utils/msgs";
 import { CounterStack } from "../utils/counter";
 import { Options } from "../utils/options";
@@ -49,8 +49,8 @@ export class InfinityProtection extends Pass<Grammar,Grammar> {
         if (len.max !== Infinity) return g;
 
         // it's potentially infinite, add a Count for protection
-        const newChild = new CountGrammar(g.child, g.tapeName, env.opt.maxChars, false, false);
-        return new CursorGrammar(g.tapeName, newChild).tapify(env);
+        const child = new CountGrammar(g.child, g.tapeName, env.opt.maxChars, false, false);
+        return update(g, {child}).tapify(env);
     }
 }
 

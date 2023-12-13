@@ -37,7 +37,6 @@ import { tokenizeUnicode } from "./utils/strings";
  * according to Gramble's character rules.
  */
 
-
 export type VocabDict = Dict<Vocab>;
 
 export const enum Tag {
@@ -328,8 +327,8 @@ function resolveRef(
     }
     const referent = env.vocabMap[v.tape];
     if (referent === undefined) {
-        // should never happen so long as FlattenCollections has been run
-        throw new Error(`Unknown tape ${v.tape} in vocab unification`);
+        throw new Error(`Unknown tape ${v.tape} in vocab unification, ` +
+            `candidates are ${Object.keys(env.vocabMap)}`);
     }
     const newVisited = union(env.visited, [v.tape]);
     const newEnv = update(env, {visited:newVisited});
@@ -340,6 +339,76 @@ function map(
     v: Vocab, 
     f: (v: Vocab, env: VocabEnv) => Vocab,
     env: VocabEnv
+): Vocab {
+    const newEnv = env.update(v);
+    const clone = Object.create(Object.getPrototypeOf(v));
+    for (const [k, child] of Object.entries(v)) {
+        if (child.hasOwnProperty("tag")) {
+            // it's a vocab
+            clone[k] = f(child, newEnv);
+            continue;
+        }
+        clone[k] = child;
+    }
+    return simplify(clone);
+}
+
+
+export class VocReplaceEnv extends Env<Vocab> {
+    
+    constructor(
+        public refToReplace: string,
+        public replacement: Vocab,
+        public visited: Set<string>
+    ) { 
+        super({});
+    }
+
+    public update(v: Vocab): VocReplaceEnv {
+        if (v.tag !== Tag.Rename) return this;
+
+        return this;
+        // we only care about Renames for this
+
+        /*
+        const newTapes: Dict<Vocab> = Object.create(this.vocabMap);
+        Object.assign(newTapes, this.vocabMap);
+        newTapes[v.fromTape] = this.vocabMap[v.toTape];
+        delete newTapes[v.toTape];
+        return update(this, { vocabMap: newTapes });
+        */
+    }
+
+}
+
+export function vocReplace(
+    v: Vocab, 
+    env: VocReplaceEnv
+): Vocab {
+    const newV = vocReplaceMap(v, vocReplace, env);
+    switch (newV.tag) {
+        case Tag.Ref:        return vocReplaceRef(newV, env);
+        default:             return newV;
+    }
+}
+
+function vocReplaceRef(
+    v: Ref, 
+    env: VocReplaceEnv
+): Vocab {
+    if (env.visited.has(v.tape)) {
+        return Atomic();
+    }
+
+    const newVisited = union(env.visited, [v.tape]);
+    const newEnv = update(env, {visited:newVisited});
+    return vocReplace(env.replacement, newEnv);
+}
+
+function vocReplaceMap(
+    v: Vocab, 
+    f: (v: Vocab, env: VocReplaceEnv) => Vocab,
+    env: VocReplaceEnv
 ): Vocab {
     const newEnv = env.update(v);
     const clone = Object.create(Object.getPrototypeOf(v));

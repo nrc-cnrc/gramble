@@ -23,6 +23,7 @@ export const enum Tag {
     Join = "TapeJoin",
     Rename = "TapeRename",
     Match = "TapeMatch",
+    Cursor = "TapeCursor",
     Unknown = "TapeUnknown"
 }
 
@@ -33,6 +34,7 @@ export type TapeSet = Lit
                     | Product
                     | Join
                     | Match
+                    | Cursor
                     | Unknown; 
 
 /** Lits are the actual tape information objects, containing
@@ -43,8 +45,8 @@ export type Lit = {
     vocabMap: VocabDict 
 };
 
-export function Lit(tapes: VocabDict = {}): Lit {
-    return { tag: Tag.Lit, vocabMap: tapes }
+export function Lit(vocabMap: VocabDict = {}): Lit {
+    return { tag: Tag.Lit, vocabMap }
 };
 
 /**
@@ -202,6 +204,24 @@ export function Match(
              fromTape: fromTape, toTape: toTape }
 }
 
+export type Cursor = {
+    tag: Tag.Cursor,
+    child: TapeSet,
+    tapeName: string
+};
+
+export function Cursor(
+    child: TapeSet,
+    tapeName: string
+): TapeSet {
+    if (child.tag !== Tag.Lit) 
+        return { tag: Tag.Cursor, child, tapeName };
+
+    const vocabMap = {...child.vocabMap};
+    delete vocabMap[tapeName];
+    return Lit(vocabMap);
+}
+
 /** 
  * Turning a [TapeInfo] to a string
  */ 
@@ -215,6 +235,7 @@ export function toStr(t: TapeSet): string {
         case Tag.Sum: return toStr(t.c1) + "+" + toStr(t.c2);
         case Tag.Product: return toStr(t.c1) + "⋅" + toStr(t.c2);
         case Tag.Join: return toStr(t.c1) + "⋈" + toStr(t.c2);
+        case Tag.Cursor: return `C_${t.tapeName}(${toStr(t.child)})`;
         default: exhaustive(t);
     }
 }
@@ -270,6 +291,7 @@ function simplify(
         case Tag.Product: return Product(t.c1, t.c2);
         case Tag.Join:    return Join(t.c1, t.c2);
         case Tag.Match:   return Match(t.child, t.fromTape, t.toTape);
+        case Tag.Cursor:  return Cursor(t.child, t.tapeName);
         default:          return t;
     }
 }

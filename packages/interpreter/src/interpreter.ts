@@ -234,6 +234,8 @@ export class Interpreter {
         query: StringDict | StringDict[] = {}
     ): Expr {
 
+        console.log(`staging`);
+
         // qualify the name and select the symbol
         let targetGrammar: Grammar = new SelectSymbol(symbol)
                                        .getEnvAndTransform(this.grammar, this.opt)
@@ -270,6 +272,9 @@ export class Interpreter {
     }
 
     public runTests(): void {
+
+        console.log(`running tests`);
+
         const env = new PassEnv(this.opt);
         const expr = constructExpr(env, this.grammar);
         const symbols = expr instanceof CollectionExpr
