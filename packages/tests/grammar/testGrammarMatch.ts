@@ -455,7 +455,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     });
 
-    /*
     testGrammar({
         desc: '30. Match t1>t2, t1:.* (vocab hi/XhiZ)',
         grammar: Count({t1:3},
@@ -1302,6 +1301,5 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'h', t2: 'eeeehe'}, {t1: 'h', t2: 'eeeeeh'},
         ],
     });
-    */
 
 });

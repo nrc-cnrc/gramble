@@ -1,5 +1,6 @@
 import {
     Collection, Dot, Embed, Epsilon, Join,
+    Rename,
     Seq, Uni, WithVocab,
 } from "../../interpreter/src/grammarConvenience";
 
@@ -244,5 +245,28 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: "hip"}
         ]
     });
+    
+    testGrammar({
+		desc: '25. t1:hi + t1:.',
+        grammar: Rename(Seq(t1("hi"), Dot("t1")), "t1", "t2"),
+        tapes: ["t2"],
+        //vocab: {t1: 2},
+        results: [
+            {t2: 'hih'},
+            {t2: 'hii'},
+        ],
+    });
+    
+    testGrammar({
+		desc: '26. t1:hi + t1:.',
+        grammar: Seq(t2("hi"), Rename(Dot("t1"), "t1", "t2")),
+        tapes: ["t2"],
+        //vocab: {t1: 2},
+        results: [
+            {t2: 'hih'},
+            {t2: 'hii'},
+        ],
+    });
+
 
 });
