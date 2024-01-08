@@ -42,6 +42,10 @@ export function randomChoice<T>(xs: T[]): T {
     return xs[i];
 }
 
+export function randomString(len: number): string {
+    return (Math.random() + 1).toString(36).substring(2, len+2);
+}
+
 export function poisson(mean: number): number {
     const L = Math.exp(-mean);
     let p = 1.0;

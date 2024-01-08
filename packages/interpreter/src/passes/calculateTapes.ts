@@ -548,10 +548,15 @@ function getTapesCursor(
     }
     
     let vocab = g.child.tapes.vocabMap[g.tapeName];
-    const vocabEnv = new Vocabs.VocReplaceEnv(g.tapeName, vocab, new Set());
     
     const vocabs = mapDict(g.child.tapes.vocabMap, (k,v) => {
-        return Vocabs.vocReplace(v, vocabEnv);
+        
+        let visited = new Set([k])
+        const vocabEnv = new Vocabs.VocReplaceEnv(g.tapeName, vocab, visited);
+        console.log(`vocab ${k} was ${Vocabs.toStr(v)}`);
+        const result = Vocabs.vocReplace(v, vocabEnv);
+        console.log(`now vocab ${k} is ${Vocabs.toStr(result)}`);
+        return result;
     });
 
     vocab = vocabs[g.tapeName];

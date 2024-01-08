@@ -1,3 +1,4 @@
+import { renameTape } from "./tapes";
 import { VOCAB_MAX_TOKENS } from "./utils/constants";
 import { Dict, Func, flatmapSet, union, update } from "./utils/func";
 import { Env } from "./utils/options";
@@ -367,7 +368,13 @@ export class VocReplaceEnv extends Env<Vocab> {
     public update(v: Vocab): VocReplaceEnv {
         if (v.tag !== Tag.Rename) return this;
 
-        return this;
+        const visited = new Set(this.visited);
+        if (visited.has(v.toTape)) {
+            visited.delete(v.toTape);
+            visited.add(v.fromTape);
+        } 
+        const refToReplace = renameTape(this.refToReplace, v.toTape, v.fromTape);
+        return update(this, {refToReplace,visited});
         // we only care about Renames for this
 
         /*
@@ -400,8 +407,12 @@ function vocReplaceRef(
         return Atomic();
     }
 
-    const newVisited = union(env.visited, [v.tape]);
-    const newEnv = update(env, {visited:newVisited});
+    if (v.tape !== env.refToReplace) {
+        return v;
+    }
+
+    const visited = union(env.visited, [v.tape]);
+    const newEnv = update(env, {visited});
     return vocReplace(env.replacement, newEnv);
 }
 
