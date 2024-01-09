@@ -16,7 +16,7 @@ To better support programmer/expert collaboration, we've also made a plug-in to 
 Tutorials and documentation
 ---------------
 
-Tutorials and language documentation can be found [here](https://nrc-cnrc.github.io/gramble/)
+Tutorials and language documentation can be found [here](https://nrc-cnrc.github.io/gramble/).
 
 To install from source
 ---------------
@@ -95,9 +95,14 @@ To get a list of all scripts available in the tests package:
 Copyright
 ---------
 
-All files in this repository are **Copyright © 2020 National Research Council Canada.**
+All files in this repository are **Copyright © 2020-2024 National Research Council Canada.**
 
 License
 -------
 
 All files in this repository are released under the MIT licence. See the [LICENSE](LICENSE) file for details.
+
+Privacy
+-------
+
+See the [PRIVACY](PRIVACY) file for details.

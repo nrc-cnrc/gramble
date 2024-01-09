@@ -1,4 +1,4 @@
-# `@gramble/cli`
+# `@gramble/cli`: A Gramble Command Line Interface
 
 > Run your Gramble spreadsheets!
 
@@ -56,3 +56,24 @@ Sample a few words from your Gramble grammar:
   -f, --format csv\|json | write output in CSV or JSON formats
   -n, --num \<n\> | sample \<n\> terms [default: 5]
   -v, --verbose | log error and info messages
+
+Tutorials and documentation
+---------------
+
+Gramble tutorials and language documentation can be found [here](https://nrc-cnrc.github.io/gramble/).
+
+
+Copyright
+---------
+
+All files in this package are **Copyright © 2020-2024 National Research Council Canada.**
+
+License
+-------
+
+All files in this package are released under the MIT licence. See the [LICENSE](LICENSE) file for details.
+
+Privacy
+-------
+
+See the [PRIVACY](PRIVACY) file for details.

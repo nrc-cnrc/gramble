@@ -1,6 +1,6 @@
 {
   "name": "gramble",
-  "version": "1.0.0",
+  "version": "0.9.0",
   "description": "Typescript interpreter for the Gramble language",
   "private": true,
   "scripts": {
@@ -16,7 +16,7 @@
     "packages/*"
   ],
   "bin": {
-    "gramble": "./packages/cli/run-locally"
+    "gramble": "packages/cli/run-locally"
   },
   "author": "Patrick Littell",
   "contributors": [

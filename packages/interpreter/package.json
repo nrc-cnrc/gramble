@@ -1,6 +1,6 @@
 {
   "name": "@gramble/interpreter",
-  "version": "1.0.0",
+  "version": "0.9.0",
   "description": "The parse library that underlies Gramble",
   "keywords": [
     "parse",
@@ -17,11 +17,11 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "directories": {
-    "lib": "dist",
-    "test": "tests"
+    "lib": "dist"
   },
   "files": [
-    "dist"
+    "dist",
+    "PRIVACY.md"
   ],
   "publishConfig": {
     "access": "public"

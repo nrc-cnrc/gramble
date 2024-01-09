@@ -1,6 +1,8 @@
-# Deploying the Google Sheets add-on
+# Google Sheets add-on for Gramble
 
-This directory contains scripts to build and deploy a convenient Gramble IDE into Google Sheets.
+## Deploying the Google Sheets add-on
+
+This package contains scripts to build and deploy a convenient Gramble IDE into Google Sheets.
 
 First, make sure that project dependencies have been installed as per the main README. We use browserify to transpile and bundle the TypeScript into JavaScript, and we use clasp to push the results to a Google AppsScript project.
 
@@ -25,3 +27,23 @@ If the projectName doesn't already exist, it then creates a directory `deploymen
 If the projectName already exists, it just updates the existing directory/sheet/project space with the current Gramble code.
 
 The first time you try to run a command from the Gramble menu in your Gramble sheet, you may need to go through a series of prompts to authorize the running of the gramble command scripts.
+
+Tutorials and documentation
+---------------
+
+Gramble tutorials and language documentation can be found [here](https://nrc-cnrc.github.io/gramble/).
+ 
+Copyright
+---------
+
+All files in this package are **Copyright © 2020-2024 National Research Council Canada.**
+
+License
+-------
+
+All files in this package are released under the MIT licence. See the [LICENSE](LICENSE) file for details.
+
+Privacy
+-------
+
+See the [PRIVACY](PRIVACY) file for details.

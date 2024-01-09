@@ -1,6 +1,6 @@
 {
   "name": "@gramble/sheets_addon",
-  "version": "1.0.0",
+  "version": "0.9.0",
   "description": "Google Sheets addon for Gramble",
   "keywords": [
     "gramble",
@@ -14,13 +14,6 @@
   ],
   "homepage": "https://github.com/nrc-cnrc/gramble#readme",
   "license": "MIT",
-  "directories": {
-    "lib": "dist",
-    "test": "tests"
-  },
-  "files": [
-    "dist"
-  ],
   "publishConfig": {
     "access": "public"
   },

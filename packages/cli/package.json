@@ -1,6 +1,6 @@
 {
   "name": "@gramble/cli",
-  "version": "1.0.0",
+  "version": "0.9.0",
   "description": "Command line interface to Gramble",
   "keywords": [
     "gramble",
@@ -19,14 +19,14 @@
   "homepage": "https://github.com/nrc-cnrc/gramble#readme",
   "license": "MIT",
   "bin": {
-    "gramble": "./bin/index.js"
+    "gramble": "bin/index.js"
   },
   "directories": {
-    "lib": "dist",
-    "test": "tests"
+    "lib": "dist"
   },
   "files": [
-    "dist"
+    "dist",
+    "PRIVACY.md"
   ],
   "publishConfig": {
     "access": "public"
@@ -50,7 +50,7 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "@gramble/interpreter": "^1.0.0",
+    "@gramble/interpreter": "^0.9.0",
     "command-line-args": "^5.2.1",
     "command-line-usage": "^7.0.1"
   }
