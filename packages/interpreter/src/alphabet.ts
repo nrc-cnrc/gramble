@@ -23,11 +23,11 @@ export type Vocab = Lit | Ref;
 
 export type Ref = {
     tag: Tag.Ref,
-    name: string 
+    key: string 
 }
 
-export function Ref(name: string): Ref {
-    return { tag: Tag.Ref, name };
+export function Ref(key: string): Ref {
+    return { tag: Tag.Ref, key };
 }
 
 export type Atomic = {
@@ -77,56 +77,70 @@ function tokenize(v: Lit): Tokenized {
     return Tokenized(newTokens);
 }
 
-/*
-function sumDict(c1: VocabDict, c2: VocabDict): VocabDict {
+export function sumKeys(c1: VocabDict, c2: VocabDict): VocabDict {
     let result: VocabDict = {...c1};
-    for (const [key, value] of Object.entries(c2)) {
-        result = sumVocabToDict(result, key, value);
+    let visited: Set<string> = new Set();
+    for (const key of Object.keys(c2)) {
+        result = sumKey(result, c2, key, visited);
+        visited.add(key);
     }
-
     return result;
 }
-*/
 
-function sumVocabToDict(
+function sumKey(
     dict1: VocabDict, 
-    key: string, 
     dict2: VocabDict, 
+    key: string, 
+    visited: Set<string>
 ): VocabDict {
-    let result = {...dict1};
+    if (visited.has(key)) return dict1;
 
-    const orig = dict1[key];
-    const newValue = dict2[key];
-    if (newValue === undefined) return result;
-    if (orig === undefined) {
+    console.log();
+    console.log(`dict1 is ${vocabDictToStr(dict1)}`);
+    console.log(`dict2 is ${vocabDictToStr(dict2)}`);
+    console.log(`summing on key ${key}`);
+    
+    const value1 = dict1[key];
+    const value2 = dict2[key];
+    const newVisited = new Set([...visited, key]);
+
+    if (value2 === undefined) return dict1;
+
+    if (value1 === undefined) {
+        const result = {...dict1};
         result[key] = dict2[key];
         return result;
     }
 
-    if (orig.tag === Tag.Ref) {
-        return sumVocabToDict(dict1, orig.name, dict2);
+    if (value1.tag === Tag.Ref) {
+        // anything + ref, follow the ref
+        const newDict2 = mergeKeys(dict2, value1.key, key);
+        return sumKey(dict1, newDict2, value1.key, newVisited);
     }
 
-    if (newValue.tag === Tag.Ref) {
-        result = mergeKeys(dict1, key, newValue.name);
-
+    if (value2.tag === Tag.Ref) {
+        // lit + ref, move the lit to the ref's key, 
+        // and then sum on that key
+        //const newDict2 = mergeKeys(dict1, key, value2.key);
+        const result = sumKey(dict1, dict2, value2.key, newVisited);
         return result;
     }
-    
-    result[key] = sum(orig, newValue);
+
+    // lit + lit, the result is just the sum
+    const result = {...dict1};
+    result[key] = sum(value1, value2);
     return result;
 }
 
 export function mergeKeys(dict: VocabDict, key1: string, key2: string): VocabDict {
 
-    // if the keys are the same they're already merged
+    // if the keys are the same we don't have to do anything
     if (key1 === key2) return dict;
 
     const value1 = dict[key1];
     const value2 = dict[key2];
     
-    // in practice neither should be undefined, but just in case
-    if (value2 === undefined) return dict;
+    if (value1 === undefined && value2 === undefined) return dict;
 
     if (value1 === undefined) {    
         const result = {...dict};
@@ -134,13 +148,19 @@ export function mergeKeys(dict: VocabDict, key1: string, key2: string): VocabDic
         return result;
     }
 
+    if (value2 === undefined) {
+        const result = {...dict};
+        result[key2] = Ref(key1);
+        return result;
+    }
+
     // if either is a reference, follow the reference
     if (value1.tag === Tag.Ref) {
-        return mergeKeys(dict, value1.name, key2);
+        return mergeKeys(dict, value1.key, key2);
     }
 
     if (value2.tag === Tag.Ref) {
-        return mergeKeys(dict, key1, value2.name);
+        return mergeKeys(dict, key1, value2.key);
     }
 
     // both are literals.  make a new entry and point 
@@ -158,7 +178,7 @@ export function mergeKeys(dict: VocabDict, key1: string, key2: string): VocabDic
 export function toStr(v: Vocab): string {
     switch(v.tag) {
         case Tag.Lit: return "{" + [...v.tokens].join(",") + "}";
-        case Tag.Ref: return v.name;
+        case Tag.Ref: return v.key;
     }
 }
 
