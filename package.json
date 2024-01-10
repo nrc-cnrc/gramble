@@ -5,7 +5,6 @@
   "private": true,
   "scripts": {
     "build": "npm run build --workspaces",
-    "postinstall": "node ./libexec/postinstall.js",
     "test": "npm test --workspaces",
     "tests": "npm run --workspace packages/tests",
     "gramble": "gramble",
@@ -15,9 +14,6 @@
   "workspaces": [
     "packages/*"
   ],
-  "bin": {
-    "gramble": "packages/cli/run-locally"
-  },
   "author": "Patrick Littell",
   "contributors": [
     "Patrick Littell <Patrick.Littell@nrc-cnrc.gc.ca>",
