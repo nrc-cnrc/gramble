@@ -35,16 +35,14 @@ function test({
     results
 }: VocabTest): void {
     const vocabDict = vocToVocabDict(vocab);
-    console.log(desc + ":", vocabDictToStr(vocabDict));
-    describe(desc, function() {
-        for (const [k,v] of Object.entries(results)) {
-            it(`tape ${k} should have vocab ${v}`, function() {
-                const resultSet = getFromVocabDict(vocabDict, k);
-                const expectedSet = new Set(v);
-                expect(resultSet).to.deep.equal(new Set(expectedSet));
-            });
-        }
-    });
+    //console.log(desc + ":", vocabDictToStr(vocabDict));
+    for (const [k,v] of Object.entries(results)) {
+        it(`tape ${k} should have vocab ${v}`, function() {
+            const resultSet = getFromVocabDict(vocabDict, k);
+            const expectedSet = new Set(v);
+            expect(resultSet).to.deep.equal(new Set(expectedSet));
+        });
+    }
 }
 
 type MergeTest = VocabTest & { 
@@ -61,7 +59,14 @@ function mergeTest({
 }: MergeTest): void {
     const vocabDict = vocToVocabDict(vocab);
     const mergedVocab = mergeKeys(vocabDict, key1, key2);
-    test({desc, vocab: mergedVocab, results});
+    describe(desc, function() {
+        it(`should contain all input keys`, function() {
+            const originalKeys = Object.keys(vocabDict);
+            const resultKeys = Object.keys(mergedVocab);
+            expect(resultKeys).to.include.members(originalKeys);
+        });
+        test({desc, vocab: mergedVocab, results});
+    });
 }
 
 type SumTest = VocabTest & {
@@ -77,14 +82,21 @@ function sumTest({
     const vocabDict = vocToVocabDict(vocab);
     const vocabDict2 = vocToVocabDict(vocab2);
     const mergedVocab = sumKeys(vocabDict, vocabDict2);
-    test({desc, vocab: mergedVocab, results});
+    describe(desc, function() {
+        it(`should contain all input keys`, function() {
+            const originalKeys = Object.keys(vocabDict)
+                                    .concat(Object.keys(vocabDict2));
+            const resultKeys = Object.keys(mergedVocab);
+            expect(resultKeys).to.include.members(originalKeys);
+        });
+        test({desc, vocab: mergedVocab, results});
+    });
 }
 
 describe(`${testSuiteName(module)}`, function() {
 
     logTestSuite(this.title);
 
-    /*
     mergeTest({
         desc: "M1. Two literal sets",
         vocab: {
@@ -232,9 +244,8 @@ describe(`${testSuiteName(module)}`, function() {
         }
     });
 
-    */
     sumTest({
-        desc: "S3: Ref on the left",
+        desc: "S3a: Ref on the left",
         vocab: {
             "t1": Ref("X"),
             "X": ["a","b"],
@@ -247,185 +258,248 @@ describe(`${testSuiteName(module)}`, function() {
         }
     });
 
-});
-
-/*
-type VocabTest = {
-    desc: string,
-    vocab: VocabSet,
-    tokens: Iterable<string>,
-    wildcard: boolean
-};
-
-function test({
-    desc,
-    vocab,
-    tokens,
-    wildcard
-}: VocabTest): void {
-
-    describe(desc, function() {
-        it(`should have tokens ${tokens}`, function() {
-            expect(vocab.tokens).to.deep.equal(new Set(tokens));
-        });
-        it(`should${wildcard?"":" not"} be a wildcard`, function() {
-            expect(vocab.wildcard).to.deep.equal(wildcard);
-        });
+    sumTest({
+        desc: "S3b: Ref chain on the left",
+        vocab: {
+            "t1": Ref("X"),
+            "X": Ref("Y"),
+            "Y": ["a","b"],
+        },
+        vocab2: {
+            "t1": ["a","c"],
+        },
+        results: {
+            "t1": ["a","b","c"]
+        }
     });
-}
-
-describe(`${testSuiteName(module)}`, function() {
-
-    logTestSuite(this.title);
-
-    test({
-        desc: "1. {}",
-        vocab: VocabSet([]),
-        tokens: [],
-        wildcard: false
-    }); 
-
-    test({
-        desc: "2. {*}",
-        vocab: VocabSet([], true),
-        tokens: [],
-        wildcard: true
-    }); 
     
-    test({
-        desc: "3. {a}",
-        vocab: VocabSet(["a"]),
-        tokens: ["a"],
-        wildcard: false
-    }); 
+    sumTest({
+        desc: "S3c: Ref on the right",
+        vocab: {
+            "t1": ["a","b"],
+        },
+        vocab2: {
+            "t1": Ref("X"),
+            "X": ["a","c"],
+        },
+        results: {
+            "t1": ["a","b","c"]
+        }
+    });
     
-    test({
-        desc: "4. {a,*}",
-        vocab: VocabSet(["a"], true),
-        tokens: ["a"],
-        wildcard: true
-    }); 
+    sumTest({
+        desc: "S3c: Ref on the right, different ordering",
+        vocab: {
+            "t1": ["a","b"],
+        },
+        vocab2: {
+            "X": ["a","c"],
+            "t1": Ref("X"),
+        },
+        results: {
+            "t1": ["a","b","c"]
+        }
+    });
 
-    test({
-        desc: "5a. {a,b} + {}",
-        vocab: vocabUnion(VocabSet(["a","b"]),
-                          VocabSet([])),
-        tokens: ["a","b"],
-        wildcard: false
-    }); 
+    sumTest({
+        desc: "S4a: Ref chain on the right",
+        vocab: {
+            "t1": ["a","b"],
+        },
+        vocab2: {
+            "t1": Ref("X"),
+            "X": Ref("Y"),
+            "Y": ["a","c"],
+        },
+        results: {
+            "t1": ["a","b","c"]
+        }
+    });
     
-    test({
-        desc: "5b. {} + {a,c}",
-        vocab: vocabUnion(VocabSet([]),
-                          VocabSet(["a","c"])),
-        tokens: ["a","c"],
-        wildcard: false
-    }); 
+    sumTest({
+        desc: "S4b: Ref chain on the right, ordering 2",
+        vocab: {
+            "t1": ["a","b"],
+        },
+        vocab2: {
+            "t1": Ref("X"),
+            "Y": ["a","c"],
+            "X": Ref("Y"),
+        },
+        results: {
+            "t1": ["a","b","c"]
+        }
+    });
     
-    test({
-        desc: "6. {a,b} + {a,c}",
-        vocab: vocabUnion(VocabSet(["a","b"]),
-                          VocabSet(["a","c"])),
-        tokens: ["a","b","c"],
-        wildcard: false
-    }); 
-    
-    test({
-        desc: "6b. {a,b} + {a,c,*}",
-        vocab: vocabUnion(VocabSet(["a","b"]),
-                          VocabSet(["a","c"], true)),
-        tokens: ["a","b","c"],
-        wildcard: true
-    }); 
-    
-    
-    test({
-        desc: "6c. {a,b,*} + {a,c}",
-        vocab: vocabUnion(VocabSet(["a","b"], true),
-                          VocabSet(["a","c"])),
-        tokens: ["a","b","c"],
-        wildcard: true
-    }); 
-    
-    
-    test({
-        desc: "7. {a,b} & {a,c}",
-        vocab: vocabIntersection(VocabSet(["a","b"]),
-                          VocabSet(["a","c"])),
-        tokens: ["a"],
-        wildcard: false
-    }); 
-    
-    test({
-        desc: "8a. {a,b} & {}",
-        vocab: vocabIntersection(VocabSet(["a","b"]),
-                                VocabSet([])),
-        tokens: [],
-        wildcard: false
-    }); 
+    sumTest({
+        desc: "S4c: Ref chain on the right, ordering 3",
+        vocab: {
+            "t1": ["a","b"],
+        },
+        vocab2: {
+            "X": Ref("Y"),
+            "t1": Ref("X"),
+            "Y": ["a","c"],
+        },
+        results: {
+            "t1": ["a","b","c"]
+        }
+    });
 
-    test({
-        desc: "8b. {} & {a,c}",
-        vocab: vocabIntersection(VocabSet([]),
-                          VocabSet(["a","c"])),
-        tokens: [],
-        wildcard: false
-    }); 
+    sumTest({
+        desc: "S4d: Ref chain on the right, ordering 4",
+        vocab: {
+            "t1": ["a","b"],
+        },
+        vocab2: {
+            "X": Ref("Y"),
+            "Y": ["a","c"],
+            "t1": Ref("X"),
+        },
+        results: {
+            "t1": ["a","b","c"]
+        }
+    });
 
-    test({
-        desc: "9a. {a,b} & {*}",
-        vocab: vocabIntersection(VocabSet(["a","b"]),
-                                VocabSet([], true)),
-        tokens: ["a","b"],
-        wildcard: false
-    }); 
+    sumTest({
+        desc: "S4e: Ref chain on the right, ordering 5",
+        vocab: {
+            "t1": ["a","b"],
+        },
+        vocab2: {
+            "Y": ["a","c"],
+            "t1": Ref("X"),
+            "X": Ref("Y"),
+        },
+        results: {
+            "t1": ["a","b","c"]
+        }
+    });
 
-    test({
-        desc: "9b. {*} & {a,c}",
-        vocab: vocabIntersection(VocabSet([], true),
-                          VocabSet(["a","c"])),
-        tokens: ["a","c"],
-        wildcard: false
-    }); 
+    sumTest({
+        desc: "S4f: Ref chain on the right, ordering 6",
+        vocab: {
+            "t1": ["a","b"],
+        },
+        vocab2: {
+            "Y": ["a","c"],
+            "X": Ref("Y"),
+            "t1": Ref("X"),
+        },
+        results: {
+            "t1": ["a","b","c"]
+        }
+    });
+
+    sumTest({
+        desc: "S5a: Ref on both sides",
+        vocab: {
+            "t1": Ref("X"),
+            "X": ["a","b"],
+        },
+        vocab2: {
+            "t1": Ref("Y"),
+            "Y": ["a","c"],
+        },
+        results: {
+            "t1": ["a","b","c"]
+        }
+    });
+
+    sumTest({
+        desc: "S5b: Ref on both sides, different ordering",
+        vocab: {
+            "t1": Ref("X"),
+            "X": ["a","b"],
+        },
+        vocab2: {
+            "Y": ["a","c"],
+            "t1": Ref("Y"),
+        },
+        results: {
+            "t1": ["a","b","c"]
+        }
+    });
     
-    test({
-        desc: "10a. {a,b} & {a,c,*}",
-        vocab: vocabIntersection(VocabSet(["a","b"]),
-                                VocabSet(["a","c"], true)),
-        tokens: ["a","b"],
-        wildcard: false
-    }); 
+    sumTest({
+        desc: "S6a: Ref on both sides, same label",
+        vocab: {
+            "t1": Ref("X"),
+            "X": ["a","b"],
+        },
+        vocab2: {
+            "t1": Ref("X"),
+            "X": ["a","c"],
+        },
+        results: {
+            "t1": ["a","b","c"]
+        }
+    });
 
-    test({
-        desc: "10b. {a,b,*} & {a,c}",
-        vocab: vocabIntersection(VocabSet(["a","b"], true),
-                                VocabSet(["a","c"])),
-        tokens: ["a","c"],
-        wildcard: false
-    }); 
+    sumTest({
+        desc: "S6b: Ref on both sides, same label, different ordering",
+        vocab: {
+            "t1": Ref("X"),
+            "X": ["a","b"],
+        },
+        vocab2: {
+            "X": ["a","c"],
+            "t1": Ref("X"),
+        },
+        results: {
+            "t1": ["a","b","c"]
+        }
+    });
 
-    test({
-        desc: "11. {a,b,*} & {a,c,*}",
-        vocab: vocabIntersection(VocabSet(["a","b"], true),
-                                VocabSet(["a","c"], true)),
-        tokens: ["a", "b", "c"],
-        wildcard: true
-    }); 
+    sumTest({
+        desc: "S7a: Ref chain on both sides, all different labels",
+        vocab: {
+            "t1": Ref("W"),
+            "W": Ref("X"),
+            "X": ["a","b"],
+        },
+        vocab2: {
+            "t1": Ref("Y"),
+            "Y": Ref("Z"),
+            "Z": ["a","c"],
+        },
+        results: {
+            "t1": ["a","b","c"]
+        }
+    });
 
-    test({
-        desc: "12a. {a,b,*} & {}",
-        vocab: vocabIntersection(VocabSet(["a","b"], true),
-                                VocabSet([])),
-        tokens: [],
-        wildcard: false
-    }); 
+    sumTest({
+        desc: "S7b: Ref chain on both sides, all same labels",
+        vocab: {
+            "t1": Ref("X"),
+            "X": Ref("Y"),
+            "Y": ["a","b"],
+        },
+        vocab2: {
+            "t1": Ref("X"),
+            "X": Ref("Y"),
+            "Y": ["a","c"],
+        },
+        results: {
+            "t1": ["a","b","c"]
+        }
+    });
 
-    test({
-        desc: "8b. {} & {a,c,*}",
-        vocab: vocabIntersection(VocabSet([]),
-                          VocabSet(["a","c"], true)),
-        tokens: [],
-        wildcard: false
-    }); 
+    sumTest({
+        desc: "S7c: Ref chain on both sides, backwards labels",
+        vocab: {
+            "t1": Ref("X"),
+            "X": Ref("Y"),
+            "Y": ["a","b"],
+        },
+        vocab2: {
+            "t1": Ref("Y"),
+            "Y": Ref("X"),
+            "X": ["a","c"],
+        },
+        results: {
+            "t1": ["a","b","c"]
+        }
+    });
 
-}); */
+});  

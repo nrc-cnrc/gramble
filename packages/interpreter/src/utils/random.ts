@@ -42,7 +42,13 @@ export function randomChoice<T>(xs: T[]): T {
     return xs[i];
 }
 
-export function randomString(len: number): string {
+/**
+ * Lazy way to get a random alphanumeric string of a particular
+ * length.  Defaults to Infinity but that doesn't result
+ * in an infinite string here, the result is naturally limited by the 
+ * precision of floating-point numbers.
+ */
+export function randomString(len: number=Infinity): string {
     return (Math.random() + 1).toString(36).substring(2, len+2);
 }
 

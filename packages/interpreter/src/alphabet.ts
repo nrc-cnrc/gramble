@@ -77,101 +77,87 @@ function tokenize(v: Lit): Tokenized {
     return Tokenized(newTokens);
 }
 
+/**
+ * sumKeys takes two VocabDicts and returns their sum.  
+ */
 export function sumKeys(c1: VocabDict, c2: VocabDict): VocabDict {
     let result: VocabDict = {...c1};
-    let visited: Set<string> = new Set();
-    for (const key of Object.keys(c2)) {
-        result = sumKey(result, c2, key, visited);
-        visited.add(key);
+    for (const [k, v] of Object.entries(c2)) {
+        result = sumKey(result, k, v);
     }
     return result;
 }
 
+/**
+ * sumKey is the workhorse for the bigger sumKeys operation.  It's complicated
+ * by the fact that the values may be references to other keys, meaning we have
+ * to follow reference chains and potentially re-direct them so that the result
+ * contains all the keys of both original dicts.
+ */
 function sumKey(
-    dict1: VocabDict, 
-    dict2: VocabDict, 
+    dict: VocabDict, 
     key: string, 
-    visited: Set<string>
+    newValue: Vocab
 ): VocabDict {
-    if (visited.has(key)) return dict1;
-
-    console.log();
-    console.log(`dict1 is ${vocabDictToStr(dict1)}`);
-    console.log(`dict2 is ${vocabDictToStr(dict2)}`);
-    console.log(`summing on key ${key}`);
     
-    const value1 = dict1[key];
-    const value2 = dict2[key];
-    const newVisited = new Set([...visited, key]);
+    const origValue = dict[key] || Atomic();
 
-    if (value2 === undefined) return dict1;
-
-    if (value1 === undefined) {
-        const result = {...dict1};
-        result[key] = dict2[key];
-        return result;
+    if (origValue.tag === Tag.Ref) {
+        // ref + anything, follow the ref
+        return sumKey(dict, origValue.key, newValue);
     }
 
-    if (value1.tag === Tag.Ref) {
-        // anything + ref, follow the ref
-        const newDict2 = mergeKeys(dict2, value1.key, key);
-        return sumKey(dict1, newDict2, value1.key, newVisited);
-    }
-
-    if (value2.tag === Tag.Ref) {
-        // lit + ref, move the lit to the ref's key, 
-        // and then sum on that key
-        //const newDict2 = mergeKeys(dict1, key, value2.key);
-        const result = sumKey(dict1, dict2, value2.key, newVisited);
+    if (newValue.tag === Tag.Ref) {
+        // lit + ref.  at some point (past or future), the value
+        // of this ref will be copied into dict1; now is not the 
+        // time to do it.  what we DO have to do is make it so 
+        // key1 points there.  before this, though, we have to grab
+        // anything currently in dict1[key1] and get it into 
+        // dict1[value2.key], so it isn't overwritten by this.
+        const result = mergeKeys(dict, key, newValue.key);
         return result;
     }
 
     // lit + lit, the result is just the sum
-    const result = {...dict1};
-    result[key] = sum(value1, value2);
+    const result = {...dict};
+    result[key] = sum(origValue, newValue);
     return result;
 }
 
-export function mergeKeys(dict: VocabDict, key1: string, key2: string): VocabDict {
+/**
+ * mergeKeys takes a single dictionary and sums the values of two keys.  This 
+ * is necessary when calculating the vocabulary of MatchGrammars, and is also 
+ * necessary for some of the reference chain fix-up of sumKeys.
+ * 
+ * Like sumKeys, this function is complicated by the need to follow references, 
+ * but it's not as difficult because there's no need to fuse two different 
+ * ref chains into one.  There's only one dict here.
+ */
+export function mergeKeys(
+    dict: VocabDict, 
+    key1: string, 
+    key2: string, 
+): VocabDict {
 
     // if the keys are the same we don't have to do anything
     if (key1 === key2) return dict;
 
-    const value1 = dict[key1];
-    const value2 = dict[key2];
-    
-    if (value1 === undefined && value2 === undefined) return dict;
-
-    if (value1 === undefined) {    
-        const result = {...dict};
-        result[key1] = Ref(key2);
-        return result;
-    }
-
-    if (value2 === undefined) {
-        const result = {...dict};
-        result[key2] = Ref(key1);
-        return result;
-    }
+    const value1 = dict[key1] || Atomic();
+    const value2 = dict[key2] || Atomic();
 
     // if either is a reference, follow the reference
-    if (value1.tag === Tag.Ref) {
-        return mergeKeys(dict, value1.key, key2);
-    }
-
-    if (value2.tag === Tag.Ref) {
-        return mergeKeys(dict, key1, value2.key);
-    }
+    if (value1.tag === Tag.Ref) return mergeKeys(dict, value1.key, key2);
+    if (value2.tag === Tag.Ref) return mergeKeys(dict, key1, value2.key);
 
     // both are literals.  make a new entry and point 
     // both keys to it
-    const newKey = "$" + randomString(3);
-    const newValue = sum(value1, value2);
     const result = {...dict};
+    const newKey = "$" + randomString();
     result[key1] = Ref(newKey);
     result[key2] = Ref(newKey);
-    result[newKey] = newValue;
+    result[newKey] = sum(value1, value2);
     return result;
+
 }
 
 
