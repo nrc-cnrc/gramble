@@ -1004,7 +1004,7 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "21a",
         grammar: Replace("e", "a", "h", "llo"),
         tapes: {
-            "$i": ["h","e","l","o"],
+            "$i": ["h","e","l","o","a"],
             "$o": ["h","e","l","o","a"],
         },
     });
@@ -1200,7 +1200,7 @@ describe(`${testSuiteName(module)}`, function() {
                     NamedReplace("R1", "e", "a")),
         tapes: {
             "t1": ["h","e","l","o","a"],
-            ".R1": ["h","e","l","o"],
+            ".R1": ["h","e","l","o","a"],
         },
     });
     
@@ -1211,8 +1211,8 @@ describe(`${testSuiteName(module)}`, function() {
                     NamedReplace("R2", "a", "u")),
         tapes: {
             "t1": ["h","e","l","o","a","u"],
-            ".R2": ["h","e","l","o","a"],
-            ".R1": ["h","e","l","o"],
+            ".R2": ["h","e","l","o","a","u"],
+            ".R1": ["h","e","l","o","a","u"],
         },
     });
 
@@ -1255,7 +1255,7 @@ describe(`${testSuiteName(module)}`, function() {
         symbol: "a",
         tapes: {
             "t1": ["h","e","l","o","a"],
-            ".R1": ["h","e","l","o"],
+            ".R1": ["h","e","l","o","a"],
         },
     });
     
@@ -1270,8 +1270,8 @@ describe(`${testSuiteName(module)}`, function() {
         symbol: "a",
         tapes: {
             "t1": ["h","e","l","o","a","u"],
-            ".R2": ["h","e","l","o","a"],
-            ".R1": ["h","e","l","o"],
+            ".R2": ["h","e","l","o","a","u"],
+            ".R1": ["h","e","l","o","a","u"],
         },
     });
 
@@ -1489,7 +1489,7 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "38a",
         grammar: Replace("e", "a", "h", "llo", t3("1SG")),
         tapes: {
-            "$i": ["h","e","l","o"],
+            "$i": ["h","e","l","o","a"],
             "$o": ["h","e","l","o","a"],
             "t3": ["1","S","G"],
         },
@@ -1500,7 +1500,7 @@ describe(`${testSuiteName(module)}`, function() {
         atomicity: true,
         grammar: Replace("e", "a", "h", "llo", t3("1SG")),
         tapes: {
-            "$i": ["h","e","l","o"],
+            "$i": ["h","e","l","o","a"],
             "$o": ["h","e","l","o","a"],
             "t3": ["1SG"],
         },

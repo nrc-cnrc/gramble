@@ -171,7 +171,13 @@ function mapKey(
     op: (v1: Lit, v2: Lit) => Lit,
 ): VocabDict {
     
-    const origValue = dict[key] || Atomic();
+    const origValue = dict[key];
+
+    if (origValue === undefined) {
+        const result = {...dict};
+        result[key] = newValue;
+        return result;
+    }
 
     if (origValue.tag === Tag.Ref) {
         // ref + anything, follow the ref

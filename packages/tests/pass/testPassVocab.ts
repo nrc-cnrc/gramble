@@ -795,6 +795,25 @@ describe(`${testSuiteName(module)}`, function() {
         }
     });
 
+    
+    // intersection with non-intersected tapes
+    multTest({
+        desc: "M4: Atomic & Atomic",
+        vocab: {
+            t1: Atom("ab"),
+            t2: Atom("xy"),
+        },
+        vocab2: {
+            t1: Atom("ac"),
+            t3: Atom("xz"),
+        },
+        expected: {
+            t1: Conc("ab","ac"),
+            t2: Atom("xy"),
+            t3: Atom("xz")
+        }
+    });
+
     multTest({
         desc: "M4: Atom * Conc, ref chain on both sides, backwards labels",
         vocab: {
@@ -969,7 +988,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     // intersection with non-intersected tapes
     intersectTest({
-        desc: "I1b: Atomic & Concatenated",
+        desc: "I4: Atomic & Concatenated",
         vocab: {
             t1: Atom("ab"),
             t2: Atom("xy"),
