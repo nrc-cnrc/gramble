@@ -3,6 +3,11 @@ import { Dict, flatmapSet, union } from "./utils/func";
 import { randomString } from "./utils/random";
 import { tokenizeUnicode } from "./utils/strings";
 
+
+// *******************
+// VOCAB-RELATED TYPES
+// *******************
+
 export type VocabDict = Dict<Vocab>;
 
 export const enum Tag {
@@ -15,25 +20,42 @@ export const enum Atomicity {
     Concatenated = "Concatenated",
     Tokenized = "Tokenized",
 }
-export type Lit = Atomic
-                | Concatenated
-                | Tokenized;
-                           
-export type Vocab = Lit | Ref;
-
-export type Ref = {
-    tag: Tag.Ref,
-    key: string 
-}
-
-export function Ref(key: string): Ref {
-    return { tag: Tag.Ref, key };
-}
 
 export type Atomic = {
     tag: Tag.Lit,
     atomicity: Atomicity.Atomic,
     tokens: Set<string>
+}
+
+export type Concatenated = {
+    tag: Tag.Lit,
+    atomicity: Atomicity.Concatenated,
+    tokens: Set<string>,
+}
+
+export type Tokenized = {
+    tag: Tag.Lit,
+    atomicity: Atomicity.Tokenized,
+    tokens: Set<string>
+}
+
+export type Lit = Atomic
+                | Concatenated
+                | Tokenized;
+                           
+export type Ref = {
+    tag: Tag.Ref,
+    key: string 
+}
+
+export type Vocab = Lit | Ref;
+
+// ********************************************
+// CONVENIENCE CONSTRUCTORS FOR VOCAB LITERALS
+// ********************************************
+
+export function Ref(key: string): Ref {
+    return { tag: Tag.Ref, key };
 }
 
 export function Atomic(
@@ -45,12 +67,6 @@ export function Atomic(
     return result;
 }
 
-export type Concatenated = {
-    tag: Tag.Lit,
-    atomicity: Atomicity.Concatenated,
-    tokens: Set<string>,
-}
-
 export function Concatenated(
     tokens: Set<string> = new Set(),
 ): Lit {
@@ -59,52 +75,107 @@ export function Concatenated(
     return result;
 }
 
-export type Tokenized = {
-    tag: Tag.Lit,
-    atomicity: Atomicity.Tokenized,
-    tokens: Set<string>
-}
-
 export function Tokenized(
     tokens: Set<string> = new Set(),
 ): Tokenized {
     return { tag: Tag.Lit, atomicity: Atomicity.Tokenized, tokens };
 }
 
-function tokenize(v: Lit): Tokenized {
+// ****************************
+// OPERATIONS ON VOCAB LITERALS
+// ****************************
+
+export function tokenize(v: Lit): Tokenized {
     if (v.atomicity === Atomicity.Tokenized) return v;
     const newTokens = flatmapSet(v.tokens, t => tokenizeUnicode(t));
     return Tokenized(newTokens);
 }
 
-/**
- * sumKeys takes two VocabDicts and returns their sum.  
- */
+export function sum(c1: Lit, c2: Lit): Lit {
+
+    if (c1.atomicity === Atomicity.Tokenized || c2.atomicity === Atomicity.Tokenized) {
+        // If either is tokenized, the result is too
+        const splitC1 = tokenize(c1);
+        const splitC2 = tokenize(c2);
+        return Tokenized(union(splitC1.tokens, splitC2.tokens));
+    }
+    
+    if (c1.atomicity === Atomicity.Concatenated || c2.atomicity === Atomicity.Concatenated) {
+        // If either is concatenated, the result is too
+        return Concatenated(union(c1.tokens, c2.tokens));
+    }
+
+    return Atomic(union(c1.tokens, c2.tokens))
+}
+
+export function product(c1: Lit, c2: Lit): Lit {
+    const result = sum(c1, c2);
+    if (result.atomicity === Atomicity.Atomic) {
+        return Concatenated(result.tokens);
+    }
+    return result;
+}
+
+export function intersect(c1: Lit, c2: Lit): Lit {
+
+    if (c1.atomicity === Atomicity.Atomic && c2.atomicity === Atomicity.Atomic) {
+        // only when both operands are atomic is the result atomic
+        return Atomic(union(c1.tokens, c2.tokens));
+    }
+
+    // otherwise it's Tokenized
+    const splitV1 = tokenize(c1);
+    const splitV2 = tokenize(c2);
+    return Tokenized(union(splitV1.tokens, splitV2.tokens));
+}
+
+// **************************
+// VOCAB COMBINING OPERATIONS
+// **************************
+
 export function sumKeys(c1: VocabDict, c2: VocabDict): VocabDict {
+    return mapKeys(c1, c2, sum);
+}
+
+export function multKeys(c1: VocabDict, c2: VocabDict): VocabDict {
+    return mapKeys(c1, c2, product);
+}
+
+export function intersectKeys(c1: VocabDict, c2: VocabDict): VocabDict {
+    return mapKeys(c1, c2, intersect);
+}
+
+function mapKeys(
+    c1: VocabDict, 
+    c2: VocabDict,    
+    op: (v1: Lit, v2: Lit) => Lit
+): VocabDict {
     let result: VocabDict = {...c1};
     for (const [k, v] of Object.entries(c2)) {
-        result = sumKey(result, k, v);
+        result = mapKey(result, k, v, op);
     }
     return result;
 }
 
 /**
- * sumKey is the workhorse for the bigger sumKeys operation.  It's complicated
+ * mapKey is the workhorse for the bigger sumKeys/prodKeys/intersectKeys 
+ * operations.  This isn't a straightforward map, though; it's complicated
  * by the fact that the values may be references to other keys, meaning we have
  * to follow reference chains and potentially re-direct them so that the result
  * contains all the keys of both original dicts.
  */
-function sumKey(
+function mapKey(
     dict: VocabDict, 
     key: string, 
-    newValue: Vocab
+    newValue: Vocab,
+    op: (v1: Lit, v2: Lit) => Lit,
 ): VocabDict {
     
     const origValue = dict[key] || Atomic();
 
     if (origValue.tag === Tag.Ref) {
         // ref + anything, follow the ref
-        return sumKey(dict, origValue.key, newValue);
+        return mapKey(dict, origValue.key, newValue, op);
     }
 
     if (newValue.tag === Tag.Ref) {
@@ -114,13 +185,12 @@ function sumKey(
         // key1 points there.  before this, though, we have to grab
         // anything currently in dict1[key1] and get it into 
         // dict1[value2.key], so it isn't overwritten by this.
-        const result = mergeKeys(dict, key, newValue.key);
-        return result;
+        return mergeKeys(dict, key, newValue.key);
     }
 
     // lit + lit, the result is just the sum
     const result = {...dict};
-    result[key] = sum(origValue, newValue);
+    result[key] = op(origValue, newValue);
     return result;
 }
 
@@ -157,13 +227,11 @@ export function mergeKeys(
     result[key2] = Ref(newKey);
     result[newKey] = sum(value1, value2);
     return result;
-
 }
-
 
 export function toStr(v: Vocab): string {
     switch(v.tag) {
-        case Tag.Lit: return "{" + [...v.tokens].join(",") + "}";
+        case Tag.Lit: return `(${v.atomicity} ` + [...v.tokens].join(" ") + ")";
         case Tag.Ref: return v.key;
     }
 }
@@ -172,37 +240,4 @@ export function vocabDictToStr(v: VocabDict): string {
     return Object.entries(v)
                  .map(([k,v]) => `${k}:${toStr(v)}`)
                  .join(","); 
-}
-
-
-export function sum(c1: Lit, c2: Lit): Lit {
-
-    // If either is a string, both must be.  tokenize them both,
-    // if either is already tokenized it won't matter
-    if (c1.atomicity === Atomicity.Tokenized || 
-        c2.atomicity === Atomicity.Tokenized) {
-        const splitC1 = tokenize(c1);
-        const splitC2 = tokenize(c2);
-        return {
-            tag: Tag.Lit,
-            atomicity: Atomicity.Tokenized,
-            tokens: union(splitC1.tokens, splitC2.tokens)
-        };
-    }
-    
-    // If either is a string, both become seq
-    if (c1.atomicity === Atomicity.Concatenated || 
-        c2.atomicity === Atomicity.Concatenated) {
-        return {
-            tag: Tag.Lit,
-            atomicity: Atomicity.Concatenated,
-            tokens: union(c1.tokens, c2.tokens)
-        };
-    }
-
-    return {
-        tag: Tag.Lit,
-        atomicity: Atomicity.Atomic,
-        tokens: union(c1.tokens, c2.tokens)
-    };
 }

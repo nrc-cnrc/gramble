@@ -1,51 +1,78 @@
 import { expect } from "chai";
 import { testSuiteName, logTestSuite } from "../testUtil";
-import { Ref, Tag, Tokenized, Vocab, VocabDict, mergeKeys, sumKeys, vocabDictToStr } from "../../interpreter/src/alphabet";
-import { Dict, mapDict } from "../../interpreter/src/utils/func";
+import { 
+    Atomic, Concatenated, Lit, Ref, 
+    Tag, VocabDict, 
+    intersectKeys, mergeKeys, 
+    multKeys, sumKeys, tokenize, 
+} from "../../interpreter/src/alphabet";
 
 
-function getFromVocabDict(v: VocabDict, key: string): Set<string> {
+function getFromVocabDict(v: VocabDict, key: string): Lit {
     const value = v[key];
-    if (value === undefined) return new Set();
+    if (value === undefined) return Atomic(new Set());
     switch (value.tag) {
-        case Tag.Lit: return value.tokens;
+        case Tag.Lit: return value;
         case Tag.Ref: return getFromVocabDict(v, value.key);
     }
 }
 
-/** A simplified VocabDict for easy entry */
-type Voc = Dict<Vocab|string[]>;
+// *************************************************
+// CONVENIENCE FUNCTIONS FOR EASY TEST SPECIFICATION
+// *************************************************
 
-function vocToVocabDict(voc: Voc): VocabDict {
-    return mapDict(voc, (k,v) => {
-        if (Array.isArray(v)) return Tokenized(new Set(v));
-        return v;
-    });
+function Atom(...ss: string[]): Lit {
+    return Atomic(new Set(ss));
 }
 
-type VocabTest = {
+function Conc(...ss: string[]): Lit {
+    return Concatenated(new Set(ss));
+}
+
+function Tok(...ss: string[]): Lit { 
+    return tokenize(Atom(...ss));
+}
+
+// ******************************
+// PARAM TYPES AND TEST FUNCTIONS
+// ******************************
+
+type VocabParams = {
     desc: string,
-    vocab: Voc,
-    results: Dict<string[]>
+    vocab: VocabDict,
+    expected: VocabDict,
+    origKeys: string[]
 };
 
 function test({
     desc,
     vocab,
-    results
-}: VocabTest): void {
-    const vocabDict = vocToVocabDict(vocab);
+    expected,
+    origKeys
+}: VocabParams): void {
     //console.log(desc + ":", vocabDictToStr(vocabDict));
-    for (const [k,v] of Object.entries(results)) {
-        it(`tape ${k} should have vocab ${v}`, function() {
-            const resultSet = getFromVocabDict(vocabDict, k);
-            const expectedSet = new Set(v);
-            expect(resultSet).to.deep.equal(new Set(expectedSet));
+    describe(desc, function() {
+        it(`should contain all input keys`, function() {
+            const resultKeys = Object.keys(vocab);
+            expect(resultKeys).to.include.members(origKeys);
         });
-    }
+        for (const k of Object.keys(expected)) {
+            const systemValue = getFromVocabDict(vocab, k);
+            const expectedValue = getFromVocabDict(expected, k);
+            it(`tape ${k} should have atomicity ${expectedValue.atomicity}`, function() {
+                expect(systemValue.atomicity).to.equal(expectedValue.atomicity);
+            });
+            it(`tape ${k} should have tokens ${[...expectedValue.tokens]}`, function() {
+                expect(systemValue.tokens).to.deep.equal(new Set(expectedValue.tokens));
+            });
+        }
+    });
 }
 
-type MergeTest = VocabTest & { 
+type MergeParams = {
+    desc: string,
+    vocab: VocabDict,
+    expected: VocabDict,
     key1: string,
     key2: string,
 }
@@ -55,42 +82,44 @@ function mergeTest({
     vocab,
     key1,
     key2,
-    results
-}: MergeTest): void {
-    const vocabDict = vocToVocabDict(vocab);
-    const mergedVocab = mergeKeys(vocabDict, key1, key2);
-    describe(desc, function() {
-        it(`should contain all input keys`, function() {
-            const originalKeys = Object.keys(vocabDict);
-            const resultKeys = Object.keys(mergedVocab);
-            expect(resultKeys).to.include.members(originalKeys);
-        });
-        test({desc, vocab: mergedVocab, results});
-    });
+    expected
+}: MergeParams): void {
+    const mergedVocab = mergeKeys(vocab, key1, key2);
+    const origKeys = Object.keys(vocab);
+    test({desc, vocab: mergedVocab, expected, origKeys});
 }
 
-type SumTest = VocabTest & {
-    vocab2: Voc,
+type OpParams = {
+    desc: string,
+    vocab: VocabDict,
+    expected: VocabDict,
+    vocab2: VocabDict,
 }
 
-function sumTest({
+function opTest({
     desc,
     vocab,
     vocab2,
-    results
-}: SumTest): void {
-    const vocabDict = vocToVocabDict(vocab);
-    const vocabDict2 = vocToVocabDict(vocab2);
-    const mergedVocab = sumKeys(vocabDict, vocabDict2);
-    describe(desc, function() {
-        it(`should contain all input keys`, function() {
-            const originalKeys = Object.keys(vocabDict)
-                                    .concat(Object.keys(vocabDict2));
-            const resultKeys = Object.keys(mergedVocab);
-            expect(resultKeys).to.include.members(originalKeys);
-        });
-        test({desc, vocab: mergedVocab, results});
-    });
+    expected
+}: OpParams, 
+    op: (v1: VocabDict, v2: VocabDict) => VocabDict
+): void {
+    const mergedVocab = op(vocab, vocab2);
+    const origKeys = Object.keys(vocab)
+                            .concat(Object.keys(vocab2));
+    test({desc, vocab: mergedVocab, expected, origKeys});
+}
+
+function sumTest(params: OpParams): void {
+    opTest(params, sumKeys);
+}
+
+function multTest(params: OpParams): void {
+    opTest(params, multKeys);
+}
+
+function intersectTest(params: OpParams): void {
+    opTest(params, intersectKeys);
 }
 
 describe(`${testSuiteName(module)}`, function() {
@@ -100,406 +129,851 @@ describe(`${testSuiteName(module)}`, function() {
     mergeTest({
         desc: "M1. Two literal sets",
         vocab: {
-            "t1": ["a","b"],
-            "t2": ["a","c"]
+            t1: Atom("a","b"),
+            t2: Atom("a","c")
         },
         key1: "t1",
         key2: "t2",
-        results: {
-            t1: ["a","b","c"],
-            t2: ["a","b","c"]
+        expected: {
+            t1: Atom("a","b","c"),
+            t2: Atom("a","b","c")
         }
     });
     
     mergeTest({
         desc: "M2a. Literal and ref",
         vocab: {
-            "t1": ["a","b"],
-            "t2": Ref("t3"),
-            "t3": ["a","c"]
+            t1: Atom("a","b"),
+            t2: Ref("t3"),
+            t3: Atom("a","c")
         },
         key1: "t1",
         key2: "t2",
-        results: {
-            t1: ["a","b","c"],
-            t2: ["a","b","c"]
+        expected: {
+            t1: Atom("a","b","c"),
+            t2: Atom("a","b","c")
         }
     });
 
     mergeTest({
         desc: "M2b. Ref and literal",
         vocab: {
-            "t1": Ref("t3"),
-            "t2": ["a","c"],
-            "t3": ["a","b"],
+            t1: Ref("t3"),
+            t2: Atom("a","c"),
+            t3: Atom("a","b"),
         },
         key1: "t1",
         key2: "t2",
-        results: {
-            t1: ["a","b","c"],
-            t2: ["a","b","c"]
+        expected: {
+            t1: Atom("a","b","c"),
+            t2: Atom("a","b","c")
         }
     });
 
     mergeTest({
         desc: "M3. Two refs",
         vocab: {
-            "t1": Ref("t3"),
-            "t2": Ref("t4"),
-            "t3": ["a","b"],
-            "t4": ["a","c"],
+            t1: Ref("t3"),
+            t2: Ref("t4"),
+            t3: Atom("a","b"),
+            t4: Atom("a","c"),
         },
         key1: "t1",
         key2: "t2",
-        results: {
-            t1: ["a","b","c"],
-            t2: ["a","b","c"]
+        expected: {
+            t1: Atom("a","b","c"),
+            t2: Atom("a","b","c")
         }
     });
 
     mergeTest({
         desc: "M4a. Chain of refs on the left side",
         vocab: {
-            "t1": Ref("t3"),
-            "t2": ["a","b"],
-            "t3": Ref("t4"),
-            "t4": ["a","c"],
+            t1: Ref("t3"),
+            t2: Atom("a","b"),
+            t3: Ref("t4"),
+            t4: Atom("a","c"),
         },
         key1: "t1",
         key2: "t2",
-        results: {
-            t1: ["a","b","c"],
-            t2: ["a","b","c"]
+        expected: {
+            t1: Atom("a","b","c"),
+            t2: Atom("a","b","c")
         }
     });
 
     mergeTest({
         desc: "M4b. Chain of refs on the right side",
         vocab: {
-            "t1": ["a","b"],
-            "t2": Ref("t3"),
-            "t3": Ref("t4"),
-            "t4": ["a","c"],
+            t1: Atom("a","b"),
+            t2: Ref("t3"),
+            t3: Ref("t4"),
+            t4: Atom("a","c"),
         },
         key1: "t1",
         key2: "t2",
-        results: {
-            t1: ["a","b","c"],
-            t2: ["a","b","c"]
+        expected: {
+            t1: Atom("a","b","c"),
+            t2: Atom("a","b","c")
         }
     });
 
     mergeTest({
         desc: "M5a. Left side refers to right",
         vocab: {
-            "t1": Ref("t2"),
-            "t2": ["a","b"],
+            t1: Ref("t2"),
+            t2: Atom("a","b"),
         },
         key1: "t1",
         key2: "t2",
-        results: {
-            t1: ["a","b"],
-            t2: ["a","b"]
+        expected: {
+            t1: Atom("a","b"),
+            t2: Atom("a","b")
         }
     });
 
     mergeTest({
         desc: "M5b. Right side refers to left",
         vocab: {
-            "t1": ["a","b"],
-            "t2": Ref("t1"),
+            t1: Atom("a","b"),
+            t2: Ref("t1"),
         },
         key1: "t1",
         key2: "t2",
-        results: {
-            t1: ["a","b"],
-            t2: ["a","b"]
+        expected: {
+            t1: Atom("a","b"),
+            t2: Atom("a","b")
         }
     });
 
     sumTest({
         desc: "S1: Two literals",
         vocab: {
-            "t1": ["a","b"],
+            t1: Atom("a","b"),
         },
         vocab2: {
-            "t1": ["a","c"],
+            t1: Atom("a","c"),
         },
-        results: {
-            "t1": ["a","b","c"]
+        expected: {
+            t1: Atom("a","b","c")
         }
     });
 
     sumTest({
         desc: "S2: Different tapes altogether",
         vocab: {
-            "t1": ["a","b"],
+            t1: Atom("a","b"),
         },
         vocab2: {
-            "t2": ["a","c"],
+            t2: Atom("a","c"),
         },
-        results: {
-            "t1": ["a","b"],
-            "t2": ["a","c"]
+        expected: {
+            t1: Atom("a","b"),
+            t2: Atom("a","c")
         }
     });
 
     sumTest({
         desc: "S3a: Ref on the left",
         vocab: {
-            "t1": Ref("X"),
-            "X": ["a","b"],
+            t1: Ref("X"),
+            X: Atom("a","b"),
         },
         vocab2: {
-            "t1": ["a","c"],
+            t1: Atom("a","c"),
         },
-        results: {
-            "t1": ["a","b","c"]
+        expected: {
+            t1: Atom("a","b","c")
         }
     });
 
     sumTest({
         desc: "S3b: Ref chain on the left",
         vocab: {
-            "t1": Ref("X"),
-            "X": Ref("Y"),
-            "Y": ["a","b"],
+            t1: Ref("X"),
+            X: Ref("Y"),
+            Y: Atom("a","b"),
         },
         vocab2: {
-            "t1": ["a","c"],
+            t1: Atom("a","c"),
         },
-        results: {
-            "t1": ["a","b","c"]
+        expected: {
+            t1: Atom("a","b","c")
         }
     });
     
     sumTest({
         desc: "S3c: Ref on the right",
         vocab: {
-            "t1": ["a","b"],
+            t1: Atom("a","b"),
         },
         vocab2: {
-            "t1": Ref("X"),
-            "X": ["a","c"],
+            t1: Ref("X"),
+            X: Atom("a","c"),
         },
-        results: {
-            "t1": ["a","b","c"]
+        expected: {
+            t1: Atom("a","b","c")
         }
     });
     
     sumTest({
         desc: "S3c: Ref on the right, different ordering",
         vocab: {
-            "t1": ["a","b"],
+            t1: Atom("a","b"),
         },
         vocab2: {
-            "X": ["a","c"],
-            "t1": Ref("X"),
+            X: Atom("a","c"),
+            t1: Ref("X"),
         },
-        results: {
-            "t1": ["a","b","c"]
+        expected: {
+            t1: Atom("a","b","c")
         }
     });
 
     sumTest({
         desc: "S4a: Ref chain on the right",
         vocab: {
-            "t1": ["a","b"],
+            t1: Atom("a","b"),
         },
         vocab2: {
-            "t1": Ref("X"),
-            "X": Ref("Y"),
-            "Y": ["a","c"],
+            t1: Ref("X"),
+            X: Ref("Y"),
+            Y: Atom("a","c"),
         },
-        results: {
-            "t1": ["a","b","c"]
+        expected: {
+            t1: Atom("a","b","c")
         }
     });
     
     sumTest({
         desc: "S4b: Ref chain on the right, ordering 2",
         vocab: {
-            "t1": ["a","b"],
+            t1: Atom("a","b"),
         },
         vocab2: {
-            "t1": Ref("X"),
-            "Y": ["a","c"],
-            "X": Ref("Y"),
+            t1: Ref("X"),
+            Y: Atom("a","c"),
+            X: Ref("Y"),
         },
-        results: {
-            "t1": ["a","b","c"]
+        expected: {
+            t1: Atom("a","b","c")
         }
     });
     
     sumTest({
         desc: "S4c: Ref chain on the right, ordering 3",
         vocab: {
-            "t1": ["a","b"],
+            t1: Atom("a","b"),
         },
         vocab2: {
-            "X": Ref("Y"),
-            "t1": Ref("X"),
-            "Y": ["a","c"],
+            X: Ref("Y"),
+            t1: Ref("X"),
+            Y: Atom("a","c"),
         },
-        results: {
-            "t1": ["a","b","c"]
+        expected: {
+            t1: Atom("a","b","c")
         }
     });
 
     sumTest({
         desc: "S4d: Ref chain on the right, ordering 4",
         vocab: {
-            "t1": ["a","b"],
+            t1: Atom("a","b"),
         },
         vocab2: {
-            "X": Ref("Y"),
-            "Y": ["a","c"],
-            "t1": Ref("X"),
+            X: Ref("Y"),
+            Y: Atom("a","c"),
+            t1: Ref("X"),
         },
-        results: {
-            "t1": ["a","b","c"]
+        expected: {
+            t1: Atom("a","b","c")
         }
     });
 
     sumTest({
         desc: "S4e: Ref chain on the right, ordering 5",
         vocab: {
-            "t1": ["a","b"],
+            t1: Atom("a","b"),
         },
         vocab2: {
-            "Y": ["a","c"],
-            "t1": Ref("X"),
-            "X": Ref("Y"),
+            Y: Atom("a","c"),
+            t1: Ref("X"),
+            X: Ref("Y"),
         },
-        results: {
-            "t1": ["a","b","c"]
+        expected: {
+            t1: Atom("a","b","c")
         }
     });
 
     sumTest({
         desc: "S4f: Ref chain on the right, ordering 6",
         vocab: {
-            "t1": ["a","b"],
+            t1: Atom("a","b"),
         },
         vocab2: {
-            "Y": ["a","c"],
-            "X": Ref("Y"),
-            "t1": Ref("X"),
+            Y: Atom("a","c"),
+            X: Ref("Y"),
+            t1: Ref("X"),
         },
-        results: {
-            "t1": ["a","b","c"]
+        expected: {
+            t1: Atom("a","b","c")
         }
     });
 
     sumTest({
         desc: "S5a: Ref on both sides",
         vocab: {
-            "t1": Ref("X"),
-            "X": ["a","b"],
+            t1: Ref("X"),
+            X: Atom("a","b"),
         },
         vocab2: {
-            "t1": Ref("Y"),
-            "Y": ["a","c"],
+            t1: Ref("Y"),
+            Y: Atom("a","c"),
         },
-        results: {
-            "t1": ["a","b","c"]
+        expected: {
+            t1: Atom("a","b","c")
         }
     });
 
     sumTest({
         desc: "S5b: Ref on both sides, different ordering",
         vocab: {
-            "t1": Ref("X"),
-            "X": ["a","b"],
+            t1: Ref("X"),
+            X: Atom("a","b"),
         },
         vocab2: {
-            "Y": ["a","c"],
-            "t1": Ref("Y"),
+            Y: Atom("a","c"),
+            t1: Ref("Y"),
         },
-        results: {
-            "t1": ["a","b","c"]
+        expected: {
+            t1: Atom("a","b","c")
         }
     });
     
     sumTest({
         desc: "S6a: Ref on both sides, same label",
         vocab: {
-            "t1": Ref("X"),
-            "X": ["a","b"],
+            t1: Ref("X"),
+            X: Atom("a","b"),
         },
         vocab2: {
-            "t1": Ref("X"),
-            "X": ["a","c"],
+            t1: Ref("X"),
+            X: Atom("a","c"),
         },
-        results: {
-            "t1": ["a","b","c"]
+        expected: {
+            t1: Atom("a","b","c")
         }
     });
 
     sumTest({
         desc: "S6b: Ref on both sides, same label, different ordering",
         vocab: {
-            "t1": Ref("X"),
-            "X": ["a","b"],
+            t1: Ref("X"),
+            X: Atom("a","b"),
         },
         vocab2: {
-            "X": ["a","c"],
-            "t1": Ref("X"),
+            X: Atom("a","c"),
+            t1: Ref("X"),
         },
-        results: {
-            "t1": ["a","b","c"]
+        expected: {
+            t1: Atom("a","b","c")
         }
     });
 
     sumTest({
         desc: "S7a: Ref chain on both sides, all different labels",
         vocab: {
-            "t1": Ref("W"),
-            "W": Ref("X"),
-            "X": ["a","b"],
+            t1: Ref("W"),
+            W: Ref("X"),
+            X: Atom("a","b"),
         },
         vocab2: {
-            "t1": Ref("Y"),
-            "Y": Ref("Z"),
-            "Z": ["a","c"],
+            t1: Ref("Y"),
+            Y: Ref("Z"),
+            Z: Atom("a","c"),
         },
-        results: {
-            "t1": ["a","b","c"]
+        expected: {
+            t1: Atom("a","b","c")
         }
     });
 
     sumTest({
         desc: "S7b: Ref chain on both sides, all same labels",
         vocab: {
-            "t1": Ref("X"),
-            "X": Ref("Y"),
-            "Y": ["a","b"],
+            t1: Ref("X"),
+            X: Ref("Y"),
+            Y: Atom("a","b"),
         },
         vocab2: {
-            "t1": Ref("X"),
-            "X": Ref("Y"),
-            "Y": ["a","c"],
+            t1: Ref("X"),
+            X: Ref("Y"),
+            Y: Atom("a","c"),
         },
-        results: {
-            "t1": ["a","b","c"]
+        expected: {
+            t1: Atom("a","b","c")
         }
     });
 
     sumTest({
         desc: "S7c: Ref chain on both sides, backwards labels",
         vocab: {
-            "t1": Ref("X"),
-            "X": Ref("Y"),
-            "Y": ["a","b"],
+            t1: Ref("X"),
+            X: Ref("Y"),
+            Y: Atom("a","b"),
         },
         vocab2: {
-            "t1": Ref("Y"),
-            "Y": Ref("X"),
-            "X": ["a","c"],
+            t1: Ref("Y"),
+            Y: Ref("X"),
+            X: Atom("a","c"),
         },
-        results: {
-            "t1": ["a","b","c"]
+        expected: {
+            t1: Atom("a","b","c")
         }
     });
+
+    // testing sum atomicity
+
+    sumTest({
+        desc: "S8a: Atomic | Atomic",
+        vocab: {
+            t1: Atom("ab"),
+        },
+        vocab2: {
+            t1: Atom("ac"),
+        },
+        expected: {
+            t1: Atom("ab", "ac")
+        }
+    });
+
+    sumTest({
+        desc: "S8b: Atomic | Concatenated",
+        vocab: {
+            t1: Atom("ab"),
+        },
+        vocab2: {
+            t1: Conc("ac"),
+        },
+        expected: {
+            t1: Conc("ab", "ac")
+        }
+    });
+
+
+    sumTest({
+        desc: "S8c: Atomic | Tokenized",
+        vocab: {
+            t1: Atom("ab"),
+        },
+        vocab2: {
+            t1: Tok("ac")
+        },
+        expected: {
+            t1: Tok("a","b","c")
+        }
+    });
+
+    sumTest({
+        desc: "S8d: Concatenated | Atomic",
+        vocab: {
+            t1: Conc("ab"),
+        },
+        vocab2: {
+            t1: Atom("ac"),
+        },
+        expected: {
+            t1: Conc("ab", "ac")
+        }
+    });
+
+    sumTest({
+        desc: "S8e: Concatenated | Concatenated",
+        vocab: {
+            t1: Conc("ab"),
+        },
+        vocab2: {
+            t1: Conc("ac"),
+        },
+        expected: {
+            t1: Conc("ab", "ac")
+        }
+    });
+
+    sumTest({
+        desc: "S8f: Concatenated | Tokenized",
+        vocab: {
+            t1: Conc("ab"),
+        },
+        vocab2: {
+            t1: Tok("ac"),
+        },
+        expected: {
+            t1: Tok("ab", "ac")
+        }
+    });
+
+    sumTest({
+        desc: "S8g: Tokenized | Atomic",
+        vocab: {
+            t1: Tok("ab"),
+        },
+        vocab2: {
+            t1: Atom("ac"),
+        },
+        expected: {
+            t1: Tok("a","b","c")
+        }
+    });
+    sumTest({
+        desc: "S8h: Tokenized | Concatenated",
+        vocab: {
+            t1: Tok("ab"),
+        },
+        vocab2: {
+            t1: Conc("ac"),
+        },
+        expected: {
+            t1: Tok("ab", "ac")
+        }
+    });
+
+    sumTest({
+        desc: "S8i: Tokenized | Tokenized",
+        vocab: {
+            t1: Tok("ab"),
+        },
+        vocab2: {
+            t1: Tok("ac"),
+        },
+        expected: {
+            t1: Tok("ab", "ac")
+        }
+    });
+
+    // testing product atomicity
+    
+    multTest({
+        desc: "M1a: Atomic * Atomic",
+        vocab: {
+            t1: Atom("ab"),
+        },
+        vocab2: {
+            t1: Atom("ac"),
+        },
+        expected: {
+            t1: Conc("ab", "ac")
+        }
+    });
+
+    multTest({
+        desc: "M1b: Atomic * Concatenated",
+        vocab: {
+            t1: Atom("ab"),
+        },
+        vocab2: {
+            t1: Conc("ac"),
+        },
+        expected: {
+            t1: Conc("ab", "ac")
+        }
+    });
+
+    multTest({
+        desc: "M1c: Atomic * Tokenized",
+        vocab: {
+            t1: Atom("ab"),
+        },
+        vocab2: {
+            t1: Tok("ac")
+        },
+        expected: {
+            t1: Tok("a","b","c")
+        }
+    });
+
+    multTest({
+        desc: "M1d: Concatenated * Atomic",
+        vocab: {
+            t1: Conc("ab"),
+        },
+        vocab2: {
+            t1: Atom("ac"),
+        },
+        expected: {
+            t1: Conc("ab", "ac")
+        }
+    });
+
+    multTest({
+        desc: "M1e: Concatenated * Concatenated",
+        vocab: {
+            t1: Conc("ab"),
+        },
+        vocab2: {
+            t1: Conc("ac"),
+        },
+        expected: {
+            t1: Conc("ab", "ac")
+        }
+    });
+
+    multTest({
+        desc: "M1f: Concatenated * Tokenized",
+        vocab: {
+            t1: Conc("ab"),
+        },
+        vocab2: {
+            t1: Tok("ac"),
+        },
+        expected: {
+            t1: Tok("ab", "ac")
+        }
+    });
+
+    multTest({
+        desc: "M1g: Tokenized * Atomic",
+        vocab: {
+            t1: Tok("ab"),
+        },
+        vocab2: {
+            t1: Atom("ac"),
+        },
+        expected: {
+            t1: Tok("a","b","c")
+        }
+    });
+
+    multTest({
+        desc: "M1h: Tokenized * Concatenated",
+        vocab: {
+            t1: Tok("ab"),
+        },
+        vocab2: {
+            t1: Conc("ac"),
+        },
+        expected: {
+            t1: Tok("ab", "ac")
+        }
+    });
+
+    multTest({
+        desc: "M1i: Tokenized * Tokenized",
+        vocab: {
+            t1: Tok("ab"),
+        },
+        vocab2: {
+            t1: Tok("ac"),
+        },
+        expected: {
+            t1: Tok("ab", "ac")
+        }
+    });
+
+    // spot-checking some complex multiplications
+
+    multTest({
+        desc: "M2: Atom * Atom, ref chain on both sides, all different labels",
+        vocab: {
+            t1: Ref("W"),
+            W: Ref("X"),
+            X: Atom("ab"),
+        },
+        vocab2: {
+            t1: Ref("Y"),
+            Y: Ref("Z"),
+            Z: Atom("ac"),
+        },
+        expected: {
+            t1: Conc("ab","ac")
+        }
+    });
+    
+    multTest({
+        desc: "M3: Atom * Atom, ref on both sides, same label, different ordering",
+        vocab: {
+            t1: Ref("X"),
+            X: Atom("ab"),
+        },
+        vocab2: {
+            X: Atom("ac"),
+            t1: Ref("X"),
+        },
+        expected: {
+            t1: Conc("ab","ac")
+        }
+    });
+
+    multTest({
+        desc: "M4: Atom * Conc, ref chain on both sides, backwards labels",
+        vocab: {
+            t1: Ref("X"),
+            X: Ref("Y"),
+            Y: Atom("ab"),
+        },
+        vocab2: {
+            t1: Ref("Y"),
+            Y: Ref("X"),
+            X: Conc("ac"),
+        },
+        expected: {
+            t1: Conc("ab","ac")
+        }
+    });
+
+    // testing intersection atomicity
+
+    intersectTest({
+        desc: "I1a: Atomic & Atomic",
+        vocab: {
+            t1: Atom("ab"),
+        },
+        vocab2: {
+            t1: Atom("ac"),
+        },
+        expected: {
+            t1: Atom("ab", "ac")
+        }
+    });
+
+    intersectTest({
+        desc: "I1b: Atomic & Concatenated",
+        vocab: {
+            t1: Atom("ab"),
+        },
+        vocab2: {
+            t1: Conc("ac"),
+        },
+        expected: {
+            t1: Tok("a","b","c")
+        }
+    });
+
+    intersectTest({
+        desc: "I1c: Atomic & Tokenized",
+        vocab: {
+            t1: Atom("ab"),
+        },
+        vocab2: {
+            t1: Tok("ac")
+        },
+        expected: {
+            t1: Tok("a","b","c")
+        }
+    });
+
+    intersectTest({
+        desc: "I1d: Concatenated & Atomic",
+        vocab: {
+            t1: Conc("ab"),
+        },
+        vocab2: {
+            t1: Atom("ac"),
+        },
+        expected: {
+            t1: Tok("a","b","c")
+        }
+    });
+
+    intersectTest({
+        desc: "I1e: Concatenated & Concatenated",
+        vocab: {
+            t1: Conc("ab"),
+        },
+        vocab2: {
+            t1: Conc("ac"),
+        },
+        expected: {
+            t1: Tok("a","b","c")
+        }
+    });
+
+    intersectTest({
+        desc: "I1f: Concatenated & Tokenized",
+        vocab: {
+            t1: Conc("ab"),
+        },
+        vocab2: {
+            t1: Tok("ac"),
+        },
+        expected: {
+            t1: Tok("ab", "ac")
+        }
+    });
+
+    intersectTest({
+        desc: "I1g: Tokenized & Atomic",
+        vocab: {
+            t1: Tok("ab"),
+        },
+        vocab2: {
+            t1: Atom("ac"),
+        },
+        expected: {
+            t1: Tok("a","b","c")
+        }
+    });
+
+    intersectTest({
+        desc: "I1h: Tokenized & Concatenated",
+        vocab: {
+            t1: Tok("ab"),
+        },
+        vocab2: {
+            t1: Conc("ac"),
+        },
+        expected: {
+            t1: Tok("ab", "ac")
+        }
+    });
+
+    intersectTest({
+        desc: "I1i: Tokenized & Tokenized",
+        vocab: {
+            t1: Tok("ab"),
+        },
+        vocab2: {
+            t1: Tok("ac"),
+        },
+        expected: {
+            t1: Tok("ab", "ac")
+        }
+    });
+
+    // spot-checking some complex intersections
+
+    intersectTest({
+        desc: "I2: Atom & Conc, ref chain on both sides, all same labels",
+        vocab: {
+            t1: Ref("X"),
+            X: Ref("Y"),
+            Y: Atom("ab"),
+        },
+        vocab2: {
+            t1: Ref("X"),
+            X: Ref("Y"),
+            Y: Conc("ac"),
+        },
+        expected: {
+            t1: Tok("a","b","c")
+        }
+    });
+
+    intersectTest({
+        desc: "I3: Conc & Atom, ref chain on both sides, backwards labels",
+        vocab: {
+            t1: Ref("X"),
+            X: Ref("Y"),
+            Y: Conc("ab"),
+        },
+        vocab2: {
+            t1: Ref("Y"),
+            Y: Ref("X"),
+            X: Atom("ac"),
+        },
+        expected: {
+            t1: Tok("a","b","c")
+        }
+    });
+
 
 });  
