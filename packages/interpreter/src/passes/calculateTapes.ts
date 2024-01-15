@@ -262,8 +262,6 @@ function getTapesCorrespond(
 
 }
 
-
-
 function getTapesNot(g: NegationGrammar): Grammar {
     let tapes = getChildTapes(g);
     if (tapes.tag !== Tapes.Tag.Lit) {
@@ -272,8 +270,8 @@ function getTapesNot(g: NegationGrammar): Grammar {
     }
 
     const stringifiers = Tapes.Lit();
-    for (const tape of Object.keys(tapes.vocabMap)) {
-        stringifiers.vocabMap[tape] = Vocabs.Wildcard(tape);
+    for (const tape of tapes.tapeNames) {
+        stringifiers.vocabMap[tape] = Vocabs.Tokenized();
     }
     tapes = Tapes.Sum(stringifiers, tapes);
     return updateTapes(g, tapes);
@@ -303,11 +301,12 @@ function getTapesRepeat(
 }
 
 function getTapesLit(g: LiteralGrammar, env: TapesEnv): Grammar {
+    const tapes = new Set([g.tapeName]);
     const vocab = env.opt.optimizeAtomicity
                         ? Vocabs.Atomic(new Set([g.text]))
                         : Vocabs.Tokenized(new Set(g.tokens));
-    const tapes = { [g.tapeName]: vocab };
-    return updateTapes(g, Tapes.Lit(tapes));
+    const vocabMap = { [g.tapeName]: vocab };
+    return updateTapes(g, Tapes.Lit(tapes, vocabMap));
 }
 
 function getTapesSingleTape(g: SingleTapeGrammar): Grammar {
@@ -342,8 +341,9 @@ function getTapesSingleTape(g: SingleTapeGrammar): Grammar {
 }
 
 function getTapesDot(g: DotGrammar, env: TapesEnv): Grammar {
-    const tapes = Tapes.Lit({ [g.tapeName]: Vocabs.Wildcard(g.tapeName) });
-    return updateTapes(g, tapes);
+    const tapes = new Set([g.tapeName]);
+    const vocab = { [g.tapeName]: Vocabs.Tokenized() };
+    return updateTapes(g, Tapes.Lit(tapes, vocab));
 }
 
 function getTapesEmbed(
@@ -461,9 +461,10 @@ function getTapesReplace(g: ReplaceGrammar, env: TapesEnv): Grammar {
         throw new EpsilonGrammar().tapify(env).msg(msgs);
 
     let tapes = getChildTapes(g);
-    const wildcard: TapeSet = Tapes.Lit({ 
-        [INPUT_TAPE]: Vocabs.Wildcard(INPUT_TAPE),
-    });
+    const wildcard: TapeSet = Tapes.Lit(
+        new Set([INPUT_TAPE]), 
+        { [INPUT_TAPE]: Vocabs.Tokenized(),}
+    );
     tapes = Tapes.Sum(wildcard, tapes);
     tapes = Tapes.Match(tapes, INPUT_TAPE, OUTPUT_TAPE);
     return updateTapes(g, tapes);
@@ -511,33 +512,30 @@ function getTapesReplaceBlock(g: ReplaceBlockGrammar): Grammar {
 function getTapesCondition(
     g: StartsGrammar | EndsGrammar | ContainsGrammar
 ): Grammar {
-    const extras: VocabDict = {}
-    for (const t of g.extraTapes) {
-        extras[t] = Vocabs.Wildcard(t);
-    }
-    
+    const extraTapes = [...g.extraTapes];
+    const extraVocab: VocabDict = {};
+
     if (g.child.tapes.tag === Tapes.Tag.Lit) {
-    // if we know what the child tapes are, add those wildcards too
-        for (const t of Object.keys(g.child.tapes.vocabMap)) {
-            extras[t] = Vocabs.Wildcard(t);
-        }
+        // if we know what the child tapes are, add those wildcards too
+        extraTapes.push(...g.child.tapes.tapeNames);
     }
 
-    const tapes = Tapes.Sum(g.child.tapes, Tapes.Lit(extras));
+    for (const t of extraTapes) {
+        extraVocab[t] = Vocabs.Tokenized();
+    }
+
+    const extras = Tapes.Lit(new Set(extraTapes), extraVocab);
+    const tapes = Tapes.Sum(g.child.tapes, extras);
     return updateTapes(g, tapes);
-    
 }
 
 function getTapesCursor(
     g: CursorGrammar,
     env: TapesEnv
 ): Grammar {
-    console.log(`tapecalc for cursor ${g.tapeName}`);
-    console.log(`child tapes are ${Tapes.toStr(g.child.tapes)}`);
 
     if (g.child.tapes.tag !== Tapes.Tag.Lit) {
         // can't do anything right now
-        console.log(`can't do anything`);
         const tapes = Tapes.Cursor(g.child.tapes, g.tapeName);
         return updateTapes(g, tapes);
     }
@@ -547,23 +545,7 @@ function getTapesCursor(
             `Cursor for ${g.tapeName}, but no such tape in its scope.`)
     }
     
-    let vocab = g.child.tapes.vocabMap[g.tapeName];
-    
-    const vocabs = mapDict(g.child.tapes.vocabMap, (k,v) => {
-        
-        let visited = new Set([k])
-        const vocabEnv = new Vocabs.VocReplaceEnv(g.tapeName, vocab, visited);
-        console.log(`vocab ${k} was ${Vocabs.toStr(v)}`);
-        const result = Vocabs.vocReplace(v, vocabEnv);
-        console.log(`now vocab ${k} is ${Vocabs.toStr(result)}`);
-        return result;
-    });
-
-    vocab = vocabs[g.tapeName];
-
-    let tapes: TapeSet = Tapes.Lit(vocabs);
-    console.log(`cursor ${g.tapeName} tapes are ${Tapes.toStr(tapes)}`);
-    console.log();
-    tapes = Tapes.Cursor(tapes, g.tapeName) // this handles deleting for us
+    const vocab = g.child.tapes.vocabMap;
+    const tapes = Tapes.Cursor(g.child.tapes, g.tapeName) // this handles deleting for us
     return update(g, {tapes, vocab});
 }

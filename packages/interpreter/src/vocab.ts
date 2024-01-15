@@ -1,52 +1,18 @@
-import { renameTape } from "./tapes";
 import { VOCAB_MAX_TOKENS } from "./utils/constants";
-import { Dict, Func, flatmapSet, union, update } from "./utils/func";
-import { Env } from "./utils/options";
+import { Dict, flatmapSet, union } from "./utils/func";
+import { randomString } from "./utils/random";
 import { tokenizeUnicode } from "./utils/strings";
 
-/**
- * For efficiency's sake, if long tokens like "abracadabra"
- * CAN be treated as single units for the purposes of calculating
- * derivatives, they should.  However, sometimes doing that will
- * cause us to get the wrong answer.  Consider intersecting two units 
- * with what should be their product:
- * 
- *    L = helloworld & (hello ⋅ world)
- * 
- * If we treat this as a string, everything goes fine:
- * 
- *    D_{h}(L) = elloworld & (ello ⋅ world)
- * 
- * If we treat "helloworld", "hello", and "world" as atomic units,
- * however, this goes very wrong.  The derivative of "hello" 
- * w.r.t. "helloworld" is null!
- * 
- *    D_{helloworld}(L) = 0
- * 
- * To calculate this, we assume every literal contributes a VocabAtomic
- * until proven otherwise.  Atomics can be alternated and joined, but
- * if they're put into sequence (e.g. by a Seq or Repeat)
- * they become a VocabSeq.  
- * 
- * The elements of a VocabSeq can be put in a sequence; in many
- * case Glosses will be VocabSeqs.  Each piece of `1SG-love-V` is
- * a unit but there's no reason yet to treat the units as being made
- * up of characters.
- * 
- * However, if a VocabSeq undergoes a join, it becomes a VocabString and
- * the elements of the vocab are tokenized into indivdual characters
- * according to Gramble's character rules.
- */
+
+// *******************
+// VOCAB-RELATED TYPES
+// *******************
 
 export type VocabDict = Dict<Vocab>;
 
 export const enum Tag {
     Lit = "Lit",
     Ref = "Ref",
-    Sum = "Sum",
-    Product = "Product",
-    Intersect = "Intersect",
-    Rename = "Rename"
 };
 
 export const enum Atomicity {
@@ -55,21 +21,41 @@ export const enum Atomicity {
     Tokenized = "Tokenized",
 }
 
-export type Lit = Atomic
-                | Concatenated
-                | Tokenized;
-                           
-export type Vocab = Lit 
-                  | Ref
-                  | Sum
-                  | Product
-                  | Intersect
-                  | Rename;
-
 export type Atomic = {
     tag: Tag.Lit,
     atomicity: Atomicity.Atomic,
     tokens: Set<string>
+}
+
+export type Concatenated = {
+    tag: Tag.Lit,
+    atomicity: Atomicity.Concatenated,
+    tokens: Set<string>,
+}
+
+export type Tokenized = {
+    tag: Tag.Lit,
+    atomicity: Atomicity.Tokenized,
+    tokens: Set<string>
+}
+
+export type Lit = Atomic
+                | Concatenated
+                | Tokenized;
+                           
+export type Ref = {
+    tag: Tag.Ref,
+    key: string 
+}
+
+export type Vocab = Lit | Ref;
+
+// ********************************************
+// CONVENIENCE CONSTRUCTORS FOR VOCAB LITERALS
+// ********************************************
+
+export function Ref(key: string): Ref {
+    return { tag: Tag.Ref, key };
 }
 
 export function Atomic(
@@ -81,12 +67,6 @@ export function Atomic(
     return result;
 }
 
-export type Concatenated = {
-    tag: Tag.Lit,
-    atomicity: Atomicity.Concatenated,
-    tokens: Set<string>,
-}
-
 export function Concatenated(
     tokens: Set<string> = new Set(),
 ): Lit {
@@ -95,341 +75,169 @@ export function Concatenated(
     return result;
 }
 
-export type Tokenized = {
-    tag: Tag.Lit,
-    atomicity: Atomicity.Tokenized,
-    tokens: Set<string>
-}
-
 export function Tokenized(
     tokens: Set<string> = new Set(),
 ): Tokenized {
     return { tag: Tag.Lit, atomicity: Atomicity.Tokenized, tokens };
 }
 
-function tokenize(v: Lit): Tokenized {
+// ****************************
+// OPERATIONS ON VOCAB LITERALS
+// ****************************
+
+export function tokenize(v: Lit): Tokenized {
     if (v.atomicity === Atomicity.Tokenized) return v;
     const newTokens = flatmapSet(v.tokens, t => tokenizeUnicode(t));
     return Tokenized(newTokens);
 }
 
-export type Ref = {
-    tag: Tag.Ref,
-    tape: string
-}
+export function sum(c1: Lit, c2: Lit): Lit {
 
-export function Ref(tape: string): Ref {
-    return { tag: Tag.Ref, tape }
-}
-
-export function Wildcard(tape: string): Vocab {
-    return Sum(Tokenized(), Ref(tape));
-}
-
-export type Sum = {
-    tag: Tag.Sum,
-    c1: Vocab,
-    c2: Vocab
-}
-
-export function Sum(c1: Vocab, c2: Vocab): Vocab {
-
-    if (c1.tag != Tag.Lit || c2.tag != Tag.Lit) {
-        return { tag: Tag.Sum, c1, c2 };
-    }
-
-    // If either is a string, both must be.  tokenize them both,
-    // if either is already tokenized it won't matter
-    if (c1.atomicity === Atomicity.Tokenized || 
-        c2.atomicity === Atomicity.Tokenized) {
+    if (c1.atomicity === Atomicity.Tokenized || c2.atomicity === Atomicity.Tokenized) {
+        // If either is tokenized, the result is too
         const splitC1 = tokenize(c1);
         const splitC2 = tokenize(c2);
-        return {
-            tag: Tag.Lit,
-            atomicity: Atomicity.Tokenized,
-            tokens: union(splitC1.tokens, splitC2.tokens)
-        };
+        return Tokenized(union(splitC1.tokens, splitC2.tokens));
     }
     
-    // If either is a string, both become seq
-    if (c1.atomicity === Atomicity.Concatenated || 
-        c2.atomicity === Atomicity.Concatenated) {
-        return {
-            tag: Tag.Lit,
-            atomicity: Atomicity.Concatenated,
-            tokens: union(c1.tokens, c2.tokens)
-        };
+    if (c1.atomicity === Atomicity.Concatenated || c2.atomicity === Atomicity.Concatenated) {
+        // If either is concatenated, the result is too
+        return Concatenated(union(c1.tokens, c2.tokens));
     }
 
-    return {
-        tag: Tag.Lit,
-        atomicity: Atomicity.Atomic,
-        tokens: union(c1.tokens, c2.tokens)
-    };
+    return Atomic(union(c1.tokens, c2.tokens))
 }
 
-export type Product = {
-    tag: Tag.Product,
-    c1: Vocab,
-    c2: Vocab
-}
-
-/** 
- * multVocab returns the sum of the tokens, so we just use that function,
- * but with one difference: if the result would have been a VocabAtomic, 
- * it's now a VocabSeq
- */
-export function Product(c1: Vocab, c2: Vocab): Vocab {
-
-    if (c1.tag != Tag.Lit || c2.tag != Tag.Lit) {
-        return { tag: Tag.Product, c1, c2 };
-    }
-
-    const result = Sum(c1, c2);
-    if (result.tag === Tag.Lit && 
-        result.atomicity === Atomicity.Atomic) 
+export function product(c1: Lit, c2: Lit): Lit {
+    const result = sum(c1, c2);
+    if (result.atomicity === Atomicity.Atomic) {
         return Concatenated(result.tokens);
+    }
     return result;
 }
 
-
-export type Intersect = {
-    tag: Tag.Intersect,
-    c1: Vocab,
-    c2: Vocab
-}
-export function Intersect(c1: Vocab, c2: Vocab): Vocab {
-
-    if (c1.tag != Tag.Lit || c2.tag != Tag.Lit) {
-        return { tag: Tag.Product, c1, c2 };
-    }
+export function intersect(c1: Lit, c2: Lit): Lit {
 
     if (c1.atomicity === Atomicity.Atomic && c2.atomicity === Atomicity.Atomic) {
         // only when both operands are atomic is the result atomic
-        return {
-            tag: Tag.Lit,
-            atomicity: Atomicity.Atomic,
-            tokens: union(c1.tokens, c2.tokens)
-        };
+        return Atomic(union(c1.tokens, c2.tokens));
     }
 
-    // otherwise it's string
+    // otherwise it's Tokenized
     const splitV1 = tokenize(c1);
     const splitV2 = tokenize(c2);
-    return {
-        tag: Tag.Lit,
-        atomicity: Atomicity.Tokenized,
-        tokens: union(splitV1.tokens, splitV2.tokens)
-    };
+    return Tokenized(union(splitV1.tokens, splitV2.tokens));
 }
 
-export type Rename = {
-    tag: Tag.Rename,
-    child: Vocab,
-    fromTape: string,
-    toTape: string
+// **************************
+// VOCAB COMBINING OPERATIONS
+// **************************
+
+export function sumKeys(c1: VocabDict, c2: VocabDict): VocabDict {
+    return mapKeys(c1, c2, sum);
 }
 
-export function Rename(
-    child: Vocab,
-    fromTape: string,
-    toTape: string
-): Vocab {
-    if (child.tag != Tag.Lit) {
-        return { tag: Tag.Rename, child, fromTape, toTape };
+export function multKeys(c1: VocabDict, c2: VocabDict): VocabDict {
+    return mapKeys(c1, c2, product);
+}
+
+export function intersectKeys(c1: VocabDict, c2: VocabDict): VocabDict {
+    return mapKeys(c1, c2, intersect);
+}
+
+function mapKeys(
+    c1: VocabDict, 
+    c2: VocabDict,    
+    op: (v1: Lit, v2: Lit) => Lit
+): VocabDict {
+    let result: VocabDict = {...c1};
+    for (const [k, v] of Object.entries(c2)) {
+        result = mapKey(result, k, v, op);
+    }
+    return result;
+}
+
+/**
+ * mapKey is the workhorse for the bigger sumKeys/prodKeys/intersectKeys 
+ * operations.  This isn't a straightforward map, though; it's complicated
+ * by the fact that the values may be references to other keys, meaning we have
+ * to follow reference chains and potentially re-direct them so that the result
+ * contains all the keys of both original dicts.
+ */
+function mapKey(
+    dict: VocabDict, 
+    key: string, 
+    newValue: Vocab,
+    op: (v1: Lit, v2: Lit) => Lit,
+): VocabDict {
+    
+    const origValue = dict[key] || Atomic();
+
+    if (origValue.tag === Tag.Ref) {
+        // ref + anything, follow the ref
+        return mapKey(dict, origValue.key, newValue, op);
     }
 
-    return child;  // doesn't do anything to concrete vocabs
+    if (newValue.tag === Tag.Ref) {
+        // lit + ref.  at some point (past or future), the value
+        // of this ref will be copied into dict1; now is not the 
+        // time to do it.  what we DO have to do is make it so 
+        // key1 points there.  before this, though, we have to grab
+        // anything currently in dict1[key1] and get it into 
+        // dict1[value2.key], so it isn't overwritten by this.
+        return mergeKeys(dict, key, newValue.key);
+    }
+
+    // lit + lit, the result is just the sum
+    const result = {...dict};
+    result[key] = op(origValue, newValue);
+    return result;
+}
+
+/**
+ * mergeKeys takes a single dictionary and sums the values of two keys.  This 
+ * is necessary when calculating the vocabulary of MatchGrammars, and is also 
+ * necessary for some of the reference chain fix-up of sumKeys.
+ * 
+ * Like sumKeys, this function is complicated by the need to follow references, 
+ * but it's not as difficult because there's no need to fuse two different 
+ * ref chains into one.  There's only one dict here.
+ */
+export function mergeKeys(
+    dict: VocabDict, 
+    key1: string, 
+    key2: string, 
+): VocabDict {
+
+    // if the keys are the same we don't have to do anything
+    if (key1 === key2) return dict;
+
+    const value1 = dict[key1] || Atomic();
+    const value2 = dict[key2] || Atomic();
+
+    // if either is a reference, follow the reference
+    if (value1.tag === Tag.Ref) return mergeKeys(dict, value1.key, key2);
+    if (value2.tag === Tag.Ref) return mergeKeys(dict, key1, value2.key);
+
+    // both are literals.  make a new entry and point 
+    // both keys to it
+    const result = {...dict};
+    const newKey = "$" + randomString();
+    result[key1] = Ref(newKey);
+    result[key2] = Ref(newKey);
+    result[newKey] = sum(value1, value2);
+    return result;
 }
 
 export function toStr(v: Vocab): string {
-    switch (v.tag) {
-        case Tag.Sum: 
-            return toStr(v.c1) + "+" + toStr(v.c2);
-        case Tag.Product: 
-            return toStr(v.c1) + "+" + toStr(v.c2);
-        case Tag.Intersect: 
-            return toStr(v.c1) + "+" + toStr(v.c2);
-        case Tag.Ref:
-            return "$" + v.tape;
-        case Tag.Rename:
-            return `R(${v.fromTape}>${v.toTape})(${toStr(v.child)})`
-        default:
-            return `${v.atomicity}{` + [...v.tokens].join(",") + "}";
+    switch(v.tag) {
+        case Tag.Lit: return `(${v.atomicity} ` + [...v.tokens].join(" ") + ")";
+        case Tag.Ref: return v.key;
     }
 }
 
-/* RESOLVING 
-*
-* Resolving tapes is the process of replacing Refs
-* inside TapeIDs into their corresponding TapeLits and in
-* turn causing the collapse of the suspensions into TapeLits.
-*/
-
-export class VocabEnv extends Env<Vocab> {
-    
-    constructor(
-        public vocabMap: Dict<Vocab>,
-        public visited: Set<string>
-    ) { 
-        super({});
-    }
-
-    public update(v: Vocab): VocabEnv {
-        if (v.tag !== Tag.Rename) return this;
-        // we only care about Renames for this
-
-        const newTapes: Dict<Vocab> = Object.create(this.vocabMap);
-        Object.assign(newTapes, this.vocabMap);
-        newTapes[v.fromTape] = this.vocabMap[v.toTape];
-        delete newTapes[v.toTape];
-        return update(this, { vocabMap: newTapes });
-    }
-
-}
-
-export function resolveAll(vocabMap: Dict<Vocab>): Dict<Vocab> {
-    let current = vocabMap;
-    for (const [tapeName, vocab] of Object.entries(vocabMap)) {
-        const env = new VocabEnv(current, new Set(tapeName));
-        const newVocab = resolve(vocab, env);
-        current[tapeName] = newVocab;
-    }
-    return current;
-}
-
-export function resolve(
-    v: Vocab, 
-    env: VocabEnv
-): Vocab {
-    const newV = map(v, resolve, env);
-    switch (newV.tag) {
-        case Tag.Ref:        return resolveRef(newV, env);
-        default:             return newV;
-    }
-}
-
-function simplify(v: Vocab): Vocab {
-    switch (v.tag) {
-        case Tag.Sum:       return Sum(v.c1, v.c2);
-        case Tag.Product:   return Product(v.c1, v.c2);
-        case Tag.Intersect: return Intersect(v.c1, v.c2);
-        case Tag.Rename:    return Rename(v.child, v.fromTape, v.toTape);
-        default:            return v;
-    }
-}
-
-function resolveRef(
-    v: Ref, 
-    env: VocabEnv
-): Vocab {
-    if (env.visited.has(v.tape)) {
-        return Atomic();
-    }
-    const referent = env.vocabMap[v.tape];
-    if (referent === undefined) {
-        throw new Error(`Unknown tape ${v.tape} in vocab unification, ` +
-            `candidates are ${Object.keys(env.vocabMap)}`);
-    }
-    const newVisited = union(env.visited, [v.tape]);
-    const newEnv = update(env, {visited:newVisited});
-    return resolve(referent, newEnv);
-}
-
-function map(
-    v: Vocab, 
-    f: (v: Vocab, env: VocabEnv) => Vocab,
-    env: VocabEnv
-): Vocab {
-    const newEnv = env.update(v);
-    const clone = Object.create(Object.getPrototypeOf(v));
-    for (const [k, child] of Object.entries(v)) {
-        if (child.hasOwnProperty("tag")) {
-            // it's a vocab
-            clone[k] = f(child, newEnv);
-            continue;
-        }
-        clone[k] = child;
-    }
-    return simplify(clone);
-}
-
-
-export class VocReplaceEnv extends Env<Vocab> {
-    
-    constructor(
-        public refToReplace: string,
-        public replacement: Vocab,
-        public visited: Set<string>
-    ) { 
-        super({});
-    }
-
-    public update(v: Vocab): VocReplaceEnv {
-        if (v.tag !== Tag.Rename) return this;
-
-        const visited = new Set(this.visited);
-        if (visited.has(v.toTape)) {
-            visited.delete(v.toTape);
-            visited.add(v.fromTape);
-        } 
-        const refToReplace = renameTape(this.refToReplace, v.toTape, v.fromTape);
-        return update(this, {refToReplace,visited});
-        // we only care about Renames for this
-
-        /*
-        const newTapes: Dict<Vocab> = Object.create(this.vocabMap);
-        Object.assign(newTapes, this.vocabMap);
-        newTapes[v.fromTape] = this.vocabMap[v.toTape];
-        delete newTapes[v.toTape];
-        return update(this, { vocabMap: newTapes });
-        */
-    }
-
-}
-
-export function vocReplace(
-    v: Vocab, 
-    env: VocReplaceEnv
-): Vocab {
-    const newV = vocReplaceMap(v, vocReplace, env);
-    switch (newV.tag) {
-        case Tag.Ref:        return vocReplaceRef(newV, env);
-        default:             return newV;
-    }
-}
-
-function vocReplaceRef(
-    v: Ref, 
-    env: VocReplaceEnv
-): Vocab {
-    if (env.visited.has(v.tape)) {
-        return Atomic();
-    }
-
-    if (v.tape !== env.refToReplace) {
-        return v;
-    }
-
-    const visited = union(env.visited, [v.tape]);
-    const newEnv = update(env, {visited});
-    return vocReplace(env.replacement, newEnv);
-}
-
-function vocReplaceMap(
-    v: Vocab, 
-    f: (v: Vocab, env: VocReplaceEnv) => Vocab,
-    env: VocReplaceEnv
-): Vocab {
-    const newEnv = env.update(v);
-    const clone = Object.create(Object.getPrototypeOf(v));
-    for (const [k, child] of Object.entries(v)) {
-        if (child.hasOwnProperty("tag")) {
-            // it's a vocab
-            clone[k] = f(child, newEnv);
-            continue;
-        }
-        clone[k] = child;
-    }
-    return simplify(clone);
+export function vocabDictToStr(v: VocabDict): string {
+    return Object.entries(v)
+                 .map(([k,v]) => `${k}:${toStr(v)}`)
+                 .join(","); 
 }

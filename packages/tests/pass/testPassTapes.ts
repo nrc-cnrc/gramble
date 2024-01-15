@@ -24,6 +24,7 @@ import {
     testSuiteName,
     t1, t2, t3, 
 } from "../testUtil";
+import { getFromVocabDict } from "./testPassUtils";
 
 type GrammarIDTest = {
     desc: string,
@@ -60,14 +61,15 @@ export function testGrammarTapes({
             if (grammar.tapes.tag !== Tapes.Tag.Lit) return;
 
             const expectedTapes = new Set(Object.keys(tapes));
-            const foundTapes = new Set(Object.keys(grammar.tapes.vocabMap))
+            const foundTapes = grammar.tapes.tapeNames;
+
             it(`Tapes should equal [${[...expectedTapes]}]`, function() {
                 expect(foundTapes).to.deep.equal(expectedTapes);
             });
 
             for (const [tapeName, wildList] of Object.entries(tapes)) {
                 const expectedVocab = Vocabs.Atomic(new Set(wildList));
-                const vocabMap = Vocabs.resolveAll(grammar.tapes.vocabMap);
+                const vocabMap = grammar.tapes.vocabMap;
 
                 const vocab = vocabMap[tapeName];
                 if (vocab === undefined) {
@@ -77,15 +79,10 @@ export function testGrammarTapes({
                     continue;
                 }
 
-                if (vocab.tag !== Vocabs.Tag.Lit) {
-                    it(`${tapeName} is unresolved`, function() {
-                        assert.fail(Vocabs.toStr(vocab));
-                    });
-                    return;
-                }
+                const vocabLit = getFromVocabDict(grammar.tapes.vocabMap, tapeName);
 
                 it(`${tapeName} should have vocab [${[...expectedVocab.tokens]}]`, function() {
-                    expect(vocab.tokens).to.deep.equal(expectedVocab.tokens);
+                    expect(vocabLit.tokens).to.deep.equal(expectedVocab.tokens);
                 });
             }
         } catch (e) {

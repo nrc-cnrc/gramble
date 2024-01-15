@@ -5,17 +5,9 @@ import {
     Tag, VocabDict, 
     intersectKeys, mergeKeys, 
     multKeys, sumKeys, tokenize, 
-} from "../../interpreter/src/alphabet";
+} from "../../interpreter/src/vocab";
+import { getFromVocabDict } from "./testPassUtils";
 
-
-function getFromVocabDict(v: VocabDict, key: string): Lit {
-    const value = v[key];
-    if (value === undefined) return Atomic(new Set());
-    switch (value.tag) {
-        case Tag.Lit: return value;
-        case Tag.Ref: return getFromVocabDict(v, value.key);
-    }
-}
 
 // *************************************************
 // CONVENIENCE FUNCTIONS FOR EASY TEST SPECIFICATION
@@ -975,5 +967,22 @@ describe(`${testSuiteName(module)}`, function() {
         }
     });
 
+    // intersection with non-intersected tapes
+    intersectTest({
+        desc: "I1b: Atomic & Concatenated",
+        vocab: {
+            t1: Atom("ab"),
+            t2: Atom("xy"),
+        },
+        vocab2: {
+            t1: Conc("ac"),
+            t3: Atom("xz"),
+        },
+        expected: {
+            t1: Tok("a","b","c"),
+            t2: Atom("xy"),
+            t3: Atom("xz")
+        }
+    });
 
 });  

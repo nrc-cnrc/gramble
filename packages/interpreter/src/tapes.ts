@@ -1,7 +1,4 @@
 import { Dict, exhaustive, mapDict, union, update } from "./utils/func";
-import { 
-    Namespace
-} from "./utils/namespace";
 import * as Vocabs from "./vocab";
 import { VocabDict } from "./vocab";
 
@@ -42,11 +39,15 @@ export type TapeSet = Lit
  */
 export type Lit = { 
     tag: Tag.Lit, 
+    tapeNames: Set<string>,
     vocabMap: VocabDict 
 };
 
-export function Lit(vocabMap: VocabDict = {}): Lit {
-    return { tag: Tag.Lit, vocabMap }
+export function Lit(
+    tapes: Set<string> = new Set(), 
+    vocabMap: VocabDict = {}
+): Lit {
+    return { tag: Tag.Lit, tapeNames: tapes, vocabMap }
 };
 
 /**
@@ -71,20 +72,9 @@ export function Sum(c1: TapeSet, c2: TapeSet): TapeSet {
     if (c1.tag !== Tag.Lit || c2.tag !== Tag.Lit) 
         return { tag: Tag.Sum, c1, c2 };
 
-    const resultTapes: VocabDict = {};
-    Object.assign(resultTapes, c1.vocabMap);
-    for (const [k,v] of Object.entries(c2.vocabMap)) {
-        const other = c1.vocabMap[k];
-        if (other === undefined) {
-            resultTapes[k] = v;
-            continue;
-        }
-        const newVocab = Vocabs.Sum(v, other);
-        resultTapes[k] = newVocab;
-    }
-
-    return Lit(resultTapes);
-    
+    const newTapes = union(c1.tapeNames, c2.tapeNames);
+    const newVocabs = Vocabs.sumKeys(c1.vocabMap, c2.vocabMap);
+    return Lit(newTapes, newVocabs);
 }
 
 
@@ -99,19 +89,9 @@ export function Product(c1: TapeSet, c2: TapeSet): TapeSet {
     if (c1.tag !== Tag.Lit || c2.tag !== Tag.Lit) 
         return { tag: Tag.Product, c1, c2 };
 
-    const resultTapes: VocabDict = {};
-    Object.assign(resultTapes, c1.vocabMap);
-    for (const [k,v] of Object.entries(c2.vocabMap)) {
-        const other = c1.vocabMap[k];
-        if (other === undefined) {
-            resultTapes[k] = v;
-            continue;
-        }
-        const newVocab = Vocabs.Product(v, other);
-        resultTapes[k] = newVocab;
-    }
-
-    return Lit(resultTapes);
+    const newTapes = union(c1.tapeNames, c2.tapeNames);
+    const newVocabs = Vocabs.multKeys(c1.vocabMap, c2.vocabMap);
+    return Lit(newTapes, newVocabs);
     
 }
 
@@ -126,19 +106,9 @@ export function Join(c1: TapeSet, c2: TapeSet): TapeSet {
     if (c1.tag !== Tag.Lit || c2.tag !== Tag.Lit) 
         return { tag: Tag.Join, c1, c2 };
 
-    const resultTapes: VocabDict = {};
-    Object.assign(resultTapes, c1.vocabMap);
-    for (const [k,v] of Object.entries(c2.vocabMap)) {
-        const other = c1.vocabMap[k];
-        if (other === undefined) {
-            resultTapes[k] = v;
-            continue;
-        }
-        const newVocab = Vocabs.Intersect(v, other);
-        resultTapes[k] = newVocab;
-    }
-
-    return Lit(resultTapes);
+    const newTapes = union(c1.tapeNames, c2.tapeNames);
+    const newVocabs = Vocabs.intersectKeys(c1.vocabMap, c2.vocabMap);
+    return Lit(newTapes, newVocabs);
     
 }
 
@@ -167,13 +137,13 @@ export function Rename(
     toTape: string
 ): TapeSet {
     if (child.tag === Tag.Lit) {
-        const renamedTapes: VocabDict = mapDict(child.vocabMap,
-                        (_,v) => Vocabs.Rename(v, fromTape, toTape));
-        let oldVocab = renamedTapes[fromTape];
+        const newTapes = [...child.tapeNames].map(t => renameTape(t, fromTape, toTape));
+        const newVocabs = { ... child.vocabMap };
+        let oldVocab = newVocabs[fromTape];
         if (oldVocab === undefined) oldVocab = Vocabs.Atomic();
-        delete renamedTapes[fromTape];
-        renamedTapes[toTape] = oldVocab;
-        return Lit(renamedTapes);
+        delete newVocabs[fromTape];
+        newVocabs[toTape] = oldVocab;
+        return Lit(new Set(newTapes), newVocabs);
     }
 
     return { tag: Tag.Rename, child: child, 
@@ -193,11 +163,10 @@ export function Match(
     toTape: string
 ): TapeSet {
     if (child.tag === Tag.Lit) {
-        const newTapes = Object.assign({}, child.vocabMap);
-        const fromVocab = newTapes[fromTape] || Vocabs.Atomic();
-        const oldToVocab = newTapes[toTape] || Vocabs.Atomic();
-        newTapes[toTape] = Vocabs.Sum(fromVocab, oldToVocab);
-        return Lit(newTapes);
+        const newTapes = new Set(child.tapeNames);
+        newTapes.add(toTape);
+        const newVocabs = Vocabs.mergeKeys(child.vocabMap, fromTape, toTape);
+        return Lit(newTapes, newVocabs);
     }
 
     return { tag: Tag.Match, child: child, 
@@ -217,9 +186,10 @@ export function Cursor(
     if (child.tag !== Tag.Lit) 
         return { tag: Tag.Cursor, child, tapeName };
 
-    const vocabMap = {...child.vocabMap};
-    delete vocabMap[tapeName];
-    return Lit(vocabMap);
+    const newTapes = [...child.tapeNames].filter(t => t !== tapeName);
+    const newVocabs = {...child.vocabMap};
+    delete newVocabs[tapeName];
+    return Lit(new Set(newTapes), newVocabs);
 }
 
 /** 
