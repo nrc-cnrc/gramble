@@ -15,6 +15,10 @@ import { CreateCursors } from "./createCursors";
 import { InfinityProtection } from "./infinityProtection";
 import { Options, Env } from "../utils/options";
 import { CalculateTapes, TapesEnv } from "./calculateTapes";
+import { ResolveVocab } from "./resolveVocab";
+
+import * as Tapes from "../tapes";
+import * as Vocabs from "../vocab";
 
 export class ExecuteTests extends Pass<Grammar,Grammar> {
 
@@ -109,23 +113,22 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
         test: AbstractTestGrammar, 
         env: SymbolEnv
     ): StringDict[] {
-
-        console.log(`running tests`);
         
         // create a filter for each test
         let targetGrammar: Grammar = new JoinGrammar(test.child, test.test)
                                         .tapify(env);    
         
-        const createCursors = new CreateCursors();
-        targetGrammar = createCursors.transform(targetGrammar, env).msgTo(THROWER);
+        targetGrammar = new CreateCursors()
+                                .transform(targetGrammar, env)
+                                .msgTo(THROWER);
 
-        const infinityProtection = new InfinityProtection();
-        targetGrammar = infinityProtection.transform(targetGrammar, env).msgTo(THROWER);
-        
-        const tapeRefreshEnv = new TapesEnv(env.opt);
-        targetGrammar = new CalculateTapes()
-                            .transform(targetGrammar, tapeRefreshEnv)
-                            .msgTo(THROWER);
+        targetGrammar = new InfinityProtection()
+                                .transform(targetGrammar, env)
+                                .msgTo(THROWER);
+
+        targetGrammar = new ResolveVocab()
+                                .getEnvAndTransform(targetGrammar, env.opt)
+                                .msgTo(THROWER);
 
         let expr = constructExpr(env, targetGrammar);
         expr = constructCollection(env, expr, this.symbolTable);

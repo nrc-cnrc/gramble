@@ -24,7 +24,7 @@ import {
     testSuiteName,
     t1, t2, t3, 
 } from "../testUtil";
-import { getFromVocabDict } from "./testPassUtils";
+import { getFromVocabDict } from "../../interpreter/src/vocab";
 
 type GrammarIDTest = {
     desc: string,
@@ -67,8 +67,8 @@ export function testGrammarTapes({
                 expect(foundTapes).to.deep.equal(expectedTapes);
             });
 
-            for (const [tapeName, wildList] of Object.entries(tapes)) {
-                const expectedVocab = Vocabs.Atomic(new Set(wildList));
+            for (const [tapeName, vocabs] of Object.entries(tapes)) {
+                const expectedVocab = Vocabs.Atomic(new Set(vocabs));
                 const vocabMap = grammar.tapes.vocabMap;
 
                 const vocab = vocabMap[tapeName];
@@ -80,7 +80,12 @@ export function testGrammarTapes({
                 }
 
                 const vocabLit = getFromVocabDict(grammar.tapes.vocabMap, tapeName);
-
+                if (vocabLit === undefined) {
+                    it(`cannot find referent for ${tapeName}`, function() {
+                        assert.fail();
+                    });
+                    continue;
+                }
                 it(`${tapeName} should have vocab [${[...expectedVocab.tokens]}]`, function() {
                     expect(vocabLit.tokens).to.deep.equal(expectedVocab.tokens);
                 });

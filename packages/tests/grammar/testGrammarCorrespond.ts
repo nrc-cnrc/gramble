@@ -269,5 +269,4 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'hello'},
         ],
     }));
-    
 });

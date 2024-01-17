@@ -138,8 +138,6 @@ function constructExprCursor(
     env: PassEnv,
     g: CursorGrammar
 ): Expr {
-    console.log(`constructing cursor ${g.tapeName}, vocab tag is ${g.vocab.tag} = ${Vocab.toStr(g.vocab)}`);
-
     const childExpr = constructExpr(env, g.child);
     if (g.vocab.tag !== Vocab.Tag.Lit) {
         throw new Error(`Constructing cursor ${g.tapeName} with unresolved vocab: ${Vocab.toStr(g.vocab)}`);

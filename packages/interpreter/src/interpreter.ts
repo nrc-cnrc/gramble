@@ -29,7 +29,9 @@ import { FlattenCollections } from "./passes/flattenCollections";
 import { CreateQuery } from "./passes/createQuery";
 import { InfinityProtection } from "./passes/infinityProtection";
 import { PassEnv } from "./components";
-import { CalculateTapes, TapesEnv } from "./passes/calculateTapes";
+
+import * as Tapes from "./tapes";
+import { ResolveVocab } from "./passes/resolveVocab";
 
 /**
  * An interpreter object is responsible for applying the passes in between sheets
@@ -234,8 +236,6 @@ export class Interpreter {
         query: StringDict | StringDict[] = {}
     ): Expr {
 
-        console.log(`staging`);
-
         // qualify the name and select the symbol
         let targetGrammar: Grammar = new SelectSymbol(symbol)
                                        .getEnvAndTransform(this.grammar, this.opt)
@@ -261,10 +261,14 @@ export class Interpreter {
                               .getEnvAndTransform(targetGrammar, this.opt)
                               .msgTo(THROWER);
         
-        const tapeRefreshEnv = new TapesEnv(this.opt, true);
-        targetGrammar = new CalculateTapes()
-                            .transform(targetGrammar, tapeRefreshEnv)
-                            .msgTo(THROWER);
+        //const tapeRefreshEnv = new TapesEnv(this.opt, true);
+        //targetGrammar = new CalculateTapes()
+                          //  .transform(targetGrammar, tapeRefreshEnv)
+                           // .msgTo(THROWER);
+
+        targetGrammar = new ResolveVocab()
+                                .getEnvAndTransform(targetGrammar, this.opt)
+                                .msgTo(THROWER);
                             
         // turns the Grammars into Exprs
         const env = new PassEnv(this.opt);
@@ -275,8 +279,12 @@ export class Interpreter {
 
         console.log(`running tests`);
 
+        const targetGrammar = new ResolveVocab()
+                                .getEnvAndTransform(this.grammar, this.opt)
+                                .msgTo(THROWER);
+        
         const env = new PassEnv(this.opt);
-        const expr = constructExpr(env, this.grammar);
+        const expr = constructExpr(env, targetGrammar);
         const symbols = expr instanceof CollectionExpr
                       ? expr.symbols
                       : {};

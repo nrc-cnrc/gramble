@@ -1,12 +1,12 @@
-import { expect } from "chai";
+import { assert, expect } from "chai";
 import { testSuiteName, logTestSuite } from "../testUtil";
 import { 
     Atomic, Concatenated, Lit, Ref, 
     Tag, VocabDict, 
+    getFromVocabDict, 
     intersectKeys, mergeKeys, 
     multKeys, sumKeys, tokenize, 
 } from "../../interpreter/src/vocab";
-import { getFromVocabDict } from "./testPassUtils";
 
 
 // *************************************************
@@ -51,6 +51,16 @@ function test({
         for (const k of Object.keys(expected)) {
             const systemValue = getFromVocabDict(vocab, k);
             const expectedValue = getFromVocabDict(expected, k);
+            if (expectedValue === undefined) {
+                continue; 
+            }
+            if (systemValue === undefined) {
+                it(`cannot find referent for ${k}`, function() {
+                    assert.fail();
+                });
+                continue;
+            }
+
             it(`tape ${k} should have atomicity ${expectedValue.atomicity}`, function() {
                 expect(systemValue.atomicity).to.equal(expectedValue.atomicity);
             });

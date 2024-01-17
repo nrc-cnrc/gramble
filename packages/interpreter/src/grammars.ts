@@ -122,7 +122,7 @@ export abstract class AbstractGrammar extends Component {
             throw new Error(`Grammar ${toStr(this)} references unresolved tapes: ` +
                                 `${Tapes.toStr(this.tapes)}`);
         }
-        return Object.keys(this.tapes.vocabMap);
+        return [...this.tapes.tapeNames];
     }
 
     /**

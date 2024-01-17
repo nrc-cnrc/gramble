@@ -171,7 +171,6 @@ export class CalculateTapes extends AutoPass<Grammar> {
             // grammar node has only literal tapes
             //const tapePusher = new CalculateTapes(true, tapeIDs);
 
-            console.log(`refeeding tapes into tree`);
             const tapePushEnv = new TapesEnv(env.opt, true, tapeIDs);
             g.symbols = mapValues(g.symbols, v => 
                     this.transform(v, tapePushEnv).msgTo(newMsgs));
@@ -254,9 +253,12 @@ function getTapesCorrespond(
         return updateTapes(g, tapes);
     }
 
-    const stringifiers = Tapes.Lit();
-    stringifiers.vocabMap[INPUT_TAPE] = Vocabs.Tokenized(); 
-    stringifiers.vocabMap[OUTPUT_TAPE] = Vocabs.Tokenized(); 
+    const tapeNames = new Set([INPUT_TAPE, OUTPUT_TAPE]);
+    const vocabMap: VocabDict = {
+        [INPUT_TAPE]: Vocabs.Tokenized(),
+        [OUTPUT_TAPE]: Vocabs.Tokenized()
+    }
+    const stringifiers = Tapes.Lit(tapeNames, vocabMap);
     tapes = Tapes.Sum(stringifiers, tapes);
     return updateTapes(g, tapes);
 
@@ -545,7 +547,7 @@ function getTapesCursor(
             `Cursor for ${g.tapeName}, but no such tape in its scope.`)
     }
     
-    const vocab = g.child.tapes.vocabMap;
+    const vocab = g.child.tapes.vocabMap[g.tapeName];
     const tapes = Tapes.Cursor(g.child.tapes, g.tapeName) // this handles deleting for us
     return update(g, {tapes, vocab});
 }

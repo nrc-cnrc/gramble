@@ -247,3 +247,12 @@ export function vocabDictToStr(v: VocabDict): string {
                  .map(([k,v]) => `${k}:${toStr(v)}`)
                  .join(","); 
 }
+
+export function getFromVocabDict(v: VocabDict, key: string): Lit | undefined {
+    const value = v[key];
+    if (value === undefined) return undefined;
+    switch (value.tag) {
+        case Tag.Lit: return value;
+        case Tag.Ref: return getFromVocabDict(v, value.key);
+    }
+}
