@@ -139,18 +139,12 @@ function constructExprCursor(
     g: CursorGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
-    /*
-    if (g.tapes.tag !== Tapes.Tag.Lit)
-        throw new Error(`Constructing cursor with unresolved tapes: ${g.tapes.tag}`);
-    const vocab = g.tapes.vocabMap[g.tapeName];
-    if (vocab === undefined)
-        throw new Error(`Tape ${g.tapeName} does not exist`);
-    if (vocab.tag !== Vocab.Tag.Lit) 
-        throw new Error(`Constructing cursor with unresolved vocab: ${g.tapeName}, vocab is ${Vocab.toStr(vocab)}`);
-    const atomic = vocab.atomicity === Vocab.Atomicity.Atomic || 
-                   vocab.atomicity === Vocab.Atomicity.Concatenated;
-    */
-    return constructCursor(env, g.tapeName, childExpr, new Set(), false);
+    if (g.vocab.tag !== Vocab.Tag.Lit) {
+        throw new Error(`Constructing cursor ${g.tapeName} with unresolved vocab: ${Vocab.toStr(g.vocab)}`);
+    }
+    const atomic = g.vocab.atomicity === Vocab.Atomicity.Atomic || 
+                    g.vocab.atomicity === Vocab.Atomicity.Concatenated;
+    return constructCursor(env, g.tapeName, childExpr, g.vocab.tokens, atomic);
 }
 
 function constructExprPreTape(

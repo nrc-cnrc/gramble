@@ -419,30 +419,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [],
     }));
 
-    /*
-    TODO: not sure what these should be anymore, reconsider and redo
-    
-    describe('Join to an alt of different tapes', function() {
-        const grammar = Join(t1("hello"), Uni(t1("hello"), t2("foo")));
-        testGenerateAndSample(grammar, [{t1: 'hello'},
-                              {t1: 'hello', t2: 'foo'}]);
-    }); 
-
-    describe('Join t2-tape alts in same direction', function() {
-        const grammar = Join(Uni(t1("hello"), t2("foo")),
-                             Uni(t1("hello"), t2("foo")));
-        testGenerateAndSample(grammar, [{t1: 'hello'},
-                              {t2: 'foo'}]);
-    });
-
-    describe('Join t2-tape alts in different directions', function() {
-        const grammar = Join(Uni(t2("foo"), t1("hello")),
-                             Uni(t1("hello"), t2("foo")));
-        testGenerateAndSample(grammar, [{t2: 'foo'},
-                              {t1: 'hello'}]);
-    });
-    */
-
     describe('50. Unfinished join: t1:h ⨝ t1:hello', test({
         grammar: Join(t1("h"), t1("hello")),
         results: [],
@@ -471,7 +447,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                       t1("hello")),
         results: [
             {t1: 'hello', t2: 'foo'},
-        ],
+        ]
     }));
 
     describe('55. t1:[hi] ⨝ t1:[hi]', test({

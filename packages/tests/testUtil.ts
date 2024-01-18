@@ -14,7 +14,9 @@ import {
     SILENT,
     VERBOSE_DEBUG,
 } from "../interpreter/src/utils/logging";
-import { OldTape } from "../interpreter/src/tapes";
+
+import * as Tapes from "../interpreter/src/tapes";
+import * as Vocab from "../interpreter/src/vocab";
 
 // Permit global control over verbose output in tests.
 // To limit verbose output to a specific test file, set VERBOSE_TEST_L2
@@ -262,34 +264,40 @@ export function testHasVocab(
     const interpreter = prepareInterpreter(grammar, {optimizeAtomicity: false});
 
     for (const tapeName in expectedVocab) {
-        let tape: OldTape;
-        try {
-            tape = interpreter.tapeNS.get(tapeName);
-        } catch (e) {
-            it(`should have tape ${tapeName}`, function() {
-                assert.fail(JSON.stringify(e));
+
+        if (interpreter.grammar.tapes.tag !== Tapes.Tag.Lit) {
+            it(`tapes should be resolved`, function() {
+                assert.fail();
             });
             continue;
         }
-        const vocab = expectedVocab[tapeName];
-        if (Array.isArray(vocab)) {
+
+        const v = interpreter.grammar.tapes.vocabMap[tapeName];
+        if (v === undefined) {
+            it(`vocab for ${tapeName} should exist`, function() {
+                assert.fail();
+            });
+            continue;
+        }
+
+        if (v.tag !== Vocab.Tag.Lit) {
+            it(`vocab for ${tapeName} should be resolved`, function() {
+                assert.fail();
+            });
+            continue;
+        }
+
+        const expected = expectedVocab[tapeName];
+        if (Array.isArray(expected)) {
             // it's a string[]
-            it(`vocab of ${tapeName} should be ${vocab}`, function() {
-                expect(tape).to.not.be.undefined;
-                if (tape == undefined) {
-                    return;
-                }
-                const expectedSet = new Set(vocab);
-                expect(tape.vocab).to.deep.equal(expectedSet);
+            const expectedSet = new Set(expected);
+            it(`vocab of ${tapeName} should be ${expected}`, function() {
+                expect(v.tokens).to.deep.equal(expectedSet);
             });
         } else {
             // it's a number
-            it(`should have ${vocab} tokens in the ${tapeName} vocab`, function() {
-                expect(tape).to.not.be.undefined;
-                if (tape == undefined) {
-                    return;
-                }
-                expect(tape.vocab.size).to.equal(vocab);
+            it(`should have ${expected} tokens in the ${tapeName} vocab`, function() {
+                expect(v.tokens.size).to.equal(expected);
             });
         }
     }

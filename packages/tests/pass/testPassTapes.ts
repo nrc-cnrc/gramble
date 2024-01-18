@@ -24,6 +24,7 @@ import {
     testSuiteName,
     t1, t2, t3, 
 } from "../testUtil";
+import { getFromVocabDict } from "../../interpreter/src/vocab";
 
 type GrammarIDTest = {
     desc: string,
@@ -60,14 +61,15 @@ export function testGrammarTapes({
             if (grammar.tapes.tag !== Tapes.Tag.Lit) return;
 
             const expectedTapes = new Set(Object.keys(tapes));
-            const foundTapes = new Set(Object.keys(grammar.tapes.vocabMap))
+            const foundTapes = grammar.tapes.tapeNames;
+
             it(`Tapes should equal [${[...expectedTapes]}]`, function() {
                 expect(foundTapes).to.deep.equal(expectedTapes);
             });
 
-            for (const [tapeName, wildList] of Object.entries(tapes)) {
-                const expectedVocab = Vocabs.Atomic(new Set(wildList));
-                const vocabMap = Vocabs.resolveAll(grammar.tapes.vocabMap);
+            for (const [tapeName, vocabs] of Object.entries(tapes)) {
+                const expectedVocab = Vocabs.Atomic(new Set(vocabs));
+                const vocabMap = grammar.tapes.vocabMap;
 
                 const vocab = vocabMap[tapeName];
                 if (vocab === undefined) {
@@ -77,15 +79,15 @@ export function testGrammarTapes({
                     continue;
                 }
 
-                if (vocab.tag !== Vocabs.Tag.Lit) {
-                    it(`${tapeName} is unresolved`, function() {
-                        assert.fail(Vocabs.toStr(vocab));
+                const vocabLit = getFromVocabDict(grammar.tapes.vocabMap, tapeName);
+                if (vocabLit === undefined) {
+                    it(`cannot find referent for ${tapeName}`, function() {
+                        assert.fail();
                     });
-                    return;
+                    continue;
                 }
-
                 it(`${tapeName} should have vocab [${[...expectedVocab.tokens]}]`, function() {
-                    expect(vocab.tokens).to.deep.equal(expectedVocab.tokens);
+                    expect(vocabLit.tokens).to.deep.equal(expectedVocab.tokens);
                 });
             }
         } catch (e) {
@@ -1007,7 +1009,7 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "21a",
         grammar: Replace("e", "a", "h", "llo"),
         tapes: {
-            "$i": ["h","e","l","o"],
+            "$i": ["h","e","l","o","a"],
             "$o": ["h","e","l","o","a"],
         },
     });
@@ -1203,7 +1205,7 @@ describe(`${testSuiteName(module)}`, function() {
                     NamedReplace("R1", "e", "a")),
         tapes: {
             "t1": ["h","e","l","o","a"],
-            ".R1": ["h","e","l","o"],
+            ".R1": ["h","e","l","o","a"],
         },
     });
     
@@ -1214,8 +1216,8 @@ describe(`${testSuiteName(module)}`, function() {
                     NamedReplace("R2", "a", "u")),
         tapes: {
             "t1": ["h","e","l","o","a","u"],
-            ".R2": ["h","e","l","o","a"],
-            ".R1": ["h","e","l","o"],
+            ".R2": ["h","e","l","o","a","u"],
+            ".R1": ["h","e","l","o","a","u"],
         },
     });
 
@@ -1258,7 +1260,7 @@ describe(`${testSuiteName(module)}`, function() {
         symbol: "a",
         tapes: {
             "t1": ["h","e","l","o","a"],
-            ".R1": ["h","e","l","o"],
+            ".R1": ["h","e","l","o","a"],
         },
     });
     
@@ -1273,8 +1275,8 @@ describe(`${testSuiteName(module)}`, function() {
         symbol: "a",
         tapes: {
             "t1": ["h","e","l","o","a","u"],
-            ".R2": ["h","e","l","o","a"],
-            ".R1": ["h","e","l","o"],
+            ".R2": ["h","e","l","o","a","u"],
+            ".R1": ["h","e","l","o","a","u"],
         },
     });
 
@@ -1492,7 +1494,7 @@ describe(`${testSuiteName(module)}`, function() {
         desc: "38a",
         grammar: Replace("e", "a", "h", "llo", t3("1SG")),
         tapes: {
-            "$i": ["h","e","l","o"],
+            "$i": ["h","e","l","o","a"],
             "$o": ["h","e","l","o","a"],
             "t3": ["1","S","G"],
         },
@@ -1503,7 +1505,7 @@ describe(`${testSuiteName(module)}`, function() {
         atomicity: true,
         grammar: Replace("e", "a", "h", "llo", t3("1SG")),
         tapes: {
-            "$i": ["h","e","l","o"],
+            "$i": ["h","e","l","o","a"],
             "$o": ["h","e","l","o","a"],
             "t3": ["1SG"],
         },

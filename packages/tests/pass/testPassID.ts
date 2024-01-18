@@ -1,7 +1,7 @@
 import { expect } from "chai";
 
 import { 
-    Any, Epsilon, Null, 
+    Dot, Epsilon, Null, 
     Rename, Seq, Uni 
 } from "../../interpreter/src/grammarConvenience";
 
@@ -37,7 +37,7 @@ describe(`${testSuiteName(module)}`, function() {
 
     testGrammarID({
         testnum: "2",
-        grammar: Any("t1"),
+        grammar: Dot("t1"),
         id: "t1:."
     });
 

@@ -1,5 +1,5 @@
 import { 
-    Any, Count, Join,
+    Count, Dot, Join,
     Match, Not, Query, Rep,
     Seq, Uni, WithVocab,
 } from "../../interpreter/src/grammarConvenience";
@@ -192,7 +192,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({t1:3, t2:3},
                      Not(
                      	 Match(
-        		 	 	 	 Seq(t1("hi"), Any("t1")),
+        		 	 	 	 Seq(t1("hi"), Dot("t1")),
         		 	 	 	 "t1", "t2"
                      ))),
         grammar2: Count({t1:3, t2:3},
@@ -273,7 +273,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      WithVocab({t1:'hi', t2:'hi'},
                          Not(
                          	 Match(
-        		 	     	 	 Rep(Any("t1"), 0, 0),
+        		 	     	 	 Rep(Dot("t1"), 0, 0),
         		 	     	 	 "t1", "t2"
                          )))),
         grammar2: Count({t1:3, t2:3},
@@ -289,7 +289,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({t1:4, t2:4},
                      Not(
                      	 Match(
-        		 	 	 	 Seq(Rep(Any("t1"), 0, 2), t1("hi")),
+        		 	 	 	 Seq(Rep(Dot("t1"), 0, 2), t1("hi")),
         		 	 	 	 "t1", "t2"
                      ))),
         grammar2: Count({t1:4, t2:4},
@@ -310,9 +310,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({t1:4, t2:4},
                      Not(
                      	 Match(
-        		 	 	 	 Seq(Rep(Any("t1"), 0, 1),
+        		 	 	 	 Seq(Rep(Dot("t1"), 0, 1),
                                  t1("hi"),
-                                 Rep(Any("t1"), 0, 1)),
+                                 Rep(Dot("t1"), 0, 1)),
         		 	 	 	 "t1", "t2"
                      ))),
         grammar2: Count({t1:4, t2:4},

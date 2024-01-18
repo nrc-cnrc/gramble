@@ -168,12 +168,6 @@ export function Lit(tape: string, text: string): LiteralGrammar {
     return new LiteralGrammar(tape, text);
 }
 
-export function Any(
-    tape: string = DEFAULT_TAPE
-): DotGrammar {
-    return new DotGrammar(tape);
-}
-
 export function Join(
     child1: Grammar | string, 
     child2: Grammar | string
@@ -237,8 +231,9 @@ export function Embed(symbol: string): EmbedGrammar {
     return new EmbedGrammar(symbol);
 }
 
-export function Dot(...tapes: string[]): SequenceGrammar {
-    return Seq(...tapes.map(t => Any(t)));
+export function Dot(...tapes: string[]): Grammar {
+    if (tapes.length == 1) return new DotGrammar(tapes[0]);
+    return Seq(...tapes.map(t => new DotGrammar(t)));
 }
 
 export function Match(

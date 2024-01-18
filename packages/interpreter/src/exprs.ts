@@ -9,10 +9,7 @@ import {
     update,
     Func,
 } from "./utils/func";
-import { 
-    OldTape, TapeNamespace, 
-    renameTape
-} from "./tapes";
+import { renameTape } from "./tapes";
 import { INPUT_TAPE, OUTPUT_TAPE } from "./utils/constants";
 import { VERBOSE_DEBUG, logDebug, logStates, logTime } from "./utils/logging";
 import { Namespace } from "./utils/namespace";
@@ -56,7 +53,6 @@ export class DerivEnv extends Env {
 
     constructor(
         opt: Options,
-        public tapeNS: TapeNamespace,
         public symbols: Dict<Expr>,
         public stack: CounterStack,
         public vocab: Set<string>,
@@ -65,20 +61,6 @@ export class DerivEnv extends Env {
         public stats: DerivStats
     ) { 
         super(opt);
-    }
-
-    public renameTape(fromKey: string, toKey: string): DerivEnv {
-        const tapeNS = this.tapeNS.rename(fromKey, toKey);
-        return update(this, {tapeNS});
-    }
-
-    public addTapes(tapes: Dict<OldTape>): DerivEnv {
-        const tapeNS = new TapeNamespace(tapes, this.tapeNS);
-        return update(this, {tapeNS});
-    }
-
-    public getTape(tapeName: string): OldTape {
-        return this.tapeNS.get(tapeName);
     }
 
     public getSymbol(symbol: string): Expr {
@@ -92,6 +74,10 @@ export class DerivEnv extends Env {
     public addSymbol(symbol: string): DerivEnv {
         const stack = this.stack.add(symbol);
         return update(this, {stack});
+    }
+
+    public setVocab(vocab: Set<string>, atomic: boolean): DerivEnv {
+        return update(this, {vocab, atomic});
     }
 
     public incrStates(): void {
@@ -461,8 +447,9 @@ class DotExpr extends Expr {
     }
 
     public expandStrings(env: DerivEnv): Set<string> {
-        const tape = env.getTape(this.tapeName);
-        return tape.vocab;
+        //const tape = env.getTape(this.tapeName);
+        //return tape.vocab;
+        return env.vocab;
     }
 
     public rename(newTapeName: string): DotExpr {
@@ -606,8 +593,8 @@ class LiteralExpr extends Expr {
         if (this.index >= this.tokens.length) return;
         if (query.tapeName != this.tapeName) return;
 
-        const tape = env.getTape(query.tapeName);
-        if (tape.atomic) {
+        //const tape = env.getTape(query.tapeName);
+        if (env.atomic) {
             if (query instanceof DotExpr || query.text == this.text) {
                 const resultToken = constructToken(this.tapeName, this.text)
                 yield new Deriv(resultToken, EPSILON);
@@ -660,8 +647,8 @@ class RTLLiteralExpr extends LiteralExpr {
         if (this.index < 0) return;
         if (query.tapeName != this.tapeName) return;
 
-        const tape = env.getTape(query.tapeName);
-        if (tape.atomic) {
+        //const tape = env.getTape(query.tapeName);
+        if (env.atomic) {
             if (query instanceof DotExpr || query.text == this.text) {
                 const resultToken = constructToken(this.tapeName, this.text);
                 yield new Deriv(resultToken, EPSILON);
@@ -1267,7 +1254,7 @@ export class OutputExpr extends UnaryExpr {
 export class CursorExpr extends UnaryExpr {
 
     constructor(
-        public tape: string,
+        public tapeName: string,
         child: Expr,
         public vocab: Set<string>,
         public atomic: boolean,
@@ -1279,28 +1266,28 @@ export class CursorExpr extends UnaryExpr {
 
     public get id(): string {
         if (this.finished) {
-            return `O_${this.tape}(${this.child.id})`;
+            return `O_${this.tapeName}(${this.child.id})`;
         }
-        return `T_${this.tape}(${this.child.id})`;
+        return `T_${this.tapeName}(${this.child.id})`;
     }
 
     public delta(tapeName: string, env: DerivEnv): Expr {
-        if (tapeName == this.tape) return this; 
+        if (tapeName == this.tapeName) return this; 
                 // a tape name "X" is considered to refer to different 
                 // tapes inside and outside Cursor("X", child)
 
         const cNext = this.child.delta(tapeName, env);
-        return constructCursor(env, this.tape, cNext, this.vocab, 
+        return constructCursor(env, this.tapeName, cNext, this.vocab, 
                     this.atomic, this.output, this.finished);
     }
 
     public *deriv(query: Query, env: DerivEnv): Derivs {
-        if (query.tapeName == this.tape) return; 
+        if (query.tapeName == this.tapeName) return; 
                 // a tape name "X" is considered to refer to different 
                 // tapes inside and outside Cursor("X", child)
 
         for (const d of this.child.deriv(query, env)) {
-            yield d.wrap(c => constructCursor(env, this.tape, c, 
+            yield d.wrap(c => constructCursor(env, this.tapeName, c, 
                     this.vocab, this.atomic, this.output, this.finished));
         }
     }
@@ -1309,18 +1296,19 @@ export class CursorExpr extends UnaryExpr {
 
         if (this.finished) {
             for (const [cHandled, cNext] of this.child.forward(env)) {
-                const wrapped = constructCursor(env, this.tape, cNext, 
+                const wrapped = constructCursor(env, this.tapeName, cNext, 
                                 this.vocab, this.atomic, this.output, true);
                 yield [cHandled, wrapped];
             }
             return;
         }
 
-        const deltaToken = new TokenExpr(this.tape, '');
-        const deltaNext = this.child.delta(this.tape, env);
+        const newEnv = env.setVocab(this.vocab, this.atomic);
+        const deltaToken = new TokenExpr(this.tapeName, '');
+        const deltaNext = this.child.delta(this.tapeName, newEnv);
         const deltaGenerator = iterUnit(new Deriv(deltaToken, deltaNext));
-        const derivQuery = constructDot(this.tape);
-        const derivResults = disjoin(this.child.deriv(derivQuery, env), env);
+        const derivQuery = constructDot(this.tapeName);
+        const derivResults = disjoin(this.child.deriv(derivQuery, newEnv), newEnv);
         const allResults = randomCutIter([deltaGenerator, derivResults], env.random);
 
         for (const d of allResults) {
@@ -1330,7 +1318,7 @@ export class CursorExpr extends UnaryExpr {
             env.indentLog(1);
             for (const [_, nNext] of d.next.forward(env)) {
                 const finished = (d.result instanceof TokenExpr && d.result.text == "");
-                const wrapped = constructCursor(env, this.tape, nNext, 
+                const wrapped = constructCursor(env, this.tapeName, nNext, 
                                 this.vocab, this.atomic, newOutput, finished);
                 yield [true, wrapped];
             }
@@ -1635,8 +1623,7 @@ class RenameExpr extends UnaryExpr {
     }
 
     public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
-        const newEnv = env.renameTape(this.toTape, this.fromTape);
-        for (const [cHandled, cNext] of this.child.forward(newEnv)) {
+        for (const [cHandled, cNext] of this.child.forward(env)) {
             const wrapped = constructRename(env, cNext, this.fromTape, this.toTape);
             yield [cHandled, wrapped];
         }
@@ -1664,8 +1651,7 @@ class RenameExpr extends UnaryExpr {
         }
 
         const newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
-        const newEnv = env.renameTape(this.toTape, this.fromTape);
-        const newChild = this.child.delta(newTapeName, newEnv);
+        const newChild = this.child.delta(newTapeName, env);
         return constructRename(env, newChild, this.fromTape, this.toTape);
     }
     
@@ -1683,9 +1669,8 @@ class RenameExpr extends UnaryExpr {
         }
 
         const newTapeName = renameTape(query.tapeName, this.toTape, this.fromTape);
-        const newEnv = env.renameTape(this.toTape, this.fromTape);
         const newQuery = query.rename(newTapeName);
-        for (const d of this.child.deriv(newQuery, newEnv)) {
+        for (const d of this.child.deriv(newQuery, env)) {
             const unRenamedResult = d.result.rename(query.tapeName);
             const wrapped = constructRename(env, d.next, this.fromTape, this.toTape);
             yield new Deriv(unRenamedResult, wrapped);
@@ -1875,8 +1860,7 @@ export class MatchExpr extends UnaryExpr {
     ): Expr {
         if (tapeName == this.toTape) {
             const newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
-            const newEnv = env.renameTape(this.toTape, this.fromTape);
-            const cNext = this.child.delta(newTapeName, newEnv);
+            const cNext = this.child.delta(newTapeName, env);
             return constructMatch(env, cNext, this.fromTape, this.toTape);  
         }
         const cNext = this.child.delta(tapeName, env);
@@ -1902,15 +1886,14 @@ export class MatchExpr extends UnaryExpr {
         // toTape, we have to act like a toTape->fromTape rename.  
 
         const oppositeTapeName = (query.tapeName == this.fromTape) ? this.toTape : this.fromTape;
-        const oppositeTape = env.getTape(oppositeTapeName);
+        //const oppositeTape = env.getTape(oppositeTapeName);
 
         // We ask for a namespace rename either way; when tapeName == fromTape,
         // this is just a no-op
-        const newEnv = env.renameTape(query.tapeName, this.fromTape); 
         const fromQuery = query.rename(this.fromTape);
 
         for (const d of 
-                this.child.deriv(fromQuery, newEnv)) {
+                this.child.deriv(fromQuery, env)) {
             const wrapped = constructMatch(env, d.next, this.fromTape, this.toTape);
             if (d.result instanceof EpsilonExpr) {
                 env.logDebug("========= EpsilonToken ==========");
@@ -1919,7 +1902,7 @@ export class MatchExpr extends UnaryExpr {
             }
 
             for (const c of d.result.expandStrings(env)) {
-                if (!oppositeTape.vocab.has(c)) continue;
+                //if (!oppositeTape.vocab.has(c)) continue;
                 
                 const lit = constructToken(oppositeTapeName, c);
                 const next = constructPrecede(env, lit, wrapped);

@@ -45,7 +45,7 @@ import { PassEnv, children } from "../components";
 import { Env, Options } from "../utils/options";
 
 
-class TapesEnv extends Env<Grammar> {
+export class TapesEnv extends Env<Grammar> {
 
     constructor(
         opt: Partial<Options>,
@@ -55,17 +55,18 @@ class TapesEnv extends Env<Grammar> {
         super(opt);
     }
 
-    public update(t: Grammar): TapesEnv {
-        if (t.tag !== "collection") 
-            return this; // we only care about collections here
-        
-        //if (this.tapeMap !== undefined) 
-        //    return this; // don't destroy an existing tapemap
-
-        const tapeMap = mapDict(t.symbols, (k,_) => Tapes.Ref(k));
-        return update(this, {tapeMap});
+    public update(g: Grammar): TapesEnv {
+        switch (g.tag) {
+            case "collection": return this.updateCollection(g);
+            default: return this;
+        }
     }
 
+    updateCollection(g: CollectionGrammar): TapesEnv {
+        const tapeMap = mapDict(g.symbols, (k,_) => Tapes.Ref(k));
+        return update(this, {tapeMap});
+    }
+    
 }
 
 /**
@@ -101,7 +102,7 @@ export class CalculateTapes extends AutoPass<Grammar> {
 
             // have their own tape name as tapes
             case "lit": return getTapesLit(g, env);
-            case "dot": return getTapesDot(g);
+            case "dot": return getTapesDot(g, env);
             
             case "singletape": return getTapesSingleTape(g);
 
@@ -112,9 +113,8 @@ export class CalculateTapes extends AutoPass<Grammar> {
             case "testnot":
             case "context":
             case "pretape": return getTapesDefault(g);
-
             
-            case "cursor":  return getTapesCursor(g);
+            case "cursor":  return getTapesCursor(g, env);
             
             // union of children's tapes but always String vocab
             case "short":      return getTapesShort(g);
@@ -163,7 +163,7 @@ export class CalculateTapes extends AutoPass<Grammar> {
             // otherwise we have to puzzle it out from exceptions elsewhere.
             for (const [k,v] of Object.entries(tapeIDs)) {
                 if (v.tag !== Tapes.Tag.Lit) {
-                    throw new Error(`Unresolved tape structure in ${k}: ${toStr(v)}`);
+                    throw new Error(`Unresolved tape structure in ${k}: ${Tapes.toStr(v)}`);
                 }
             }
 
@@ -253,15 +253,16 @@ function getTapesCorrespond(
         return updateTapes(g, tapes);
     }
 
-    const stringifiers = Tapes.Lit();
-    stringifiers.vocabMap[INPUT_TAPE] = Vocabs.Tokenized(); 
-    stringifiers.vocabMap[OUTPUT_TAPE] = Vocabs.Tokenized(); 
+    const tapeNames = new Set([INPUT_TAPE, OUTPUT_TAPE]);
+    const vocabMap: VocabDict = {
+        [INPUT_TAPE]: Vocabs.Tokenized(),
+        [OUTPUT_TAPE]: Vocabs.Tokenized()
+    }
+    const stringifiers = Tapes.Lit(tapeNames, vocabMap);
     tapes = Tapes.Sum(stringifiers, tapes);
     return updateTapes(g, tapes);
 
 }
-
-
 
 function getTapesNot(g: NegationGrammar): Grammar {
     let tapes = getChildTapes(g);
@@ -271,8 +272,8 @@ function getTapesNot(g: NegationGrammar): Grammar {
     }
 
     const stringifiers = Tapes.Lit();
-    for (const tape of Object.keys(tapes.vocabMap)) {
-        stringifiers.vocabMap[tape] = Vocabs.Wildcard(tape);
+    for (const tape of tapes.tapeNames) {
+        stringifiers.vocabMap[tape] = Vocabs.Tokenized();
     }
     tapes = Tapes.Sum(stringifiers, tapes);
     return updateTapes(g, tapes);
@@ -302,11 +303,12 @@ function getTapesRepeat(
 }
 
 function getTapesLit(g: LiteralGrammar, env: TapesEnv): Grammar {
+    const tapes = new Set([g.tapeName]);
     const vocab = env.opt.optimizeAtomicity
                         ? Vocabs.Atomic(new Set([g.text]))
                         : Vocabs.Tokenized(new Set(g.tokens));
-    const tapes = { [g.tapeName]: vocab };
-    return updateTapes(g, Tapes.Lit(tapes));
+    const vocabMap = { [g.tapeName]: vocab };
+    return updateTapes(g, Tapes.Lit(tapes, vocabMap));
 }
 
 function getTapesSingleTape(g: SingleTapeGrammar): Grammar {
@@ -340,9 +342,10 @@ function getTapesSingleTape(g: SingleTapeGrammar): Grammar {
 
 }
 
-function getTapesDot(g: DotGrammar): Grammar {
-    const tapes = Tapes.Lit({ [g.tapeName]: Vocabs.Wildcard(g.tapeName) });
-    return updateTapes(g, tapes);
+function getTapesDot(g: DotGrammar, env: TapesEnv): Grammar {
+    const tapes = new Set([g.tapeName]);
+    const vocab = { [g.tapeName]: Vocabs.Tokenized() };
+    return updateTapes(g, Tapes.Lit(tapes, vocab));
 }
 
 function getTapesEmbed(
@@ -352,7 +355,6 @@ function getTapesEmbed(
     if (env.tapeMap === undefined || !(g.symbol in env.tapeMap)) 
         throw new Error(`Unknown symbol during tapecalc: ${g.symbol}`);
         // should already be in there
-        //return updateTapes(g, Tapes.Ref(g.symbol));
     return updateTapes(g, env.tapeMap[g.symbol]);
 }
 
@@ -460,9 +462,10 @@ function getTapesReplace(g: ReplaceGrammar, env: TapesEnv): Grammar {
         throw new EpsilonGrammar().tapify(env).msg(msgs);
 
     let tapes = getChildTapes(g);
-    const wildcard: TapeSet = Tapes.Lit({ 
-        [INPUT_TAPE]: Vocabs.Wildcard(INPUT_TAPE),
-    });
+    const wildcard: TapeSet = Tapes.Lit(
+        new Set([INPUT_TAPE]), 
+        { [INPUT_TAPE]: Vocabs.Tokenized(),}
+    );
     tapes = Tapes.Sum(wildcard, tapes);
     tapes = Tapes.Match(tapes, INPUT_TAPE, OUTPUT_TAPE);
     return updateTapes(g, tapes);
@@ -510,26 +513,43 @@ function getTapesReplaceBlock(g: ReplaceBlockGrammar): Grammar {
 function getTapesCondition(
     g: StartsGrammar | EndsGrammar | ContainsGrammar
 ): Grammar {
-    const extras: VocabDict = {}
-    for (const t of g.extraTapes) {
-        extras[t] = Vocabs.Wildcard(t);
-    }
-    
+    const extraTapes = [...g.extraTapes];
+    const extraVocab: VocabDict = {};
+
     if (g.child.tapes.tag === Tapes.Tag.Lit) {
-    // if we know what the child tapes are, add those wildcards too
-        for (const t of Object.keys(g.child.tapes.vocabMap)) {
-            extras[t] = Vocabs.Wildcard(t);
-        }
+        // if we know what the child tapes are, add those wildcards too
+        extraTapes.push(...g.child.tapes.tapeNames);
     }
 
-    const tapes = Tapes.Sum(g.child.tapes, Tapes.Lit(extras));
+    for (const t of extraTapes) {
+        extraVocab[t] = Vocabs.Tokenized();
+    }
+
+    const extras = Tapes.Lit(new Set(extraTapes), extraVocab);
+    const tapes = Tapes.Sum(g.child.tapes, extras);
     return updateTapes(g, tapes);
-    
 }
 
 function getTapesCursor(
-    g: CursorGrammar
+    g: CursorGrammar,
+    env: TapesEnv
 ): Grammar {
-    //console.log(`tapecalc for cursor ${g.tapeName}, child tapes are ${Tapes.toStr(g.child.tapes)}`);
-    return getTapesDefault(g);
+
+    if (g.child.tapes.tag !== Tapes.Tag.Lit) {
+        // can't do anything right now
+        const tapes = Tapes.Cursor(g.child.tapes, g.tapeName);
+        return updateTapes(g, tapes);
+    }
+    
+    if (!(g.tapeName in g.child.tapes.vocabMap)) {
+        throw g.child.err("Spurious cursor",
+            `Cursor for ${g.tapeName}, but no such tape in its scope.`)
+    }
+    
+    let vocab = g.vocab;
+    if (vocab.tag !== Vocabs.Tag.Lit) {
+        vocab = g.child.tapes.vocabMap[g.tapeName];
+    }
+    const tapes = Tapes.Cursor(g.child.tapes, g.tapeName) // this handles deleting for us
+    return update(g, {tapes, vocab});
 }

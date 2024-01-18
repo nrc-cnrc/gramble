@@ -25,6 +25,7 @@ export class CreateQuery extends Pass<Grammar,Grammar> {
     }
     
     public transformAux(g: Grammar, env: PassEnv): Grammar {
+
         // if it's an empty query there's nothing to do
         if (Array.isArray(this.query) && this.query.length === 0) 
             return g;

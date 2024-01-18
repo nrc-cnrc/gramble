@@ -8,19 +8,21 @@ import {
     JoinGrammar
 } from "../grammars";
 
-import { TapeNamespace} from "../tapes";
 import { generate } from "../generator";
 import { Pass, SymbolEnv } from "../passes";
 import { constructExpr } from "./constructExpr";
 import { CreateCursors } from "./createCursors";
 import { InfinityProtection } from "./infinityProtection";
-import { ResolveVocab } from "./resolveVocab";
 import { Options, Env } from "../utils/options";
+import { CalculateTapes, TapesEnv } from "./calculateTapes";
+import { ResolveVocab } from "./resolveVocab";
+
+import * as Tapes from "../tapes";
+import * as Vocabs from "../vocab";
 
 export class ExecuteTests extends Pass<Grammar,Grammar> {
 
     constructor(
-        public tapeNS: TapeNamespace,
         public symbolTable: Dict<Expr>
     ) {
         super();
@@ -111,28 +113,26 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
         test: AbstractTestGrammar, 
         env: SymbolEnv
     ): StringDict[] {
-
+        
         // create a filter for each test
         let targetGrammar: Grammar = new JoinGrammar(test.child, test.test)
-                                        .tapify(env);
-
-        // there won't be any new vocabulary here, but it's possible (indeed, frequent)
-        // that the Equals we made above has a different join/concat tape structure
-        // than the original grammar, so we have to check
-        targetGrammar.collectAllVocab(this.tapeNS, env);        
+                                        .tapify(env);    
         
-        const createCursors = new CreateCursors();
-        targetGrammar = createCursors.transform(targetGrammar, env).msgTo(THROWER);
+        targetGrammar = new CreateCursors()
+                                .transform(targetGrammar, env)
+                                .msgTo(THROWER);
 
-        const resolveVocab = new ResolveVocab();
-        targetGrammar = resolveVocab.transform(targetGrammar, env).msgTo(THROWER);
+        targetGrammar = new InfinityProtection()
+                                .transform(targetGrammar, env)
+                                .msgTo(THROWER);
 
-        const infinityProtection = new InfinityProtection();
-        targetGrammar = infinityProtection.transform(targetGrammar, env).msgTo(THROWER);
-        
+        targetGrammar = new ResolveVocab()
+                                .getEnvAndTransform(targetGrammar, env.opt)
+                                .msgTo(THROWER);
+
         let expr = constructExpr(env, targetGrammar);
         expr = constructCollection(env, expr, this.symbolTable);
-        return [...generate(expr, this.tapeNS, false, env.opt)];
+        return [...generate(expr, false, env.opt)];
 
     }
 }

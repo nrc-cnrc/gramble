@@ -63,11 +63,12 @@
     "testParseRuleContext": "mocha -r ts-node/register parse/testParseRuleContext.ts",
     "testParseSymbol": "mocha -r ts-node/register parse/testParseSymbol.ts",
     "testParseTokenize": "mocha -r ts-node/register parse/testParseTokenize.ts",
-
+    
+    "testPass": "mocha -r ts-node/register pass/*.ts",
     "testPassID": "mocha -r ts-node/register pass/testPassID.ts",
-    "testPassLength": "mocha -r ts-node/register testPassLength.ts",
+    "testPassLength": "mocha -r ts-node/register pass/testPassLength.ts",
     "testPassTapes": "mocha -r ts-node/register pass/testPassTapes.ts",
-    "testPassVocab": "mocha -r ts-node/register testPassVocab.ts",
+    "testPassVocab": "mocha -r ts-node/register pass/testPassVocab.ts",
 
     "testProperty": "mocha -r ts-node/register property/testProperty.ts",
     "testPropertyEq": "mocha -r ts-node/register property/testPropertyEq.ts",

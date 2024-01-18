@@ -191,6 +191,3 @@ export const GRAMMAR_PASSES =
     ))))));
 
 export const ALL_PASSES = SOURCE_PASSES.compose(GRAMMAR_PASSES);
-
-
-

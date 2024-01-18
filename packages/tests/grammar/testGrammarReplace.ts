@@ -68,7 +68,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '1. Replace e by a in hello: e -> a {1+} || #h_llo#',
         grammar: Replace("e", "a", "h", "llo", EMPTY_CONTEXT, true, true, 1),
-        vocab: {"$i":4, "$o":5},
+        //vocab: {"$i":4, "$o":5},
         results: [
             {"$i": 'hello', "$o": 'hallo'},
         ],
@@ -144,7 +144,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({$i:5, $o:5},
                      Replace("e", "a", "h", "l", 
                         EMPTY_CONTEXT, false, true)),
-        vocab: {$i:3, $o:4},
+        //vocab: {$i:3, $o:4},
         query: inputs(io_3),
         results: outputs(io_3),
     });
@@ -341,7 +341,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", "l", EMPTY_CONTEXT,
                          false, false, 1
                      )),
-        vocab: {$i:3, $o:4},
+        //vocab: {$i:3, $o:4},
         results: [
             {$i: 'hel', $o: 'hal'},     {$i: 'hele', $o: 'hale'},
             {$i: 'helh', $o: 'halh'},   {$i: 'hell', $o: 'hall'},
@@ -402,7 +402,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", "l", EMPTY_CONTEXT,
                          false, false, 1
                      )),
-        vocab: {$i:3, $o:4},
+        //vocab: {$i:3, $o:4},
         query: inputs(io_8b),
         results: outputs(io_8b),
     });
@@ -452,7 +452,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", "l", EMPTY_CONTEXT,
                          false, false, 0, 2
                      )),
-        vocab: {$i:3, $o:4},
+        //vocab: {$i:3, $o:4},
         query: inputs(io_9),
         results: outputs(io_9),
     });
@@ -495,7 +495,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", "l", EMPTY_CONTEXT,
                          false, false, 0, 3
                      )),
-        vocab: {$i:3, $o:4},
+        //vocab: {$i:3, $o:4},
         query: inputs(io_10),
         results: outputs(io_10),
     });
@@ -508,7 +508,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", "", EMPTY_CONTEXT,
                          false, false, 0, 2
                      )),
-        vocab: {$i:2, $o:3},
+        //vocab: {$i:2, $o:3},
         results: [
             {},
             // Replacement
@@ -576,7 +576,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", "", EMPTY_CONTEXT,
                          false, false, 0, 2
                      )),
-        vocab: {$i:2, $o:3},
+        //vocab: {$i:2, $o:3},
         query: inputs(io_11b),
         results: outputs(io_11b),
     });
@@ -626,7 +626,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", EMPTY_CONTEXT, EMPTY_CONTEXT, 
                          false, false, 0, 2
                      )),
-        vocab: {$i:2, $o:3},
+        //vocab: {$i:2, $o:3},
         query: inputs(io_12),
         results: outputs(io_12),
     });
@@ -639,7 +639,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          EMPTY_CONTEXT, "l", EMPTY_CONTEXT,
                          false, false, 0, 2
                      )),
-        vocab: {$i:2, $o:3},
+        //vocab: {$i:2, $o:3},
         results: [
             {},
             // Replacement
@@ -708,7 +708,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          EMPTY_CONTEXT, "l", EMPTY_CONTEXT,
                          false, false, 0, 2
                      )),
-        vocab: {$i:2, $o:3},
+        //vocab: {$i:2, $o:3},
         query: inputs(io_13b),
         results: outputs(io_13b),
     });
@@ -722,7 +722,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              false, false, 0, 2
                          ))),
-        vocab: {$i:3, $o:4},
+        //vocab: {$i:3, $o:4},
         results: [
             {},
             // Replacement
@@ -799,7 +799,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              false, false, 0, 3
                      	 ))),
-        vocab: {$i:3, $o:4},
+        //vocab: {$i:3, $o:4},
         query: inputs(io_15),
         results: outputs(io_15),
     });
@@ -852,7 +852,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", "l", EMPTY_CONTEXT,
                          false, false, 0, 2
                      )),
-        vocab: {$i:3, $o:3},
+        //vocab: {$i:3, $o:3},
         query: inputs(io_16),
         results: outputs(io_16),
     });
@@ -865,7 +865,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", "l", EMPTY_CONTEXT, 
                          true, false, 1
                      )),
-        vocab: {$i:3, $o:3},
+        //vocab: {$i:3, $o:3},
         results: [
             {$i: 'hel', $o: 'heel'},       {$i: 'helh', $o: 'heelh'},
             {$i: 'hele', $o: 'heele'},     {$i: 'hell', $o: 'heell'},
@@ -925,7 +925,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", "l", EMPTY_CONTEXT, 
                          true, false, 0
                      )),
-        vocab: {$i:3, $o:3},
+        //vocab: {$i:3, $o:3},
         query: inputs(io_18),
         results: outputs(io_18),
     });
@@ -938,7 +938,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", "l", EMPTY_CONTEXT,
                          false, true, 1
                      )),
-        vocab: {$i:3, $o:3},
+        //vocab: {$i:3, $o:3},
         results: [
             {$i: 'hel', $o: 'heel'},       {$i: 'hhel', $o: 'hheel'},
             {$i: 'ehel', $o: 'eheel'},     {$i: 'lhel', $o: 'lheel'},
@@ -999,7 +999,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", "l", EMPTY_CONTEXT,
                          false, true, 0
                      )),
-        vocab: {$i:3, $o:3},
+        //vocab: {$i:3, $o:3},
         query: inputs(io_20),
         results: outputs(io_20),
     });
@@ -1012,7 +1012,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", EMPTY_CONTEXT, EMPTY_CONTEXT,
                          false, false, 0, 2
                      )),
-        vocab: {$i:2, $o:2},
+        //vocab: {$i:2, $o:2},
         results: [
             {},
             // Replacement 
@@ -1080,7 +1080,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "e", "ee", "h", EMPTY_CONTEXT, 
                          EMPTY_CONTEXT, false, false, 0, 2
                      )),
-        vocab: {$i:2, $o:2},
+        //vocab: {$i:2, $o:2},
         query: inputs(io_21b),
         results: outputs(io_21b),
     });
@@ -1093,7 +1093,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          EMPTY_CONTEXT, "l", EMPTY_CONTEXT,
                          false, false, 0, 2
                      )),
-        vocab: {$i:2, $o:2},
+        //vocab: {$i:2, $o:2},
         results: [
             {},
             // Replacement 
@@ -1155,7 +1155,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          EMPTY_CONTEXT, "l", EMPTY_CONTEXT,
                          false, false, 0, 2
                      )),
-        vocab: {$i:2, $o:2},
+        //vocab: {$i:2, $o:2},
         query: inputs(io_22b),
         results: outputs(io_22b),
     });
@@ -1169,7 +1169,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              false, false, 0, 2
                      	 ))),
-        vocab: {$i:3, $o:3},
+        //vocab: {$i:3, $o:3},
         results: [
             {},
             // Replacement
@@ -1244,7 +1244,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", "l", EMPTY_CONTEXT,
                          false, false, 0, 2
                      )),
-        vocab: {$i:3, $o:3},
+        //vocab: {$i:3, $o:3},
         query: inputs(io_24),
         results: outputs(io_24),
     });
@@ -1257,7 +1257,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", EMPTY_CONTEXT, EMPTY_CONTEXT,
                          false, false, 0, 2
                      )),
-        vocab: {$i:2, $o:2},
+        //vocab: {$i:2, $o:2},
         results: [
             {},
             // Replacement 
@@ -1332,7 +1332,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", EMPTY_CONTEXT, EMPTY_CONTEXT,
                          false, false, 0, 2
                      )),
-        vocab: {$i:2, $o:2},
+        //vocab: {$i:2, $o:2},
         query: inputs(io_25b),
         results: outputs(io_25b),
     });
@@ -1345,7 +1345,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          EMPTY_CONTEXT, "l", EMPTY_CONTEXT,
                          false, false, 0, 2
                      )),
-        vocab: {$i:2, $o:2},
+        //vocab: {$i:2, $o:2},
         results: [
             {},
             // Replacement 
@@ -1420,7 +1420,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          EMPTY_CONTEXT, "l", EMPTY_CONTEXT,
                          false, false, 0, 2
                      )),
-        vocab: {$i:2, $o:2},
+        //vocab: {$i:2, $o:2},
         query: inputs(io_26b),
         results: outputs(io_26b),
     });
@@ -1434,7 +1434,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              false, false, 0, 2
                      	 ))),
-        vocab: {$i:3, $o:3},
+        //vocab: {$i:3, $o:3},
         results: [
             {},
             // Replacement
@@ -1488,7 +1488,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", "l", EMPTY_CONTEXT,
                          false, false, 0, 2
                      )),
-        vocab: {$i:2, $o:3},
+        //vocab: {$i:2, $o:3},
         results: [
             {},
             // Insertion
@@ -1539,7 +1539,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", "l", EMPTY_CONTEXT,
                          false, false, 0, 2
                      )),
-        vocab: {$i:2, $o:3},
+        //vocab: {$i:2, $o:3},
         query: inputs(io_28b),
         results: outputs(io_28b),
     });
@@ -1552,7 +1552,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", "l", EMPTY_CONTEXT,
                          false, false, 0, 2
                      )),
-        vocab: {$i:3, $o:3},
+        //vocab: {$i:3, $o:3},
         results: [
             {},
             // Deletion
@@ -1612,7 +1612,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", "l", EMPTY_CONTEXT,
                          false, false, 0, 2
                      )),
-        vocab: {$i:3, $o:3},
+        //vocab: {$i:3, $o:3},
         query: inputs(io_29b),
         results: outputs(io_29b),
     });
@@ -1643,7 +1643,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", Uni("l", "y"), EMPTY_CONTEXT,
                          false, false, 0, 2
                      )),
-        vocab: {$i:4, $o:5},
+        //vocab: {$i:4, $o:5},
         query: inputs(io_30a),
         results: outputs(io_30a),
     });
@@ -1674,7 +1674,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          Uni("h", "y"), "l", EMPTY_CONTEXT,
                          false, false, 0, 2
                      )),
-        vocab: {$i:4, $o:5},
+        //vocab: {$i:4, $o:5},
         query: inputs(io_30b),
         results: outputs(io_30b),
     });
@@ -1743,7 +1743,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", "l", EMPTY_CONTEXT,
                          false, false, 0, 2
                      )),
-        vocab: {$i:4, $o:5},
+        //vocab: {$i:4, $o:5},
         query: inputs(io_31a),
         results: outputs(io_31a),
     });
@@ -1757,7 +1757,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", "l", EMPTY_CONTEXT,
                          false, false, 0, 1
                      )),
-        vocab: {$i:3, $o:5},
+        //vocab: {$i:3, $o:5},
         results: [
             {},
             // Replacement
@@ -1814,7 +1814,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", "l", EMPTY_CONTEXT,
                          false, false, 0, 1
                      )),
-        vocab: {$i:3, $o:5},
+        //vocab: {$i:3, $o:5},
         query: inputs(io_31c),
         results: outputs(io_31c),
     });
@@ -1874,11 +1874,11 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          "h", "l", t3("[1SG]"),
                          false, false, 0, 3
                      )),
-        vocab: {
-            $i:["h","e","l"], 
-            $o:["h","e","l","a"], 
-            t3:["[","1","S","G","]"]
-        },
+        //vocab: {
+        //    $i:["h","e","l"], 
+        //    $o:["h","e","l","a"], 
+        //    t3:["[","1","S","G","]"]
+        //},
         query: inputs(io_32),
         results: outputs(io_32),
     });
@@ -1892,7 +1892,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              true, false, 1, 1
                      	 ))),
-        vocab: {$i:0, $o:3},
+        //vocab: {$i:0, $o:3},
         results: [
             {$o: 'e'},  // equivalent to {$i: '', $o: 'e'}
         ],
@@ -1907,7 +1907,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              false, true, 1, 1
                      	 ))),
-        vocab: {$i:0, $o:3},
+        //vocab: {$i:0, $o:3},
         results: [
             {$o: 'e'},  // equivalent to {$i: '', $o: 'e'}
         ],
@@ -1922,7 +1922,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              true, true, 1, 1
                      	 ))),
-        vocab: {$i:0, $o:3},
+        //vocab: {$i:0, $o:3},
         results: [
             {$o: 'e'},  // equivalent to {$i: '', $o: 'e'}
         ],
@@ -1937,7 +1937,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              false, false, 1, 1
                      	 ))),
-        vocab: {$i:0, $o:3},
+        //vocab: {$i:0, $o:3},
         results: [
             {$o: 'e'},  // equivalent to {$i: '', $o: 'e'}
         ],
@@ -1952,7 +1952,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              true, false, 1, 1
                      	 ))),
-        vocab: {$i:2, $o:3},
+        //vocab: {$i:2, $o:3},
         results: [
             {$i: "h", $o: "eh"},     {$i: "l", $o: "el"},
             {$i: "hh", $o: "ehh"},   {$i: "hl", $o: "ehl"},
@@ -1974,7 +1974,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              false, true, 1, 1
                      	 ))),
-        vocab: {$i:2, $o:3},
+        //vocab: {$i:2, $o:3},
         results: [
             {$i: 'h', $o: 'he'},     {$i: 'l', $o: 'le'},
             {$i: 'hh', $o: 'hhe'},   {$i: 'hl', $o: 'hle'},
@@ -1996,7 +1996,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              true, true, 1, 1
                      	 ))),
-        vocab: {$i:2, $o:3},
+        //vocab: {$i:2, $o:3},
         results: [
             {$o: 'e'},  // equivalent to {$i: '', $o: 'e'}
         ],
@@ -2011,7 +2011,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              false, false, 1, 1
                      	 ))),
-        vocab: {$i:2, $o:3},
+        //vocab: {$i:2, $o:3},
         results: [
             {$i: "h", $o: "eh"},     {$i: "h", $o: "he"},
             {$i: "l", $o: "el"},     {$i: "l", $o: "le"},
@@ -2050,7 +2050,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              false, false, 0, 2
                      	 ))),
-        vocab: {$i:0, $o:3},
+        //vocab: {$i:0, $o:3},
         results: [
             {},         // equivalent to {$i: '', $o: ''}
             {$o: 'e'},  // equivalent to {$i: '', $o: 'e'}
@@ -2067,7 +2067,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              false, false, 0, 2
                      	 ))),
-        vocab: {$i:2, $o:3},
+        //vocab: {$i:2, $o:3},
         results: [
             // 1 Insertion
             {$o: 'e'},  // equivalent to {$i: '', $o: 'e'}
@@ -2143,7 +2143,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              false, false, 2, 2
                      	 ))),
-        vocab: {$i:1, $o:2},
+        //vocab: {$i:1, $o:2},
         results: [
             {$o: 'ee'},  // equivalent to {$i: '', $o: 'ee'}
             {$i: 'h', $o: 'ehe'},
@@ -2161,7 +2161,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              false, false, 2, 2
                      	 ))),
-        vocab: {$i:1, $o:2},
+        //vocab: {$i:1, $o:2},
         results: [
             {$o: 'ee'},  // equivalent to {$i: '', $o: 'ee'}
             {$i: 'h', $o: 'ehe'},
@@ -2185,7 +2185,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              false, false, 1, 1
                      	 ))),
-        vocab: {$i:2, $o:3},
+        //vocab: {$i:2, $o:3},
         results: [
             // Insertions
             {$i: "h", $o: "eh"},      {$i: "h", $o: "he"},
@@ -2251,7 +2251,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              false, false, 1, 1
                      	 ))),
-        vocab: {$i:2, $o:2},
+        //vocab: {$i:2, $o:2},
         results: [
             // Insertions
             {$i: "h", $o: "eh"},      {$i: "h", $o: "he"},
@@ -2314,7 +2314,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              true, false, 1, 1
                      	 ))),
-        vocab: {$i:3, $o:3},
+        //vocab: {$i:3, $o:3},
         results: [
             {$i: 'e'},  // equivalent to {$i: 'e', $o: ''}
             {$i: 'ee', $o: 'e'}, {$i: 'eh', $o: 'h'},
@@ -2350,7 +2350,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              false, true, 1, 1
                      	 ))),
-        vocab: {$i:3, $o:3},
+        //vocab: {$i:3, $o:3},
         results: [
             {$i: 'e'},  // equivalent to {$i: 'e', $o: ''}
             {$i: 'ee', $o: 'e'}, {$i: 'he', $o: 'h'},
@@ -2386,7 +2386,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              true, true, 1, 1
                      	 ))),
-        vocab: {$i:3, $o:3},
+        //vocab: {$i:3, $o:3},
         results: [
             {$i: 'e'},  // equivalent to {$i: 'e', $o: ''}
         ],
@@ -2401,7 +2401,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              false, false, 1, 1
                      	 ))),
-        vocab: {$i:3, $o:3},
+        //vocab: {$i:3, $o:3},
         results: [
             {$i: 'e'},  // equivalent to {$i: 'e', $o: ''}
             {$i: 'eh', $o: 'h'},     {$i: 'el', $o: 'l'},
@@ -2440,7 +2440,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              false, false, 0, 2
                      	 ))),
-        vocab: {$i:3, $o:3},
+        //vocab: {$i:3, $o:3},
         results: [
             {},
             {$i: 'e'},  // equivalent to {$i: 'e', $o: ''}
@@ -2475,7 +2475,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              false, false, 2, 2
                      	 ))),
-        vocab: {$i:2, $o:2},
+        //vocab: {$i:2, $o:2},
         results: [
             {$i: 'ee'},  // equivalent to {$i: 'ee', $o: ''}
             {$i: 'ehe', $o: 'h'},
@@ -2494,7 +2494,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                          false, false, 1, 1
                      )),
-        vocab: {$i:2, $o:3},
+        //vocab: {$i:2, $o:3},
         results: [
             {$i: 'aba', $o: 'X'},
         ],
@@ -2511,7 +2511,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              false, false, 1, 1
                          ))),
-        vocab: {$i:2, $o:3},
+        //vocab: {$i:2, $o:3},
         results: [
             {$i: 'aba', $o: 'X'},
         ],
@@ -2527,7 +2527,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              false, false, 1, 1
                          ))),
-        vocab: {$i:2, $o:3},
+        //vocab: {$i:2, $o:3},
         results: [
             {$i: 'aba', $o: 'X'},
         ],
@@ -2548,7 +2548,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                          false, false, 1, 3
                      )),
-        vocab: {$i:1, $o:1},
+        //vocab: {$i:1, $o:1},
         results: [
             {$i: 'ee', $o: 'e'},
             {$i: 'eee', $o: 'ee'},      // 2 ways: (ee)e, e(ee)
@@ -2577,7 +2577,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                          false, false, 1, 3
                      )),
-        vocab: {$i:2, $o:3},
+        //vocab: {$i:2, $o:3},
         query: inputs(io_36b),
         results: outputs(io_36b),
     });
@@ -2591,7 +2591,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              true, false
                      	 ))),
-        vocab: {$i:2, $o:3},
+        //vocab: {$i:2, $o:3},
         results: [
             {},
             {$i: 'h', $o: 'h'},
@@ -2612,7 +2612,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              false, true
                      	 ))),
-        vocab: {$i:2, $o:3},
+        //vocab: {$i:2, $o:3},
         results: [
             {},
             {$i: 'h', $o: 'h'},
@@ -2633,7 +2633,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                              EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
                              true, true
                      	 ))),
-        vocab: {$i:2, $o:3},
+        //vocab: {$i:2, $o:3},
         results: [
             {},
             {$i: 'h', $o: 'h'},
