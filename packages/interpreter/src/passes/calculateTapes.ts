@@ -355,7 +355,6 @@ function getTapesEmbed(
     if (env.tapeMap === undefined || !(g.symbol in env.tapeMap)) 
         throw new Error(`Unknown symbol during tapecalc: ${g.symbol}`);
         // should already be in there
-        //return updateTapes(g, Tapes.Ref(g.symbol));
     return updateTapes(g, env.tapeMap[g.symbol]);
 }
 
@@ -547,7 +546,10 @@ function getTapesCursor(
             `Cursor for ${g.tapeName}, but no such tape in its scope.`)
     }
     
-    const vocab = g.child.tapes.vocabMap[g.tapeName];
+    let vocab = g.vocab;
+    if (vocab.tag !== Vocabs.Tag.Lit) {
+        vocab = g.child.tapes.vocabMap[g.tapeName];
+    }
     const tapes = Tapes.Cursor(g.child.tapes, g.tapeName) // this handles deleting for us
     return update(g, {tapes, vocab});
 }

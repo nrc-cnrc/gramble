@@ -260,11 +260,6 @@ export class Interpreter {
         targetGrammar = new InfinityProtection()
                               .getEnvAndTransform(targetGrammar, this.opt)
                               .msgTo(THROWER);
-        
-        //const tapeRefreshEnv = new TapesEnv(this.opt, true);
-        //targetGrammar = new CalculateTapes()
-                          //  .transform(targetGrammar, tapeRefreshEnv)
-                           // .msgTo(THROWER);
 
         targetGrammar = new ResolveVocab()
                                 .getEnvAndTransform(targetGrammar, this.opt)
