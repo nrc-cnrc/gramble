@@ -32,7 +32,7 @@
 
             class SidebarDevEnvironment {
 
-                serializedErrors = new Set();
+                errors = {};
 
                 constructor(cellsBySheet) {
                     this.cellsBySheet = {};
@@ -40,7 +40,6 @@
                         const lowercaseName = sheetName.toLowerCase();
                         this.cellsBySheet[lowercaseName] = cellsBySheet[sheetName];
                     }; // {[key: string}: string[][]
-                    this.errorMsgs = []; // list of [sheet, row, col, shortMsg, msg, level]
                 }
 
                 hasSource(sheetName) { 
@@ -57,30 +56,22 @@
                 }
 
                 message(msg) {
-                    // we only care about errors and warnings in the sidebar
+                    // we only care about errors  in the sidebar
                     switch (msg.tag) {
-                        case "error": 
-                        case "warning": return this.markNote(msg);
+                        case "error": return this.markNote(msg);
                     }
                 }
                 
                 markNote(msg, level) {
-                                
-                    // so as not to keep recording identical errors
-                    const serializedError = `${msg.sheet}___${msg.row}___${msg.col}___${msg.LongMsg}`;
-                    if (this.serializedErrors.has(serializedError)) {
-                        return;
-                    } 
-                    this.serializedErrors.add(serializedError);
-                    
-                    this.errorMsgs.push([msg.sheet, msg.row, msg.col, msg.shortMsg, msg.msg, msg.tag]);
+                    const key = `${msg.sheet}___${msg.row}___${msg.col}___${msg.LongMsg}`;
+                    this.errors[key] = msg;
                 }
 
-                markHeader(sheet, row, col, color) { }
-                markContent(sheet, row, col, color) { }
-                markCommand(sheet, row, col) { }
-                markComment(sheet, row, col) { }
-                markSymbol(sheet, row, col) { }
+                markHeader(msg) { }
+                markContent(msg) { }
+                markCommand(msg) { }
+                markComment(msg) { }
+                markSymbol(msg) { }
                 highlight() { }
 
             }
@@ -159,7 +150,7 @@
                 devEnv = new SidebarDevEnvironment(cellsBySheet);
                 project = gramble.Interpreter.fromSheet(devEnv, currentSheetName, {verbose: gramble.VERBOSE_TIME});
 
-                createErrorButtons(devEnv.errorMsgs, currentSheetName);
+                createErrorButtons(devEnv.errors, currentSheetName);
                 reloadSymbols(currentSheetName);
                 reloadInputFields();
 
@@ -187,36 +178,25 @@
                 }
 
                 project.runTests();
-                createErrorButtons(devEnv.errorMsgs, currentSheetName);
-
+                createErrorButtons(devEnv.errors, currentSheetName);
             }
 
-            function createErrorButtons(errorMsgs, currentSheetName) {
+            function createErrorButtons(errors, currentSheetName) {
 
-
-                if (errorMsgs.length == 0) {
-                    return;
-                }
-
-                
                 const errorArea = document.getElementById("errorArea");
                 
-                for (const [sheet, row, col, shortMsg, msg, lvl] of errorMsgs) {
-
-                    if (lvl != "error") {
-                        continue;
-                    }
+                for (const msg of Object.values(errors)) {
 
                     const button = document.createElement('button');
                     button.classList.add('errorButton');
-                    let cellName = getA1Notation("", row, col);
-                    if (sheet != currentSheetName) {
-                        cellName = `${sheet}!${cellName}`; 
+                    let cellName = getA1Notation("", msg.row, msg.col);
+                    if (msg.sheet != currentSheetName) {
+                        cellName = `${msg.sheet}!${cellName}`; 
                     }
-                    button.innerHTML = `${cellName}: ${shortMsg}`;
-                    button.title = msg;
+                    button.innerHTML = `${cellName}: ${msg.shortMsg}`;
+                    button.title = msg.longMsg;
                     button.onclick = async function() {
-                        await scriptRunPromise().scrollToCell(sheet, row, col);
+                        await scriptRunPromise().scrollToCell(msg.sheet, msg.row, msg.col);
                         return false;
                     };
                     errorArea.appendChild(button);

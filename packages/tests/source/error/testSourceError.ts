@@ -33,7 +33,7 @@ describe(`Source ${DIR}`, function() {
     describe('Sheet name using a reserved word', test({
         filename: "optional",
         errors: [
-            { sheet: "optional", row: 0, col: 0, severity: "error" }
+            Error(0, 0, "optional")
         ],
         results: undefined
     }));
@@ -138,7 +138,7 @@ describe(`Source ${DIR}`, function() {
 
     describe('6b. Content obliteration by assignment', test({
         id: "6b",
-        errors: [ Error(0,0) ],
+        errors: [ Warning(0,0) ],
         results: [
             {text: "baz"},
             {text: "bar"}

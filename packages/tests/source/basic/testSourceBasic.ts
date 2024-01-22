@@ -92,7 +92,7 @@ describe(`Source ${DIR}`, function() {
             {text:"baz", gloss:"-2SG"},
             {text:"bar", gloss:"-1SG"}
         ],
-        errors: [ Warning(1, 0), Warning(1, 1) ]
+        errors: [ Warning(1, 0), Error(1, 1) ]
     }));
     
     describe('6a. "optional text" header', test({
@@ -156,7 +156,7 @@ describe(`Source ${DIR}`, function() {
     describe('10. Empty assignment', test({
         id: "10",
         results: [{}],
-        errors: [ Error(0, 0) ]
+        errors: [ Warning(0, 0) ]
     }));
     
     describe('11. Nested tables', test({

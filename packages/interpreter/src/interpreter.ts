@@ -272,8 +272,6 @@ export class Interpreter {
 
     public runTests(): void {
 
-        console.log(`running tests`);
-
         const targetGrammar = new ResolveVocab()
                                 .getEnvAndTransform(this.grammar, this.opt)
                                 .msgTo(THROWER);

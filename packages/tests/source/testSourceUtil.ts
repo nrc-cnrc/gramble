@@ -16,22 +16,19 @@ import { Options } from "../../interpreter/src/utils/options";
 
 import { testErrors, testGenerate } from '../testUtil';
 import { Epsilon } from '../../interpreter/src/grammarConvenience';
+import { Message } from '../../interpreter/src/utils/msgs';
+import * as Msgs from '../../interpreter/src/utils/msgs';
 
 const TEST_DIR = dirname(module.filename);
 
-export interface ProjectError {
-    sheet?: string,
-    row: number,
-    col: number,
-    severity?: string
+export function Error(row: number, col: number, sheet?: string): Partial<Message> {
+    if (sheet === undefined) return { row, col, tag: Msgs.Tag.Error };
+    return {sheet, row, col, tag: Msgs.Tag.Error} 
 }
 
-export function Error(row: number, col: number) {
-    return { row: row, col: col, severity: "error" };
-}
-
-export function Warning(row: number, col: number) {
-    return { row: row, col: col, severity: "warning" };
+export function Warning(row: number, col: number, sheet?: string):  Partial<Message> {
+    if (sheet === undefined) return { row, col, tag: Msgs.Tag.Warning };
+    return { row, col, tag: Msgs.Tag.Warning };
 }
 
 export interface ProjectTest extends Options {
@@ -39,7 +36,7 @@ export interface ProjectTest extends Options {
     filename: string,
     dir: string,
     results: StringDict[],
-    errors: ProjectError[],
+    errors: Partial<Message>[],
     symbol: string
 }
 
@@ -74,9 +71,10 @@ export function testProject({
     const qualifiedSymbol = [ projectName, symbol ]
                             .filter(s => s !== undefined && s.length > 0)
                             .join(".");
-    const expectedErrors: [string, number, number, string][] = errors.map(e => {
+    const expectedErrors: Partial<Message>[] = errors.map(e => {
         const sheet = e.sheet === undefined ? projectName : e.sheet;
-        return [ sheet, e.row, e.col, e.severity || "error" ];
+        const error = { ...e, sheet };
+        return error;
     });
     testErrors(interpreter, expectedErrors);
     if (results !== undefined) {

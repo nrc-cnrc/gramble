@@ -125,7 +125,7 @@ describe(`Source ${DIR}`, function() {
         id: "10a",
         errors: [
             Error(9,1),
-            Error(9,0)
+            Warning(9,0)
         ],
         results: [{}]
     }));
@@ -134,7 +134,7 @@ describe(`Source ${DIR}`, function() {
         id: "10b",
         errors: [
             Error(9,1),
-            Error(9,0)
+            Warning(9,0)
         ],
         results: [{}]
     }));

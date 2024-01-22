@@ -1,4 +1,4 @@
-import { SyntaxError, SimpleDevEnvironment } from "./devEnv";
+import { SimpleDevEnvironment } from "./devEnv";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { parseCSV } from "./utils/strings";
@@ -10,8 +10,6 @@ export class TextDevEnvironment extends SimpleDevEnvironment {
     ) { 
         super();
     }
-
-    protected errors: {[key: string]: SyntaxError[]} = {};
 
     public hasSource(sheet: string): boolean {
         if (super.hasSource(sheet)) {

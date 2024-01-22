@@ -1,5 +1,7 @@
 import { parseCSV } from "./utils/strings";
+import { Message } from "./utils/msgs";
 import * as Messages from "./utils/msgs";
+import { Dict } from "./utils/func";
 
 /**
  * DevEnvironment
@@ -10,10 +12,8 @@ import * as Messages from "./utils/msgs";
  * that particular cells are errors, comments, column headers, etc.
  */
 export interface DevEnvironment {
-    getErrorMessages(): [string, number, number, string, "error" | "warning" | "success"][];
-    numErrors(level: "error" | "warning"| "any"): number;
-    logErrors(): void;
-    getErrors(sheet: string, row: number, col: number): string[];
+    getErrors(query?: Partial<Message>): Message[];
+    logErrors(query?: Partial<Message>): void;
 
     hasSource(sheet: string): boolean;
     loadSource(sheet: string): string[][];
@@ -31,14 +31,10 @@ export function posToStr(sheet: string, row: number, col: number) {
     return `${sheet}:${row}:${col}`;
 }
 
-export type SyntaxError = [string, number, number, string, "error"|"warning"|"success"];
-
-
 export class SimpleDevEnvironment implements DevEnvironment {
 
     protected sources: {[name: string]: string[][]} = {};
-    protected errors: {[key: string]: SyntaxError[]} = {};
-    protected serializedErrors: Set<string> = new Set();
+    protected errors: Dict<Message> = {};
 
     public hasSource(sheet: string): boolean {
         return sheet in this.sources;
@@ -63,66 +59,33 @@ export class SimpleDevEnvironment implements DevEnvironment {
     public message(msg: any): void {
         // The simple dev env only cares about errors and warnings
         switch (msg.tag) {
-            case Messages.Tag.Error: return this.markNote(msg, "error");
-            case Messages.Tag.Warning: return this.markNote(msg, "warning");
+            case Messages.Tag.Error: return this.markNote(msg);
+            case Messages.Tag.Warning: return this.markNote(msg);
         }
     }
 
-    public markNote(msg: Messages.Message, level: "error" | "warning" | "success" = "error"): void {
+    public markNote(msg: Messages.Message): void {
 
         const sheet = msg.sheet || "???";
-        const row = msg.row || -1;
-        const col = msg.col || -1;
+        const row = msg.row || 0;
+        const col = msg.col || 0;
 
-        // so as not to keep recording identical errors
-        const serializedError = `${sheet}___${row}___${col}___${msg.longMsg}`;
-        if (this.serializedErrors.has(serializedError)) {
-            return;
-        }
-        this.serializedErrors.add(serializedError);
-
-        const key = posToStr(sheet, row, col);
-        if (!(key in this.errors)) {
-            this.errors[key] = [];
-        }
-        const error: SyntaxError = [sheet, row, col, msg.longMsg, level];
-        this.errors[key].push(error);
+        const key = `${sheet}___${row}___${col}___${msg.longMsg}`;
+        this.errors[key] = msg;
     }
 
-    public logErrors(): void {
-        for (const error of Object.values(this.errors)) {
-            for (const [sheet, row, col, msg, lev] of error) {
-                console.log(`${sheet}:${row}:${col}: ${lev.toUpperCase()}:${msg}`);
-            }
+    public logErrors(query: Partial<Message> = {}): void {
+        for (const msg of this.getErrors(query)) {
+            console.log(`${msg.sheet}:${msg.row}:${msg.col}: ${msg.tag.toUpperCase()}:${msg}`);
         }
     }
 
-    public getErrorMessages(): [string, number, number, string, "error"|"warning"|"success"][] {
-        let results: SyntaxError[] = [];
-        for (const errors of Object.values(this.errors)) {
-            results = results.concat(errors);
+    public getErrors(query: Partial<Message> = {}): Message[] {
+        let errors = Object.values(this.errors);
+        for (const key of Object.keys(query) as (keyof Message)[]) {
+            errors = errors.filter(e => e[key] == query[key]);
         }
-        return results;
-    }
-
-    public getErrors(sheet: string, row: number, col: number): string[] {
-        const key = posToStr(sheet, row, col);
-        if (!(key in this.errors)) {
-            return [];
-        }
-        return this.errors[key].map(e => e.toString());
-    }
-
-    public numErrors(level: "error" | "warning"|"any"): number {
-        let result = 0;
-        for (const error of Object.values(this.errors)) {
-            for (const [sheet, row, col, msg, lev] of error) {
-                if (level == "any" && lev != "success" || lev == level) {
-                    result++;
-                }
-            }
-        }
-        return result;
+        return errors;
     }
 
     public highlight(): void {}

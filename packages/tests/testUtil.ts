@@ -7,6 +7,7 @@ import { Interpreter } from "../interpreter/src/interpreter";
 import { StringDict, stringDictToStr } from "../interpreter/src/utils/func";
 import { HIDDEN_PREFIX } from "../interpreter/src/utils/constants";
 import { Options } from "../interpreter/src/utils/options";
+import * as Messages from "../interpreter/src/utils/msgs";
 
 import {
     logDebug,
@@ -17,6 +18,8 @@ import {
 
 import * as Tapes from "../interpreter/src/tapes";
 import * as Vocab from "../interpreter/src/vocab";
+
+import { Message } from "../interpreter/src/utils/msgs";
 
 // Permit global control over verbose output in tests.
 // To limit verbose output to a specific test file, set VERBOSE_TEST_L2
@@ -305,18 +308,18 @@ export function testHasVocab(
 
 export function testErrors(
     interpreter: Interpreter,
-    expectedErrors: [string, number, number, string][]
+    expectedErrors: Partial<Message>[]
 ): void {
     testNumErrors(interpreter, expectedErrors.length);
-    const devEnv = interpreter.devEnv;
-    for (const [sheet, row, col, level] of expectedErrors) {
-        const levelMsg = (level == "warning") ? `a ${level}` : `an ${level}`;
-        it(`should have ${levelMsg} at ${sheet}:${row}:${col}`, function() {
+    for (const err of expectedErrors) {
+        const levelMsg = (err.tag === "error") ? `an ${err.tag}` : `an ${err.tag}`;
+        it(`should have ${levelMsg} at ${err.sheet}:${err.row}:${err.col}`, function() {
             try {
-                expect(devEnv.getErrors(sheet, row, col).length).to.be.greaterThan(0);
+                const msgs = interpreter.devEnv.getErrors(err);
+                expect(msgs.length).to.be.greaterThan(0);
             } catch (e) {
                 console.log(`[${this.test?.fullTitle()}]`);
-                console.log(`outputs: ${JSON.stringify(devEnv.getErrorMessages())}`);
+                console.log(`outputs: ${JSON.stringify(interpreter.devEnv.getErrors())}`);
                 throw e;
             }
         });
@@ -330,10 +333,11 @@ export function testNumErrors(
     it(`should have ${numErrors} errors/warnings`, function() {
         try {
             interpreter.runTests();
-            expect(interpreter.devEnv.numErrors("any")).to.equal(numErrors);
+            const msgs = interpreter.devEnv.getErrors();
+            expect(msgs.length).to.equal(numErrors);
         } catch (e) {
             console.log(`[${this.test?.fullTitle()}]`);
-            console.log(`outputs: ${JSON.stringify(interpreter.devEnv.getErrorMessages())}`);
+            console.log(`outputs: ${JSON.stringify(interpreter.devEnv.getErrors())}`);
             throw e;
         }
     });

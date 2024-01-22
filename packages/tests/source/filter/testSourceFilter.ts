@@ -184,7 +184,7 @@ describe(`Source ${DIR}`, function() {
 
     describe('21. Equals with a slash header', test({
         id: "21",
-        errors: [ Error(6,3), Error(7,3) ],
+        errors: [ Error(6,3), Warning(7,3) ],
         results: [
             {"text":"goo","pos":"v","class":"n"},
             {"text":"moo","pos":"n","class":"n"},

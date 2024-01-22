@@ -133,9 +133,9 @@ class GoogleSheetsDevEnvironment {
         if (msg.sheet != this.currentSheetName) return;
 
         switch (msg.tag) {
-            case "error":       return this.markNote(msg, "error");
-            case "warning":     return this.markNote(msg, "warning");
-            case "success":     return this.markNote(msg, "success");
+            case "error":       return this.markNote(msg);
+            case "warning":     return this.markNote(msg);
+            case "success":     return this.markNote(msg);
             case "comment":     return this.markComment(msg);
             case "header":      return this.markHeader(msg);
             case "content":     return this.markContent(msg);

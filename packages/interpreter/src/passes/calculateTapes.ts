@@ -432,7 +432,7 @@ function getTapesFilter(g: FilterGrammar): Grammar {
     const t2 = g.child2.tapeNames[0];
     if (g.child1.tapes.vocabMap[t2] === undefined) {
         throw g.child1.err("Filtering non-existent tape", 
-        `This filter references a tape ${t2} that does not exist`);
+        `This filter references a tape "${t2}" that does not exist`);
     }
 
     return getTapesJoin(g);
