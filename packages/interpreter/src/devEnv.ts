@@ -1,5 +1,5 @@
 import { parseCSV } from "./utils/strings";
-
+import * as Messages from "./utils/msgs";
 
 /**
  * DevEnvironment
@@ -10,8 +10,8 @@ import { parseCSV } from "./utils/strings";
  * that particular cells are errors, comments, column headers, etc.
  */
 export interface DevEnvironment {
-    getErrorMessages(): [string, number, number, string, "error"|"warning"|"info"][];
-    numErrors(level: "error" | "warning"|"any"): number;
+    getErrorMessages(): [string, number, number, string, "error" | "warning" | "success"][];
+    numErrors(level: "error" | "warning"| "any"): number;
     logErrors(): void;
     getErrors(sheet: string, row: number, col: number): string[];
 
@@ -31,7 +31,8 @@ export function posToStr(sheet: string, row: number, col: number) {
     return `${sheet}:${row}:${col}`;
 }
 
-export type SyntaxError = [string, number, number, string, "error"|"warning"|"info"];
+export type SyntaxError = [string, number, number, string, "error"|"warning"|"success"];
+
 
 export class SimpleDevEnvironment implements DevEnvironment {
 
@@ -60,26 +61,21 @@ export class SimpleDevEnvironment implements DevEnvironment {
     }
 
     public message(msg: any): void {
-        if (msg.tag == "error") {
-            this.markError(msg["sheet"], msg["row"],
-                msg["col"], msg["shortMsg"], msg["longMsg"],
-                "error");
-        } else if (msg.tag == "warning") {
-            this.markError(msg["sheet"], msg["row"],
-                msg["col"], msg["shortMsg"], msg["longMsg"],
-                "warning");
+        // The simple dev env only cares about errors and warnings
+        switch (msg.tag) {
+            case Messages.Tag.Error: return this.markNote(msg, "error");
+            case Messages.Tag.Warning: return this.markNote(msg, "warning");
         }
     }
 
-    public markError(sheet: string, 
-                     row: number, 
-                     col: number, 
-                     shortMsg: string,
-                     msg: string, 
-                     level: "error" | "warning" | "info" = "error"): void {
+    public markNote(msg: Messages.Message, level: "error" | "warning" | "success" = "error"): void {
+
+        const sheet = msg.sheet || "???";
+        const row = msg.row || -1;
+        const col = msg.col || -1;
 
         // so as not to keep recording identical errors
-        const serializedError = `${sheet}___${row}___${col}___${msg}`;
+        const serializedError = `${sheet}___${row}___${col}___${msg.longMsg}`;
         if (this.serializedErrors.has(serializedError)) {
             return;
         }
@@ -89,7 +85,7 @@ export class SimpleDevEnvironment implements DevEnvironment {
         if (!(key in this.errors)) {
             this.errors[key] = [];
         }
-        const error: SyntaxError = [sheet, row, col, msg, level];
+        const error: SyntaxError = [sheet, row, col, msg.longMsg, level];
         this.errors[key].push(error);
     }
 
@@ -101,7 +97,7 @@ export class SimpleDevEnvironment implements DevEnvironment {
         }
     }
 
-    public getErrorMessages(): [string, number, number, string, "error"|"warning"|"info"][] {
+    public getErrorMessages(): [string, number, number, string, "error"|"warning"|"success"][] {
         let results: SyntaxError[] = [];
         for (const errors of Object.values(this.errors)) {
             results = results.concat(errors);
@@ -111,7 +107,6 @@ export class SimpleDevEnvironment implements DevEnvironment {
 
     public getErrors(sheet: string, row: number, col: number): string[] {
         const key = posToStr(sheet, row, col);
-        const results: string[] = [];
         if (!(key in this.errors)) {
             return [];
         }
@@ -122,7 +117,7 @@ export class SimpleDevEnvironment implements DevEnvironment {
         let result = 0;
         for (const error of Object.values(this.errors)) {
             for (const [sheet, row, col, msg, lev] of error) {
-                if (level == "any" && lev != "info" || lev == level) {
+                if (level == "any" && lev != "success" || lev == level) {
                     result++;
                 }
             }

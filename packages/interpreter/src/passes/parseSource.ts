@@ -1,5 +1,5 @@
 import { Pass } from "../passes";
-import { CommandMsg, CommentMsg, Err, Message, Msg } from "../utils/msgs";
+import { OpMsg, CommentMsg, Err, Message, Msg } from "../utils/msgs";
 import { 
     TstAssignment,
     TstEnclosure, 
@@ -163,7 +163,7 @@ export class ParseSource extends Pass<Source,TST> {
                     // it's an operation, which starts a new enclosures
                     const op = parseOp(cellText).localize(cellPos).msgTo(msgs);
                     const newEnclosure = new TstOp(cell, op);
-                    new CommandMsg().msgTo(msgs, cellPos);
+                    new OpMsg().msgTo(msgs, cellPos);
 
                     if (top.tst instanceof TstGrid) {
                         Err(`Unexpected operator`,

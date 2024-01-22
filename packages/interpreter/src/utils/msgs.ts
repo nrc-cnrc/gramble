@@ -1,8 +1,16 @@
 import { Dict, Func } from "./func";
 import { Pos } from "./cell";
 
-type Tag = "error" | "warning" | "info" | 
-                "command" | "header" | "comment" | "content";
+
+export const enum Tag {
+    Error = "error",
+    Warning = "warning",
+    Success = "success",
+    Op = "op",
+    Header = "header",
+    Comment = "comment",
+    Content = "content"
+}
 
 /**
  * Message is a communication between the compiler and 
@@ -15,12 +23,12 @@ type Tag = "error" | "warning" | "info" |
  * just look up msg["row"] or whatever, not have to know about the 
  * class hierarchy and such.
  */
-export class Message {
+export abstract class Message {
+    public abstract tag: Tag;
 
     constructor(
-        public tag: Tag,
-        public shortMsg: string,
-        public longMsg: string,
+        public shortMsg: string = "",
+        public longMsg: string = "",
         public pos: Pos | undefined = undefined
     ) {}
 
@@ -59,54 +67,68 @@ export class Message {
     }
 };
 
-export class MissingSymbolError extends Message {
+export class Error extends Message {
+    public readonly tag = Tag.Error;
+}
+
+export class Warning extends Message {
+    public readonly tag = Tag.Warning;
+}
+
+export class Success extends Message {
+    public readonly tag = Tag.Success;
+}
+
+export class MissingSymbolError extends Error {
+    public readonly tag = Tag.Error;
+
     constructor(
         public symbol: string
     ) {
-        super("error", "Undefined symbol", 
+        super("Undefined symbol", 
             `Undefined symbol: ${symbol}`)
     }
 }
 
-export class CommandMsg extends Message  {
-    constructor() {
-        super("command", "", "");
-    }
+export class OpMsg extends Message  {
+    public readonly tag = Tag.Op;
 }
 
 export class CommentMsg extends Message  {
-    constructor() {
-        super("comment", "", "");
-    }
+    public readonly tag = Tag.Comment;
 }
 
 export class ContentMsg extends Message  {
+    public readonly tag = Tag.Content;
+
     constructor(
         public color: string,
         public fontColor: string
     ) {
-        super("content", "", "");
+        super();
     }
 }
 
 export class HeaderMsg extends Message  {
+    public readonly tag = Tag.Header;
+
     constructor(
         public color: string
     ) {
-        super("header", "", "");
+        super();
     }
 }
 
 export function Err(shortMsg: string, longMsg: string): Message {
-    return new Message("error", shortMsg, longMsg);
+    return new Error(shortMsg, longMsg);
 }
 
 export function Warn(longMsg: string): Message {
-    return new Message("warning", "warning", longMsg);
+    return new Warning("warning", longMsg);
 }
 
-export function Success(longMsg: string): Message {
-    return new Message("info", "success", longMsg);
+export function Succeed(longMsg: string): Message {
+    return new Success("success", longMsg);
 }
 
 type MsgCallback = Func<Message, void>;

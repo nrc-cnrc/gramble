@@ -57,27 +57,23 @@
                 }
 
                 message(msg) {
-                    if (msg["type"] == "error") {
-                        this.markError(msg["sheet"], msg["row"],
-                            msg["col"], msg["shortMsg"], msg["longMsg"],
-                            "error");
-                    } else if (msg["type"] == "warning") {
-                        this.markError(msg["sheet"], msg["row"],
-                            msg["col"], msg["shortMsg"], msg["longMsg"],
-                            "warning");
+                    // we only care about errors and warnings in the sidebar
+                    switch (msg.tag) {
+                        case "error": 
+                        case "warning": return this.markNote(msg);
                     }
                 }
                 
-                markError(sheet, row, col, shortMsg, msg, level = "error") {
+                markNote(msg, level) {
                                 
                     // so as not to keep recording identical errors
-                    const serializedError = `${sheet}___${row}___${col}___${msg}`;
+                    const serializedError = `${msg.sheet}___${msg.row}___${msg.col}___${msg.LongMsg}`;
                     if (this.serializedErrors.has(serializedError)) {
                         return;
                     } 
                     this.serializedErrors.add(serializedError);
                     
-                    this.errorMsgs.push([sheet, row, col, shortMsg, msg, level]);
+                    this.errorMsgs.push([msg.sheet, msg.row, msg.col, msg.shortMsg, msg.msg, msg.tag]);
                 }
 
                 markHeader(sheet, row, col, color) { }

@@ -1,6 +1,6 @@
 import { Dict, StringDict, mapDict } from "../utils/func";
 import { constructCollection, Expr } from "../exprs";
-import { Message, Err, Success, THROWER, Msg } from "../utils/msgs";
+import { Message, Err, Succeed, THROWER, Msg } from "../utils/msgs";
 import { 
     Grammar, TestNotGrammar, 
     TestGrammar, 
@@ -61,7 +61,7 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
             Err("Failed unit test",
                 "The grammar above has no outputs compatible with these inputs.").msgTo(msgs);
         } else {
-            Success(
+            Succeed(
                 "The grammar above has outputs compatible with these inputs.").msgTo(msgs);
         }
 
@@ -105,7 +105,7 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
                 "The grammar above incorrectly has outputs compatible with these inputs.");
         } 
 
-        return g.msg(Success(
+        return g.msg(Succeed(
             "The grammar above correctly has no outputs compatible with these inputs."));
     }
     

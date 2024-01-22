@@ -5,8 +5,10 @@ function alert(msg) {
 const NOTE_COLORS = new Map([
     ["error", "#FF7777"],
     ["warning", "#FFCC66"],
-    ["info", "#88FF99"]
+    ["success", "#88FF99"]
 ]);
+
+const DEFAULT_BG_COLOR = "#EEEEEE";
 
 const COMMENT_FONT_COLOR = "#669944";
 
@@ -29,9 +31,9 @@ class Styler {
         this.cells = []; // cells: string[], containing a1Notations referring to cells
     }
 
-    addCell(sheet, row, col) {
+    addCell(msg) {
         //const a1Notation = `${sheet}!${letterFromNumber(col)}${(row+1)}`;
-        const a1Notation = getA1Notation("", row, col);
+        const a1Notation = getA1Notation("", msg.row, msg.col);
         this.cells.push(a1Notation);
     }
 
@@ -127,32 +129,19 @@ class GoogleSheetsDevEnvironment {
     }
 
     message(msg) {
-        if (msg["type"] == "error") {
-            this.markError(msg["sheet"], msg["row"],
-                msg["col"], msg["shortMsg"], msg["longMsg"],
-                "error");
-        } else if (msg["type"] == "warning") {
-            this.markError(msg["sheet"], msg["row"],
-                msg["col"], msg["shortMsg"], msg["longMsg"],
-                "warning");
-        } else if (msg["type"] == "info") {
-            this.markError(msg["sheet"], msg["row"],
-                msg["col"], msg["shortMsg"], msg["longMsg"],
-                "info");
-        } else if (msg["type"] == "comment") {
-            this.markComment(msg["sheet"], 
-                msg["row"], msg["col"]);
-        } else if (msg["type"] == "header") {
-            this.markHeader(msg["sheet"], msg["row"],
-                msg["col"], msg["color"]);
-        } else if (msg["type"] == "command") {
-            this.markCommand(msg["sheet"], 
-                msg["row"], msg["col"]);
-        } else if (msg["type"] == "content") {
-            this.markContent(msg["sheet"], msg["row"],
-                msg["col"], msg["color"], msg["fontColor"]);
-        } else {
-            console.log(`unknown message: ${msg}`);
+        
+        if (msg.sheet != this.currentSheetName) return;
+
+        switch (msg.tag) {
+            case "error":       return this.markNote(msg, "error");
+            case "warning":     return this.markNote(msg, "warning");
+            case "success":     return this.markNote(msg, "success");
+            case "comment":     return this.markComment(msg);
+            case "header":      return this.markHeader(msg);
+            case "content":     return this.markContent(msg);
+            case "op":          return this.markOp(msg);
+            default: 
+                console.log(`unknown message: ${JSON.stringify(msg)}`);
         }
     }
 
@@ -171,97 +160,69 @@ class GoogleSheetsDevEnvironment {
         return values;
     }
 
-    markError(sheet, row, col, shortMsg, msg, level = "error") {
-
-        if (sheet != this.currentSheetName) {
-            return;
-        }
-
-        const color = NOTE_COLORS.get(level);
-        if (color == undefined) {
-            throw new Error("Color undefined: " + level);
-        }
-        let noteStyler = this.noteStylers.get(msg);
+    markNote(msg) {
+        const color = NOTE_COLORS.get(msg.tag) || DEFAULT_BG_COLOR;
+        let noteStyler = this.noteStylers.get(msg.longMsg);
         if (noteStyler == undefined) {
-            noteStyler = new NoteStyler(msg, color)
-            this.noteStylers.set(msg, noteStyler);
+            noteStyler = new NoteStyler(msg.longMsg, color)
+            this.noteStylers.set(msg.longMsg, noteStyler);
         }
-        noteStyler.addCell(sheet, row, col); 
+        noteStyler.addCell(msg); 
     }
 
-    markComment(sheet, row, col) {
-
-        if (sheet != this.currentSheetName) {
-            return;
-        }
+    markComment(msg) {
 
         let colorStyler = this.fontColorStylers.get(COMMENT_FONT_COLOR);
         if (colorStyler == undefined) {
             colorStyler = new FontColorStyler(COMMENT_FONT_COLOR);
             this.fontColorStylers.set(COMMENT_FONT_COLOR, colorStyler);
         }
-        colorStyler.addCell(sheet, row, col);
-        this.italicStyler.addCell(sheet, row, col);
+        colorStyler.addCell(msg);
+        this.italicStyler.addCell(msg);
     }
 
-    markHeader(sheet, row, col, color) {
+    markHeader(msg) {
 
-        if (sheet != this.currentSheetName) {
-            return;
-        }
-
-        let bgColorStyler = this.bgColorStylers.get(color);
+        let bgColorStyler = this.bgColorStylers.get(msg.color);
         if (bgColorStyler == undefined) {
-            bgColorStyler = new BackgroundColorStyler(color);
-            this.bgColorStylers.set(color, bgColorStyler);
+            bgColorStyler = new BackgroundColorStyler(msg.color);
+            this.bgColorStylers.set(msg.color, bgColorStyler);
         }
-        bgColorStyler.addCell(sheet, row, col);
-        this.borderStyler.addCell(sheet, row, col);
-        this.boldStyler.addCell(sheet, row, col);
-        this.centerStyler.addCell(sheet, row, col);
+        bgColorStyler.addCell(msg);
+        this.borderStyler.addCell(msg);
+        this.boldStyler.addCell(msg);
+        this.centerStyler.addCell(msg);
     }
 
 
-    markContent(sheet, row, col, color, fontColor) {
+    markContent(msg) {
 
-        if (sheet != this.currentSheetName) {
-            return;
-        }
-
-        let bgColorStyler = this.bgColorStylers.get(color);
+        let bgColorStyler = this.bgColorStylers.get(msg.color);
         if (bgColorStyler == undefined) {
-            bgColorStyler = new BackgroundColorStyler(color);
-            this.bgColorStylers.set(color, bgColorStyler);
+            bgColorStyler = new BackgroundColorStyler(msg.color);
+            this.bgColorStylers.set(msg.color, bgColorStyler);
         }
-        bgColorStyler.addCell(sheet, row, col);
+        bgColorStyler.addCell(msg);
 
-        let fontColorStyler = this.fontColorStylers.get(fontColor);
+        let fontColorStyler = this.fontColorStylers.get(msg.fontColor);
         if (fontColorStyler == undefined) {
-            fontColorStyler = new FontColorStyler(fontColor);
-            this.fontColorStylers.set(fontColor, fontColorStyler);
+            fontColorStyler = new FontColorStyler(msg.fontColor);
+            this.fontColorStylers.set(msg.fontColor, fontColorStyler);
         }
-        fontColorStyler.addCell(sheet, row, col);
-        this.centerStyler.addCell(sheet, row, col);
+        fontColorStyler.addCell(msg);
+        this.centerStyler.addCell(msg);
     }
 
-    markCommand(sheet, row, col) {
+    markOp(msg) {
 
-        if (sheet != this.currentSheetName) {
-            return;
-        }
-
-        this.boldStyler.addCell(sheet, row, col);
-        this.centerStyler.addCell(sheet, row, col);
+        this.boldStyler.addCell(msg);
+        this.centerStyler.addCell(msg);
     }
     
-    markSymbol(sheet, row, col) {
-
-        if (sheet != this.currentSheetName) {
-            return;
-        }
+    markSymbol(msg) {
         
-        this.boldStyler.addCell(sheet, row, col);
-        this.centerStyler.addCell(sheet, row, col);
+        this.boldStyler.addCell(msg);
+        this.centerStyler.addCell(msg);
     }
 
     highlight() {
