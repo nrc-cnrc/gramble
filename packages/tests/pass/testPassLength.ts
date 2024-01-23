@@ -1,22 +1,22 @@
 import { expect } from 'chai';
 
 import {
-    Count, Epsilon, 
-    Join, Null, Rep, 
-    Seq, Uni, Not, 
-    Rename, Hide, Match, ReplaceBlock, Replace
+    Count, Epsilon, Hide, Join,
+    Match, Not, Null, Rename,
+    Rep, Replace, ReplaceBlock,
+    Seq, Uni,
 } from '../../interpreter/src/grammarConvenience';
 
 import { Grammar } from '../../interpreter/src/grammars';
 import { SymbolEnv } from '../../interpreter/src/passes';
 import { lengthRange } from '../../interpreter/src/passes/infinityProtection';
+import { CounterStack } from '../../interpreter/src/utils/counter';
 
 import {
     testSuiteName, logTestSuite,
     VERBOSE_TEST_L2,
     t1, t2
 } from "../testUtil";
-import { CounterStack } from '../../interpreter/src/utils/counter';
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -45,7 +45,7 @@ function testLength(
 
 }
 
-describe(`${testSuiteName(module)}`, function() {
+describe(`Pass ${testSuiteName(module)}`, function() {
 
     logTestSuite(this.title);
 

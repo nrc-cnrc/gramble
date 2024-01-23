@@ -8,7 +8,10 @@ import {
 import { Grammar } from "../../interpreter/src/grammars";
 import { toStr } from "../../interpreter/src/passes/toStr";
 
-import { t1, t2, testSuiteName } from "../testUtil";
+import {
+    testSuiteName, logTestSuite,
+    t1, t2
+} from "../testUtil";
 
 type GrammarIDTest = {
     testnum: string,
@@ -22,12 +25,14 @@ export function testGrammarID({
     id
 }: GrammarIDTest): void {
     const result = toStr(grammar);
-    it(`${testnum} should have id "${id}"`, function() {
+    it(`${testnum}. should have id "${id}"`, function() {
         expect(result).to.equal(id);
     });
 }
 
-describe(`${testSuiteName(module)}`, function() {
+describe(`Pass ${testSuiteName(module)}`, function() {
+
+    logTestSuite(this.title);
 
     testGrammarID({
         testnum: "1",
@@ -85,5 +90,5 @@ describe(`${testSuiteName(module)}`, function() {
         id: "(collection {\n  a:t1:hi\n  b:(embed a)\n} Default)"
     });
     */
-});
 
+});

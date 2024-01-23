@@ -1,30 +1,29 @@
-import { Grammar, ReplaceGrammar } from "../../interpreter/src/grammars";
 import { assert, expect } from "chai";
+
 import { 
     Collection, Contains, Dot,
     Embed, Ends, Epsilon,
-    Hide, Join, Match,
-    Not,
+    Hide, Join, Match, Not,
     Null, Rename, Rep,
     Replace, ReplaceBlock, Seq, 
-    Short, 
-    SingleTape, Starts, Uni
+    Short, SingleTape, Starts, Uni
 } from "../../interpreter/src/grammarConvenience";
 
+import { Grammar, ReplaceGrammar } from "../../interpreter/src/grammars";
 import { CalculateTapes } from "../../interpreter/src/passes/calculateTapes";
 import { FlattenCollections } from "../../interpreter/src/passes/flattenCollections";
 import { SelectSymbol } from "../../interpreter/src/passes/selectSymbol";
 import { Dict } from "../../interpreter/src/utils/func";
 import { THROWER } from "../../interpreter/src/utils/msgs";
 import { Options } from "../../interpreter/src/utils/options";
+import { getFromVocabDict } from "../../interpreter/src/vocab";
 import * as Tapes from "../../interpreter/src/tapes";
 import * as Vocabs from "../../interpreter/src/vocab";
 
 import {
-    testSuiteName,
+    testSuiteName, logTestSuite,
     t1, t2, t3, 
 } from "../testUtil";
-import { getFromVocabDict } from "../../interpreter/src/vocab";
 
 type GrammarIDTest = {
     desc: string,
@@ -43,7 +42,6 @@ export function testGrammarTapes({
 }: GrammarIDTest): void {
 
     describe(`${desc}`, function() {
-
         try {
             const opt = Options({optimizeAtomicity: atomicity});
             const pass = new FlattenCollections().compose(new CalculateTapes());
@@ -113,7 +111,9 @@ function NamedReplace(
             undefined, undefined, undefined, name, false)
 }
 
-describe(`${testSuiteName(module)}`, function() {
+describe(`Pass ${testSuiteName(module)}`, function() {
+
+    logTestSuite(this.title);
 
     testGrammarTapes({
         desc: "1a",
@@ -1534,4 +1534,5 @@ describe(`${testSuiteName(module)}`, function() {
             "t3": ["1","S","G"]
         },
     });
+
 });
