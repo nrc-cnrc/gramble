@@ -24,9 +24,9 @@
   "scripts": {
     "build": ":",
     "prepare": "npm run build",
-    "test": "./deploy.sh --help",
+    "test": "bash deploy.sh --help",
     "clasp": "clasp",
-    "deploy": "./deploy.sh"
+    "deploy": "bash deploy.sh"
   },
   "bugs": {
     "url": "https://github.com/nrc-cnrc/gramble/issues"
