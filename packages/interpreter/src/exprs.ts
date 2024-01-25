@@ -66,6 +66,10 @@ export class DerivEnv extends Env {
     public getSymbol(symbol: string): Expr {
         return this.symbols[symbol];
     }
+
+    public setRandom(random: boolean): DerivEnv {
+        return update(this, {random});
+    }
     
     public setSymbols(symbols: Dict<Expr>): DerivEnv {
         return update(this, {symbols});
@@ -955,6 +959,10 @@ class JoinExpr extends BinaryExpr {
         }
         return this;
     }
+    
+    public getOutputs(env: DerivEnv): StringDict[] {
+        return this.child1.getOutputs(env);
+    }
 
 }
 
@@ -1441,7 +1449,12 @@ export class PreTapeExpr extends UnaryExpr {
         for (const d of this.child.deriv(query, env)) {
             yield d.wrap(c => constructPreTape(env, this.tape1, this.tape2, c, this.output));
         }
+    }
 
+    public getOutputs(env: DerivEnv): StringDict[] {
+        const myOutput = this.output.getOutputs(env);
+        const childOutput = this.child.getOutputs(env);
+        return outputProduct(myOutput, childOutput);
     }
 
     public simplify(env: Env): Expr {
@@ -1915,7 +1928,7 @@ export class MatchExpr extends UnaryExpr {
     public simplify(env: Env): Expr {
         if (this.child instanceof EpsilonExpr) return this.child;
         if (this.child instanceof NullExpr) return this.child;
-        return this;
+        return this; 
     }
 
 }

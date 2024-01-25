@@ -148,7 +148,8 @@
                 previousSheetName = currentSheetName;
                 
                 devEnv = new SidebarDevEnvironment(cellsBySheet);
-                project = gramble.Interpreter.fromSheet(devEnv, currentSheetName, {verbose: gramble.VERBOSE_TIME});
+                project = gramble.Interpreter.fromSheet(devEnv, currentSheetName, 
+                        {verbose: gramble.VERBOSE_TIME | gramble.VERBOSE_DEBUG});
 
                 createErrorButtons(devEnv.errors, currentSheetName);
                 reloadSymbols(currentSheetName);
