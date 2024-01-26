@@ -24,6 +24,7 @@ export class CreateCursors extends Pass<Grammar,Grammar> {
 
     public transformAux(g: Grammar, env: SymbolEnv): Grammar {
         const priorities = prioritizeTapes(g, env);
+        //console.log(`priorities = ${priorities}`);
         return Cursor(priorities, g).tapify(env);
     }
 }

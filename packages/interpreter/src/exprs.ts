@@ -1993,7 +1993,7 @@ export function constructConcat(
     return new ConcatExpr(c1, c2).simplify(env);
 }
 
-export function constructSequence(
+export function constructSeq(
     env: Env,
     ...children: Expr[]
 ): Expr {
@@ -2042,7 +2042,7 @@ export function constructUniverse(
     env: Env,
     tapes: Set<string>, 
 ): Expr {
-    return constructSequence(env, ...[...tapes]
+    return constructSeq(env, ...[...tapes]
                 .map(t => constructDotStar(t)));
 }
 

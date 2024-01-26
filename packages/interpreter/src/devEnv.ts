@@ -76,7 +76,7 @@ export class SimpleDevEnvironment implements DevEnvironment {
 
     public logErrors(query: Partial<Message> = {}): void {
         for (const msg of this.getErrors(query)) {
-            console.log(`${msg.sheet}:${msg.row}:${msg.col}: ${msg.tag.toUpperCase()}:${msg}`);
+            console.log(`${msg.sheet}:${msg.row}:${msg.col}: ${msg.tag.toUpperCase()}:${msg.longMsg}`);
         }
     }
 

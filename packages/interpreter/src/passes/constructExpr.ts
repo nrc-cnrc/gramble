@@ -19,7 +19,7 @@ import {
     constructJoin, constructLiteral, 
     constructMatch, constructNegation, constructPreTape, 
     constructPrecede, constructRename, constructRepeat, 
-    constructSequence, constructShort 
+    constructSeq, constructShort 
 } from "../exprs";
 import { INPUT_TAPE } from "../utils/constants";
 import { Env } from "../utils/options";
@@ -71,7 +71,7 @@ function constructExprSeq(
     g: SequenceGrammar
 ): Expr {
     const childExprs = g.children.map(c => constructExpr(env, c));
-    return constructSequence(env, ...childExprs);
+    return constructSeq(env, ...childExprs);
 }
 
 function constructExprAlt(
@@ -215,85 +215,61 @@ function constructExprReplace(
     const toExpr: Expr = constructExpr(env, g.toGrammar);
     const preContextExpr: Expr = constructExpr(env, g.preContext);
     const postContextExpr: Expr = constructExpr(env, g.postContext);
-    let states: Expr[] = [
-        constructMatch(env, preContextExpr),
-        constructCorrespond(env, constructPrecede(env, fromExpr, toExpr)),
-        constructMatch(env, postContextExpr)
-    ];
-
-    const that = g;
-
-    function matchAnythingElse(replaceNone: boolean = false): Expr {
-        // 1. If the rule is optional, we just need to match .*
-        // 2. If we are matching an instance at the start of text (beginsWith),
-        //    or end of text (endsWith), then merely matching the replacement pattern
-        //    isn't really matching.  That is, if we're matching "#b", the fact that b
-        //    occurs elsewhere is no problem, it's not actually a match.  So we just 
-        //    need to match .*
-
-        if( that.optional ||
-                (that.beginsWith && !replaceNone) ||
-                (that.endsWith && !replaceNone)) {
-            return constructMatch(env, constructDotStar(INPUT_TAPE));
-        }
-        const fromInstance: Expr[] = [preContextExpr, fromExpr, postContextExpr];
-
-        let notExpr: Expr = constructNotContains(env, INPUT_TAPE, fromInstance,
-            that.beginsWith && replaceNone, that.endsWith && replaceNone);
-        return constructMatch(env, notExpr);
-    }
     
-    if (!g.endsWith)
-        states.push(matchAnythingElse());
-
-    const replaceOne: Expr = constructSequence(env, ...states);
-    const replaceMultiple: Expr = constructRepeat(env, replaceOne, Math.max(1, g.minReps), g.maxReps);
+    const preMatch = constructMatch(env, preContextExpr);
+    const postMatch = constructMatch(env, postContextExpr);
+    const match = constructCorrespond(env, constructPrecede(env, fromExpr, toExpr));
+    const pattern = constructSeq(env, preMatch, match, postMatch);
     
-    // we need to match the context on other tapes too
-    const otherContextExpr: Expr = constructExpr(env, g.otherContext);
-    if (g.beginsWith)
-        states = [replaceOne, otherContextExpr]
-    else if (g.endsWith)
-        states = [matchAnythingElse(), replaceOne, otherContextExpr];
-    else
-        states = [matchAnythingElse(), replaceMultiple, otherContextExpr];
-    let replaceExpr: Expr = constructSequence(env, ...states);
-            
-    if (g.minReps > 0) {
-        return replaceExpr;
-    } else {
-        let copyExpr: Expr = matchAnythingElse(true);
-        if (! (otherContextExpr instanceof EpsilonExpr)) {
-            let negatedOtherContext: Expr = 
-                constructNegation(env, otherContextExpr, new Set(g.otherContext.tapeNames));
-            const matchDotStar: Expr =
-                constructMatch(env, constructDotStar(INPUT_TAPE));
-            copyExpr = constructAlternation(env, constructSequence(env, matchAnythingElse(true), otherContextExpr),
-                                            constructSequence(env, matchDotStar, negatedOtherContext));
-        }
+    const dotStar: Expr = constructDotStar(INPUT_TAPE);
+    const anything = constructMatch(env, dotStar);
+    const fromContent = constructSeq(env, preContextExpr, fromExpr, postContextExpr);
+    
+    if (g.beginsWith && g.endsWith) {
+        let replaceExpr = constructSeq(env, pattern);
+        let shortFrom = constructShort(env, fromContent);
+        let copyExpr: Expr = g.minReps > 0 ? NULL : matchNot(env, shortFrom);
         return constructAlternation(env, copyExpr, replaceExpr);
     }
+    
+    if (g.beginsWith) {
+        let replaceExpr = constructSeq(env, pattern, anything);
+        let shortFrom = constructSeq(env, constructShort(env, fromContent), dotStar);
+        let copyExpr: Expr = g.minReps > 0 ? NULL : matchNot(env, shortFrom);
+        return constructAlternation(env, copyExpr, replaceExpr);
+    }
+    
+    if (g.endsWith) {
+        let replaceExpr = constructSeq(env, anything, pattern);
+        let shortFrom = constructSeq(env, dotStar, constructShort(env, fromContent));
+        let copyExpr: Expr = g.minReps > 0 ? NULL : matchNot(env, shortFrom);
+        return constructAlternation(env, copyExpr, replaceExpr);
+    }
+
+    // neither beginsWith nor endsWith
+    const anythingElse = g.optional ? anything 
+                                    : matchNotContains(env, fromContent);
+    const seq = constructSeq(env, pattern, anythingElse);
+    const rep = constructRepeat(env, seq, g.minReps, g.maxReps);
+    return constructSeq(env, anythingElse, rep);
 }
 
-export function constructNotContains(
+export function matchNot(
     env: Env,
-    fromTapeName: string,
-    children: Expr[], 
-    begin: boolean = false,
-    end: boolean = false,
+    child: Expr,
+    tape: string = INPUT_TAPE
 ): Expr {
-    const dotStar: Expr = constructDotStar(fromTapeName);
-    let seq: Expr;
-    if (begin && end) {
-        seq = constructShort(env, constructSequence(env, ...children));
-    } else if (begin) {
-        seq = constructSequence(env, constructShort(env, constructSequence(env, ...children)), dotStar);
-    } else if (end) {
-        seq = constructSequence(env, dotStar, constructShort(env, constructSequence(env, ...children)));
-    } else {
-        seq = env.opt.directionLTR ?
-              constructSequence(env, constructShort(env, constructSequence(env, dotStar, ...children)), dotStar) :
-              constructSequence(env, dotStar, constructShort(env, constructSequence(env, ...children, dotStar)));
-    }
-    return constructNegation(env, seq, new Set([fromTapeName]));
+    const notExpr = constructNegation(env, child, new Set([tape]));
+    return constructMatch(env, notExpr);
+}
+
+export function matchNotContains(
+    env: Env,
+    child: Expr,
+): Expr {
+    const dotStar: Expr = constructDotStar(INPUT_TAPE);
+    const shortFrom = env.opt.directionLTR ?
+              constructSeq(env, constructShort(env, constructSeq(env, dotStar, child)), dotStar) :
+              constructSeq(env, dotStar, constructShort(env, constructSeq(env, child, dotStar)));
+    return matchNot(env, shortFrom);
 }
