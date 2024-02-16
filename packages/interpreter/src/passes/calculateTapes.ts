@@ -23,6 +23,7 @@ import {
     NegationGrammar,
     CorrespondGrammar,
     CursorGrammar,
+    RewriteGrammar,
 } from "../grammars";
 import { AutoPass } from "../passes";
 import { 
@@ -108,6 +109,7 @@ export class CalculateTapes extends AutoPass<Grammar> {
 
             // just the union of children's tapes
             case "alt":
+            case "priority":
             case "count": 
             case "test":
             case "testnot":
@@ -140,7 +142,8 @@ export class CalculateTapes extends AutoPass<Grammar> {
             case "replace":      return getTapesReplace(g, env);
             case "replaceblock": return getTapesReplaceBlock(g);
             
-            case "correspond": return getTapesCorrespond(g, env);
+            case "rewrite":     return getTapesRewrite(g, env);
+            case "correspond":  return getTapesCorrespond(g, env);
 
             default: exhaustive(g);
             //default: throw new Error(`unhandled grammar in getTapes: ${g.tag}`);
@@ -239,6 +242,26 @@ function getTapesShort(g: ShortGrammar): Grammar {
         // dummy vocab ensures the atomicity is tokenized
         stringifiers.vocabMap[tape] = Vocabs.Tokenized(); 
     }
+    tapes = Tapes.Sum(stringifiers, tapes);
+    return updateTapes(g, tapes);
+}
+
+function getTapesRewrite(
+    g: RewriteGrammar,
+    env: TapesEnv
+): Grammar | Msg<Grammar> {
+    let tapes = getChildTapes(g);
+    if (tapes.tag !== Tapes.Tag.Lit) {
+        // nothing we can do at the moment
+        return updateTapes(g, tapes);
+    }
+
+    const tapeNames = new Set([INPUT_TAPE, OUTPUT_TAPE]);
+    const vocabMap: VocabDict = {
+        [INPUT_TAPE]: Vocabs.Tokenized(),
+        [OUTPUT_TAPE]: Vocabs.Tokenized()
+    }
+    const stringifiers = Tapes.Lit(tapeNames, vocabMap);
     tapes = Tapes.Sum(stringifiers, tapes);
     return updateTapes(g, tapes);
 }

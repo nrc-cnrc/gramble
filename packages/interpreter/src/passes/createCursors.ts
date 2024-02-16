@@ -7,6 +7,7 @@ import {
     LiteralGrammar, 
     PreTapeGrammar, 
     RenameGrammar, 
+    RewriteGrammar, 
     StringPairSet 
 } from "../grammars";
 import { 
@@ -81,6 +82,7 @@ function getTapePriority(
 
         // joins & similar increase the priority of their intersecting tapes
         case "join":        return getTapePriorityJoin(g, tape, symbolsVisited, env);
+        case "rewrite":     return getTapePriorityRewrite(g, tape, symbolsVisited, env);
 
         // cursor and pretape handle priority on their own, so they're -1 for the tape they handle
         case "pretape":     return getTapePriorityPreTape(g, tape, symbolsVisited, env);
@@ -203,6 +205,22 @@ function getTapePriorityRename(
 
 function getTapePriorityJoin(
     g: JoinGrammar,
+    tapeName: string,
+    symbolsVisited: StringPairSet,
+    env: SymbolEnv
+): number {
+    const c1tapes = new Set(g.child1.tapeNames);
+    const c2tapes = new Set(g.child2.tapeNames);
+    const c1priority = getTapePriority(g.child1, tapeName, symbolsVisited, env);
+    const c2priority = getTapePriority(g.child2, tapeName, symbolsVisited, env);
+    if (c1tapes.has(tapeName) && c2tapes.has(tapeName)) {
+        return c1priority + c2priority * 10;
+    }
+    return (c1priority + c2priority);
+}
+
+function getTapePriorityRewrite(
+    g: RewriteGrammar,
     tapeName: string,
     symbolsVisited: StringPairSet,
     env: SymbolEnv

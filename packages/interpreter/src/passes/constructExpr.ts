@@ -5,8 +5,9 @@ import {
     Grammar, HideGrammar,
     JoinGrammar, MatchGrammar,
     NegationGrammar, PreTapeGrammar, 
+    PriorityUnionGrammar, 
     RenameGrammar, RepeatGrammar,
-    ReplaceGrammar, SequenceGrammar, 
+    ReplaceGrammar, RewriteGrammar, SequenceGrammar, 
     ShortGrammar,
 } from "../grammars";
 import { Dict } from "../utils/func";
@@ -19,7 +20,7 @@ import {
     constructJoin, constructLiteral, 
     constructMatch, constructNegation, constructPreTape, 
     constructPrecede, constructRename, constructRepeat, 
-    constructSeq, constructShort 
+    constructSeq, constructShort, constructPriorityUnion, constructRewrite
 } from "../exprs";
 import { INPUT_TAPE } from "../utils/constants";
 import { Env } from "../utils/options";
@@ -50,6 +51,8 @@ export function constructExpr(
         case "alt":        return constructExprAlt(env, g);
         case "short":      return constructExprShort(env, g);
         case "join":       return constructExprJoin(env, g);
+        case "priority":   return constructExprPriUni(env, g);
+        case "rewrite":    return constructExprRewrite(env, g);
         case "count":      return constructExprCount(env, g);
         case "rename":     return constructExprRename(env, g);
         case "repeat":     return constructExprRepeat(env, g);
@@ -100,6 +103,21 @@ function constructExprJoin(
         new Set(g.child2.tapeNames));
 }
 
+function constructExprPriUni(
+    env: PassEnv,
+    g: PriorityUnionGrammar
+): Expr {
+    return constructPriorityUnion(env, constructExpr(env, g.child1),
+                                        constructExpr(env, g.child2));
+}
+
+function constructExprRewrite(
+    env: PassEnv,
+    g: RewriteGrammar
+): Expr {
+    return constructRewrite(env, constructExpr(env, g.child1),
+                                    constructExpr(env, g.child2));
+}
 
 function constructExprCount(
     env: PassEnv,

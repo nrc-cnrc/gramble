@@ -41,6 +41,8 @@ export type Grammar = EpsilonGrammar
              | EndsGrammar
              | ContainsGrammar
              | FilterGrammar
+             | PriorityUnionGrammar
+             | RewriteGrammar
              | SingleTapeGrammar
              | RenameGrammar
              | RepeatGrammar
@@ -215,13 +217,26 @@ abstract class BinaryGrammar extends AbstractGrammar {
     }
 }
 
+export class JoinGrammar extends BinaryGrammar {
+    public readonly tag = "join";
+}
+
+export class FilterGrammar extends BinaryGrammar {
+    public readonly tag = "filter";
+}
+
+export class PriorityUnionGrammar extends BinaryGrammar {
+    public readonly tag = "priority";
+}
+
+export class RewriteGrammar extends BinaryGrammar {
+    public readonly tag = "rewrite";
+}
+
 export class ShortGrammar extends UnaryGrammar {
     public readonly tag = "short";
 }
 
-export class JoinGrammar extends BinaryGrammar {
-    public readonly tag = "join";
-}
 
 export class CountGrammar extends UnaryGrammar {
     public readonly tag = "count";
@@ -237,9 +252,6 @@ export class CountGrammar extends UnaryGrammar {
     }
 }
 
-export class FilterGrammar extends BinaryGrammar {
-    public readonly tag = "filter";
-}
 
 abstract class ConditionGrammar extends UnaryGrammar {
 

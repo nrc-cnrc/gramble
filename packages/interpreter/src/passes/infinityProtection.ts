@@ -9,6 +9,7 @@ import { AlternationGrammar,
     LengthRange, 
     MatchGrammar,
     NegationGrammar,
+    PriorityUnionGrammar,
     RenameGrammar,
     RepeatGrammar,
     SequenceGrammar
@@ -100,11 +101,15 @@ export function lengthRange(
     stack: CounterStack, 
     env: SymbolEnv
 ): LengthRange {
+
+    console.log(`child is ${g.tag}`);
+
     switch (g.tag) {
 
         // ones with a specific length
         case "epsilon": return { null: false, min: 0, max: 0 };
-        case "null": return { null: true, min: 0, max: 0 };
+        case "null": 
+            return { null: true, min: 0, max: 0 };
         case "lit": 
             if (tapeName !== g.tapeName) 
                 return { null: false, min: 0, max: 0 };
@@ -114,6 +119,8 @@ export function lengthRange(
                 return { null: false, min: 0, max: 0 };
             return { null: false, min: 1, max: 1 };
         case "replace": 
+            return { null: false, min: 0, max: Infinity };
+        case "rewrite": 
             return { null: false, min: 0, max: Infinity };
         case "replaceblock":
             if (tapeName !== g.inputTape) 
@@ -134,6 +141,7 @@ export function lengthRange(
         case "embed": return lengthEmbed(g, tapeName, stack, env);
         case "seq": return lengthSeq(g, tapeName, stack, env);
         case "alt": return lengthAlt(g, tapeName, stack, env);
+        case "priority": return lengthPriority(g, tapeName, stack, env);
         case "join": return lengthJoin(g, tapeName, stack, env);
         case "match": return lengthMatch(g, tapeName, stack, env);
         case "count": return lengthCount(g, tapeName, stack, env);
@@ -182,16 +190,25 @@ function lengthSeq(g: SequenceGrammar, tapeName: string, stack: CounterStack, en
 function lengthAlt(g: AlternationGrammar, tapeName: string, stack: CounterStack, env: SymbolEnv): LengthRange {
     let min = Infinity;
     let max = 0;
+    let isNull = true;
     if (g.children.length == 0) {
         return { null: true, min: min, max: max };
     }
     for (const child of g.children) {
         const childLength = lengthRange(child, tapeName, stack, env);
-        if (childLength.null) continue;
+        isNull = isNull && childLength.null;
         min = Math.min(min, childLength.min);
         max = Math.max(max, childLength.max);
     }
-    return { null: false, min: min, max: max };
+    return { null: isNull, min: min, max: max };
+}
+
+function lengthPriority(g: PriorityUnionGrammar, tapeName: string, stack: CounterStack, env: SymbolEnv): LengthRange {
+    const child1length = lengthRange(g.child1, tapeName, stack, env);
+    const child2length = lengthRange(g.child2, tapeName, stack, env);
+    return { null: child1length.null && child2length.null,
+             min: Math.min(child1length.min, child2length.min),
+             max: Math.max(child1length.max, child2length.max) }
 }
 
 function lengthJoin(g: JoinGrammar, tapeName: string, stack: CounterStack, env: SymbolEnv): LengthRange {

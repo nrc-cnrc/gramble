@@ -9,13 +9,15 @@ import {
     JoinGrammar, LiteralGrammar, 
     MatchGrammar, NegationGrammar, 
     NullGrammar, PreTapeGrammar, 
+    PriorityUnionGrammar, 
     RenameGrammar, RepeatGrammar, 
     ReplaceBlockGrammar, ReplaceGrammar, 
+    RewriteGrammar, 
     SequenceGrammar, ShortGrammar, 
     SingleTapeGrammar, 
     StartsGrammar 
 } from "./grammars";
-import { Dict, StringDict } from "./utils/func";
+import { Dict, StringDict, foldRight } from "./utils/func";
 import { INPUT_TAPE, OUTPUT_TAPE, DEFAULT_TAPE } from "./utils/constants";
 import { toStr } from "./passes/toStr";
 
@@ -26,6 +28,16 @@ export function SingleTape(
     child = makeGrammar(child);
     return new SingleTapeGrammar(tapeName, child);
 }
+
+export function Rewrite(
+    fromGrammar: Grammar|string, 
+    toGrammar: Grammar|string
+): Grammar {
+    fromGrammar = SingleTape(INPUT_TAPE, fromGrammar);
+    toGrammar = SingleTape(OUTPUT_TAPE, toGrammar);
+    return new RewriteGrammar(fromGrammar, toGrammar);
+}
+
 
 /**
   * Replace implements general phonological replacement rules.
@@ -152,6 +164,14 @@ export function Uni(...children: (Grammar|string)[]): AlternationGrammar {
     children = children.map(c => makeGrammar(c));
     return new AlternationGrammar(children as Grammar[]);
 }
+
+export function PriUni(...children: (Grammar|string)[]): Grammar {
+    const childGrammars = children.map(c => makeGrammar(c));
+    return foldRight(childGrammars, 
+                    (c1, c2) => new PriorityUnionGrammar(c1, c2), 
+                    new NullGrammar());
+}
+
 
 export function Optional(
     child: Grammar | string

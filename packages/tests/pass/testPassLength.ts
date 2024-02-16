@@ -60,7 +60,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
         testLength(grammar, "t1", [0, 0]);
     });
 
-    describe("3. Null", function() {
+    describe("3. ∅", function() {
         const grammar = Null();
         testLength(grammar, "t1", null);
     });
@@ -94,6 +94,16 @@ describe(`Pass ${testSuiteName(module)}`, function() {
     describe("8. t1:hello | (t1:hello)*", function() {
         const grammar = Uni(t1("hello"), Rep(t1("hello")));
         testLength(grammar, "t1", [0, Infinity]);
+    });
+    
+    describe("8b. t1:hello | ∅", function() {
+        const grammar = Uni(t1("hello"), Null());
+        testLength(grammar, "t1", [0, 5]);
+    });
+    
+    describe("8c. ∅ | ∅", function() {
+        const grammar = Uni(Null(), Null());
+        testLength(grammar, "t1", null);
     });
     
     describe("9. t1:hello + (t1:hello)*", function() {
