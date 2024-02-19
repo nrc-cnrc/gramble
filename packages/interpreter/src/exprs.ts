@@ -733,7 +733,7 @@ class ConcatExpr extends BinaryExpr {
             yield* randomCutIter([c1wrapped], env.random);
             return;
         }
-        
+
         const c2derivs = c2.deriv(query, env);
         const c2wrapped = wrap(c2derivs, e => constructPrecede(env, c1next, e));
 
@@ -909,33 +909,29 @@ class RewriteExpr extends Expr {
             return;
         }
 
-        // branch1
+        // the first branch is the one where we've [begun to] match the pattern
         const patternToMatch = constructConcat(env, this.fromChild, this.toChild);
-        console.log(`querying ${query.id}`);
+        const patternCorrespond = constructCorrespond(env, patternToMatch, INPUT_TAPE, OUTPUT_TAPE);
+        const patternConcat = constructConcat(env, patternCorrespond, this);
+        const patternDerivs = patternConcat.deriv(query, env);
 
-        const patternDerivs = patternToMatch.deriv(query, env);
-        const patternDerivsWrapped = wrap(patternDerivs, e => constructConcat(env, e, this));
+        // the second branch is the one where the current character isn't part of that match
+        const matchAnything = constructMatch(env, constructDot(INPUT_TAPE), INPUT_TAPE, OUTPUT_TAPE);
+        const anythingConcat = constructConcat(env, matchAnything, this);
 
-        const patternConcat = constructConcat(env, patternToMatch, this);
-        yield* patternConcat.deriv(query, env);
-
-        /*const matchAnything = constructMatch(env, constructDot(INPUT_TAPE)); // input/output tape are default here
-        
-        const anythingDerivs = matchAnything.deriv(query, env);
-        const anythingDerivsWrapped = wrap(anythingDerivs, e => constructConcat(env, e, this));
-
-        yield* anythingDerivsWrapped; */
-        /*const branch2 = constructPrecede(env, matchAnything, this);
-
+        // the second branch also requires a constraint that the resulting output does not begin with the
+        // pattern
         const dotStar = constructDotStar(INPUT_TAPE);
         const shortFrom = constructShort(env, this.fromChild);
         const beginsWith = constructPrecede(env, shortFrom, dotStar);
         const notBeginsWith = constructNegation(env, beginsWith, new Set([INPUT_TAPE]));
 
-        const branch2withNegation = constructJoin(env, notBeginsWith, branch2, 
+        // apply the not-begins-with constraint to the second branch
+        const branch2withNegation = constructJoin(env, notBeginsWith, anythingConcat, 
             new Set([INPUT_TAPE]), new Set([INPUT_TAPE, OUTPUT_TAPE]))
-    
-        yield* branch2withNegation.deriv(query, env); */
+        const anythingElseDerivs = branch2withNegation.deriv(query, env);
+
+        yield* randomCutIter([patternDerivs, anythingElseDerivs], env.random);
     }
 
     public simplify(env: Env): Expr {

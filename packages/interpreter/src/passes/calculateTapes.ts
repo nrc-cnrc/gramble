@@ -263,6 +263,7 @@ function getTapesRewrite(
     }
     const stringifiers = Tapes.Lit(tapeNames, vocabMap);
     tapes = Tapes.Sum(stringifiers, tapes);
+    tapes = Tapes.Match(tapes, INPUT_TAPE, OUTPUT_TAPE);
     return updateTapes(g, tapes);
 }
 

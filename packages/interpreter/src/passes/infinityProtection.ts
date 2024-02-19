@@ -102,8 +102,6 @@ export function lengthRange(
     env: SymbolEnv
 ): LengthRange {
 
-    console.log(`child is ${g.tag}`);
-
     switch (g.tag) {
 
         // ones with a specific length

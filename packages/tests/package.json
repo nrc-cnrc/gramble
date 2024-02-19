@@ -48,11 +48,11 @@
     "testGrammarMatch": "mocha -r ts-node/register grammar/testGrammarMatch.ts",
     "testGrammarNegation": "mocha -r ts-node/register grammar/testGrammarNegation.ts",
     "testGrammarNotMatch": "mocha -r ts-node/register grammar/testGrammarNotMatch.ts",
-    "testGrammarPriUni": "mocha -r ts-node/register grammar/testGrammarPriUni.ts",
+    "testGrammarRecursion": "mocha -r ts-node/register grammar/testGrammarRecursion.ts",
     "testGrammarRename": "mocha -r ts-node/register grammar/testGrammarRename.ts",
     "testGrammarRepeat": "mocha -r ts-node/register grammar/testGrammarRepeat.ts",
     "testGrammarReplace": "mocha -r ts-node/register grammar/testGrammarReplace.ts",
-    "testGrammarRecursion": "mocha -r ts-node/register grammar/testGrammarRecursion.ts",
+    "testGrammarRewrite": "mocha -r ts-node/register grammar/testGrammarRewrite.ts",
     "testGrammarShort": "mocha -r ts-node/register grammar/testGrammarShort.ts",
     "testGrammarSingleTape": "mocha -r ts-node/register grammar/testGrammarSingleTape.ts",
     
