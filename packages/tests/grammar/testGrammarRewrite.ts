@@ -29,60 +29,58 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     logTestSuite(this.title);
  
     describe("1a. Replace one character", test({
-        grammar: Join(Input("a"), Rewrite("a", "x")),
+        grammar: Join(Input("a"), Rewrite("a", "X")),
         results: [
-            { "$i": "a", "$o": "x" }
+            { "$i": "a", "$o": "X" }
         ],
     }));
 
     describe("1b. Replace a character at the beginning", test({
-        grammar: Join(Input("abc"), Rewrite("a", "x")),
+        grammar: Join(Input("abc"), Rewrite("a", "X")),
         results: [
-            { "$i": "abc", "$o": "xbc" }
+            { "$i": "abc", "$o": "Xbc" }
         ],
     }));
 
     describe("1c. Replace a character in the middle", test({
-        grammar: Join(Input("abc"), Rewrite("b", "x")),
+        grammar: Join(Input("abc"), Rewrite("b", "X")),
         results: [
-            { "$i": "abc", "$o": "axc" }
+            { "$i": "abc", "$o": "aXc" }
         ],
     }));
     
     describe("1d. Replace a character at the end", test({
-        grammar: Join(Input("abc"), Rewrite("c", "x")),
+        grammar: Join(Input("abc"), Rewrite("c", "X")),
         results: [
-            { "$i": "abc", "$o": "abx" }
+            { "$i": "abc", "$o": "abX" }
         ],
     }));
 
     describe("1e. Replace a character several times", test({
-        grammar: Join(Input("abaca"), Rewrite("a", "x")),
+        grammar: Join(Input("abaca"), Rewrite("a", "X")),
         results: [
-            { "$i": "abaca", "$o": "xbxcx" }
+            { "$i": "abaca", "$o": "XbXcX" }
         ],
     }));
 
     describe("2a. Replace a multiple-character pattern with a single", test({
-        grammar: Join(Input("azbc"), Rewrite("az", "x")),
+        grammar: Join(Input("azbc"), Rewrite("az", "X")),
         results: [
-            { "$i": "azbc", "$o": "xbc" }
+            { "$i": "azbc", "$o": "Xbc" }
         ],
     }));
     
     describe("2b. Replace a multiple-character pattern with a single, several times", test({
-        grammar: Join(Input("azbazcaz"), Rewrite("az", "x")),
+        grammar: Join(Input("azbazcaz"), Rewrite("az", "X")),
         results: [
-            { "$i": "azbazcaz", "$o": "xbxcx" }
+            { "$i": "azbazcaz", "$o": "XbXcX" }
         ],
-        verbose: VERBOSE_DEBUG
     }));
     
     describe("2c. Replace a multiple-character pattern with a single, several times, with distractors", test({
-        grammar: Join(Input("azabzaazcaaz"), Rewrite("az", "x")),
+        grammar: Join(Input("azabzaazcaaz"), Rewrite("az", "X")),
         results: [
-            { "$i": "azabzaazcaaz", "$o": "xabzaxcax" }
+            { "$i": "azabzaazcaaz", "$o": "XabzaXcaX" }
         ],
-        verbose: VERBOSE_DEBUG
     }));
 });

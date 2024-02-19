@@ -912,8 +912,8 @@ class RewriteExpr extends Expr {
         // the first branch is the one where we've [begun to] match the pattern
         const patternToMatch = constructConcat(env, this.fromChild, this.toChild);
         const patternCorrespond = constructCorrespond(env, patternToMatch, INPUT_TAPE, OUTPUT_TAPE);
-        const patternConcat = constructConcat(env, patternCorrespond, this);
-        const patternDerivs = patternConcat.deriv(query, env);
+        const patternBranch = constructConcat(env, patternCorrespond, this);
+        //const patternDerivs = patternBranch.deriv(query, env);
 
         // the second branch is the one where the current character isn't part of that match
         const matchAnything = constructMatch(env, constructDot(INPUT_TAPE), INPUT_TAPE, OUTPUT_TAPE);
@@ -929,9 +929,10 @@ class RewriteExpr extends Expr {
         // apply the not-begins-with constraint to the second branch
         const branch2withNegation = constructJoin(env, notBeginsWith, anythingConcat, 
             new Set([INPUT_TAPE]), new Set([INPUT_TAPE, OUTPUT_TAPE]))
-        const anythingElseDerivs = branch2withNegation.deriv(query, env);
+        //const anythingElseDerivs = branch2withNegation.deriv(query, env);
 
-        yield* randomCutIter([patternDerivs, anythingElseDerivs], env.random);
+        const branches = constructAlternation(env, patternBranch, branch2withNegation);
+        yield* branches.deriv(query, env);
     }
 
     public simplify(env: Env): Expr {
@@ -1116,6 +1117,12 @@ class JoinExpr extends BinaryExpr {
         }
         if (this.child1 instanceof EpsilonExpr && this.child2 instanceof OutputExpr) {
             return this.child2;
+        }
+        if (this.child1 instanceof DotStarExpr && this.tapes2.has(this.child1.tapeName)) {
+            return this.child2;
+        }
+        if (this.child2 instanceof DotStarExpr && this.tapes1.has(this.child2.tapeName)) {
+            return this.child1;
         }
         return this;
     }
@@ -1947,9 +1954,8 @@ export class CorrespondExpr extends UnaryExpr {
     
     public get id(): string {
         // return this.child.id;
-        return `NCor_${this.fromTape}>${this.toTape}(${this.child.id})`;
+        return `Cor_${this.fromTape}>${this.toTape}(${this.child.id})`;
     }
-
     
     public delta(tapeName: string, env: DerivEnv): Expr {
         if (tapeName == this.fromTape) {
