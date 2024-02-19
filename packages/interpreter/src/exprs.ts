@@ -887,7 +887,9 @@ class RewriteExpr extends Expr {
     }
 
     public get id(): string {
-        return `R(${this.fromChild.id}->${this.toChild.id})`;
+        const fromID = this.fromChild.id.split(":").slice(1).join(":");
+        const toID = this.toChild.id.split(":").slice(1).join(":");
+        return `R(${fromID}->${toID})`;
     }
 
     public delta(
@@ -1953,8 +1955,13 @@ export class CorrespondExpr extends UnaryExpr {
     }   
     
     public get id(): string {
-        // return this.child.id;
-        return `Cor_${this.fromTape}>${this.toTape}(${this.child.id})`;
+        // the child always has a particular structure, so use that to abbreviate
+        const pieces = this.child.id.split(/:|\+/);
+        if (pieces[0] == 'ε') return "Cor(ε)";
+        if (pieces.length == 4) return `Cor(${pieces[1]}->${pieces[3]})`;
+        if (pieces.length == 2 && pieces[0] == "$i") return `Cor(${pieces[1]}->ε)`;
+        if (pieces.length == 2 && pieces[0] == "$o") return `Cor(ε->${pieces[1]})`;
+        return `Cor(${this.child.id})`;
     }
     
     public delta(tapeName: string, env: DerivEnv): Expr {
