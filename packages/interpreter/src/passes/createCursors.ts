@@ -176,7 +176,7 @@ function getTapePriorityPreTape(
     symbolsVisited: StringPairSet,
     env: SymbolEnv
 ): number {
-    if (tape == g.fromTape) return -1;
+    if (tape == g.inputTape) return -1;
     return getTapePriorityDefault(g, tape, symbolsVisited, env);
 }
 
@@ -225,10 +225,10 @@ function getTapePriorityRewrite(
     symbolsVisited: StringPairSet,
     env: SymbolEnv
 ): number {
-    const c1tapes = new Set(g.fromChild.tapeNames);
-    const c2tapes = new Set(g.toChild.tapeNames);
-    const c1priority = getTapePriority(g.fromChild, tapeName, symbolsVisited, env);
-    const c2priority = getTapePriority(g.toChild, tapeName, symbolsVisited, env);
+    const c1tapes = new Set(g.inputChild.tapeNames);
+    const c2tapes = new Set(g.outputChild.tapeNames);
+    const c1priority = getTapePriority(g.inputChild, tapeName, symbolsVisited, env);
+    const c2priority = getTapePriority(g.outputChild, tapeName, symbolsVisited, env);
     if (c1tapes.has(tapeName) && c2tapes.has(tapeName)) {
         return c1priority + c2priority * 10;
     }

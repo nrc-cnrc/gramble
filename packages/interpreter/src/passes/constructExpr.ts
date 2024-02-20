@@ -12,7 +12,7 @@ import {
 } from "../grammars";
 import { Dict } from "../utils/func";
 import { 
-    CollectionExpr, EPSILON, EpsilonExpr, 
+    CollectionExpr, EPSILON,
     Expr, 
     NULL, constructAlternation, constructCollection, 
     constructCorrespond, constructCount, constructCursor, 
@@ -115,10 +115,12 @@ function constructExprRewrite(
     env: PassEnv,
     g: RewriteGrammar
 ): Expr {
-    return constructRewrite(env, constructExpr(env, g.fromChild),
-                                 constructExpr(env, g.toChild),
+    return constructRewrite(env, constructExpr(env, g.inputChild),
+                                 constructExpr(env, g.outputChild),
                                  constructExpr(env, g.preChild),
-                                 constructExpr(env, g.postChild));
+                                 constructExpr(env, g.postChild),
+                                 g.beginsWith,
+                                 g.endsWith);
 }
 
 function constructExprCount(
@@ -172,7 +174,7 @@ function constructExprPreTape(
     g: PreTapeGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
-    return constructPreTape(env, g.fromTape, g.toTape, childExpr);
+    return constructPreTape(env, g.inputTape, g.outputTape, childExpr);
 }
 
 function constructExprHide(
@@ -188,7 +190,7 @@ function constructExprMatch(
     g: MatchGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
-    return constructMatch(env, childExpr, g.fromTape, g.toTape);
+    return constructMatch(env, childExpr, g.inputTape, g.outputTape);
 }
 
 function constructExprCollection(
@@ -231,44 +233,44 @@ function constructExprReplace(
         g.minReps = Math.min(g.minReps, g.maxReps);
     }
 
-    const fromExpr: Expr = constructExpr(env, g.fromGrammar);
-    const toExpr: Expr = constructExpr(env, g.toGrammar);
+    const inputExpr: Expr = constructExpr(env, g.inputGrammar);
+    const outputExpr: Expr = constructExpr(env, g.outputGrammar);
     const preContextExpr: Expr = constructExpr(env, g.preContext);
     const postContextExpr: Expr = constructExpr(env, g.postContext);
     
     const preMatch = constructMatch(env, preContextExpr);
     const postMatch = constructMatch(env, postContextExpr);
-    const match = constructCorrespond(env, constructPrecede(env, fromExpr, toExpr));
+    const match = constructCorrespond(env, constructPrecede(env, inputExpr, outputExpr));
     const pattern = constructSeq(env, preMatch, match, postMatch);
     
     const dotStar: Expr = constructDotStar(INPUT_TAPE);
     const anything = constructMatch(env, dotStar);
-    const fromContent = constructSeq(env, preContextExpr, fromExpr, postContextExpr);
+    const inputPattern = constructSeq(env, preContextExpr, inputExpr, postContextExpr);
     
     if (g.beginsWith && g.endsWith) {
         let replaceExpr = constructSeq(env, pattern);
-        let shortFrom = constructShort(env, fromContent);
-        let copyExpr: Expr = g.minReps > 0 ? NULL : matchNot(env, shortFrom);
+        let shortInput = constructShort(env, inputPattern);
+        let copyExpr: Expr = g.minReps > 0 ? NULL : matchNot(env, shortInput);
         return constructAlternation(env, copyExpr, replaceExpr);
     }
     
     if (g.beginsWith) {
         let replaceExpr = constructSeq(env, pattern, anything);
-        let shortFrom = constructSeq(env, constructShort(env, fromContent), dotStar);
-        let copyExpr: Expr = g.minReps > 0 ? NULL : matchNot(env, shortFrom);
+        let shortInput = constructSeq(env, constructShort(env, inputPattern), dotStar);
+        let copyExpr: Expr = g.minReps > 0 ? NULL : matchNot(env, shortInput);
         return constructAlternation(env, copyExpr, replaceExpr);
     }
     
     if (g.endsWith) {
         let replaceExpr = constructSeq(env, anything, pattern);
-        let shortFrom = constructSeq(env, dotStar, constructShort(env, fromContent));
-        let copyExpr: Expr = g.minReps > 0 ? NULL : matchNot(env, shortFrom);
+        let shortInput = constructSeq(env, dotStar, constructShort(env, inputPattern));
+        let copyExpr: Expr = g.minReps > 0 ? NULL : matchNot(env, shortInput);
         return constructAlternation(env, copyExpr, replaceExpr);
     }
 
     // neither beginsWith nor endsWith
     const anythingElse = g.optional ? anything 
-                                    : matchNotContains(env, fromContent);
+                                    : matchNotContains(env, inputPattern);
     const seq = constructSeq(env, pattern, anythingElse);
     const rep = constructRepeat(env, seq, g.minReps, g.maxReps);
     return constructSeq(env, anythingElse, rep);

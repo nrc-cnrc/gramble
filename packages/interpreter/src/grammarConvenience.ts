@@ -31,16 +31,18 @@ export function SingleTape(
 }
 
 export function Rewrite(
-    fromChild: Grammar|string, 
-    toChild: Grammar|string,
+    inputChild: Grammar|string, 
+    outputChild: Grammar|string,
     preChild: Grammar|string = Epsilon(),
-    postChild: Grammar|string = Epsilon()
+    postChild: Grammar|string = Epsilon(),
+    beginsWith: boolean = false,
+    endsWith: boolean = false
 ): Grammar {
-    fromChild = SingleTape(INPUT_TAPE, fromChild);
-    toChild = SingleTape(OUTPUT_TAPE, toChild);
+    inputChild = SingleTape(INPUT_TAPE, inputChild);
+    outputChild = SingleTape(OUTPUT_TAPE, outputChild);
     preChild = SingleTape(INPUT_TAPE, preChild);
     postChild = SingleTape(INPUT_TAPE, postChild);
-    return new RewriteGrammar(fromChild, toChild, preChild, postChild);
+    return new RewriteGrammar(inputChild, outputChild, preChild, postChild, beginsWith, endsWith);
 }
 
 
@@ -52,19 +54,19 @@ export function Rewrite(
   * for testing, whereas the defaults in ReplaceGrammar are appropriate for
   * the purposes of converting tabular syntax into grammars.
   * 
-  * fromGrammar: input (target) Grammar (on fromTape)
-  * toGrammar: output (change) Grammar (on one or more toTapes)
-  * preContext: context to match before the target fromGrammar (on fromTape)
-  * postContext: context to match after the target fromGrammar (on fromTape)
-  * otherContext: context to match on other tapes (other than fromTape & toTapes)
-  * beginsWith: set to True to match at the start of fromTape
-  * endsWith: set to True to match at the end of fromTape
+  * inputGrammar: input (target) Grammar (on inputTape)
+  * toGrammar: output (change) Grammar (on one or more outputTapes)
+  * preContext: context to match before the target inputGrammar (on inputTape)
+  * postContext: context to match after the target inputGrammar (on inputTape)
+  * otherContext: context to match on other tapes (other than inputTape & outputTapes)
+  * beginsWith: set to True to match at the start of inputTape
+  * endsWith: set to True to match at the end of inputTape
   * minReps: minimum number of times the replace rule is applied; normally 0
   * maxReps: maximum number of times the replace rule is applied
 */
 export function Replace(
-    fromGrammar: Grammar | string, 
-    toGrammar: Grammar | string,
+    inputGrammar: Grammar | string, 
+    outputGrammar: Grammar | string,
     preContext: Grammar | string = Epsilon(),
     postContext: Grammar | string = Epsilon(),
     otherContext: Grammar | string = Epsilon(),
@@ -79,19 +81,19 @@ export function Replace(
         beginsWith = true;
     if (typeof postContext === 'string' && postContext.endsWith("#"))
         endsWith = true;
-    fromGrammar = SingleTape(INPUT_TAPE, fromGrammar);
-    toGrammar = SingleTape(OUTPUT_TAPE, toGrammar);
+    inputGrammar = SingleTape(INPUT_TAPE, inputGrammar);
+    outputGrammar = SingleTape(OUTPUT_TAPE, outputGrammar);
     preContext = SingleTape(INPUT_TAPE, preContext);
     postContext = SingleTape(INPUT_TAPE, postContext);
     otherContext = makeGrammar(otherContext);
-    return new ReplaceGrammar(fromGrammar, toGrammar, 
+    return new ReplaceGrammar(inputGrammar, outputGrammar, 
         preContext, postContext, otherContext, beginsWith, endsWith, 
         minReps, maxReps, hiddenTapeName, optional);
 }
 
 export function OptionalReplace(
-    fromGrammar: Grammar | string, 
-    toGrammar: Grammar | string,
+    inputGrammar: Grammar | string, 
+    outputGrammar: Grammar | string,
     preContext: Grammar | string = Epsilon(), 
     postContext: Grammar | string = Epsilon(),
     otherContext: Grammar | string = Epsilon(),
@@ -101,7 +103,7 @@ export function OptionalReplace(
     maxReps: number = Infinity,
     hiddenTapeName: string = ""
 ): ReplaceGrammar {
-    return Replace(fromGrammar, toGrammar, 
+    return Replace(inputGrammar, outputGrammar, 
         preContext, postContext, otherContext, beginsWith, endsWith, 
         minReps, maxReps, hiddenTapeName, true);
 }
@@ -148,12 +150,12 @@ export function Query(
 }
 
 export function PreTape(
-    fromTape: string, 
-    toTape: string, 
+    inputTape: string, 
+    outputTape: string, 
     child: Grammar | string
 ): Grammar {
     child = makeGrammar(child);
-    return new PreTapeGrammar(fromTape, toTape, child);
+    return new PreTapeGrammar(inputTape, outputTape, child);
 }
 
 export function Epsilon(): EpsilonGrammar {
@@ -263,13 +265,13 @@ export function Dot(...tapes: string[]): Grammar {
 
 export function Match(
     child: Grammar | string, 
-    fromTape: string, 
-    ...toTapes: string[]
+    inputTape: string, 
+    ...outputTapes: string[]
 ): Grammar {
     child = makeGrammar(child);
     let result = child;
-    for (const tape of toTapes) {
-        result = new MatchGrammar(result, fromTape, tape);
+    for (const tape of outputTapes) {
+        result = new MatchGrammar(result, inputTape, tape);
     }
     return result;
 }

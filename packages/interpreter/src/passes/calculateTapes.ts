@@ -383,7 +383,7 @@ function getTapesEmbed(
 }
 
 function getTapesMatch(g: MatchGrammar): Grammar {
-    const tapes = Tapes.Match(g.child.tapes, g.fromTape, g.toTape);
+    const tapes = Tapes.Match(g.child.tapes, g.inputTape, g.outputTape);
     return updateTapes(g, tapes);
 }
 
@@ -467,8 +467,8 @@ function getTapesReplace(g: ReplaceGrammar, env: TapesEnv): Grammar {
     // during normal construction it shouldn't be possible to construct
     // multitape rules, but just in case...
     const childrenToCheck: [string, Grammar][] = [
-        ["from", g.fromGrammar],
-        ["to", g.toGrammar],
+        ["from", g.inputGrammar],
+        ["to", g.outputGrammar],
         ["pre", g.preContext],
         ["post", g.postContext]
     ];

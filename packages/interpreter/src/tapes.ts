@@ -146,31 +146,29 @@ export function Rename(
         return Lit(new Set(newTapes), newVocabs);
     }
 
-    return { tag: Tag.Rename, child: child, 
-             fromTape: fromTape, toTape: toTape }
+    return { tag: Tag.Rename, child, fromTape, toTape }
 }
 
 export type Match =  { 
     tag: Tag.Match, 
     child: TapeSet, 
-    fromTape: string, 
-    toTape: string 
+    inputTape: string, 
+    outputTape: string 
 };
 
 export function Match(
     child: TapeSet, 
-    fromTape: string, 
-    toTape: string
+    inputTape: string, 
+    outputTape: string
 ): TapeSet {
     if (child.tag === Tag.Lit) {
         const newTapes = new Set(child.tapeNames);
-        newTapes.add(toTape);
-        const newVocabs = Vocabs.mergeKeys(child.vocabMap, fromTape, toTape);
+        newTapes.add(outputTape);
+        const newVocabs = Vocabs.mergeKeys(child.vocabMap, inputTape, outputTape);
         return Lit(newTapes, newVocabs);
     }
 
-    return { tag: Tag.Match, child: child, 
-             fromTape: fromTape, toTape: toTape }
+    return { tag: Tag.Match, child, inputTape, outputTape }
 }
 
 export type Cursor = {
@@ -201,7 +199,7 @@ export function toStr(t: TapeSet): string {
         case Tag.Lit: return litToStr(t);
         case Tag.Ref: return "$" + t.symbol;
         case Tag.Rename: return `${t.fromTape}>${t.toTape}(${toStr(t.child)})`;
-        case Tag.Match: return `M${t.fromTape}>${t.toTape}(${toStr(t.child)})`;
+        case Tag.Match: return `M${t.inputTape}>${t.outputTape}(${toStr(t.child)})`;
         case Tag.Sum: return toStr(t.c1) + "+" + toStr(t.c2);
         case Tag.Product: return toStr(t.c1) + "⋅" + toStr(t.c2);
         case Tag.Join: return toStr(t.c1) + "⋈" + toStr(t.c2);
@@ -260,7 +258,7 @@ function simplify(
         case Tag.Sum:     return Sum(t.c1, t.c2);
         case Tag.Product: return Product(t.c1, t.c2);
         case Tag.Join:    return Join(t.c1, t.c2);
-        case Tag.Match:   return Match(t.child, t.fromTape, t.toTape);
+        case Tag.Match:   return Match(t.child, t.inputTape, t.outputTape);
         case Tag.Cursor:  return Cursor(t.child, t.tapeName);
         default:          return t;
     }

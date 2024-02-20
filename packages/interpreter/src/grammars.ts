@@ -232,10 +232,12 @@ export class PriorityUnionGrammar extends BinaryGrammar {
 export class RewriteGrammar extends AbstractGrammar {
     public readonly tag = "rewrite";
     constructor(
-        public fromChild: Grammar,
-        public toChild: Grammar,
+        public inputChild: Grammar,
+        public outputChild: Grammar,
         public preChild: Grammar,
-        public postChild: Grammar
+        public postChild: Grammar,
+        public beginsWith: boolean = true,
+        public endsWith: boolean = true
     ) {
         super();
     }
@@ -355,8 +357,8 @@ export class PreTapeGrammar extends UnaryGrammar {
     public readonly tag = "pretape";
 
     constructor(
-        public fromTape: string,
-        public toTape: string,
+        public inputTape: string,
+        public outputTape: string,
         child: Grammar
     ) {
         super(child);
@@ -385,8 +387,8 @@ export class MatchGrammar extends UnaryGrammar {
 
     constructor(
         child: Grammar,
-        public fromTape: string,
-        public toTape: string
+        public inputTape: string,
+        public outputTape: string
     ) {
         super(child);
     }
@@ -475,8 +477,8 @@ export class ReplaceGrammar extends AbstractGrammar {
     public readonly tag = "replace";
 
     constructor(
-        public fromGrammar: Grammar,
-        public toGrammar: Grammar,
+        public inputGrammar: Grammar,
+        public outputGrammar: Grammar,
         public preContext: Grammar,
         public postContext: Grammar, 
         public otherContext: Grammar,

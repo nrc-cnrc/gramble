@@ -71,20 +71,20 @@ export class ConstructReplaceBlocks extends AutoPass<Grammar> {
         const stack = new CounterStack(2);
 
         // first handle the "from" material (i.e. pre/from/post)
-        const fromMaterial = new SequenceGrammar([g.preContext, g.fromGrammar, g.postContext]).tapify(env);
-        if (fromMaterial.tapeNames.length != 1) {
+        const inputMaterial = new SequenceGrammar([g.preContext, g.inputGrammar, g.postContext]).tapify(env);
+        if (inputMaterial.tapeNames.length != 1) {
             // I don't think this is actually possible with 
             // new-style rules, but just in case
             throw new EpsilonGrammar()
                         .tapify(env)
                         .err( "Multitape rule", 
                             "This rule has the wrong number of tapes " +
-                              ` in "pre/from/post": ${fromMaterial.tapeNames}`);
+                              ` in "pre/from/post": ${inputMaterial.tapeNames}`);
         }
 
-        const fromTape = fromMaterial.tapeNames[0];
-        const fromLength = lengthRange(fromMaterial, fromTape, stack, env);
-        if (fromLength.null == false && fromLength.min == 0 && 
+        const inputTape = inputMaterial.tapeNames[0];
+        const inputLength = lengthRange(inputMaterial, inputTape, stack, env);
+        if (inputLength.null == false && inputLength.min == 0 && 
                     !g.optional && !g.beginsWith && !g.endsWith) {
             throw new EpsilonGrammar().err(
                         "Unconditional insertion",
@@ -92,9 +92,9 @@ export class ConstructReplaceBlocks extends AutoPass<Grammar> {
                         "(i.e. can trigger on an empty input).");
         }
 
-        const toTape = g.toGrammar.tapeNames[0];
-        const toLength = lengthRange(g.toGrammar, toTape, stack, env);
-        if (toLength.null == false && toLength.max == Infinity) {
+        const outputTape = g.outputGrammar.tapeNames[0];
+        const outputLength = lengthRange(g.outputGrammar, outputTape, stack, env);
+        if (outputLength.null == false && outputLength.max == Infinity) {
             // this shouldn't be syntactically possible to express in sheets, but if
             // it does happen, it's bad news because it's infinite generation.
             throw new EpsilonGrammar()

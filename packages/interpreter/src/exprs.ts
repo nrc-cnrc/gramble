@@ -880,18 +880,20 @@ export class UnionExpr extends Expr {
 class RewriteExpr extends Expr {
 
     constructor(
-        public fromChild: Expr,
-        public toChild: Expr,
+        public inputChild: Expr,
+        public outputChild: Expr,
         public preChild: Expr = EPSILON,
-        public postChild: Expr = EPSILON
+        public postChild: Expr = EPSILON,
+        public beginsWith: boolean = false,
+        public endsWith: boolean = false
     ) {
         super();
     }
 
     public get id(): string {
-        const fromID = this.fromChild.id.split(":").slice(1).join(":");
-        const toID = this.toChild.id.split(":").slice(1).join(":");
-        return `R(${fromID}->${toID})`;
+        const inputID = this.inputChild.id.split(":").slice(1).join(":");
+        const outputID = this.outputChild.id.split(":").slice(1).join(":");
+        return `R(${inputID}->${outputID})`;
     }
 
     public delta(
@@ -913,23 +915,29 @@ class RewriteExpr extends Expr {
             return;
         }
 
+        const dotStar = constructDotStar(INPUT_TAPE);
+
+        let continuation: Expr = this;
+        if (this.beginsWith) {
+            continuation = constructMatch(env, dotStar, INPUT_TAPE, OUTPUT_TAPE);
+        }
+
         const preMatch = constructMatch(env, this.preChild, INPUT_TAPE, OUTPUT_TAPE);
         const postMatch = constructMatch(env, this.postChild, INPUT_TAPE, OUTPUT_TAPE);
 
         // the first branch is the one where we've [begun to] match the pattern
-        const patternToMatch = constructConcat(env, this.fromChild, this.toChild);
+        const patternToMatch = constructConcat(env, this.inputChild, this.outputChild);
         const patternCorrespond = constructCorrespond(env, patternToMatch, INPUT_TAPE, OUTPUT_TAPE);
-        const patternBranch = constructSeq(env, preMatch, patternCorrespond, postMatch, this);
+        const patternBranch = constructSeq(env, preMatch, patternCorrespond, postMatch, continuation);
 
         // the second branch is the one where the current character isn't part of that match
         const matchAnything = constructMatch(env, constructDot(INPUT_TAPE), INPUT_TAPE, OUTPUT_TAPE);
-        const anythingConcat = constructConcat(env, matchAnything, this);
+        const anythingConcat = constructConcat(env, matchAnything, continuation);
 
         // the second branch also requires a constraint that the resulting output does not begin with the
         // pattern
-        const dotStar = constructDotStar(INPUT_TAPE);
-        const fromMaterial = constructSeq(env, this.preChild, this.fromChild, this.postChild);
-        const shortFrom = constructShort(env, fromMaterial);
+        const inputMaterial = constructSeq(env, this.preChild, this.inputChild, this.postChild);
+        const shortFrom = constructShort(env, inputMaterial);
         const beginsWith = constructPrecede(env, shortFrom, dotStar);
         const notBeginsWith = constructNegation(env, beginsWith, new Set([INPUT_TAPE]));
 
@@ -948,14 +956,15 @@ class RewriteExpr extends Expr {
 
 export function constructRewrite(
     env: Env, 
-    fromChild: Expr, 
-    toChild: Expr,
+    inputChild: Expr, 
+    outputChild: Expr,
     preChild: Expr,
-    postChild: Expr
+    postChild: Expr,
+    beginsWith: boolean = true,
+    endsWith: boolean = true,
 ): Expr {
-    return new RewriteExpr(fromChild, toChild, preChild, postChild);
+    return new RewriteExpr(inputChild, outputChild, preChild, postChild, beginsWith, endsWith);
 }
-
 
 /**
  * A priority union is a union that "prefers" its first child -- only when the
@@ -1545,8 +1554,8 @@ export function constructCursor(
 export class PreTapeExpr extends UnaryExpr {
 
     constructor(
-        public tape1: string,
-        public tape2: string,
+        public inputTape: string,
+        public outputTape: string,
         child: Expr,
         public output: OutputExpr = new OutputExpr(EPSILON)
     ) {
@@ -1554,48 +1563,47 @@ export class PreTapeExpr extends UnaryExpr {
     }
 
     public get id(): string {
-        return `Pre_${this.tape1}>${this.tape2}(${this.output.id},${this.child.id})`;
+        return `Pre_${this.inputTape}>${this.outputTape}(${this.output.id},${this.child.id})`;
     }
 
     public delta(
         tapeName: string,
         env: DerivEnv
     ): Expr {
-        if (tapeName == this.tape1) {
+        if (tapeName == this.inputTape) {
             throw new Error(`something's gone wrong, querying on ` +
-                `a PreTapeExpr tape1 ${this.tape1}`);
+                `a PreTapeExpr tape1 ${this.inputTape}`);
         }
 
-        if (tapeName == this.tape2) {
-            const t1next = this.child.delta(this.tape1, env);
-            const t2next = t1next.delta(this.tape2, env);
-            return constructPreTape(env, this.tape1, this.tape2, t2next, this.output);
+        if (tapeName == this.outputTape) {
+            const t1next = this.child.delta(this.inputTape, env);
+            const t2next = t1next.delta(this.outputTape, env);
+            return constructPreTape(env, this.inputTape, this.outputTape, t2next, this.output);
         }
 
         const cNext = this.child.delta(tapeName, env);
-        return constructPreTape(env, this.tape1, this.tape2, cNext, this.output);
+        return constructPreTape(env, this.inputTape, this.outputTape, cNext, this.output);
     }
     
     public *deriv(
         query: Query,
         env: DerivEnv
     ): Derivs {
-        if (query.tapeName == this.tape1) {
+        if (query.tapeName == this.inputTape) {
             throw new Error(`something's gone wrong, querying on ` +
-                `a PreTapeExpr tape1 ${this.tape1}`);
+                `a PreTapeExpr tape1 ${this.inputTape}`);
         }
 
-        if (query.tapeName == this.tape2) {
+        if (query.tapeName == this.outputTape) {
             
-            // if the child is nullable on the fromTape, we can stop 
-            // querying on fromTape -- that is, stop being a PreTapeExpr
-            const childDelta = this.child.delta(this.tape1, env);
+            // if the child is nullable on the input tape, we can stop 
+            // querying on that tape -- that is, stop being a PreTapeExpr
+            const childDelta = this.child.delta(this.inputTape, env);
             if (!(childDelta instanceof NullExpr)) {
                 yield* childDelta.deriv(query, env);
             }
 
-            //const globalTapeName = env.getTape(this.fromTape).globalName;
-            const t1query = query.rename(this.tape1);
+            const t1query = query.rename(this.inputTape);
             
             for (const d1 of this.child.deriv(t1query, env)) {
                 if (d1.next instanceof NullExpr) {
@@ -1606,8 +1614,8 @@ export class PreTapeExpr extends UnaryExpr {
                 if (d1.result instanceof EpsilonExpr) {
                     // if we didn't go anywhere on tape1, don't query on
                     // tape2, just treat it as going nowhere on tape2
-                    const t2result = d1.result.rename(this.tape2);
-                    const wrapped = constructPreTape(env, this.tape1, this.tape2, 
+                    const t2result = d1.result.rename(this.outputTape);
+                    const wrapped = constructPreTape(env, this.inputTape, this.outputTape, 
                                                         d1.next, this.output);
                     yield new Deriv(t2result, wrapped);
                     continue;
@@ -1616,7 +1624,7 @@ export class PreTapeExpr extends UnaryExpr {
                 const newOutput = this.output.addOutput(env, d1.result);
                 for (const d2 of d1.next.deriv(query, env)) {
                     env.logDeriv(d2.result, d2.next);
-                    yield d2.wrap(c => constructPreTape(env, this.tape1, this.tape2, 
+                    yield d2.wrap(c => constructPreTape(env, this.inputTape, this.outputTape, 
                                                         c, newOutput));
                 }
                 env.indentLog(-1);
@@ -1625,7 +1633,7 @@ export class PreTapeExpr extends UnaryExpr {
         }
 
         for (const d of this.child.deriv(query, env)) {
-            yield d.wrap(c => constructPreTape(env, this.tape1, this.tape2, c, this.output));
+            yield d.wrap(c => constructPreTape(env, this.inputTape, this.outputTape, c, this.output));
         }
     }
 
@@ -1645,12 +1653,12 @@ export class PreTapeExpr extends UnaryExpr {
 
 export function constructPreTape(
     env: Env,
-    fromTape: string, 
-    toTape: string, 
+    inputTape: string, 
+    outputTape: string, 
     child: Expr,
     output?: OutputExpr,
 ): Expr {
-    return new PreTapeExpr(fromTape, toTape, child, output).simplify(env);
+    return new PreTapeExpr(inputTape, outputTape, child, output).simplify(env);
 }
 
 /**
@@ -1957,8 +1965,8 @@ export class CorrespondExpr extends UnaryExpr {
 
     constructor(
         public child: Expr,
-        public fromTape: string,
-        public toTape: string
+        public inputTape: string,
+        public outputTape: string
     ) {
         super(child);
     }   
@@ -1974,14 +1982,14 @@ export class CorrespondExpr extends UnaryExpr {
     }
     
     public delta(tapeName: string, env: DerivEnv): Expr {
-        if (tapeName == this.fromTape) {
-            // if we can delta on the fromTape, we're done being a Correspond
+        if (tapeName == this.inputTape) {
+            // if we can delta on the input tape, we're done being a Correspond
             return this.child.delta(tapeName, env);
         }
 
-        if (tapeName == this.toTape) {
+        if (tapeName == this.outputTape) {
             // we can't delta out on the toTape, the only escape
-            // is deltaing out on the fromTape
+            // is deltaing out on the input tape
             return NULL;
         }
         
@@ -1990,27 +1998,27 @@ export class CorrespondExpr extends UnaryExpr {
 
     public *deriv(query: Query, env: DerivEnv): Derivs {
 
-        if (query.tapeName == this.fromTape) {
+        if (query.tapeName == this.inputTape) {
             for (const d of this.child.deriv(query, env)) {
                 yield d.wrap(c => constructCorrespond(env, c, 
-                        this.fromTape, this.toTape));
+                        this.inputTape, this.outputTape));
             }
             return;
         }
 
-        if (query.tapeName == this.toTape) {
+        if (query.tapeName == this.outputTape) {
             for (const d of this.child.deriv(query, env)) {
                 yield d.wrap(c => constructCorrespond(env, c, 
-                                            this.fromTape,
-                                            this.toTape));
+                                            this.inputTape,
+                                            this.outputTape));
             }
 
-            // toTape is special, if it's nullable but has emitted fewer tokens than
-            // fromTape has, it can emit an epsilon
+            // the output tape is special, if it's nullable but has emitted fewer tokens than
+            // the input tape has, it can emit an epsilon
             const cNext = this.child.delta(query.tapeName, env);
             if (!(cNext instanceof NullExpr)) {
                 const wrapped = constructCorrespond(env, cNext, 
-                    this.fromTape, this.toTape);
+                    this.inputTape, this.outputTape);
                 yield new Deriv(EPSILON, wrapped);
             }
             return;
@@ -2029,37 +2037,37 @@ export class CorrespondExpr extends UnaryExpr {
 export function constructCorrespond(
     env: Env,
     child: Expr,
-    fromTape: string = INPUT_TAPE,
-    toTape: string = OUTPUT_TAPE
+    inputTape: string = INPUT_TAPE,
+    outputTape: string = OUTPUT_TAPE
 ): Expr {
-    return new CorrespondExpr(child, fromTape, toTape).simplify(env);
+    return new CorrespondExpr(child, inputTape, outputTape).simplify(env);
 }
 
 export class MatchExpr extends UnaryExpr {
 
     constructor(
         child: Expr,
-        public fromTape: string,
-        public toTape: string
+        public inputTape: string,
+        public outputTape: string
     ) {
         super(child);
     }
 
     public get id(): string {
-        return `M_${this.fromTape}>${this.toTape}(${this.child.id})`;
+        return `M_${this.inputTape}>${this.outputTape}(${this.child.id})`;
     }
 
     public delta(
         tapeName: string,
         env: DerivEnv
     ): Expr {
-        if (tapeName == this.toTape) {
-            const newTapeName = renameTape(tapeName, this.toTape, this.fromTape);
+        if (tapeName == this.outputTape) {
+            const newTapeName = renameTape(tapeName, this.outputTape, this.inputTape);
             const cNext = this.child.delta(newTapeName, env);
-            return constructMatch(env, cNext, this.fromTape, this.toTape);  
+            return constructMatch(env, cNext, this.inputTape, this.outputTape);  
         }
         const cNext = this.child.delta(tapeName, env);
-        return constructMatch(env, cNext, this.fromTape, this.toTape);
+        return constructMatch(env, cNext, this.inputTape, this.outputTape);
     }
     
     public *deriv(
@@ -2067,29 +2075,29 @@ export class MatchExpr extends UnaryExpr {
         env: DerivEnv
     ): Derivs {
         
-        // if it's a tape that isn't our to/from, just forward and wrap 
-        if (query.tapeName != this.fromTape && query.tapeName != this.toTape) {
+        // if it's a tape that isn't our input/output, just forward and wrap 
+        if (query.tapeName != this.inputTape && query.tapeName != this.outputTape) {
             for (const d of this.child.deriv(query, env)) {
-                yield d.wrap(c => constructMatch(env, c, this.fromTape, this.toTape));
+                yield d.wrap(c => constructMatch(env, c, this.inputTape, this.outputTape));
             }
             return;
         }
 
-        // tapeName is either our toTape or fromTape.  The only differences
+        // tapeName is either our output or input tape.  The only differences
         // between these two cases is (a) we buffer the literal on the opposite
         // tape, that's what oppositeTape is below and (b) when tapeName is our
-        // toTape, we have to act like a toTape->fromTape rename.  
+        // output tape, we have to act like a output->input rename.  
 
-        const oppositeTapeName = (query.tapeName == this.fromTape) ? this.toTape : this.fromTape;
+        const oppositeTapeName = (query.tapeName == this.inputTape) ? this.outputTape : this.inputTape;
         //const oppositeTape = env.getTape(oppositeTapeName);
 
-        // We ask for a namespace rename either way; when tapeName == fromTape,
+        // We ask for a namespace rename either way; when tapeName == input,
         // this is just a no-op
-        const fromQuery = query.rename(this.fromTape);
+        const fromQuery = query.rename(this.inputTape);
 
         for (const d of 
                 this.child.deriv(fromQuery, env)) {
-            const wrapped = constructMatch(env, d.next, this.fromTape, this.toTape);
+            const wrapped = constructMatch(env, d.next, this.inputTape, this.outputTape);
             if (d.result instanceof EpsilonExpr) {
                 env.logDebug("========= EpsilonToken ==========");
                 yield d;
@@ -2118,10 +2126,10 @@ export class MatchExpr extends UnaryExpr {
 export function constructMatch(
     env: Env,
     child: Expr,
-    fromTape: string = INPUT_TAPE,
-    toTape: string = OUTPUT_TAPE
+    inputTape: string = INPUT_TAPE,
+    outputTape: string = OUTPUT_TAPE
 ): Expr {
-    return new MatchExpr(child, fromTape, toTape).simplify(env);
+    return new MatchExpr(child, inputTape, outputTape).simplify(env);
 }
 
 /* CONVENIENCE FUNCTIONS */

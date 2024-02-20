@@ -230,9 +230,9 @@ function lengthJoin(g: JoinGrammar, tapeName: string, stack: CounterStack, env: 
 }
 
 function lengthMatch(g: MatchGrammar, tapeName: string, stack: CounterStack, env: SymbolEnv): LengthRange {
-    if (tapeName === g.toTape) {
+    if (tapeName === g.outputTape) {
         // also collect as a rename
-        let newTapeName = renameTape(tapeName, g.toTape, g.fromTape);
+        let newTapeName = renameTape(tapeName, g.outputTape, g.inputTape);
         return lengthRange(g.child, newTapeName, stack, env);
     }
     return lengthRange(g.child, tapeName, stack, env);
