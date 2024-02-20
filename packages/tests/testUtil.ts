@@ -211,6 +211,7 @@ export function testGenerate(
     stripHidden: boolean = true,
     allowDuplicateOutputs: boolean = false,
     shortDesc: string = "",
+    skipMatchOutputs: boolean = false,
 ): void {
     timeIt(() => {
         const outputs: StringDict[] =
@@ -218,7 +219,14 @@ export function testGenerate(
                                 query, stripHidden, false);
         testNumOutputs(outputs, expectedResults.length,
                        allowDuplicateOutputs, symbol);
-        testMatchOutputs(outputs, expectedResults, symbol);
+        if (!skipMatchOutputs && expectedResults !== undefined) {
+            testMatchOutputs(outputs, expectedResults, symbol);
+        } else {
+            it("skipping match outputs", function() {
+                expect(skipMatchOutputs).to.be.true;
+                expect(expectedResults).to.not.be.undefined;
+            });
+        }
     }, VERBOSE_TEST_L2, `${shortDesc} testGenerate`);
 }
 
