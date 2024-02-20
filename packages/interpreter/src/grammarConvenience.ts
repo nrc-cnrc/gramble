@@ -20,6 +20,7 @@ import {
 import { Dict, StringDict, foldRight } from "./utils/func";
 import { INPUT_TAPE, OUTPUT_TAPE, DEFAULT_TAPE } from "./utils/constants";
 import { toStr } from "./passes/toStr";
+import { EPSILON } from "./exprs";
 
 export function SingleTape(
     tapeName: string,
@@ -30,12 +31,16 @@ export function SingleTape(
 }
 
 export function Rewrite(
-    fromGrammar: Grammar|string, 
-    toGrammar: Grammar|string
+    fromChild: Grammar|string, 
+    toChild: Grammar|string,
+    preChild: Grammar|string = Epsilon(),
+    postChild: Grammar|string = Epsilon()
 ): Grammar {
-    fromGrammar = SingleTape(INPUT_TAPE, fromGrammar);
-    toGrammar = SingleTape(OUTPUT_TAPE, toGrammar);
-    return new RewriteGrammar(fromGrammar, toGrammar);
+    fromChild = SingleTape(INPUT_TAPE, fromChild);
+    toChild = SingleTape(OUTPUT_TAPE, toChild);
+    preChild = SingleTape(INPUT_TAPE, preChild);
+    postChild = SingleTape(INPUT_TAPE, postChild);
+    return new RewriteGrammar(fromChild, toChild, preChild, postChild);
 }
 
 

@@ -115,8 +115,10 @@ function constructExprRewrite(
     env: PassEnv,
     g: RewriteGrammar
 ): Expr {
-    return constructRewrite(env, constructExpr(env, g.child1),
-                                    constructExpr(env, g.child2));
+    return constructRewrite(env, constructExpr(env, g.fromChild),
+                                 constructExpr(env, g.toChild),
+                                 constructExpr(env, g.preChild),
+                                 constructExpr(env, g.postChild));
 }
 
 function constructExprCount(

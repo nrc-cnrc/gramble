@@ -225,10 +225,10 @@ function getTapePriorityRewrite(
     symbolsVisited: StringPairSet,
     env: SymbolEnv
 ): number {
-    const c1tapes = new Set(g.child1.tapeNames);
-    const c2tapes = new Set(g.child2.tapeNames);
-    const c1priority = getTapePriority(g.child1, tapeName, symbolsVisited, env);
-    const c2priority = getTapePriority(g.child2, tapeName, symbolsVisited, env);
+    const c1tapes = new Set(g.fromChild.tapeNames);
+    const c2tapes = new Set(g.toChild.tapeNames);
+    const c1priority = getTapePriority(g.fromChild, tapeName, symbolsVisited, env);
+    const c2priority = getTapePriority(g.toChild, tapeName, symbolsVisited, env);
     if (c1tapes.has(tapeName) && c2tapes.has(tapeName)) {
         return c1priority + c2priority * 10;
     }

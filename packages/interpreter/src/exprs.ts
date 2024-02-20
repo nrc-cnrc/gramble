@@ -882,6 +882,8 @@ class RewriteExpr extends Expr {
     constructor(
         public fromChild: Expr,
         public toChild: Expr,
+        public preChild: Expr = EPSILON,
+        public postChild: Expr = EPSILON
     ) {
         super();
     }
@@ -911,11 +913,13 @@ class RewriteExpr extends Expr {
             return;
         }
 
+        const preMatch = constructMatch(env, this.preChild, INPUT_TAPE, OUTPUT_TAPE);
+        const postMatch = constructMatch(env, this.postChild, INPUT_TAPE, OUTPUT_TAPE);
+
         // the first branch is the one where we've [begun to] match the pattern
         const patternToMatch = constructConcat(env, this.fromChild, this.toChild);
         const patternCorrespond = constructCorrespond(env, patternToMatch, INPUT_TAPE, OUTPUT_TAPE);
-        const patternBranch = constructConcat(env, patternCorrespond, this);
-        //const patternDerivs = patternBranch.deriv(query, env);
+        const patternBranch = constructSeq(env, preMatch, patternCorrespond, postMatch, this);
 
         // the second branch is the one where the current character isn't part of that match
         const matchAnything = constructMatch(env, constructDot(INPUT_TAPE), INPUT_TAPE, OUTPUT_TAPE);
@@ -924,14 +928,14 @@ class RewriteExpr extends Expr {
         // the second branch also requires a constraint that the resulting output does not begin with the
         // pattern
         const dotStar = constructDotStar(INPUT_TAPE);
-        const shortFrom = constructShort(env, this.fromChild);
+        const fromMaterial = constructSeq(env, this.preChild, this.fromChild, this.postChild);
+        const shortFrom = constructShort(env, fromMaterial);
         const beginsWith = constructPrecede(env, shortFrom, dotStar);
         const notBeginsWith = constructNegation(env, beginsWith, new Set([INPUT_TAPE]));
 
         // apply the not-begins-with constraint to the second branch
         const branch2withNegation = constructJoin(env, notBeginsWith, anythingConcat, 
-            new Set([INPUT_TAPE]), new Set([INPUT_TAPE, OUTPUT_TAPE]))
-        //const anythingElseDerivs = branch2withNegation.deriv(query, env);
+            new Set([INPUT_TAPE]), new Set([INPUT_TAPE, OUTPUT_TAPE]));
 
         const branches = constructAlternation(env, patternBranch, branch2withNegation);
         yield* branches.deriv(query, env);
@@ -942,9 +946,14 @@ class RewriteExpr extends Expr {
     }
 }
 
-export function constructRewrite(env: Env, fromChild: Expr, toChild: Expr): Expr {
-    return new RewriteExpr(fromChild, toChild);
-
+export function constructRewrite(
+    env: Env, 
+    fromChild: Expr, 
+    toChild: Expr,
+    preChild: Expr,
+    postChild: Expr
+): Expr {
+    return new RewriteExpr(fromChild, toChild, preChild, postChild);
 }
 
 
@@ -1957,7 +1966,7 @@ export class CorrespondExpr extends UnaryExpr {
     public get id(): string {
         // the child always has a particular structure, so use that to abbreviate
         const pieces = this.child.id.split(/:|\+/);
-        if (pieces[0] == 'ε') return "Cor(ε)";
+        if (pieces.length == 1 && pieces[0] == 'ε') return "Cor(ε)";
         if (pieces.length == 4) return `Cor(${pieces[1]}->${pieces[3]})`;
         if (pieces.length == 2 && pieces[0] == "$i") return `Cor(${pieces[1]}->ε)`;
         if (pieces.length == 2 && pieces[0] == "$o") return `Cor(ε->${pieces[1]})`;

@@ -229,8 +229,16 @@ export class PriorityUnionGrammar extends BinaryGrammar {
     public readonly tag = "priority";
 }
 
-export class RewriteGrammar extends BinaryGrammar {
+export class RewriteGrammar extends AbstractGrammar {
     public readonly tag = "rewrite";
+    constructor(
+        public fromChild: Grammar,
+        public toChild: Grammar,
+        public preChild: Grammar,
+        public postChild: Grammar
+    ) {
+        super();
+    }
 }
 
 export class ShortGrammar extends UnaryGrammar {
