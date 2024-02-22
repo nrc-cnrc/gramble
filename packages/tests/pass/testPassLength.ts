@@ -3,7 +3,8 @@ import { expect } from 'chai';
 import {
     Count, Epsilon, Hide, Join,
     Match, Not, Null, Rename,
-    Rep, Replace, ReplaceBlock,
+    Rep, ReplaceBlock,
+    Rewrite,
     Seq, Uni,
 } from '../../interpreter/src/grammarConvenience';
 
@@ -147,7 +148,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
     });
 
     describe("15. t1:hello ⨝ e -> a", function() {
-        const grammar = ReplaceBlock("t1", "hello", Replace("e","a"));
+        const grammar = ReplaceBlock("t1", "hello", Rewrite("e","a"));
         testLength(grammar, "t1", [0, Infinity]);
     });
     

@@ -36,13 +36,14 @@ export function Rewrite(
     preChild: Grammar|string = Epsilon(),
     postChild: Grammar|string = Epsilon(),
     beginsWith: boolean = false,
-    endsWith: boolean = false
+    endsWith: boolean = false,
+    name: string = "",
 ): RewriteGrammar {
     inputChild = SingleTape(INPUT_TAPE, inputChild);
     outputChild = SingleTape(OUTPUT_TAPE, outputChild);
     preChild = SingleTape(INPUT_TAPE, preChild);
     postChild = SingleTape(INPUT_TAPE, postChild);
-    return new RewriteGrammar(inputChild, outputChild, preChild, postChild, beginsWith, endsWith);
+    return new RewriteGrammar(inputChild, outputChild, preChild, postChild, beginsWith, endsWith, name);
 }
 
 
