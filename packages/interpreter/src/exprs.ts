@@ -916,10 +916,29 @@ class RewriteExpr extends Expr {
         }
 
         const dotStar = constructDotStar(INPUT_TAPE);
+        const matchDotStar = constructMatch(env, dotStar, INPUT_TAPE, OUTPUT_TAPE);
+        
+        const inputMaterial = constructSeq(env, this.preChild, this.inputChild, this.postChild);
 
-        let continuation: Expr = this;
-        if (this.beginsWith) {
-            continuation = constructMatch(env, dotStar, INPUT_TAPE, OUTPUT_TAPE);
+        let firstBranchContinuation: Expr;
+        let secondBranchContinuation: Expr;
+        let negationContinuation: Expr;
+        if (this.beginsWith && this.endsWith) {
+            firstBranchContinuation = EPSILON;
+            negationContinuation = EPSILON;
+            secondBranchContinuation = matchDotStar;
+        } else if (this.beginsWith) {
+            firstBranchContinuation = matchDotStar;
+            negationContinuation = dotStar;
+            secondBranchContinuation = matchDotStar;
+        } else if (this.endsWith) {
+            firstBranchContinuation = EPSILON;
+            negationContinuation = EPSILON;
+            secondBranchContinuation = this;
+        } else {
+            firstBranchContinuation = this;
+            negationContinuation = dotStar;
+            secondBranchContinuation = this;
         }
 
         const preMatch = constructMatch(env, this.preChild, INPUT_TAPE, OUTPUT_TAPE);
@@ -928,17 +947,21 @@ class RewriteExpr extends Expr {
         // the first branch is the one where we've [begun to] match the pattern
         const patternToMatch = constructConcat(env, this.inputChild, this.outputChild);
         const patternCorrespond = constructCorrespond(env, patternToMatch, INPUT_TAPE, OUTPUT_TAPE);
-        const patternBranch = constructSeq(env, preMatch, patternCorrespond, postMatch, continuation);
+
+        // in the first branch, the continuation is
+        // (a) this, if it's neither beginsWith nor endsWith
+        // (b) matchDotStar, if it's beginsWith
+        // (c) epsilon, if it's endsWith
+        const patternBranch = constructSeq(env, preMatch, patternCorrespond, postMatch, firstBranchContinuation);
 
         // the second branch is the one where the current character isn't part of that match
         const matchAnything = constructMatch(env, constructDot(INPUT_TAPE), INPUT_TAPE, OUTPUT_TAPE);
-        const anythingConcat = constructConcat(env, matchAnything, continuation);
+        const anythingConcat = constructConcat(env, matchAnything, secondBranchContinuation);
 
         // the second branch also requires a constraint that the resulting output does not begin with the
         // pattern
-        const inputMaterial = constructSeq(env, this.preChild, this.inputChild, this.postChild);
         const shortFrom = constructShort(env, inputMaterial);
-        const beginsWith = constructPrecede(env, shortFrom, dotStar);
+        const beginsWith = constructPrecede(env, shortFrom, negationContinuation);
         const notBeginsWith = constructNegation(env, beginsWith, new Set([INPUT_TAPE]));
 
         // apply the not-begins-with constraint to the second branch
