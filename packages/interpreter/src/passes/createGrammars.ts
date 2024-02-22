@@ -21,7 +21,8 @@ import {
     SequenceGrammar, TestGrammar, 
     JoinGrammar,
     RuleContextGrammar,
-    FilterGrammar
+    FilterGrammar,
+    RewriteGrammar
 } from "../grammars";
 import { parseClass, TapeHeader } from "../headers";
 import { Err, Msg, Message, msgList } from "../utils/msgs";
@@ -137,7 +138,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
     public handleReplace(t: TstReplace, env: PassEnv): Msg<Grammar> {
 
         let [sibling, sibMsgs] = this.transform(t.sibling, env).destructure();
-        const replaceRules: ReplaceGrammar[] = [];
+        const replaceRules: RewriteGrammar[] = [];
         const newMsgs: Message[] = [];
 
         for (const params of t.child.rows) {
@@ -156,10 +157,10 @@ export class CreateGrammars extends Pass<TST,Grammar> {
                 postArg = contextArg.postContext.locate(contextArg.pos);
             }
             
-            const replaceRule = new ReplaceGrammar(fromArg, toArg,
-                                                   preArg, postArg, new EpsilonGrammar(),
-                                                   begins, ends, 0, Infinity, 
-                                                   `${params.pos.sheet}_${params.pos.row}`, false);
+            const replaceRule = new RewriteGrammar(fromArg, toArg,
+                                                   preArg, postArg,
+                                                   begins, ends, 
+                                                   `${params.pos.sheet}_${params.pos.row}`);
             replaceRules.push(replaceRule);
         }
 

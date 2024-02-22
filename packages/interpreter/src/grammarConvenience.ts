@@ -37,7 +37,7 @@ export function Rewrite(
     postChild: Grammar|string = Epsilon(),
     beginsWith: boolean = false,
     endsWith: boolean = false
-): Grammar {
+): RewriteGrammar {
     inputChild = SingleTape(INPUT_TAPE, inputChild);
     outputChild = SingleTape(OUTPUT_TAPE, outputChild);
     preChild = SingleTape(INPUT_TAPE, preChild);
@@ -111,10 +111,10 @@ export function OptionalReplace(
 export function ReplaceBlock(
     inputTape: string,
     child: Grammar | string,
-    ...rules: ReplaceGrammar[]
+    ...rules: RewriteGrammar[]
 ): ReplaceBlockGrammar {
     child = makeGrammar(child, inputTape);
-    if (rules instanceof ReplaceGrammar) rules = [rules];
+    if (rules instanceof RewriteGrammar) rules = [rules];
     return new ReplaceBlockGrammar(inputTape, child, rules);
 }
 

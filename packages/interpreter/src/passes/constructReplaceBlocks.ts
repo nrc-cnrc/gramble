@@ -6,6 +6,7 @@ import {
     EpsilonGrammar,
     ReplaceGrammar,
     SequenceGrammar,
+    RewriteGrammar,
 } from "../grammars";
 
 import { INPUT_TAPE, OUTPUT_TAPE } from "../utils/constants";
@@ -38,8 +39,8 @@ export class ConstructReplaceBlocks extends AutoPass<Grammar> {
 
         // it's possible for rule transformation to result in a non
         // rule (due to errors), so we filter those out
-        const isReplace = (r: Grammar): r is ReplaceGrammar => 
-                                r instanceof ReplaceGrammar;
+        const isReplace = (r: Grammar): r is RewriteGrammar => 
+                                r instanceof RewriteGrammar;
         const validRules = g.rules.filter(isReplace);
 
         if (validRules.length == 0) {

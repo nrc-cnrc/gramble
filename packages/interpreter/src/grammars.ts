@@ -237,9 +237,15 @@ export class RewriteGrammar extends AbstractGrammar {
         public preChild: Grammar,
         public postChild: Grammar,
         public beginsWith: boolean = true,
-        public endsWith: boolean = true
+        public endsWith: boolean = true,
+        public hiddenTapeName: string = "",
     ) {
         super();
+        if (this.hiddenTapeName.length == 0) {
+            this.hiddenTapeName = `${HIDDEN_PREFIX}R${INDICES.REPLACE++}`;
+        } else if (!this.hiddenTapeName.startsWith(HIDDEN_PREFIX)) {
+            this.hiddenTapeName = HIDDEN_PREFIX + this.hiddenTapeName;
+        }
     }
 }
 
@@ -454,7 +460,7 @@ export class ReplaceBlockGrammar extends AbstractGrammar {
     constructor(
         public inputTape: string,
         public child: Grammar,
-        public rules: ReplaceGrammar[]
+        public rules: RewriteGrammar[]
     ) {
         super();
     }

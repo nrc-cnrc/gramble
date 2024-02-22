@@ -507,8 +507,8 @@ function getTapesReplaceBlock(g: ReplaceBlockGrammar): Grammar {
     }
 
     // filter out Tapes.Any non-rules caused by children disappearing
-    const isReplace = (r: Grammar): r is ReplaceGrammar => 
-                        r instanceof ReplaceGrammar;
+    const isReplace = (r: Grammar): r is RewriteGrammar => 
+                        r instanceof RewriteGrammar;
     g.rules = g.rules.filter(isReplace);
 
     if (g.rules.length == 0) {
