@@ -159,7 +159,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
             
             const replaceRule = new RewriteGrammar(fromArg, toArg,
                                                    preArg, postArg,
-                                                   begins, ends, 
+                                                   begins, ends, false,
                                                    `${params.pos.sheet}_${params.pos.row}`);
             replaceRules.push(replaceRule);
         }

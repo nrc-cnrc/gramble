@@ -888,6 +888,7 @@ class RewriteExpr extends Expr {
         public postChild: Expr = EPSILON,
         public beginsWith: boolean = false,
         public endsWith: boolean = false,
+        public optional: boolean = false,
     ) {
         super();
     }
@@ -908,6 +909,9 @@ class RewriteExpr extends Expr {
         const inputMaterial = constructSeq(env, this.preChild, this.inputChild, this.postChild);
         const inputDelta = inputMaterial.delta(tapeName, env);
         if (!(inputDelta instanceof NullExpr)) {
+            if (this.optional) {
+                return constructAlternation(env, this.outputChild, EPSILON);
+            }
             return this.outputChild;
         }
         return EPSILON;
@@ -955,8 +959,13 @@ class RewriteExpr extends Expr {
 
             // the first branch is the one where we've [begun to] match the pattern
             const patternToMatch = constructConcat(env, this.inputChild, this.outputChild);
+            let patternCorrespond = constructCorrespond(env, patternToMatch, INPUT_TAPE, OUTPUT_TAPE);
 
-            const patternCorrespond = constructCorrespond(env, patternToMatch, INPUT_TAPE, OUTPUT_TAPE);
+            if (this.optional) {
+                // if the rule is optional, there's also a possibility to just match the input
+                const matchedInput = constructMatch(env, this.inputChild, INPUT_TAPE, OUTPUT_TAPE);
+                patternCorrespond = constructAlternation(env, patternCorrespond, matchedInput);
+            }
 
             // in the first branch, the continuation is
             // (a) this, if it's neither beginsWith nor endsWith
@@ -995,10 +1004,11 @@ export function constructRewrite(
     outputChild: Expr,
     preChild: Expr,
     postChild: Expr,
-    beginsWith: boolean = true,
-    endsWith: boolean = true,
+    beginsWith: boolean = false,
+    endsWith: boolean = false,
+    optional: boolean = false,
 ): Expr {
-    return new RewriteExpr(inputChild, outputChild, preChild, postChild, beginsWith, endsWith);
+    return new RewriteExpr(inputChild, outputChild, preChild, postChild, beginsWith, endsWith, optional);
 }
 
 /**

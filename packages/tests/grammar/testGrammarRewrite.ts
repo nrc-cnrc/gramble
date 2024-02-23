@@ -1,5 +1,5 @@
 import {
-    CharSet, Count, Cursor, Epsilon, Join, Lit, Null, PriUni, Query, Rep, Rewrite, Seq, Uni, WithVocab,
+    CharSet, Count, Cursor, Epsilon, Join, Lit, Null, OptionalRewrite, PriUni, Query, Rep, Rewrite, Seq, Uni, WithVocab,
 } from "../../interpreter/src/grammarConvenience";
 
 import {
@@ -39,7 +39,7 @@ const InputChars = (ss: string[]) => Rep(CharSet(INPUT_TAPE, ss));
 describe(`${grammarTestSuiteName(module)}`, function() {
 
     logTestSuite(this.title);
-    
+
     describe("0a. Generation from a rewrite a->X with vocab a,b", test({
         grammar: Count({"$i":3}, Join(InputChars(["a","b"]), Rewrite("a", "X"))),
         io: [
@@ -103,8 +103,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ]
     }));
 
-    
-    describe("0c. Generation from a rewrite a->X with vocab a,b, beginsWith endsWith", test({
+    describe("0d. Generation from a rewrite a->X with vocab a,b, beginsWith endsWith", test({
         grammar: Count({"$i":3}, Join(InputChars(["a","b"]), Rewrite("a", "X",  Epsilon(), Epsilon(), true, true))),
         io: [
             ["", ""],
@@ -600,6 +599,136 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             ["abc", "abcX"]
         ],
         verbose: VERBOSE_DEBUG
+    }));
+
+    // Optional rewrite
+    
+    describe("20a. Generation from a rewrite a->X with vocab a,b", test({
+        grammar: Count({"$i":3}, Join(InputChars(["a","b"]), 
+                                OptionalRewrite("a", "X"))),
+        io: [
+            ["", ""],
+            ["a", "X"],
+            ["a", "a"],
+            ["aa", "XX"],
+            ["aa", "aX"],
+            ["aa", "Xa"],
+            ["aa", "aa"],
+            ["aaa", "XXX"],
+            ["aaa", "XXa"],
+            ["aaa", "XaX"],
+            ["aaa", "Xaa"],
+            ["aaa", "aXX"],
+            ["aaa", "aXa"],
+            ["aaa", "aaX"],
+            ["aaa", "aaa"],
+            ["aab", "XXb"],
+            ["aab", "Xab"],
+            ["aab", "aXb"],
+            ["aab", "aab"],
+            ["ab", "Xb"],
+            ["ab", "ab"],
+            ["aba", "XbX"],
+            ["aba", "Xba"],
+            ["aba", "abX"],
+            ["aba", "aba"],
+            ["abb", "Xbb"],
+            ["abb", "abb"],
+            ["b", "b"],
+            ["ba", "bX"],
+            ["ba", "ba"],
+            ["baa", "bXX"],
+            ["baa", "bXa"],
+            ["baa", "baX"],
+            ["baa", "baa"],
+            ["bab", "bXb"],
+            ["bab", "bab"],
+            ["bb", "bb"],
+            ["bba", "bbX"],
+            ["bba", "bba"],
+            ["bbb", "bbb"]
+        ]
+    }));
+    
+    describe("20b. Generation from a rewrite a->X with vocab a,b, beginsWith", test({
+        grammar: Count({"$i":3}, Join(InputChars(["a","b"]), 
+                            OptionalRewrite("a", "X", Epsilon(), Epsilon(), true))),
+        io: [
+            ["", ""],
+            ["a", "X"],
+            ["a", "a"],
+            ["aa", "Xa"],
+            ["aa", "aa"],
+            ["aaa", "Xaa"],
+            ["aaa", "aaa"],
+            ["aab", "Xab"],
+            ["aab", "aab"],
+            ["ab", "Xb"],
+            ["ab", "ab"],
+            ["aba", "Xba"],
+            ["aba", "aba"],
+            ["abb", "Xbb"],
+            ["abb", "abb"],
+            ["b", "b"],
+            ["ba", "ba"],
+            ["baa", "baa"],
+            ["bab", "bab"],
+            ["bb", "bb"],
+            ["bba", "bba"],
+            ["bbb", "bbb"]
+        ]
+    }));
+
+    describe("20c. Generation from a rewrite a->X with vocab a,b, endsWith", test({
+        grammar: Count({"$i":3}, Join(InputChars(["a","b"]), 
+                            OptionalRewrite("a", "X",  Epsilon(), Epsilon(), false, true))),
+        io: [
+            ["", ""],
+            ["a", "X"],
+            ["a", "a"],
+            ["aa", "aX"],
+            ["aa", "aa"],
+            ["aaa", "aaX"],
+            ["aaa", "aaa"],
+            ["aab", "aab"],
+            ["ab", "ab"],
+            ["aba", "abX"],
+            ["aba", "aba"],
+            ["abb", "abb"],
+            ["b", "b"],
+            ["ba", "bX"],
+            ["ba", "ba"],
+            ["baa", "baX"],
+            ["baa", "baa"],
+            ["bab", "bab"],
+            ["bb", "bb"],
+            ["bba", "bbX"],
+            ["bba", "bba"],
+            ["bbb", "bbb"]
+        ]
+    }));
+
+    describe("20d. Generation from a rewrite a->X with vocab a,b, beginsWith endsWith", test({
+        grammar: Count({"$i":3}, Join(InputChars(["a","b"]), 
+                                OptionalRewrite("a", "X",  Epsilon(), Epsilon(), true, true))),
+        io: [
+            ["", ""],
+            ["a", "X"],
+            ["a", "a"],
+            ["aa", "aa"],
+            ["aaa", "aaa"],
+            ["aab", "aab"],
+            ["ab", "ab"],
+            ["aba", "aba"],
+            ["abb", "abb"],
+            ["b", "b"],
+            ["ba", "ba"],
+            ["baa", "baa"],
+            ["bab", "bab"],
+            ["bb", "bb"],
+            ["bba", "bba"],
+            ["bbb", "bbb"]
+        ]
     }));
 
 });

@@ -120,7 +120,8 @@ function constructExprRewrite(
                                  constructExpr(env, g.preChild),
                                  constructExpr(env, g.postChild),
                                  g.beginsWith,
-                                 g.endsWith);
+                                 g.endsWith,
+                                 g.optional);
 }
 
 function constructExprCount(

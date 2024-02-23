@@ -43,7 +43,23 @@ export function Rewrite(
     outputChild = SingleTape(OUTPUT_TAPE, outputChild);
     preChild = SingleTape(INPUT_TAPE, preChild);
     postChild = SingleTape(INPUT_TAPE, postChild);
-    return new RewriteGrammar(inputChild, outputChild, preChild, postChild, beginsWith, endsWith, name);
+    return new RewriteGrammar(inputChild, outputChild, preChild, postChild, beginsWith, endsWith, false, name);
+}
+
+export function OptionalRewrite(
+    inputChild: Grammar|string, 
+    outputChild: Grammar|string,
+    preChild: Grammar|string = Epsilon(),
+    postChild: Grammar|string = Epsilon(),
+    beginsWith: boolean = false,
+    endsWith: boolean = false,
+    name: string = "",
+): RewriteGrammar {
+    inputChild = SingleTape(INPUT_TAPE, inputChild);
+    outputChild = SingleTape(OUTPUT_TAPE, outputChild);
+    preChild = SingleTape(INPUT_TAPE, preChild);
+    postChild = SingleTape(INPUT_TAPE, postChild);
+    return new RewriteGrammar(inputChild, outputChild, preChild, postChild, beginsWith, endsWith, true, name);
 }
 
 

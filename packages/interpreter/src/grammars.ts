@@ -236,8 +236,9 @@ export class RewriteGrammar extends AbstractGrammar {
         public outputChild: Grammar,
         public preChild: Grammar,
         public postChild: Grammar,
-        public beginsWith: boolean = true,
-        public endsWith: boolean = true,
+        public beginsWith: boolean = false,
+        public endsWith: boolean = false,
+        public optional: boolean = false,
         public hiddenTapeName: string = "",
     ) {
         super();
