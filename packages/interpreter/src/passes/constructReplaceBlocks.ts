@@ -30,7 +30,7 @@ export class ConstructReplaceBlocks extends AutoPass<Grammar> {
     public postTransform(g: Grammar, env: SymbolEnv): Grammar {
         switch (g.tag) {
             case "replaceblock": return this.handleReplaceBlock(g, env);
-            case "replace":      return this.handleReplace(g, env);
+            case "rewrite":      return this.handleRewrite(g, env);
             default:             return g;
         }
     }
@@ -67,12 +67,12 @@ export class ConstructReplaceBlocks extends AutoPass<Grammar> {
         return new RenameGrammar(newG, OUTPUT_TAPE, g.inputTape).tapify(env);
     }
 
-    public handleReplace(g: ReplaceGrammar, env: SymbolEnv): Grammar {
+    public handleRewrite(g: RewriteGrammar, env: SymbolEnv): Grammar {
 
         const stack = new CounterStack(2);
 
         // first handle the "from" material (i.e. pre/from/post)
-        const inputMaterial = new SequenceGrammar([g.preContext, g.inputGrammar, g.postContext]).tapify(env);
+        const inputMaterial = new SequenceGrammar([g.preChild, g.inputChild, g.postChild]).tapify(env);
         if (inputMaterial.tapeNames.length != 1) {
             // I don't think this is actually possible with 
             // new-style rules, but just in case
@@ -86,15 +86,16 @@ export class ConstructReplaceBlocks extends AutoPass<Grammar> {
         const inputTape = inputMaterial.tapeNames[0];
         const inputLength = lengthRange(inputMaterial, inputTape, stack, env);
         if (inputLength.null == false && inputLength.min == 0 && 
-                    !g.optional && !g.beginsWith && !g.endsWith) {
+                    //!g.optional && 
+                    !g.beginsWith && !g.endsWith) {
             throw new EpsilonGrammar().err(
                         "Unconditional insertion",
                         "This rule can execute unconditionally " +
                         "(i.e. can trigger on an empty input).");
         }
 
-        const outputTape = g.outputGrammar.tapeNames[0];
-        const outputLength = lengthRange(g.outputGrammar, outputTape, stack, env);
+        const outputTape = g.outputChild.tapeNames[0];
+        const outputLength = lengthRange(g.outputChild, outputTape, stack, env);
         if (outputLength.null == false && outputLength.max == Infinity) {
             // this shouldn't be syntactically possible to express in sheets, but if
             // it does happen, it's bad news because it's infinite generation.

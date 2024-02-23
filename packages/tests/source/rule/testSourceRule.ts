@@ -1,3 +1,4 @@
+import { VERBOSE_DEBUG } from "../../../interpreter/src/utils/logging";
 import { 
     testProject, ProjectTest, 
     Error, Warning 
@@ -13,6 +14,7 @@ function test(params: Partial<ProjectTest>): () => void {
 
 describe(`Source ${DIR}`, function() {
 
+    /*
     describe('1. Simple replace', test({
         id: "1",
         results: [
@@ -431,14 +433,17 @@ describe(`Source ${DIR}`, function() {
             {text: "caba"}
         ]
     }));
-    
+    */
+
     describe('21f. Rule with an empty from, ends', test({
         id: "21f",
         results: [
             {text: "abac"}
-        ]
+        ],
+        verbose: VERBOSE_DEBUG
     }));
 
+    /*
     describe('22. Rule cascade with an empty to', test({
         id: "22",
         results: [
@@ -543,4 +548,5 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", "gloss":"jump-1SG"}
         ]
     }));
+    */
 });

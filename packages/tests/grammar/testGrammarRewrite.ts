@@ -39,7 +39,7 @@ const InputChars = (ss: string[]) => Rep(CharSet(INPUT_TAPE, ss));
 describe(`${grammarTestSuiteName(module)}`, function() {
 
     logTestSuite(this.title);
- 
+    
     describe("0a. Generation from a rewrite a->X with vocab a,b", test({
         grammar: Count({"$i":3}, Join(InputChars(["a","b"]), Rewrite("a", "X"))),
         io: [
@@ -495,95 +495,111 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     // BEGIN AND ENDS
 
-    describe("11a. Replace one character, beginsWith endsWith", test({
+    describe("16a. Replace one character, beginsWith endsWith", test({
         grammar: Join(Input("a"), Rewrite("a", "X", Epsilon(), Epsilon(), true, true)),
         io: [
             ["a", "X"]
         ],
     }));
 
-    describe("11b. Replace a character at the beginning, beginsWith endsWith", test({
+    describe("16b. Replace a character at the beginning, beginsWith endsWith", test({
         grammar: Join(Input("abc"), Rewrite("a", "X", Epsilon(), Epsilon(), true, true)),
         io: [
             ["abc", "abc"]
         ],
     }));
 
-    describe("11c. Replace a character in the middle, beginsWith endsWith", test({
+    describe("16c. Replace a character in the middle, beginsWith endsWith", test({
         grammar: Join(Input("abc"), Rewrite("b", "X", Epsilon(), Epsilon(), true, true)),
         io: [
             ["abc", "abc"]
         ],
     }));
     
-    describe("11d. Replace a character at the end, beginsWith endsWith", test({
+    describe("16d. Replace a character at the end, beginsWith endsWith", test({
         grammar: Join(Input("abc"), Rewrite("c", "X", Epsilon(), Epsilon(), true, true)),
         io: [
             ["abc", "abc"]
         ],
     }));
 
-    describe("11e. Replace rule not applying, beginsWith endsWith", test({
+    describe("16e. Replace rule not applying, beginsWith endsWith", test({
         grammar: Join(Input("bcd"), Rewrite("a", "X", Epsilon(), Epsilon(), true, true)),
         io: [
             ["bcd", "bcd"]
         ],
     }));
 
-    describe("12a. Replace a multiple-character pattern with a single, beginsWith endsWith", test({
+    describe("17a. Replace a multiple-character pattern with a single, beginsWith endsWith", test({
         grammar: Join(Input("az"), Rewrite("az", "X", Epsilon(), Epsilon(), true, true)),
         io: [
             ["az", "X"]
         ],
     }));
     
-    describe("12b. Replace a multiple-character pattern with a single, beginsWith endsWith, with distractors", test({
+    describe("17b. Replace a multiple-character pattern with a single, beginsWith endsWith, with distractors", test({
         grammar: Join(Input("azbazcaz"), Rewrite("az", "X", Epsilon(), Epsilon(), true, true)),
         io: [
             ["azbazcaz", "azbazcaz"]
         ],
     }));
 
-    describe("13a. Replace with a pre-condition, beginsWith endsWith", test({
+    describe("17a. Replace with a pre-condition, beginsWith endsWith", test({
         grammar: Join(Input("az"), Rewrite("z", "X", "a", Epsilon(), true, true)),
         io: [
             ["az", "aX"]
         ],
     }));
 
-    describe("13b. Replace with a pre-condition, beginsWith endsWith, with distractors", test({
+    describe("17b. Replace with a pre-condition, beginsWith endsWith, with distractors", test({
         grammar: Join(Input("azbazcaz"), Rewrite("z", "X", "a", Epsilon(), true, true)),
         io: [
             ["azbazcaz", "azbazcaz"]
         ],
    }));
     
-    describe("14a. Replace with a post-condition, beginsWith endsWith", test({
+    describe("18a. Replace with a post-condition, beginsWith endsWith", test({
         grammar: Join(Input("az"), Rewrite("a", "X", Epsilon(), "z", true, true)),
         io: [
             ["az", "Xz"]
         ],
     }));
 
-    describe("14b. Replace with a post-condition, beginsWith endsWith, with distractors", test({
+    describe("18b. Replace with a post-condition, beginsWith endsWith, with distractors", test({
         grammar: Join(Input("azbazcaz"), Rewrite("a", "X", Epsilon(), "z", true, true)),
         io: [
             ["azbazcaz", "azbazcaz"]
         ],
     }));
     
-    describe("15a. Replace with pre and post, beginsWith endsWith", test({
+    describe("19a. Replace with pre and post, beginsWith endsWith", test({
         grammar: Join(Input("maz"), Rewrite("a", "X", "m", "z", true, true)),
         io: [
             ["maz", "mXz"]
         ],
     }));
 
-    describe("15b. Replace with pre and post, endsWith, with distractors", test({
+    describe("19b. Replace with pre and post, endsWith, with distractors", test({
         grammar: Join(Input("mazbmazcmaz"), Rewrite("a", "X", "m", "z", true, true)),
         io: [
             ["mazbmazcmaz", "mazbmazcmaz"]
         ],
+    }));
+
+    describe("19a. Replace epsilon at the beginning, endsWith", test({
+        grammar: Join(Input("abc"), Rewrite("", "X", Epsilon(), Epsilon(), true, false)),
+        io: [
+            ["abc", "Xabc"]
+        ],
+        verbose: VERBOSE_DEBUG
+    }));
+
+    describe("19b. Replace epsilon at the end, endsWith", test({
+        grammar: Join(Input("abc"), Rewrite("", "X", Epsilon(), Epsilon(), false, true)),
+        io: [
+            ["abc", "abcX"]
+        ],
+        verbose: VERBOSE_DEBUG
     }));
 
 });

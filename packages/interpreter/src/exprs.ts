@@ -905,6 +905,11 @@ class RewriteExpr extends Expr {
         if (tapeName != INPUT_TAPE) {
             return this;
         }
+        const inputMaterial = constructSeq(env, this.preChild, this.inputChild, this.postChild);
+        const inputDelta = inputMaterial.delta(tapeName, env);
+        if (!(inputDelta instanceof NullExpr)) {
+            return this.outputChild;
+        }
         return EPSILON;
     }
 
