@@ -334,6 +334,18 @@ function showSidebar() {
         .showSidebar(html);
 }
 
+function showAbout() {
+    var ui = SpreadsheetApp.getUi(); // Same variations.
+    ui.alert(
+        'About Gramble',
+        "Gramble is a product of the Digital Technologies Research Centre at the National Research Council of Canada.\n\n" +
+            "Tutorial: https://nrc-cnrc.github.io/gramble/ \n\n" +
+            "GitHub: https://github.com/nrc-cnrc/gramble/\n\n" +
+            "Copyright © 2020-2024 National Research Council Canada.",
+        ui.ButtonSet.OK
+    );
+}
+
 function include(filename) {
     return HtmlService.createHtmlOutputFromFile(filename)
         .getContent();
@@ -508,6 +520,8 @@ function onOpen() {
         .addItem('Uncomment', 'GrambleUncomment')
         .addSeparator()
         .addItem('Create sample project', 'makeSampleSheet')
+        .addSeparator()
+        .addItem('About Gramble', 'showAbout')
         .addToUi();
 
     if (autoEnabled_()) {
