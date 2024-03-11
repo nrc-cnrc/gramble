@@ -48,6 +48,7 @@ export interface GrammarTestAux extends Options {
     stripHidden: boolean,
     allowDuplicateOutputs: boolean,
     skipGeneration: boolean,
+    skipMatchOutputs: boolean,
     shortDesc: string,
     numErrors: number,   // in plain grammar tests, errors aren't
                          // located anywhere, so it really only makes
@@ -65,6 +66,7 @@ export function testGrammarAux({
     stripHidden = true,
     allowDuplicateOutputs = false,
     skipGeneration = false,
+    skipMatchOutputs = false,
     shortDesc = "",
     numErrors = 0,
 
@@ -102,7 +104,7 @@ export function testGrammarAux({
 
     if (!skipGeneration && results !== undefined) {
         testGenerate(interpreter, results, symbol, query,
-            stripHidden, allowDuplicateOutputs, shortDesc);
+            stripHidden, allowDuplicateOutputs, shortDesc, skipMatchOutputs);
     } else {
         it("skipping generation", function() {
             expect(skipGeneration).to.be.true;
