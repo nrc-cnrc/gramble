@@ -16,7 +16,7 @@ import {
     StartsGrammar 
 } from "./grammars";
 import { Dict, StringDict } from "./utils/func";
-import { INPUT_TAPE, OUTPUT_TAPE, DEFAULT_TAPE } from "./utils/constants";
+import { INPUT_TAPE, OUTPUT_TAPE, DEFAULT_TAPE, INTERNAL_PREFIX } from "./utils/constants";
 import { toStr } from "./passes/toStr";
 
 export function SingleTape(
@@ -89,6 +89,42 @@ export function OptionalReplace(
         minReps, maxReps, hiddenTapeName, true);
 }
 
+export function BoundingSet(
+    from: Grammar | string,
+    pre: Grammar | string = '', 
+    post: Grammar | string = '',
+    beginsWith: boolean = false, 
+    endsWith: boolean = false,
+    // count: number = 0,
+): Grammar {
+    // if (count == 0) {
+    //     if (typeof(pre) === 'string') count += pre.length;
+    //     if (typeof(from) === 'string') count += from.length;
+    //     if (typeof(post) === 'string') count += post.length;
+    //     count += (count == 0) ? 8 : 2;
+    // }
+
+    const pattern = Seq(
+        typeof(pre) === 'string' ? Lit(INPUT_TAPE, pre) : pre,
+        typeof(from) === 'string' ? Lit(INPUT_TAPE, from) : from,
+        typeof(post) === 'string' ? Lit(INPUT_TAPE, post) : post
+    );
+
+    let g: Grammar;
+
+    if (beginsWith && endsWith)
+        g = pattern;
+    else if (beginsWith)
+        g = Seq(pattern, Rep(Dot(INPUT_TAPE)));
+    else if (endsWith)
+        g = Seq(Rep(Dot(INPUT_TAPE)), pattern)
+    else
+        g = Seq(Short(Seq(Rep(Dot(INPUT_TAPE)), pattern)), Rep(Dot(INPUT_TAPE)));
+
+    return g;
+    // return Count({$i: count}, g);
+}   
+
 export function ReplaceBlock(
     inputTape: string,
     child: Grammar | string,
@@ -109,8 +145,14 @@ export function Correspond(
 }
 
 export function Query(
-    query: StringDict[] | StringDict = {},
+    query: Grammar | StringDict[] | StringDict | string = {},
 ): Grammar {
+    if (typeof(query) === 'string')
+        return new LiteralGrammar(DEFAULT_TAPE, query);
+
+    if ('tapify' in query)
+        return query as Grammar;
+
     if (! Array.isArray(query)) {
         query = [query];
     }
@@ -232,6 +274,7 @@ export function Embed(symbol: string): EmbedGrammar {
 }
 
 export function Dot(...tapes: string[]): Grammar {
+    if (tapes.length == 0) return new DotGrammar(DEFAULT_TAPE);
     if (tapes.length == 1) return new DotGrammar(tapes[0]);
     return Seq(...tapes.map(t => new DotGrammar(t)));
 }
