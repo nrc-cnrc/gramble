@@ -19,7 +19,7 @@ import * as Tapes from "../tapes";
 export class CreateQuery extends Pass<Grammar,Grammar> {
     
     constructor(
-        public query: | StringDict | StringDict[] = {},
+        public query: Grammar | StringDict[] | StringDict | string = {},
     ) {
         super();
     }
@@ -29,8 +29,12 @@ export class CreateQuery extends Pass<Grammar,Grammar> {
         // if it's an empty query there's nothing to do
         if (Array.isArray(this.query) && this.query.length === 0) 
             return g;
-        
-        if (!Array.isArray(this.query) && dictLen(this.query) == 0) 
+
+        if (typeof(this.query) === 'string' && this.query.length === 0)
+            return g;
+
+        if (typeof(this.query) === 'object' && 
+                'dictLen' in this.query && dictLen(this.query) == 0) 
             return g;
 
         // otherwise turn it into a product of literals and join it

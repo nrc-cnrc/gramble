@@ -182,7 +182,7 @@ export function prepareInterpreter(
 export function generateOutputs(
     interpreter: Interpreter,
     symbol: string = "",
-    query: StringDict[] | StringDict = {},
+    query: Grammar | StringDict[] | StringDict | string = {},
     stripHidden: boolean = true,
     rethrow: boolean = false, // in case a test wants to catch errors itself
 ): StringDict[] {
@@ -207,7 +207,7 @@ export function testGenerate(
     interpreter: Interpreter,
     expectedResults: StringDict[],
     symbol: string = "",
-    query: StringDict[] | StringDict = {},
+    query: Grammar | StringDict[] | StringDict | string = {},
     stripHidden: boolean = true,
     allowDuplicateOutputs: boolean = false,
     shortDesc: string = "",

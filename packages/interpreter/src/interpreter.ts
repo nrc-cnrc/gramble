@@ -171,7 +171,7 @@ export class Interpreter {
 
     public generate(
         symbol: string = "",
-        query: StringDict[] | StringDict = {},
+        query: Grammar | StringDict[] | StringDict | string = {},
         maxResults: number = Infinity,
         stripHidden: boolean = true
     ): StringDict[] {
@@ -182,7 +182,7 @@ export class Interpreter {
     
     public *generateStream(
         symbol: string = "",
-        query: StringDict[] | StringDict = {},
+        query: Grammar | StringDict[] | StringDict | string = {},
         stripHidden: boolean = true
     ): Gen<StringDict> {
         const expr = this.prepareExpr(symbol, query);
@@ -233,7 +233,7 @@ export class Interpreter {
     
     public prepareExpr(
         symbol: string = "",
-        query: StringDict | StringDict[] = {}
+        query: Grammar | StringDict[] | StringDict | string = {}
     ): Expr {
 
         // qualify the name and select the symbol

@@ -44,7 +44,7 @@ export interface GrammarTestAux extends Options {
     vocab: {[tape: string]: number|string[]},
     results: StringDict[],
     symbol: string,
-    query: StringDict | StringDict[],
+    query: Grammar | StringDict[] | StringDict | string,
     stripHidden: boolean,
     allowDuplicateOutputs: boolean,
     skipGeneration: boolean,
