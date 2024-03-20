@@ -70,7 +70,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     //  Replace requires input and output vocabs to be identical.
 
     testGrammar({
-        desc: '1. Replace e by a in hello: e -> a {0+BS} || #h_llo#',
+        desc: '1. Replace e by a in hello: (BS) e -> a || #h_llo#',
         grammar: Replace("e", "a", "h", "llo", EMPTY_CONTEXT, true, true),
         //vocab: {"$i":5, "$o":5},
         query: BoundingSet('hello', '', '', true, true),
@@ -79,29 +79,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     });
 
-    /*
     testGrammar({
-        desc: '2a. Replace i by a in hill: Cnt_6 i -> a {1} || h_ll#',
-        grammar: Count({$i:6, $o:6},
-                     Replace("i", "a", "h", "ll", EMPTY_CONTEXT, false, true, 1, 1)),
-        results: [
-            {$i: 'hill', $o: 'hall'},
-            {$i: 'ahill', $o: 'ahall'},   {$i: 'ihill', $o: 'ihall'},
-            {$i: 'hhill', $o: 'hhall'},   {$i: 'lhill', $o: 'lhall'},
-            {$i: 'aahill', $o: 'aahall'}, {$i: 'aihill', $o: 'aihall'},
-            {$i: 'ahhill', $o: 'ahhall'}, {$i: 'alhill', $o: 'alhall'},
-            {$i: 'iahill', $o: 'iahall'}, {$i: 'iihill', $o: 'iihall'},
-            {$i: 'ihhill', $o: 'ihhall'}, {$i: 'ilhill', $o: 'ilhall'},
-            {$i: 'hahill', $o: 'hahall'}, {$i: 'hihill', $o: 'hihall'},
-            {$i: 'hhhill', $o: 'hhhall'}, {$i: 'hlhill', $o: 'hlhall'},
-            {$i: 'lahill', $o: 'lahall'}, {$i: 'lihill', $o: 'lihall'},
-            {$i: 'lhhill', $o: 'lhhall'}, {$i: 'llhill', $o: 'llhall'},
-        ],
-    });
-    */
-
-    testGrammar({
-        desc: '2. Replace i by a in hill: Cnt_6 i -> a {0+BS} || h_ll#',
+        desc: '2a. Replace i by a in hill: Cnt_6(BS) i -> a || h_ll#',
         grammar: Count({$i:6},
                      Replace("i", "a", "h", "ll", EMPTY_CONTEXT, false, true)),
         query: BoundingSet('hill', '', '', false, true),
@@ -120,7 +99,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     });
 
-    const io_3: StringDict[] = [
+    const io_2b: StringDict[] = [
         // Valid Inputs - Replacement
         // We'll spot some of the 21 valid replacements for Count(5).
         {$i: 'hil', $o: 'hal'},
@@ -146,16 +125,16 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     ];
 
     testGrammar({
-        desc: '3. Replace i by a in hil: Spotchk_5 i -> a {0+} || h_l#',
+        desc: '2b. Replace i by a in hil: Spotchk_5 i -> a || h_l#',
         grammar: Count({$i:5},
                      Replace("i", "a", "h", "l", EMPTY_CONTEXT, false, true)),
         //vocab: {$i:4, $o:4},
-        query: inputs(io_3),
-        results: outputs(io_3),
+        query: inputs(io_2b),
+        results: outputs(io_2b),
     });
 
     testGrammar({
-        desc: '4. Replace i by a in hill: Cnt_6 i -> a {0+BS} || #h_ll',
+        desc: '3a. Replace i by a in hill: Cnt_6(BS) i -> a || #h_ll',
         grammar: Count({$i:6},
                      Replace("i", "a", "h", "ll", EMPTY_CONTEXT, true, false, 1)),
         query: BoundingSet('hill', '', '', true, false),
@@ -174,7 +153,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     });
 
-    const io_5: StringDict[] = [
+    const io_3b: StringDict[] = [
         // Valid Inputs - Replacement
         // We'll spot some of the 21 valid replacements for Count(5).
         {$i: 'hil', $o: 'hal'},
@@ -200,167 +179,15 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     ];
 
     testGrammar({
-        desc: '5. Replace i by a in hil: Spotchk_5 i -> a {0+} || #h_l',
+        desc: '3b. Replace i by a in hil: Spotchk_5 i -> a || #h_l',
         grammar: Count({$i:5},
                      Replace("i", "a", "h", "l", EMPTY_CONTEXT, true, false)),
-        query: inputs(io_5),
-        results: outputs(io_5),
-    });
-
-    /*
-    testGrammar({
-        desc: '6a. Replace i by a in hill: Cnt_5 i -> a {1} || h_ll',
-        grammar: Count({$i:5, $o:5},
-                     Replace("i", "a", "h", "ll", EMPTY_CONTEXT, false, false, 1, 1)),
-        results: [
-            {$i: 'hill', $o: 'hall'},
-            {$i: 'hilla', $o: 'halla'}, {$i: 'hillh', $o: 'hallh'},
-            {$i: 'hilli', $o: 'halli'}, {$i: 'hilll', $o: 'halll'},
-            {$i: 'ahill', $o: 'ahall'}, {$i: 'hhill', $o: 'hhall'},
-            {$i: 'ihill', $o: 'ihall'}, {$i: 'lhill', $o: 'lhall'},
-        ],
+        query: inputs(io_3b),
+        results: outputs(io_3b),
     });
 
     testGrammar({
-        desc: '6b. Replace i by a in hill: Cnt_5 i -> a {1+} || h_ll',
-        grammar: Count({$i:5, $o:5},
-                     Replace("i", "a", "h", "ll", EMPTY_CONTEXT, false, false, 1)),
-        results: [
-            {$i: 'hill', $o: 'hall'},
-            {$i: 'hilla', $o: 'halla'}, {$i: 'hillh', $o: 'hallh'},
-            {$i: 'hilli', $o: 'halli'}, {$i: 'hilll', $o: 'halll'},
-            {$i: 'ahill', $o: 'ahall'}, {$i: 'hhill', $o: 'hhall'},
-            {$i: 'ihill', $o: 'ihall'}, {$i: 'lhill', $o: 'lhall'},
-        ],
-    });
-    */
-
-    /*
-    testGrammar({
-        desc: '6. Replace i by a in hill: Cnt_6 i -> a {0+BS} || h_ll',
-        grammar: Count({$i:6},
-                     Replace("i", "a", "h", "ll")),
-        query: BoundingSet('hill'),
-        results: [
-            {$i: 'hill', $o: 'hall'},
-            {$i: 'hilla', $o: 'halla'},   {$i: 'hillh', $o: 'hallh'},
-            {$i: 'hilli', $o: 'halli'},   {$i: 'hilll', $o: 'halll'},
-            {$i: 'ahill', $o: 'ahall'},   {$i: 'hhill', $o: 'hhall'},
-            {$i: 'ihill', $o: 'ihall'},   {$i: 'lhill', $o: 'lhall'},
-            {$i: 'hillaa', $o: 'hallaa'}, {$i: 'hillah', $o: 'hallah'},
-            {$i: 'hillai', $o: 'hallai'}, {$i: 'hillal', $o: 'hallal'},
-            {$i: 'hillha', $o: 'hallha'}, {$i: 'hillhh', $o: 'hallhh'},
-            {$i: 'hillhi', $o: 'hallhi'}, {$i: 'hillhl', $o: 'hallhl'},
-            {$i: 'hillia', $o: 'hallia'}, {$i: 'hillih', $o: 'hallih'},
-            {$i: 'hillii', $o: 'hallii'}, {$i: 'hillil', $o: 'hallil'},
-            {$i: 'hillla', $o: 'hallla'}, {$i: 'hilllh', $o: 'halllh'},
-            {$i: 'hillli', $o: 'hallli'}, {$i: 'hillll', $o: 'hallll'},
-            {$i: 'ahilla', $o: 'ahalla'}, {$i: 'ahillh', $o: 'ahallh'},
-            {$i: 'ahilli', $o: 'ahalli'}, {$i: 'ahilll', $o: 'ahalll'},
-            {$i: 'hhilla', $o: 'hhalla'}, {$i: 'hhillh', $o: 'hhallh'},
-            {$i: 'hhilli', $o: 'hhalli'}, {$i: 'hhilll', $o: 'hhalll'},
-            {$i: 'ihilla', $o: 'ihalla'}, {$i: 'ihillh', $o: 'ihallh'},
-            {$i: 'ihilli', $o: 'ihalli'}, {$i: 'ihilll', $o: 'ihalll'},
-            {$i: 'lhilla', $o: 'lhalla'}, {$i: 'lhillh', $o: 'lhallh'},
-            {$i: 'lhilli', $o: 'lhalli'}, {$i: 'lhilll', $o: 'lhalll'},
-            {$i: 'aahill', $o: 'aahall'}, {$i: 'ahhill', $o: 'ahhall'},
-            {$i: 'aihill', $o: 'aihall'}, {$i: 'alhill', $o: 'alhall'},
-            {$i: 'hahill', $o: 'hahall'}, {$i: 'hhhill', $o: 'hhhall'},
-            {$i: 'hihill', $o: 'hihall'}, {$i: 'hlhill', $o: 'hlhall'},
-            {$i: 'iahill', $o: 'iahall'}, {$i: 'ihhill', $o: 'ihhall'},
-            {$i: 'iihill', $o: 'iihall'}, {$i: 'ilhill', $o: 'ilhall'},
-            {$i: 'lahill', $o: 'lahall'}, {$i: 'lhhill', $o: 'lhhall'},
-            {$i: 'lihill', $o: 'lihall'}, {$i: 'llhill', $o: 'llhall'},
-        ],
-    });
-    */
-
-    /*
-    testGrammar({
-        desc: '7a. Replace i by a in hil: Cnt_5 i -> a {0+BS} || h_l',
-        grammar: Count({$i:5},
-                     Replace("i", "a", "h", "l")),
-        query: BoundingSet('hil'),
-        results: [
-            {$i: 'hil', $o: 'hal'},
-            {$i: 'hila', $o: 'hala'},   {$i: 'hilh', $o: 'halh'},
-            {$i: 'hili', $o: 'hali'},   {$i: 'hill', $o: 'hall'},
-            {$i: 'ahil', $o: 'ahal'},   {$i: 'hhil', $o: 'hhal'},
-            {$i: 'ihil', $o: 'ihal'},   {$i: 'lhil', $o: 'lhal'},
-            {$i: 'ahila', $o: 'ahala'}, {$i: 'ahilh', $o: 'ahalh'},
-            {$i: 'ahili', $o: 'ahali'}, {$i: 'ahill', $o: 'ahall'},
-            {$i: 'hhila', $o: 'hhala'}, {$i: 'hhilh', $o: 'hhalh'},
-            {$i: 'hhili', $o: 'hhali'}, {$i: 'hhill', $o: 'hhall'},
-            {$i: 'ihila', $o: 'ihala'}, {$i: 'ihilh', $o: 'ihalh'},
-            {$i: 'ihili', $o: 'ihali'}, {$i: 'ihill', $o: 'ihall'},
-            {$i: 'lhila', $o: 'lhala'}, {$i: 'lhilh', $o: 'lhalh'},
-            {$i: 'lhili', $o: 'lhali'}, {$i: 'lhill', $o: 'lhall'},
-            {$i: 'hilaa', $o: 'halaa'}, {$i: 'hilah', $o: 'halah'},
-            {$i: 'hilai', $o: 'halai'}, {$i: 'hilal', $o: 'halal'},
-            {$i: 'hilha', $o: 'halha'}, {$i: 'hilhh', $o: 'halhh'},
-            {$i: 'hilhi', $o: 'halhi'}, {$i: 'hilhl', $o: 'halhl'},
-            {$i: 'hilia', $o: 'halia'}, {$i: 'hilih', $o: 'halih'},
-            {$i: 'hilii', $o: 'halii'}, {$i: 'hilil', $o: 'halil'},
-            {$i: 'hilla', $o: 'halla'}, {$i: 'hillh', $o: 'hallh'},
-            {$i: 'hilli', $o: 'halli'}, {$i: 'hilll', $o: 'halll'},
-            {$i: 'aahil', $o: 'aahal'}, {$i: 'ahhil', $o: 'ahhal'},
-            {$i: 'aihil', $o: 'aihal'}, {$i: 'alhil', $o: 'alhal'},
-            {$i: 'hahil', $o: 'hahal'}, {$i: 'hhhil', $o: 'hhhal'},
-            {$i: 'hihil', $o: 'hihal'}, {$i: 'hlhil', $o: 'hlhal'},
-            {$i: 'iahil', $o: 'iahal'}, {$i: 'ihhil', $o: 'ihhal'},
-            {$i: 'iihil', $o: 'iihal'}, {$i: 'ilhil', $o: 'ilhal'},
-            {$i: 'lahil', $o: 'lahal'}, {$i: 'lhhil', $o: 'lhhal'},
-            {$i: 'lihil', $o: 'lihal'}, {$i: 'llhil', $o: 'llhal'},
-        ],
-    });
-    */
-
-    /*
-    // Full Generation:
-    //  Count=7: 21845 results
-    //  Count=8: 87381 results
-    //  Count=9: 349525 results
-    //  Count=10: 1398101 results
-    // Here we spot check some of the possible 349525 results for
-    // 9 characters or less,
-    const io_7b: StringDict[] = [
-        // Some Valid Inputs - Replacement
-        {$i: 'hil', $o: 'hal'},
-        {$i: 'hhil', $o: 'hhal'},
-        {$i: 'hill', $o: 'hall'},
-        {$i: 'hhill', $o: 'hhall'},
-        {$i: 'hihill', $o: 'hihall'},
-        {$i: 'hilhil', $o: 'halhal'},
-        {$i: 'ahalhil', $o: 'ahalhal'},
-        {$i: 'ahilhal', $o: 'ahalhal'},
-        {$i: 'alhilal', $o: 'alhalal'},
-        {$i: 'halhila', $o: 'halhala'},
-        {$i: 'hihilhi', $o: 'hihalhi'},
-        {$i: 'ilhilil', $o: 'ilhalil'},
-        {$i: 'hilhilhil', $o: 'halhalhal'},
-        {$i: 'hlihillll', $o: 'hlihallll'},
-        {$i: 'lihhillih', $o: 'lihhallih'},
-        // Valid Inputs - Copy through
-        {$i: 'hli', $o: 'hli'},             {$i: 'hahahaha', $o: 'hahahaha'},
-        {$i: 'hihihihi', $o: 'hihihihi'},   {$i: 'halhalhal', $o: 'halhalhal'},
-        // Some Invalid Inputs
-        // {$i: 'hli'},        {$i: 'hilhil'},
-        {$i: 'hlihilllll'},
-        {$i: 'hillihlihlih'},
-        {$i: 'lihlihlihhil'},
-    ];
-
-    testGrammar({
-        desc: '7b. Replace i by a in hil: Spotchk_9 i -> a {0+} || h_l',
-        grammar: Count({$i:9},
-                     Replace("i", "a", "h", "l")),
-        query: Query(inputs(io_7b)),
-        results: outputs(io_7b),
-    })
-    */
-
-    testGrammar({
-        desc: '8a. Replace i by a in hil: Cnt_5 i -> a {0+BS} || h_l',
+        desc: '4a. Replace i by a in hil: Cnt_5(BS) i -> a || h_l',
         grammar: Count({$i:5},
                      Replace("i", "a", "h", "l")),
         //vocab: {$i:4, $o:4},
@@ -407,7 +234,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     //  Count=14: 357913941 results
     // Here we spot check some of the possible 357913941 results for
     // 14 characters or less.
-    const io_8b: StringDict[] = [
+    const io_4b: StringDict[] = [
         // Some Valid Inputs - Replacement
         {$i: 'hil', $o: 'hal'},               {$i: 'ahil', $o: 'ahal'},
         {$i: 'hhil', $o: 'hhal'},             {$i: 'hilh', $o: 'halh'},
@@ -471,107 +298,16 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     ];
 
     testGrammar({
-        desc: '8b. Replace i by a in hil: Spotchk_14 i -> a {0+} || h_l',
+        desc: '4b. Replace i by a in hil: Spotchk_14 i -> a || h_l',
         grammar: Count({$i:14},
                      Replace( "i", "a", "h", "l")),
         //vocab: {$i:4, $o:4},
-        query: inputs(io_8b),
-        results: outputs(io_8b),
+        query: inputs(io_4b),
+        results: outputs(io_4b),
     });
 
-    /*
-    // Full Generation:
-    //  Count=7: 21845 results
-    //  Count=8: 87381 results
-    //  Count=9: 349524 results
-    //  Count=10: 1398084 results
-    // Here we spot check some of the possible 349524 results for
-    // 9 characters or less.
-    const io_9: StringDict[] = [
-        // Some Valid Inputs - Replacement
-        {$i: 'hil', $o: 'hal'},             {$i: 'hhil', $o: 'hhal'},
-        {$i: 'hilh', $o: 'halh'},           {$i: 'hill', $o: 'hall'},
-        {$i: 'lhil', $o: 'lhal'},           {$i: 'hhilh', $o: 'hhalh'},
-        {$i: 'hhill', $o: 'hhall'},         {$i: 'lhilh', $o: 'lhalh'},
-        {$i: 'lhill', $o: 'lhall'},         {$i: 'hilhil', $o: 'halhal'},
-        {$i: 'aahilaa', $o: 'aahalaa'},     {$i: 'hhilhil', $o: 'hhalhal'},
-        {$i: 'hihilhi', $o: 'hihalhi'},     {$i: 'hilahil', $o: 'halahal'},
-        {$i: 'hilhilh', $o: 'halhalh'},     {$i: 'hilhill', $o: 'halhall'},
-        {$i: 'hillhil', $o: 'hallhal'},     {$i: 'ilhilil', $o: 'ilhalil'},
-        {$i: 'lhilhil', $o: 'lhalhal'},     {$i: 'hhilhhil', $o: 'hhalhhal'},
-        {$i: 'hhilhilh', $o: 'hhalhalh'},   {$i: 'hhilhill', $o: 'hhalhall'},
-        {$i: 'hhillhil', $o: 'hhallhal'},   {$i: 'hilhhilh', $o: 'halhhalh'},
-        {$i: 'hilhhill', $o: 'halhhall'},   {$i: 'hillhilh', $o: 'hallhalh'},
-        {$i: 'hillhill', $o: 'hallhall'},   {$i: 'lhilhhil', $o: 'lhalhhal'},
-        {$i: 'lhilhilh', $o: 'lhalhalh'},   {$i: 'lhilhill', $o: 'lhalhall'},
-        {$i: 'lhillhil', $o: 'lhallhal'},   {$i: 'hhilhhilh', $o: 'hhalhhalh'},
-        {$i: 'hhilhhill', $o: 'hhalhhall'}, {$i: 'hhillhilh', $o: 'hhallhalh'},
-        {$i: 'hhillhill', $o: 'hhallhall'}, {$i: 'lhilhhilh', $o: 'lhalhhalh'},
-        {$i: 'lhilhhill', $o: 'lhalhhall'}, {$i: 'lhillhilh', $o: 'lhallhalh'},
-        {$i: 'lhillhill', $o: 'lhallhall'},
-        // Some Valid Inputs - Copy through
-        {$i: 'h', $o: 'h'},                 {$i: 'hi', $o: 'hi'},
-        {$i: 'hal', $o: 'hal'},             {$i: 'lih', $o: 'lih'},
-        {$i: 'lhal', $o: 'lhal'},           {$i: 'lihli', $o: 'lihli'},
-        {$i: 'aahhiill', $o: 'aahhiill'},   {$i: 'iiihhhlll', $o: 'iiihhhlll'},
-        // Invalid Inputs
-        {$i: 'hhhilhilhh'}, {$i: 'hihihililil'},
-    ];
-
     testGrammar({
-        desc: '9. Replace i by a in hil: Spotchk_9 i -> a {0+} || h_l',
-        grammar: Count({$i:9, $o:9},
-                     Replace("i", "a", "h", "l")),
-        //vocab: {$i:4, $o:4},
-        query: inputs(io_9),
-        results: outputs(io_9),
-    });
-    */
-
-    /*
-    // Full Generation:
-    //  Count=7: 21845 results
-    //  Count=9: 349525 results
-    //  Count=11: 5592405 results
-    //  Count=13: 89478485 results
-    //  Count=14: 357913941 results
-    // Here we spot check some of the possible >357M results for
-    // 14 characters or less,
-    const io_10: StringDict[] = [
-        // Some Valid Inputs - Replacement
-        {$i: 'hil', $o: 'hal'},             {$i: 'hhil', $o: 'hhal'},
-        {$i: 'hhill', $o: 'hhall'},         {$i: 'alhilil', $o: 'alhalil'},
-        {$i: 'hihilhi', $o: 'hihalhi'},     {$i: 'ilhilil', $o: 'ilhalil'},
-        {$i: 'lhhilhl', $o: 'lhhalhl'},     {$i: 'hilhilhil', $o: 'halhalhal'},
-        {$i: 'lhillhhil', $o: 'lhallhhal'}, {$i: 'lahhilllll', $o: 'lahhalllll'},
-        {$i: 'lhilhallhil', $o: 'lhalhallhal'},
-        {$i: 'ihilihilihili', $o: 'ihalihalihali'},
-        {$i: 'lhilhilhlhill', $o: 'lhalhalhlhall'},
-        {$i: 'lhilhilhhlhil', $o: 'lhalhalhhlhal'},
-        {$i: 'lhilhilhhlhill', $o: 'lhalhalhhlhall'},
-        {$i: 'hilhilhilhil', $o: 'halhalhalhal'},
-        // Some Valid Inputs - Copy through
-        {$i: 'h', $o: 'h'},                 {$i: 'hi', $o: 'hi'},
-        {$i: 'hal', $o: 'hal'},             {$i: 'lih', $o: 'lih'},
-        {$i: 'lihli', $o: 'lihli'},         {$i: 'iihhll', $o: 'iihhll'},
-        {$i: 'iiihhhlll', $o: 'iiihhhlll'}, {$i: 'lllliiiihhhh', $o: 'lllliiiihhhh'},
-        {$i: 'hihihiililil', $o: 'hihihiililil'},
-        // Some Invalid Inputs
-        {$i: 'hilhilhilhilhil'}, {$i: 'hlhillhhilhlhillh'},
-    ];
-
-    testGrammar({
-        desc: '10. Replace i by a in hil: Spotchk_14 i -> a {0+} || h_l',
-        grammar: Count({$i:14, $o:14},
-                     Replace("i", "a", "h", "l")),
-        //vocab: {$i:4, $o:4},
-        query: inputs(io_10),
-        results: outputs(io_10),
-    });
-    */
-
-    testGrammar({
-        desc: '11a. Replace i by a in hi: Cnt_3 i -> a {0+} || h_',
+        desc: '5a. Replace i by a in hi: Cnt_3 i -> a || h_',
         grammar: Count({$i:3},
                      Replace("i", "a", "h", "")),
         //vocab: {$i:3, $o:3},
@@ -610,7 +346,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     //  Count=10: 88573 results
     // Here we spot check some of the possible 88573 results for
     // 10 characters or less.
-    const io_11b_12: StringDict[] = [
+    const io_5b_5c: StringDict[] = [
         // Some Valid Inputs - Replacement
         {$i: 'hi', $o: 'ha'},                 {$i: 'hih', $o: 'hah'},
         {$i: 'ahia', $o: 'ahaa'},             {$i: 'ihih', $o: 'ihah'},
@@ -641,25 +377,25 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     ];
 
     testGrammar({
-        desc: '11b. Replace i by a in hi: Spotchk_10 i -> a {0+} || h_',
+        desc: '5b. Replace i by a in hi: Spotchk_10 i -> a || h_',
         grammar: Count({$i:10},
                      Replace("i", "a", "h", "")),
         //vocab: {$i:3, $o:3},
-        query: inputs(io_11b_12),
-        results: outputs(io_11b_12),
+        query: inputs(io_5b_5c),
+        results: outputs(io_5b_5c),
     });
 
     testGrammar({
-        desc: '12. Replace i by a in hi: Spotchk_10 i -> a {0+} || h_ε',
+        desc: '5c. Replace i by a in hi: Spotchk_10 i -> a || h_ε',
         grammar: Count({$i:10},
                      Replace("i", "a", "h", EMPTY_CONTEXT)),
         //vocab: {$i:3, $o:3},
-        query: inputs(io_11b_12),
-        results: outputs(io_11b_12),
+        query: inputs(io_5b_5c),
+        results: outputs(io_5b_5c),
     });
 
     testGrammar({
-        desc: '13a. Replace i by a in il: Cnt_3 i -> a {0+} || ε_l',
+        desc: '6a. Replace i by a in il: Cnt_3 i -> a || ε_l',
         grammar: Count({$i:3},
                      Replace("i", "a", EMPTY_CONTEXT, "l")),
         //vocab: {$i:3, $o:3},
@@ -698,7 +434,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     //  Count=10: 88573 results
     // Here we spot check some of the possible 88573 results for
     // 10 characters or less.
-    const io_13b: StringDict[] = [
+    const io_6b: StringDict[] = [
         // Some Valid Inputs - Replacement
         {$i: 'il', $o: 'al'},                 {$i: 'lil', $o: 'lal'},
         {$i: 'ilal', $o: 'alal'},             {$i: 'ilil', $o: 'alal'},
@@ -729,16 +465,16 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     ];
 
     testGrammar({
-        desc: '13b. Replace i by a in il: Spotchk_10 i -> a {0+} || ε_l',
+        desc: '6b. Replace i by a in il: Spotchk_10 i -> a || ε_l',
         grammar: Count({$i:10},
                      Replace("i", "a", EMPTY_CONTEXT, "l")),
         //vocab: {$i:3, $o:3},
-        query: inputs(io_13b),
-        results: outputs(io_13b),
+        query: inputs(io_6b),
+        results: outputs(io_6b),
     });
 
     testGrammar({
-        desc: '14. Replace i by a: Cnt_3 i -> a {0+} (vocab $i:ahi)',
+        desc: '7a. Replace i by a: Cnt_3 i -> a (vocab $i:ahi)',
         grammar: Count({$i:3},
                      WithVocab({$i:'ahi'},
                          Replace("i", "a", EMPTY_CONTEXT, EMPTY_CONTEXT))),
@@ -776,7 +512,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     //  Count=10: 88573 results
     // Here we spot check some of the possible 88573 results for
     // 10 characters or less,
-    const io_15: StringDict[] = [
+    const io_7b: StringDict[] = [
         // Some Valid Inputs - Replacement
         {$i: 'i', $o: 'a'},                   {$i: 'hi', $o: 'ha'},
         {$i: 'ii', $o: 'aa'},                 {$i: 'iaa', $o: 'aaa'},
@@ -807,13 +543,13 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     ];
 
     testGrammar({
-        desc: '15. Replace i by a: Spotchk_10 i -> a {0+} (vocab $i:ahi)',
+        desc: '7b. Replace i by a: Spotchk_10 i -> a (vocab $i:ahi)',
         grammar: Count({$i:10},
         			 WithVocab({$i:'ahi'},
                      	 Replace("i", "a", EMPTY_CONTEXT, EMPTY_CONTEXT))),
         //vocab: {$i:3, $o:3},
-        query: inputs(io_15),
-        results: outputs(io_15),
+        query: inputs(io_7b),
+        results: outputs(io_7b),
     });
 
     // Full Generation:
@@ -824,7 +560,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     //  $i Count=12: 797161 results
     // Here we spot check some of the possible 797161 results for
     // $i with 12 characters or less.
-    const io_16: StringDict[] = [
+    const io_8: StringDict[] = [
         // Some Valid Inputs - Replacement
         {$i: 'hal', $o: 'haal'},                {$i: 'hala', $o: 'haala'},
         {$i: 'halh', $o: 'haalh'},              {$i: 'lhal', $o: 'lhaal'},
@@ -858,16 +594,16 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     ];
 
     testGrammar({
-        desc: '16. Replace a by aa in hal: Spotchk_12 a -> aa {0+} || h_l',
+        desc: '8. Replace a by aa in hal: Spotchk_12 a -> aa || h_l',
         grammar: Count({$i:12},
                      Replace("a", "aa", "h", "l")),
         //vocab: {$i:3, $o:3},
-        query: inputs(io_16),
-        results: outputs(io_16),
+        query: inputs(io_8),
+        results: outputs(io_8),
     });
 
     testGrammar({
-        desc: '17. Replace a by aa in hal: Cnt_i:6 a -> aa {0+BS} || #h_l',
+        desc: '9a. Replace a by aa in hal: Cnt_i:6(BS) a -> aa || #h_l',
         grammar: Count({$i:6},
                      Replace("a", "aa", "h", "l", EMPTY_CONTEXT, true, false)),
         //vocab: {$i:3, $o:3},
@@ -896,7 +632,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     });
 
-    const io_18: StringDict[] = [
+    const io_9b: StringDict[] = [
         // Some Valid Inputs - Replacement
         {$i: 'hal', $o: 'haal'},         {$i: 'halh', $o: 'haalh'},
         {$i: 'hala', $o: 'haala'},       {$i: 'hall', $o: 'haall'},
@@ -924,16 +660,16 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     ];
 
     testGrammar({
-        desc: '18. Replace a by aa in hal: Spotchk_7 a -> aa {0+} || #h_l',
+        desc: '9b. Replace a by aa in hal: Spotchk_7 a -> aa || #h_l',
         grammar: Count({$i:7},
                      Replace("a", "aa", "h", "l", EMPTY_CONTEXT, true, false)),
         //vocab: {$i:3, $o:3},
-        query: inputs(io_18),
-        results: outputs(io_18),
+        query: inputs(io_9b),
+        results: outputs(io_9b),
     });
 
     testGrammar({
-        desc: '19. Replace a by aa in hal: Cnt_i:6 a -> aa {0+BS} || h_l#',
+        desc: '10a. Replace a by aa in hal: Cnt_i:6(BS) a -> aa || h_l#',
         grammar: Count({$i:6},
                      Replace("a", "aa", "h", "l", EMPTY_CONTEXT, false, true)),
         //vocab: {$i:3, $o:3},
@@ -962,7 +698,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     });
 
-    const io_20: StringDict[] = [
+    const io_10b: StringDict[] = [
         // Some Valid Inputs - Replacement
         {$i: 'hal', $o: 'haal'},         {$i: 'hhal', $o: 'hhaal'},
         {$i: 'ahal', $o: 'ahaal'},       {$i: 'lhal', $o: 'lhaal'},
@@ -991,16 +727,16 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     ];
 
     testGrammar({
-        desc: '20. Replace a by aa in hal: Spotchk_7 a -> aa {0+} || h_l#',
+        desc: '10b. Replace a by aa in hal: Spotchk_7 a -> aa || h_l#',
         grammar: Count({$i:7},
                      Replace("a", "aa", "h", "l", EMPTY_CONTEXT, false, true)),
         //vocab: {$i:3, $o:3},
-        query: inputs(io_20),
-        results: outputs(io_20),
+        query: inputs(io_10b),
+        results: outputs(io_10b),
     });
 
     testGrammar({
-        desc: '21a. Replace a by aa in ha: Cnt_i:4 a -> aa {0+} || h_',
+        desc: '11a. Replace a by aa in ha: Cnt_i:4 a -> aa || h_ε',
         grammar: Count({$i:4},
                      Replace("a", "aa", "h", EMPTY_CONTEXT)),
         //vocab: {$i:2, $o:2},
@@ -1033,7 +769,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     //  $i Count=10: 2047 results
     // Here we spot check some of the possible 2047 results for
     // $i with 10 characters or less.
-    const io_21b: StringDict[] = [
+    const io_11b: StringDict[] = [
         // Some Valid Inputs - Replacement
         {$i: 'ha', $o: 'haa'},                  {$i: 'haa', $o: 'haaa'},
         {$i: 'hha', $o: 'hhaa'},                {$i: 'haha', $o: 'haahaa'},
@@ -1062,16 +798,16 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     ];
 
     testGrammar({
-        desc: '21b. Replace a by aa in ha: Spotchk_10 a -> aa {0+} || h_',
+        desc: '11b. Replace a by aa in ha: Spotchk_10 a -> aa || h_ε',
         grammar: Count({$i:10},
                      Replace("a", "aa", "h", EMPTY_CONTEXT)),
         //vocab: {$i:2, $o:2},
-        query: inputs(io_21b),
-        results: outputs(io_21b),
+        query: inputs(io_11b),
+        results: outputs(io_11b),
     });
 
     testGrammar({
-        desc: '22a. Replace a by aa in al: Cnt_i:4 a -> aa {0+} || _l',
+        desc: '12a. Replace a by aa in al: Cnt_i:4 a -> aa || ε_l',
         grammar: Count({$i:4},
                      Replace("a", "aa", EMPTY_CONTEXT, "l")),
         //vocab: {$i:2, $o:2},
@@ -1097,7 +833,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     });
 
-    const io_22b: StringDict[] = [
+    const io_12b: StringDict[] = [
         // Some Valid Inputs - Replacement
         {$i: 'al', $o: 'aal'},                  {$i: 'aal', $o: 'aaal'},
         {$i: 'ala', $o: 'aala'},                {$i: 'alal', $o: 'aalaal'},
@@ -1125,16 +861,16 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     ];
 
     testGrammar({
-        desc: '22b. Replace a by aa in al: Spotchk_10 a -> aa {0+} || _l',
+        desc: '12b. Replace a by aa in al: Spotchk_10 a -> aa || ε_l',
         grammar: Count({$i:10},
                      Replace("a", "aa", EMPTY_CONTEXT, "l")),
         //vocab: {$i:2, $o:2},
-        query: inputs(io_22b),
-        results: outputs(io_22b),
+        query: inputs(io_12b),
+        results: outputs(io_12b),
     });
 
     testGrammar({
-        desc: '23. Replace a by aa: Cnt_i:3 a -> aa {0+} (vocab $i:ahl)',
+        desc: '13. Replace a by aa: Cnt_i:3 a -> aa (vocab $i:ahl)',
         grammar: Count({$i:3},
         			 WithVocab({$i:'ahl'},
                      	 Replace("a", "aa", EMPTY_CONTEXT, EMPTY_CONTEXT))),
@@ -1174,7 +910,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     //  $o Count=12: 797161 results
     // Here we spot check some of the possible 797160 results for
     // $o with 12 characters or less.
-    const io_24: StringDict[] = [
+    const io_14: StringDict[] = [
         // Some Valid Inputs
         {$i: 'haal', $o: 'hal'},                  {$i: 'haala', $o: 'hala'},
         {$i: 'haalh', $o: 'halh'},                {$i: 'lhaal', $o: 'lhal'},
@@ -1203,16 +939,16 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     ];
 
     testGrammar({
-        desc: '24. Replace aa by a in haal: Spotchk_12 aa -> a {0+} || h_l',
+        desc: '14. Replace aa by a in haal: Spotchk_12 aa -> a || h_l',
         grammar: Count({$o:12},
                      Replace("aa", "a", "h", "l")),
         //vocab: {$i:3, $o:3},
-        query: inputs(io_24),
-        results: outputs(io_24),
+        query: inputs(io_14),
+        results: outputs(io_14),
     });
 
     testGrammar({
-        desc: '25a. Replace aa by a in haa: Cnt_o:4 aa -> a {0+} || h_',
+        desc: '15a. Replace aa by a in haa: Cnt_o:4 aa -> a || h_ε',
         grammar: Count({$o:4},
                      Replace("aa", "a", "h", EMPTY_CONTEXT)),
         //vocab: {$i:2, $o:2},
@@ -1251,7 +987,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     //  $o Count=12: 8192 results
     // Here we spot check some of the possible 8192 results for
     // $o with 12 characters or less.
-    const io_25b: StringDict[] = [
+    const io_15b: StringDict[] = [
         // Some Valid Inputs - Replacement
         {$i: 'haa', $o: 'ha'},                  {$i: 'haaa', $o: 'haa'},
         {$i: 'hhaa', $o: 'hha'},                {$i: 'hhaah', $o: 'hhah'},
@@ -1282,19 +1018,18 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     ];
 
     testGrammar({
-        desc: '25b. Replace aa by a in haa: Spotchk_12 aa -> a {0+} || h_',
+        desc: '15b. Replace aa by a in haa: Spotchk_12 aa -> a || h_ε',
         grammar: Count({$o:12},
                      Replace("aa", "a", "h", EMPTY_CONTEXT)),
         //vocab: {$i:2, $o:2},
-        query: inputs(io_25b),
-        results: outputs(io_25b),
+        query: inputs(io_15b),
+        results: outputs(io_15b),
     });
 
     testGrammar({
-        desc: '26a. Replace aa by a in aal: Cnt_o:4 aa -> a {0,2} || _l',
+        desc: '16a. Replace aa by a in aal: Cnt_o:4 aa -> a || ε_l',
         grammar: Count({$o:4},
-                     Replace("aa", "a", EMPTY_CONTEXT, "l", EMPTY_CONTEXT,
-                             false, false, 0, 2)),
+                     Replace("aa", "a", EMPTY_CONTEXT, "l")),
         //vocab: {$i:2, $o:2},
         results: [
             {},
@@ -1331,7 +1066,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     //  $o Count=12: 8192 results
     // Here we spot check some of the possible 8192 results for
     // $o with 12 characters or less.
-    const io_26b: StringDict[] = [
+    const io_16b: StringDict[] = [
         // Some Valid Inputs - Replacement
         {$i: 'aal', $o: 'al'},                  {$i: 'aaal', $o: 'aal'},
         {$i: 'aala', $o: 'ala'},                {$i: 'laall', $o: 'lall'},
@@ -1364,16 +1099,16 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     ];
 
     testGrammar({
-        desc: '26b. Replace aa by a in aal: Spotchk_12 aa -> a {0+} || _l',
+        desc: '16b. Replace aa by a in aal: Spotchk_12 aa -> a || ε_l',
         grammar: Count({$o:12},
                      Replace("aa", "a", EMPTY_CONTEXT, "l")),
         //vocab: {$i:2, $o:2},
-        query: inputs(io_26b),
-        results: outputs(io_26b),
+        query: inputs(io_16b),
+        results: outputs(io_16b),
     });
 
     testGrammar({
-        desc: '27. Replace aa by a: Cnt_o:3 aa -> a {0+} (vocab $i:ahl)',
+        desc: '17. Replace aa by a: Cnt_o:3 aa -> a (vocab $i:ahl)',
         grammar: Count({$o:3},
         			 WithVocab({$i:'ahl'},
                      	 Replace("aa", "a", EMPTY_CONTEXT, EMPTY_CONTEXT))),
@@ -1384,7 +1119,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'aa', $o: 'a'},      {$i: 'aaa', $o: 'aa'},
             {$i: 'aah', $o: 'ah'},    {$i: 'aal', $o: 'al'},
             {$i: 'haa', $o: 'ha'}, {$i: 'laa', $o: 'la'},
-            // See test 36a for a discussion of the following 2 results.
+            // See test 26a for a discussion of the following 2 results.
             {$i: 'aaaa', $o: 'aa'},  // (aa)(aa) -> (a)(a)
             {$i: 'aaaa', $o: 'aaa'}, // a(aa)a -> a(a)a which is valid
             {$i: 'aaah', $o: 'aah'},  {$i: 'aaal', $o: 'aal'},
@@ -1424,7 +1159,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '28a. Insert a in h_l: Cnt_i:3 0 -> a {0+} || h_l',
+        desc: '18a. Insert a in h_l: Cnt_i:3 ε -> a || h_l',
         grammar: Count({$i:3},
                      Replace("", "a", "h", "l")),
         //vocab: {$i:3, $o:3},
@@ -1461,7 +1196,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     //  $i Count=10: 88573 results
     // Here we spot check some of the possible 88573 results for
     // $i with 10 characters or less.
-    const io_28b: StringDict[] = [
+    const io_18b: StringDict[] = [
         // Some Valid Inputs - Insertion
         {$i: 'hl', $o: 'hal'},                  {$i: 'ahl', $o: 'ahal'},
         {$i: 'hla', $o: 'hala'},                {$i: 'ahla', $o: 'ahala'},
@@ -1478,16 +1213,16 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     ];
 
     testGrammar({
-        desc: '28b. Insert a in h_l: Spotchk_10 0 -> a {0+} || h_l',
+        desc: '18b. Insert a in h_l: Spotchk_10 ε -> a || h_l',
         grammar: Count({$i:10},
                      Replace("", "a", "h", "l")),
         //vocab: {$i:3, $o:3},
-        query: inputs(io_28b),
-        results: outputs(io_28b),
+        query: inputs(io_18b),
+        results: outputs(io_18b),
     });
 
     testGrammar({
-        desc: '29a. Delete a in hal: Cnt_o:3 a -> 0 {0+} || h_l',
+        desc: '19a. Delete a in hal: Cnt_o:3 a -> ε || h_l',
         grammar: Count({$o:3},
                      Replace("a", "", "h", "l")),
         //vocab: {$i:3, $o:3},
@@ -1527,7 +1262,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     //  $o Count=10: 161304 results
     // Here we spot check some of the possible 161304 results for
     // $o with 10 characters or less.
-    const io_29b: StringDict[] = [
+    const io_19b: StringDict[] = [
         // Some Valid Inputs - Deletion
         {$i: 'hal', $o: 'hl'},                  {$i: 'lhalh', $o: 'lhlh'},
         {$i: 'lhall', $o: 'lhll'},              {$i: 'halhal', $o: 'hlhl'},
@@ -1544,15 +1279,15 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     ];
 
     testGrammar({
-        desc: '29b. Delete a in hal: Spotchk_10 a -> 0 {0+} || h_l',
+        desc: '19b. Delete a in hal: Spotchk_10 a -> ε || h_l',
         grammar: Count({$o:10},
                      Replace("a", "", "h", "l")),
         //vocab: {$i:3, $o:3},
-        query: inputs(io_29b),
-        results: outputs(io_29b),
+        query: inputs(io_19b),
+        results: outputs(io_19b),
     });
 
-    const io_30a: StringDict[] = [
+    const io_20a: StringDict[] = [
         // Some Valid Inputs - Replacement
         {$i: 'hil', $o: 'hal'},             {$i: 'hiy', $o: 'hay'},
         {$i: 'ahil', $o: 'ahal'},           {$i: 'ahiy', $o: 'ahay'},
@@ -1575,16 +1310,15 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     ];
 
     testGrammar({
-        desc: '30a. Replace i by a in hil and hiy: Spotchk_10 ' +
-              'i -> a {0+} || h_l|y',
+        desc: '20a. Replace i by a in hil and hiy: Spotchk_10 i -> a || h_l|y',
         grammar: Count({$i:10},
                      Replace("i", "a", "h", Uni("l", "y"))),
         //vocab: {$i:5, $o:5},
-        query: inputs(io_30a),
-        results: outputs(io_30a),
+        query: inputs(io_20a),
+        results: outputs(io_20a),
     });
 
-    const io_30b: StringDict[] = [
+    const io_20b: StringDict[] = [
         // Some Valid Inputs - Replacement
         {$i: 'hil', $o: 'hal'},             {$i: 'yil', $o: 'yal'},
         {$i: 'ahil', $o: 'ahal'},           {$i: 'ayil', $o: 'ayal'},
@@ -1607,16 +1341,15 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     ];
 
     testGrammar({
-        desc: '30b. Replace i by a in hil and yil: Spotchk_10 ' +
-              'i -> a {0+} || h|y_l',
+        desc: '20b. Replace i by a in hil and yil: Spotchk_10 i -> a || h|y_l',
         grammar: Count({$i:10},
                      Replace("i", "a", Uni("h", "y"), "l")),
         //vocab: {$i:5, $o:5},
-        query: inputs(io_30b),
-        results: outputs(io_30b),
+        query: inputs(io_20b),
+        results: outputs(io_20b),
     });
 
-    const io_31a: StringDict[] = [
+    const io_21a: StringDict[] = [
         // Some Valid Inputs - Replacement
         {$i: 'hil', $o: 'hal'},               {$i: 'hol', $o: 'hal'},
         {$i: 'hhil', $o: 'hhal'},             {$i: 'hhol', $o: 'hhal'},
@@ -1636,17 +1369,16 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     ];
 
     testGrammar({
-        desc: '31a. Replace i or o by a in hil and hol: Spotchk_10 ' +
-              'i|o -> a {0+} || h_l',
+        desc: '21a. Replace i or o by a in hil and hol: Spotchk_10 i|o -> a || h_l',
         grammar: Count({$i:10},
                      Replace(Uni("i", "o"), "a","h", "l")),
         //vocab: {$i:5, $o:5},
-        query: inputs(io_31a),
-        results: outputs(io_31a),
+        query: inputs(io_21a),
+        results: outputs(io_21a),
     });
 
     testGrammar({
-        desc: '31b. Replace i by a or o in aio: Cnt_3 ' +
+        desc: '21b. Replace i by a or o in aio: Cnt_3 ' +
               'i -> a|o {0+} || a_o',
         grammar: Count({$i:3},
                      Replace("i", Uni("a", "o"), "a", "o")),
@@ -1678,7 +1410,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     });
 
-    const io_31c: StringDict[] = [
+    const io_21c: StringDict[] = [
         // Some Valid Inputs - Replacement
         {$i: 'hil', $o: 'hal'},     {$i: 'hil', $o: 'hol'},
         {$i: 'hhil', $o: 'hhal'},   {$i: 'hhil', $o: 'hhol'},
@@ -1700,16 +1432,15 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     ];
 
     testGrammar({
-        desc: '31c. Replace i by a or o in hil: Spotchk_5 ' +
-              'i -> a|o {0+} || h_l',
+        desc: '21c. Replace i by a or o in hil: Spotchk_5 i -> a|o || h_l',
         grammar: Count({$i:5, $o:5},
                      Replace("i", Uni("a", "o"), "h", "l")),
         //vocab: {$i:5, $o:5},
-        query: inputs(io_31c),
-        results: outputs(io_31c),
+        query: inputs(io_21c),
+        results: outputs(io_21c),
     });
 
-    const io_32: StringDict[] = [
+    const io_22: StringDict[] = [
         // Some Valid Inputs - Replacement
         {$i: 'hil', $o: 'hal', t3: '[1SG]'},
         {$i: 'ahila', $o: 'ahala', t3: '[1SG]'},
@@ -1769,8 +1500,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     ];
 
     testGrammar({
-        desc: '32. Replace i by a in hil: Spotchk_14 ' +
-              'i -> a {0+} || h_l + t3:[1SG]',
+        desc: '22. Replace i by a in hil: Spotchk_14 i -> a || h_l + t3:[1SG]',
         grammar: Count({$i:14, $o:14},
                      Replace("i", "a", "h", "l", t3("[1SG]"))),
         //vocab: {
@@ -1778,13 +1508,13 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         //    $o:["a","h","i","l"], 
         //    t3:["[","1","S","G","]"]
         //},
-        query: inputs(io_32),
-        results: outputs(io_32),
+        query: inputs(io_22),
+        results: outputs(io_22),
     });
 
     testGrammar({
-        desc: '33a. Replace ε by a: Cnt_3 ε -> a {0+} || #_ ($o:ahl)',
-        grammar: Count({$i:3, $o:3},
+        desc: '23a. Replace ε by a: Cnt_o:3 ε -> a || #_ ($o:ahl)',
+        grammar: Count({$o:3},
         			 WithVocab({$o:'ahl'},
                      	 Replace("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT,
                                  EMPTY_CONTEXT, true, false))),
@@ -1797,12 +1527,13 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'ha', $o: 'aha'}, {$i: 'hh', $o: 'ahh'},
             {$i: 'hl', $o: 'ahl'}, {$i: 'la', $o: 'ala'},
             {$i: 'lh', $o: 'alh'}, {$i: 'll', $o: 'all'},
+            // No copy-through because insertions can always occur at the start.
         ],
     });
 
     testGrammar({
-        desc: '33b. Replace ε by a: Cnt_3 ε -> a {0+} || _# (vocab $o:ahl)',
-        grammar: Count({$i:3, $o:3},
+        desc: '23b. Replace ε by a: Cnt_o:3 ε -> a || _# (vocab $o:ahl)',
+        grammar: Count({$o:3},
         			 WithVocab({$o:'ahl'},
                      	 Replace("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT,
                                  EMPTY_CONTEXT, false, true))),
@@ -1815,28 +1546,37 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'ha', $o: 'haa'}, {$i: 'hh', $o: 'hha'},
             {$i: 'hl', $o: 'hla'}, {$i: 'la', $o: 'laa'},
             {$i: 'lh', $o: 'lha'}, {$i: 'll', $o: 'lla'},
+            // No copy-through because insertions can always occur at the end.
         ],
     });
 
     testGrammar({
-        desc: '33c. Replace ε by a: Cnt_3 ε -> a {0+} || #_# (vocab $o:ahl)',
-        grammar: Count({$i:3, $o:3},
+        desc: '23c. Replace ε by a: Cnt_i:2_o:3 ε -> a || #_# (vocab $o:ahl)',
+        grammar: Count({$i:2, $o:3},
         			 WithVocab({$o:'ahl'},
                      	 Replace("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT,
                                  EMPTY_CONTEXT, true, true))),
         //vocab: {$i:3, $o:3},
         results: [
+            // Insertions
             {$o: 'a'},  // equivalent to {$i: '', $o: 'a'}
+            // Copy-through (begins & ends with can only be statisfied if there
+            // is no content on $i)
+            {$i: 'a', $o: 'a'},     {$i: 'h', $o: 'h'},
+            {$i: 'l', $o: 'l'},     {$i: 'aa', $o: 'aa'},
+            {$i: 'ah', $o: 'ah'},   {$i: 'al', $o: 'al'},
+            {$i: 'ha', $o: 'ha'},   {$i: 'hh', $o: 'hh'},
+            {$i: 'hl', $o: 'hl'},   {$i: 'la', $o: 'la'},
+            {$i: 'lh', $o: 'lh'},   {$i: 'll', $o: 'll'},
         ],
     });
 
     testGrammar({
-        desc: '33d. Replace ε by a: Cnt_3 ε -> a {0+} (vocab $o:ahl)',
+        desc: '23d. Replace ε by a: Cnt_3 ε -> a (vocab $o:ahl)',
         // This replacement is not allowed for Replace with optional=flase.
         grammar: Count({$i:3, $o:3},
         			 WithVocab({$o:'ahl'},
-                     	 Replace("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT,
-                                 EMPTY_CONTEXT, false, false))),
+                     	 Replace("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT))),
         //vocab: {$i:3, $o:3},
         results: [
             {},
@@ -1844,40 +1584,11 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         numErrors: 1,
     });
 
-    /*
     testGrammar({
-        desc: '33e. Replace ε by a, optional: Cnt_3 ε -> a {1} (vocab $o:ahl)',
+        desc: '23e. Replace ε by a, optional: Cnt_3 ε -> a (vocab $o:ahl)',
         grammar: Count({$i:3, $o:3},
         			 WithVocab({$o:'ahl'},
-                     	 OptionalReplace("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT,
-                                         EMPTY_CONTEXT, false, false, 1, 1))),
-        //vocab: {$i:3, $o:3},
-        results: [
-            {$o: 'a'},   // equivalent to {$i: '', $o: 'a'}
-            {$i: 'a', $o: 'aa'},   {$i: 'h', $o: 'ah'},
-            {$i: 'h', $o: 'ha'},   {$i: 'l', $o: 'al'},
-            {$i: 'l', $o: 'la'},   {$i: 'aa', $o: 'aaa'},
-            {$i: 'ah', $o: 'aah'}, {$i: 'ah', $o: 'aha'},
-            {$i: 'al', $o: 'aal'}, {$i: 'al', $o: 'ala'},
-            {$i: 'ha', $o: 'aha'}, {$i: 'ha', $o: 'haa'},
-            {$i: 'hh', $o: 'ahh'}, {$i: 'hh', $o: 'hah'},
-            {$i: 'hh', $o: 'hha'}, {$i: 'hl', $o: 'ahl'},
-            {$i: 'hl', $o: 'hal'}, {$i: 'hl', $o: 'hla'},
-            {$i: 'la', $o: 'ala'}, {$i: 'la', $o: 'laa'},
-            {$i: 'lh', $o: 'alh'}, {$i: 'lh', $o: 'lah'},
-            {$i: 'lh', $o: 'lha'}, {$i: 'll', $o: 'all'},
-            {$i: 'll', $o: 'lal'}, {$i: 'll', $o: 'lla'},
-        ],
-        allowDuplicateOutputs: true,
-    });
-    */
-
-    testGrammar({
-        desc: '33f. Replace ε by a, optional: Cnt_3 ε -> a {0+} (vocab $o:ahl)',
-        grammar: Count({$i:3, $o:3},
-        			 WithVocab({$o:'ahl'},
-                     	 OptionalReplace("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT,
-                                         EMPTY_CONTEXT, false, false))),
+                     	 OptionalReplace("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT))),
         //vocab: {$i:3, $o:3},
         results: [
             // 1, 2 or 3 insertions
@@ -1901,7 +1612,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'lh', $o: 'lah'},  {$i: 'lh', $o: 'lha'},
             {$i: 'll', $o: 'all'},  {$i: 'll', $o: 'lal'},
             {$i: 'll', $o: 'lla'},
-            // Copy-through: 0 insertions
+            // Copy-through: 0 insertions (because optional is set)
             {},         // equivalent to {$i: '', $o: ''}
             {$i: 'a', $o: 'a'},     {$i: 'h', $o: 'h'},
             {$i: 'l', $o: 'l'},     {$i: 'aa', $o: 'aa'},
@@ -1927,11 +1638,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '33g. Replace ε by a, optional: Cnt_i:1_2:5 ε -> a {0+} (vocab $i:ah)',
+        desc: '23f. Replace ε by a, optional: Cnt_i:1_2:5 ε -> a (vocab $i:ah)',
         grammar: Count({$i:1, $o:5},
         			 WithVocab({$i:'ah'},
-                     	 OptionalReplace("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT,
-                                         EMPTY_CONTEXT, false, false))),
+                     	 OptionalReplace("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT))),
         //vocab: {$i:2, $o:2},
         results: [
             // 1-5 Insertions
@@ -1949,23 +1659,22 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'a', $o: 'aaaaa'}, {$i: 'h', $o: 'aaaah'},
             {$i: 'h', $o: 'aaaha'}, {$i: 'h', $o: 'aahaa'},
             {$i: 'h', $o: 'ahaaa'}, {$i: 'h', $o: 'haaaa'},
-            // Copy-through: 0 insertions
+            // Copy-through: 0 insertions (because optional is set)
             {},             // equivalent to {$i: '', $o: ''}
             {$i: 'a', $o: 'a'},     {$i: 'h', $o: 'h'},
         ],
     });
 
     testGrammar({
-        desc: '33h. Replace ε by a, optional: Cnt_i:2_o:4 ε -> a {0+} (vocab $i:ah)',
+        desc: '23g. Replace ε by a, optional: Cnt_i:2_o:4 ε -> a (vocab $i:ah)',
         grammar: Count({$i:2, $o:4},
         			 WithVocab({$i:'ah'},
-                     	 OptionalReplace("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT,
-                                         EMPTY_CONTEXT, false, false))),
+                     	 OptionalReplace("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT))),
         //vocab: {$i:2, $o:2},
         results: [
             // 1-4 Insertions
             {$o: 'a'},      // equivalent to {$i: '', $o: 'a'}
-            {$o: 'aa'},    // equivalent to {$i: '', $o: 'aa'}
+            {$o: 'aa'},     // equivalent to {$i: '', $o: 'aa'}
             {$o: 'aaa'},    // equivalent to {$i: '', $o: 'aaa'}
             {$o: 'aaaa'},   // equivalent to {$i: '', $o: 'aaaa'}
             {$i: 'a', $o: 'aa'},    {$i: 'h', $o: 'ah'},
@@ -1994,11 +1703,11 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '33i. Replace ε|h by e, optional: Cnt_i:2_o:3 ε|$i:h -> a {0+} (vocab $i:ahl)',
+        desc: '23h. Replace ε|h by a, optional: Cnt_i:2_o:3 ε|h -> a (vocab $i:ahl)',
         grammar: Count({$i:2, $o:3},
         			 WithVocab({$i:'ahl'},
-                     	 OptionalReplace(Uni("", "h"), "a", EMPTY_CONTEXT, EMPTY_CONTEXT,
-                                         EMPTY_CONTEXT, false, false))),
+                     	 OptionalReplace(Uni("", "h"), "a",
+                                         EMPTY_CONTEXT, EMPTY_CONTEXT))),
         //vocab: {$i:3, $o:3},
         results: [
             // 1-3 Insertions, 0 Replacements
@@ -2047,11 +1756,11 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '33j. Replace ε|h by a, optional: Cnt_i:3_o:4 ε|$i:h -> a {0+} (vocab $i:ah)',
+        desc: '23i. Replace ε|h by a, optional: Cnt_i:3_o:4 ε|h -> a (vocab $i:ah)',
         grammar: Count({$i:3, $o:4},
         			 WithVocab({$i:'ah'},
-                     	 OptionalReplace(Uni("", "h"), "a", EMPTY_CONTEXT, EMPTY_CONTEXT,
-                                         EMPTY_CONTEXT,false, false))),
+                     	 OptionalReplace(Uni("", "h"), "a",
+                                         EMPTY_CONTEXT, EMPTY_CONTEXT))),
         //vocab: {$i:2, $o:2},
         results: [
             // 1-4 Insertions, 0 Replacements
@@ -2136,101 +1845,106 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '34a. Replace a by ε: Cnt_3 a -> ε {1} || #_ (vocab $i:ahl)',
-        grammar: Count({$i:3, $o:3},
+        desc: '24a. Replace a by ε: Cnt_o:2 a -> ε || #_ (vocab $i:ahl)',
+        grammar: Count({$o:2},
         			 WithVocab({$i:'ahl'},
-                     	 Replace("a", "", EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
-                                 true, false, 1, 1))),
+                     	 Replace("a", "", EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                 EMPTY_CONTEXT, true, false))),
         //vocab: {$i:3, $o:3},
         results: [
+            // Deletions
             {$i: 'a'},  // equivalent to {$i: 'a', $o: ''}
-            {$i: 'aa', $o: 'a'},   {$i: 'ah', $o: 'h'},
-            {$i: 'al', $o: 'l'},   {$i: 'aaa', $o: 'aa'},
-            {$i: 'aah', $o: 'ah'}, {$i: 'aal', $o: 'al'},
-            {$i: 'aha', $o: 'ha'}, {$i: 'ahh', $o: 'hh'},
-            {$i: 'ahl', $o: 'hl'}, {$i: 'ala', $o: 'la'},
-            {$i: 'alh', $o: 'lh'}, {$i: 'all', $o: 'll'},
-        ],
-    });
-
-    testGrammar({
-        desc: '34b. Replace a by ε: Cnt_3 a -> ε {1} || _# (vocab $i:ahl)',
-        grammar: Count({$i:3, $o:3},
-        			 WithVocab({$i:'ahl'},
-                     	 Replace("a", "", EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
-                                 false, true, 1, 1))),
-        //vocab: {$i:3, $o:3},
-        results: [
-            {$i: 'a'},  // equivalent to {$i: 'a', $o: ''}
-            {$i: 'aa', $o: 'a'},   {$i: 'ha', $o: 'h'},
-            {$i: 'la', $o: 'l'},   {$i: 'aaa', $o: 'aa'},
-            {$i: 'aha', $o: 'ah'}, {$i: 'ala', $o: 'al'},
-            {$i: 'haa', $o: 'ha'}, {$i: 'hha', $o: 'hh'},
-            {$i: 'hla', $o: 'hl'}, {$i: 'laa', $o: 'la'},
-            {$i: 'lha', $o: 'lh'}, {$i: 'lla', $o: 'll'},
-        ],
-    });
-
-    testGrammar({
-        desc: '34c. Replace a by ε: Cnt_3 a -> a {1} || #_# (vocab $i:ahl)',
-        grammar: Count({$i:3, $o:3},
-        			 WithVocab({$i:'ahl'},
-                     	 Replace("a", "", EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
-                                 true, true, 1, 1 ))),
-        //vocab: {$i:3, $o:3},
-        results: [
-            {$i: 'a'},  // equivalent to {$i: 'a', $o: ''}
-        ],
-    });
-
-    testGrammar({
-        desc: '34d. Replace a by ε: Cnt_3 a -> ε {1} (vocab $i:ahl)',
-        grammar: Count({$i:3, $o:3},
-        			 WithVocab({$i:'ahl'},
-                     	 Replace("a", "", EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
-                                 false, false, 1, 1))),
-        //vocab: {$i:3, $o:3},
-        results: [
-            {$i: 'a'},  // equivalent to {$i: 'a', $o: ''}
-            {$i: 'ah', $o: 'h'},   {$i: 'al', $o: 'l'},
-            {$i: 'ha', $o: 'h'},   {$i: 'la', $o: 'l'},
-            {$i: 'ahh', $o: 'hh'}, {$i: 'ahl', $o: 'hl'},
-            {$i: 'alh', $o: 'lh'}, {$i: 'all', $o: 'll'},
-            {$i: 'hah', $o: 'hh'}, {$i: 'hal', $o: 'hl'},
-            {$i: 'hha', $o: 'hh'}, {$i: 'hla', $o: 'hl'},
-            {$i: 'lah', $o: 'lh'}, {$i: 'lal', $o: 'll'},
-            {$i: 'lha', $o: 'lh'}, {$i: 'lla', $o: 'll'},
-        ],
-    });
-
-    testGrammar({
-        desc: '34e. Replace a by ε: Cnt_3 a -> ε {0,2} (vocab $i:ahl)',
-        grammar: Count({$i:3, $o:3},
-        			 WithVocab({$i:'ahl'},
-                     	 Replace("a", "", EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
-                                 false, false, 0, 2))),
-        //vocab: {$i:3, $o:3},
-        results: [
-            {},
-            {$i: 'a'},  // equivalent to {$i: 'a', $o: ''}
-            {$i: 'aa'}, // equivalent to {$i: 'aa', $o: ''}
-            {$i: 'h', $o: 'h'},     {$i: 'l', $o: 'l'},
-            {$i: 'ah', $o: 'h'},    {$i: 'al', $o: 'l'},
-            {$i: 'ha', $o: 'h'},    {$i: 'hh', $o: 'hh'},
-            {$i: 'hl', $o: 'hl'},   {$i: 'la', $o: 'l'},
-            {$i: 'lh', $o: 'lh'},   {$i: 'll', $o: 'll'},
-            {$i: 'aah', $o: 'h'},   {$i: 'aal', $o: 'l'},
-            {$i: 'aha', $o: 'h'},   {$i: 'ahh', $o: 'hh'},
-            {$i: 'ahl', $o: 'hl'},  {$i: 'ala', $o: 'l'},
+            {$i: 'aa', $o: 'a'},    {$i: 'ah', $o: 'h'},
+            {$i: 'al', $o: 'l'},    {$i: 'aaa', $o: 'aa'},
+            {$i: 'aah', $o: 'ah'},  {$i: 'aal', $o: 'al'},
+            {$i: 'aha', $o: 'ha'},  {$i: 'ahh', $o: 'hh'},
+            {$i: 'ahl', $o: 'hl'},  {$i: 'ala', $o: 'la'},
             {$i: 'alh', $o: 'lh'},  {$i: 'all', $o: 'll'},
-            {$i: 'haa', $o: 'h'},   {$i: 'hah', $o: 'hh'},
-            {$i: 'hal', $o: 'hl'},  {$i: 'hha', $o: 'hh'},
-            {$i: 'hhh', $o: 'hhh'}, {$i: 'hhl', $o: 'hhl'},
-            {$i: 'hla', $o: 'hl'},  {$i: 'hlh', $o: 'hlh'},
-            {$i: 'hll', $o: 'hll'}, {$i: 'laa', $o: 'l'},
+            // Copy-through
+            {},         // equivalent to {$i: '', $o: ''}
+            {$i: 'h', $o: 'h'},     {$i: 'l', $o: 'l'},
+            {$i: 'ha', $o: 'ha'},   {$i: 'hh', $o: 'hh'},
+            {$i: 'hl', $o: 'hl'},   {$i: 'la', $o: 'la'},
+            {$i: 'lh', $o: 'lh'},   {$i: 'll', $o: 'll'},
+        ],
+    });
+
+    testGrammar({
+        desc: '24b. Replace a by ε: Cnt_o:2 a -> ε || _# (vocab $i:ahl)',
+        grammar: Count({$o:2},
+        			 WithVocab({$i:'ahl'},
+                     	 Replace("a", "", EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                 EMPTY_CONTEXT, false, true))),
+        //vocab: {$i:3, $o:3},
+        results: [
+            // Deletions
+            {$i: 'a'},  // equivalent to {$i: 'a', $o: ''}
+            {$i: 'aa', $o: 'a'},    {$i: 'ha', $o: 'h'},
+            {$i: 'la', $o: 'l'},    {$i: 'aaa', $o: 'aa'},
+            {$i: 'aha', $o: 'ah'},  {$i: 'ala', $o: 'al'},
+            {$i: 'haa', $o: 'ha'},  {$i: 'hha', $o: 'hh'},
+            {$i: 'hla', $o: 'hl'},  {$i: 'laa', $o: 'la'},
+            {$i: 'lha', $o: 'lh'},  {$i: 'lla', $o: 'll'},
+            // Copy-through
+            {},         // equivalent to {$i: '', $o: ''}
+            {$i: 'h', $o: 'h'},     {$i: 'l', $o: 'l'},
+            {$i: 'ah', $o: 'ah'},   {$i: 'al', $o: 'al'},
+            {$i: 'hh', $o: 'hh'},   {$i: 'hl', $o: 'hl'},
+            {$i: 'lh', $o: 'lh'},   {$i: 'll', $o: 'll'},
+        ],
+    });
+
+    testGrammar({
+        desc: '24c. Replace a by ε: Cnt_o:2 a -> ε || #_# (vocab $i:ahl)',
+        grammar: Count({$o:2},
+        			 WithVocab({$i:'ahl'},
+                     	 Replace("a", "", EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                EMPTY_CONTEXT, true, true))),
+        //vocab: {$i:3, $o:3},
+        results: [
+            // Deletions
+            {$i: 'a'},  // equivalent to {$i: 'a', $o: ''}
+            // Copy-through
+            {},         // equivalent to {$i: '', $o: ''}
+            {$i: 'h', $o: 'h'},     {$i: 'l', $o: 'l'},
+            {$i: 'aa', $o: 'aa'},   {$i: 'ah', $o: 'ah'},
+            {$i: 'al', $o: 'al'},   {$i: 'ha', $o: 'ha'},
+            {$i: 'hh', $o: 'hh'},   {$i: 'hl', $o: 'hl'},
+            {$i: 'la', $o: 'la'},   {$i: 'lh', $o: 'lh'},
+            {$i: 'll', $o: 'll'},
+        ],
+    });
+
+    testGrammar({
+        desc: '24d. Replace a by ε: Cnt_3 a -> ε (vocab $i:ahl)',
+        grammar: Count({$i:3, $o:3},
+        			 WithVocab({$i:'ahl'},
+                     	 Replace("a", "", EMPTY_CONTEXT, EMPTY_CONTEXT))),
+        //vocab: {$i:3, $o:3},
+        results: [
+            // Deletions
+            {$i: 'a'},      // equivalent to {$i: 'a', $o: ''}
+            {$i: 'aa'},     // equivalent to {$i: 'aa', $o: ''}
+            {$i: 'aaa'},    // equivalent to {$i: 'aaa', $o: ''}
+            {$i: 'ah', $o: 'h'},    {$i: 'al', $o: 'l'},
+            {$i: 'ha', $o: 'h'},    {$i: 'la', $o: 'l'},
+            {$i: 'aah', $o: 'h'},   {$i: 'aal', $o: 'l'},
+            {$i: 'aha', $o: 'h'},   {$i: 'ala', $o: 'l'},
+            {$i: 'haa', $o: 'h'},   {$i: 'laa', $o: 'l'},
+            {$i: 'ahh', $o: 'hh'},  {$i: 'ahl', $o: 'hl'},
+            {$i: 'alh', $o: 'lh'},  {$i: 'all', $o: 'll'},
+            {$i: 'hah', $o: 'hh'},  {$i: 'hal', $o: 'hl'},
+            {$i: 'hha', $o: 'hh'},  {$i: 'hla', $o: 'hl'},
             {$i: 'lah', $o: 'lh'},  {$i: 'lal', $o: 'll'},
-            {$i: 'lha', $o: 'lh'},  {$i: 'lhh', $o: 'lhh'},
-            {$i: 'lhl', $o: 'lhl'}, {$i: 'lla', $o: 'll'},
+            {$i: 'lha', $o: 'lh'},  {$i: 'lla', $o: 'll'},
+            // Copy-through
+            {},         // equivalent to {$i: '', $o: ''}
+            {$i: 'h', $o: 'h'},     {$i: 'l', $o: 'l'},
+            {$i: 'hh', $o: 'hh'},   {$i: 'hl', $o: 'hl'},
+            {$i: 'lh', $o: 'lh'},   {$i: 'll', $o: 'll'},
+            {$i: 'hhh', $o: 'hhh'}, {$i: 'hhl', $o: 'hhl'},
+            {$i: 'hlh', $o: 'hlh'}, {$i: 'hll', $o: 'hll'},
+            {$i: 'lhh', $o: 'lhh'}, {$i: 'lhl', $o: 'lhl'},
             {$i: 'llh', $o: 'llh'}, {$i: 'lll', $o: 'lll'},
         ],
     });
@@ -2238,55 +1952,62 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     // Tests to isolate an expression simplification issue in CorrespondExpr.
 
     testGrammar({
-        desc: '35a. Replace aba by X: Cnt_i:3 aba -> X {1}',
+        desc: '25a. Replace aba by X: Cnt_i:3(BS) aba -> X',
         grammar: Count({$i:3},
-                     Replace("aba", "X", EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
-                             false, false, 1, 1)),
+                     Replace("aba", "X", EMPTY_CONTEXT, EMPTY_CONTEXT)),
         //vocab: {$i:3, $o:3},
+        query: BoundingSet('aba'),
         results: [
             {$i: 'aba', $o: 'X'},
         ],
-        verbose: vb(VERBOSE_DEBUG),
+        // verbose: vb(VERBOSE_DEBUG),
+        // verbose: VERBOSE_DEBUG,
     });
 
     testGrammar({
-        desc: '35b. Replace aba by X: Cnt_i:3 aba -> X {1} (cursor: $i,$o)',
+        desc: '25b. Replace aba by X: Cnt_i:3(BS) aba -> X (cursor: $i,$o)',
         grammar: Cursor(["$i", "$o"],
                      Count({$i:3},
-                         Replace("aba", "X", EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
-                                 false, false, 1, 1))),
+                         Replace("aba", "X", EMPTY_CONTEXT, EMPTY_CONTEXT))),
         //vocab: {$i:3, $o:3},
+        // BoundingSet not surrounded by Count results in heap out of memory!!!!
+        query: Count({$i:3}, BoundingSet('aba')),
+        // Multiple Counts on the same tape cause problems!!
         results: [
             {$i: 'aba', $o: 'X'},
         ],
+        // verbose: VERBOSE_DEBUG,
     });
 
     testGrammar({
-        desc: '35c. Replace aba by X: Cnt_i:3 aba -> X {1} (cursor: $o,$i)',
+        desc: '25c. Replace aba by X: Cnt_i:3(BS) aba -> X (cursor: $o,$i)',
         grammar: Cursor(["$o", "$i"],
                      Count({$i:3},
-                         Replace("aba", "X", EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
-                                 false, false, 1, 1))),
+                         Replace("aba", "X", EMPTY_CONTEXT, EMPTY_CONTEXT))),
         //vocab: {$i:3, $o:3},
+        // BoundingSet not surrounded by Count results in heap out of memory!!!!
+        query: Count({$i:3}, BoundingSet('aba')),
+        // Multiple Counts on the same tape cause problems!!
         results: [
             {$i: 'aba', $o: 'X'},
         ],
+        verbose: VERBOSE_DEBUG,
     });
 
-    // 36a-b: Tests exploring the ways for replacements to yield multiple
+    // 26a-b: Tests exploring the ways for replacements to yield multiple
     // outputs for an input.
     // This is a phenomenon that occurs with repeated overlapping patterns
     // in a string. For example, the pattern ABA in the string ABABABA can
     // be found as (ABA)B(ABA) or AB(ABA)BA.
-    // Test 36a is based on test 27.
+    // Test 26a is based on test 17.
 
     testGrammar({
-        desc: '36a. Replace aa by a: Cnt_6 aa -> a {1,3}',
+        desc: '26a. Replace aa by a: Cnt_6 aa -> a',
         grammar: Count({$i:6, $o:6},
-                     Replace("aa", "a", EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
-                             false, false, 1, 3)),
+                     Replace("aa", "a", EMPTY_CONTEXT, EMPTY_CONTEXT)),
         //vocab: {$i:1, $o:1},
         results: [
+            // Replacements
             {$i: 'aa', $o: 'a'},
             {$i: 'aaa', $o: 'aa'},      // 2 ways: (aa)a, a(aa)
             {$i: 'aaaa', $o: 'aa'},     // (aa)(aa) -> (a)(a)
@@ -2296,32 +2017,34 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'aaaaaa', $o: 'aaaa'}, // a(aa)a(aa) -> a(a)a(a)
                                         // (aa)a(aa)a -> (a)a(a)a
                                         // a(aa)(aa)a -> a(a)(a)a
+            // Copy-through
+            {},         // equivalent to {$i: '', $o: ''}
+            {$i: 'a', $o: 'a'},
         ],
         allowDuplicateOutputs: true,
     });
 
-    // Note: test 36b is affected by the issue explored in tests 35a-c.
-    const io_36b: StringDict[] = [
+    // Note: test 26b is affected by the issue explored in tests 25a-c.
+    const io_26b: StringDict[] = [
         {$i: 'abababa', $o: 'abXba'},
         {$i: 'abababa', $o: 'XbX'},
     ];
 
     testGrammar({
-        desc: '36b. Replace aba by X: Spotchk_8 aba -> X {1,3}',
+        desc: '26b. Replace aba by X: Spotchk_8 aba -> X',
         grammar: Count({$i:8, $o:8},
-                     Replace("aba", "X", EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
-                             false, false, 1, 3)),
+                     Replace("aba", "X", EMPTY_CONTEXT, EMPTY_CONTEXT)),
         //vocab: {$i:3, $o:3},
-        query: inputs(io_36b),
-        results: outputs(io_36b),
+        query: inputs(io_26b),
+        results: outputs(io_26b),
     });
 
     testGrammar({
-        desc: '37a. Replace i by a: Cnt_2 i -> a || #_ (vocab $i:hi)',
+        desc: '27a. Replace i by a: Cnt_2 i -> a || #_ (vocab $i:hi)',
         grammar: Count({$i:2, $o:2},
         			 WithVocab({$i:'hi'},
-                     	 Replace("i", "a", EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
-                                 true, false))),
+                     	 Replace("i", "a", EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                 EMPTY_CONTEXT, true, false))),
         //vocab: {$i:3, $o:3},
         results: [
             {},
@@ -2335,11 +2058,11 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '37b. Replace i by a: Cnt_2 i -> a || _# (vocab $i:hi)',
+        desc: '27b. Replace i by a: Cnt_2 i -> a || _# (vocab $i:hi)',
         grammar: Count({$i:2, $o:2},
         			 WithVocab({$i:'hi'},
-                     	 Replace("i", "a", EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
-                                 false, true))),
+                     	 Replace("i", "a", EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                 EMPTY_CONTEXT, false, true))),
         //vocab: {$i:3, $o:3},
         results: [
             {},
@@ -2353,11 +2076,11 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '37c. Replace i by a: Cnt_2 i -> a || #_# (vocab $i:hi)',
+        desc: '27c. Replace i by a: Cnt_2 i -> a || #_# (vocab $i:hi)',
         grammar: Count({$i:2, $o:2},
         			 WithVocab({$i:'hi'},
-                     	 Replace("i", "a", EMPTY_CONTEXT, EMPTY_CONTEXT, EMPTY_CONTEXT,
-                                 true, true))),
+                     	 Replace("i", "a", EMPTY_CONTEXT, EMPTY_CONTEXT,
+                                 EMPTY_CONTEXT, true, true))),
         //vocab: {$i:3, $o:3},
         results: [
             {},
