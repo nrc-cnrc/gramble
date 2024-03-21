@@ -76,6 +76,7 @@ export function testGrammarAux({
     optimizeAtomicity = true,
     maxRecursion = DEFAULT_MAX_RECURSION,
     maxChars = DEFAULT_MAX_CHARS,
+    priority = [],
 }: Partial<GrammarTestAux>): void {
 
     const opt = Options({
@@ -83,7 +84,8 @@ export function testGrammarAux({
         directionLTR: directionLTR,
         optimizeAtomicity: optimizeAtomicity,
         maxRecursion: maxRecursion,
-        maxChars: maxChars
+        maxChars: maxChars,
+        priority: priority,
     });
 
     if (grammar === undefined){

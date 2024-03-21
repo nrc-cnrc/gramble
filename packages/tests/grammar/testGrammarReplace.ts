@@ -80,10 +80,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2a. Replace i by a in hill: Cnt_6(BS) i -> a || h_ll#',
-        grammar: Count({$i:6},
-                     Replace("i", "a", "h", "ll", EMPTY_CONTEXT, false, true)),
+        desc: '2a. Replace i by a in hill: maxChars_i:6(BS) i -> a || h_ll#',
+        grammar: Replace("i", "a", "h", "ll", EMPTY_CONTEXT, false, true),
         query: BoundingSet('hill', '', '', false, true),
+        maxChars: {$i:6},
         results: [
             {$i: 'hill', $o: 'hall'},
             {$i: 'ahill', $o: 'ahall'},   {$i: 'ihill', $o: 'ihall'},
@@ -134,10 +134,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '3a. Replace i by a in hill: Cnt_6(BS) i -> a || #h_ll',
-        grammar: Count({$i:6},
-                     Replace("i", "a", "h", "ll", EMPTY_CONTEXT, true, false, 1)),
+        desc: '3a. Replace i by a in hill: maxChars_i:6(BS) i -> a || #h_ll',
+        grammar: Replace("i", "a", "h", "ll", EMPTY_CONTEXT, true, false, 1),
         query: BoundingSet('hill', '', '', true, false),
+        maxChars: {$i:6},
         results: [
             {$i: 'hill', $o: 'hall'},
             {$i: 'hilla', $o: 'halla'},   {$i: 'hillh', $o: 'hallh'},
@@ -179,7 +179,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     ];
 
     testGrammar({
-        desc: '3b. Replace i by a in hil: Spotchk_5 i -> a || #h_l',
+        desc: '3b. Replace i by a in hil: Spotchk_i:5 i -> a || #h_l',
         grammar: Count({$i:5},
                      Replace("i", "a", "h", "l", EMPTY_CONTEXT, true, false)),
         query: inputs(io_3b),
@@ -187,11 +187,11 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '4a. Replace i by a in hil: Cnt_5(BS) i -> a || h_l',
-        grammar: Count({$i:5},
-                     Replace("i", "a", "h", "l")),
+        desc: '4a. Replace i by a in hil: maxChars_i:5(BS) i -> a || h_l',
+        grammar: Replace("i", "a", "h", "l"),
         //vocab: {$i:4, $o:4},
         query: BoundingSet('hil'),
+        maxChars: {$i:5},
         results: [
             {$i: 'hil', $o: 'hal'},
             {$i: 'hila', $o: 'hala'},   {$i: 'hilh', $o: 'halh'},
@@ -603,11 +603,11 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '9a. Replace a by aa in hal: Cnt_i:6(BS) a -> aa || #h_l',
-        grammar: Count({$i:6},
-                     Replace("a", "aa", "h", "l", EMPTY_CONTEXT, true, false)),
+        desc: '9a. Replace a by aa in hal: maxChars_i:6(BS) a -> aa || #h_l',
+        grammar: Replace("a", "aa", "h", "l", EMPTY_CONTEXT, true, false),
         //vocab: {$i:3, $o:3},
         query: BoundingSet('hal', '', '', true, false),
+        maxChars: {$i:6},
         results: [
             {$i: 'hal', $o: 'haal'},       {$i: 'halh', $o: 'haalh'},
             {$i: 'hala', $o: 'haala'},     {$i: 'hall', $o: 'haall'},
@@ -669,11 +669,11 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '10a. Replace a by aa in hal: Cnt_i:6(BS) a -> aa || h_l#',
-        grammar: Count({$i:6},
-                     Replace("a", "aa", "h", "l", EMPTY_CONTEXT, false, true)),
+        desc: '10a. Replace a by aa in hal: maxChars_i:6(BS) a -> aa || h_l#',
+        grammar: Replace("a", "aa", "h", "l", EMPTY_CONTEXT, false, true),
         //vocab: {$i:3, $o:3},
         query: BoundingSet('hal', '', '', false, true),
+        maxChars: {$i:6},
         results: [
             {$i: 'hal', $o: 'haal'},       {$i: 'hhal', $o: 'hhaal'},
             {$i: 'ahal', $o: 'ahaal'},     {$i: 'lhal', $o: 'lhaal'},
@@ -1952,46 +1952,57 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     // Tests to isolate an expression simplification issue in CorrespondExpr.
 
     testGrammar({
-        desc: '25a. Replace aba by X: Cnt_i:3(BS) aba -> X',
-        grammar: Count({$i:3},
-                     Replace("aba", "X", EMPTY_CONTEXT, EMPTY_CONTEXT)),
+        desc: '25a. Replace aba by X: maxChars_i:3(BS) aba -> X',
+        grammar: Replace("aba", "X", EMPTY_CONTEXT, EMPTY_CONTEXT),
         //vocab: {$i:3, $o:3},
         query: BoundingSet('aba'),
+        maxChars: {$i:3},
         results: [
             {$i: 'aba', $o: 'X'},
         ],
-        // verbose: vb(VERBOSE_DEBUG),
-        // verbose: VERBOSE_DEBUG,
+    });
+
+    // Constructing a test of the following form is problematic when also
+    // specifying a BoundingSet query:
+    //      grammar: Cursor(["$i", "$o"],
+    //                  Count({$i:3},
+    //                      Replace("aba", "X", EMPTY_CONTEXT, EMPTY_CONTEXT))),
+    // It can result in a heap out-of-memory error. This is because we go down
+    // a garden path generating the BoundingSet side of the query Join without
+    // it being count limited. Adding a Count call in the query doesn't work
+    // either because we end up with multiple cursors on the input tape resulting
+    // in twice as many characters as expected being permitted -- this is because
+    // the tapes within the two cursors on the same tape name are actually
+    // different tapes.
+    //
+    // The correct way to construct the test is to:
+    //  a) use the maxChars option instead of calling Count in the grammar
+    //  b) use the priority option instead of calling Cursor in the grammar
+    // In fact, it's always best to use the maxChars option to specify the count
+    // limits when using BoundingSet.
+
+    testGrammar({
+        desc: '25b. Replace aba by X: maxChars_i:3(BS) aba -> X (priority: $i,$o)',
+        grammar: Replace("aba", "X", EMPTY_CONTEXT, EMPTY_CONTEXT),
+        //vocab: {$i:3, $o:3},
+        query: BoundingSet('aba'),
+        maxChars: {$i:3},
+        priority: ["$i", "$o"],
+        results: [
+            {$i: 'aba', $o: 'X'},
+        ],
     });
 
     testGrammar({
-        desc: '25b. Replace aba by X: Cnt_i:3(BS) aba -> X (cursor: $i,$o)',
-        grammar: Cursor(["$i", "$o"],
-                     Count({$i:3},
-                         Replace("aba", "X", EMPTY_CONTEXT, EMPTY_CONTEXT))),
+        desc: '25c. Replace aba by X: maxChars_i:3(BS) aba -> X (priority: $o,$i)',
+        grammar: Replace("aba", "X", EMPTY_CONTEXT, EMPTY_CONTEXT),
         //vocab: {$i:3, $o:3},
-        // BoundingSet not surrounded by Count results in heap out of memory!!!!
-        query: Count({$i:3}, BoundingSet('aba')),
-        // Multiple Counts on the same tape cause problems!!
+        query: BoundingSet('aba'),
+        maxChars: {$i:3},
+        priority: ["$o", "$i"],
         results: [
             {$i: 'aba', $o: 'X'},
         ],
-        // verbose: VERBOSE_DEBUG,
-    });
-
-    testGrammar({
-        desc: '25c. Replace aba by X: Cnt_i:3(BS) aba -> X (cursor: $o,$i)',
-        grammar: Cursor(["$o", "$i"],
-                     Count({$i:3},
-                         Replace("aba", "X", EMPTY_CONTEXT, EMPTY_CONTEXT))),
-        //vocab: {$i:3, $o:3},
-        // BoundingSet not surrounded by Count results in heap out of memory!!!!
-        query: Count({$i:3}, BoundingSet('aba')),
-        // Multiple Counts on the same tape cause problems!!
-        results: [
-            {$i: 'aba', $o: 'X'},
-        ],
-        verbose: VERBOSE_DEBUG,
     });
 
     // 26a-b: Tests exploring the ways for replacements to yield multiple
