@@ -4,6 +4,8 @@ title: Your first Gramble program
 sidebar_label: Your first program
 ---
 
+import Highlight from '@site/src/components/Highlight';
+
 Okay, let's make a program that does something!  We'll start with a verb conjugator.  This isn't the only kind of program you can make with Gramble, but it's the prototypical one.
 
 ## A simple English conjugator 
