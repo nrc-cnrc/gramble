@@ -12,6 +12,7 @@ Okay, let's make a program that does something!  We'll start with a verb conjuga
 
 First, let's use some simple English verbs.  I've chosen *regular* verbs (those that don't change form) to make things easier for now.  Let's model these two verbs, in three conjugations:
 
+||
 |-------|
 | calls | 
 | calling |

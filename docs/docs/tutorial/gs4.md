@@ -1,6 +1,6 @@
 ---
 id: gs4
-title: Your first Gramble program
+title: Your second Gramble program
 sidebar_label: Your second program
 ---
 
