@@ -32,7 +32,7 @@ export class CreateCursors extends Pass<Grammar,Grammar> {
 
 export function prioritizeTapes(
     g: Grammar,
-    env: SymbolEnv
+    env: SymbolEnv,
 ): string[] {
     const priorities: [string, number][] = g.tapeNames.map(t => {
         const joinWeight = getTapePriority(g, t, new StringPairSet(), env);
@@ -46,10 +46,19 @@ export function prioritizeTapes(
         return [t, joinWeight];
     });
 
-    const result = priorities.filter(([t, priority]) => priority >= 0)
-                     .sort((a, b) => b[1] - a[1])
-                     .map(([a,_]) => a);
-    
+    const computedPriorities = priorities.filter(([t, priority]) => priority >= 0)
+                                    .sort((a, b) => b[1] - a[1])
+                                    .map(([a,_]) => a);
+
+    if (env.opt.priority.length == 0)
+        return computedPriorities;
+
+    // Concatenate explicit tape priorities from env.opt with the computed ones,
+    // and remove the duplicates.
+    const result = env.opt.priority.concat(computedPriorities)
+                        .filter((e, idx, self) => idx === self.indexOf(e));
+
+    // console.log(`result: ${result}`);
     return result;
 }
 

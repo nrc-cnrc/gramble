@@ -39,7 +39,7 @@
     "url": "https://github.com/nrc-cnrc/gramble/issues"
   },
   "devDependencies": {
-    "typescript": "^5.3.3"
+    "typescript": "^5.4.3"
   },
   "dependencies": {
     "unicode-properties": "^1.4.1"

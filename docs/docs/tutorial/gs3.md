@@ -4,12 +4,15 @@ title: Your first Gramble program
 sidebar_label: Your first program
 ---
 
+import Highlight from '@site/src/components/Highlight';
+
 Okay, let's make a program that does something!  We'll start with a verb conjugator.  This isn't the only kind of program you can make with Gramble, but it's the prototypical one.
 
 ## A simple English conjugator 
 
 First, let's use some simple English verbs.  I've chosen *regular* verbs (those that don't change form) to make things easier for now.  Let's model these two verbs, in three conjugations:
 
+||
 |-------|
 | calls | 
 | calling |

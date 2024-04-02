@@ -74,22 +74,22 @@ A lot of linguistic phenomena are like that, not just verb conjugation.  For ano
 
 For example, the following little Gramble program has the same effect as the Swahili database above:
 
-|----|----|----|----|----|
-| **SUBJECT:** | **text** | **person** |
+| **SUBJECT =** | **text** | **person** ||
+|----|----|----|---|
 |              | ni   | 1 |
 |              | u   | 2 |
 |              | a   | 3 |
 | &nbsp; |
-| **TENSE:** | **text** | **tense** |
+| **TENSE =** | **text** | **tense** |
 |         | na | present |
 |         | li | past |
 |         | me | perfect |
 | &nbsp; |
-| **ROOT:** | **text/root** |
+| **ROOT =** | **text/root** |
 |         | pend |
 |         | ona |
 | &nbsp; |
-| **var** | **var** | **var** |
-| SUBJECT | TENSE | ROOT |
+| **VERB =** | **embed** | **embed** | **embed** |
+|           | SUBJECT | TENSE | ROOT |
 
 To add a new verb, you don't have to specify nine new forms (in our little database above) or thousands of new forms (in real Swahili).  You just add one line to the ROOT chart with the new verb.  You've saved yourself a lot of time in the future, at the cost of some programming work right now.

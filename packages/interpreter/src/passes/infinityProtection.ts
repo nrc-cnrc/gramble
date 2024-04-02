@@ -20,6 +20,7 @@ import { exhaustive, update } from "../utils/func";
 import { Msg } from "../utils/msgs";
 import { CounterStack } from "../utils/counter";
 import { Options } from "../utils/options";
+import { DEFAULT_MAX_CHARS } from "../utils/constants";
 
 export class InfinityProtection extends Pass<Grammar,Grammar> {
 
@@ -50,7 +51,14 @@ export class InfinityProtection extends Pass<Grammar,Grammar> {
         if (len.max !== Infinity) return g;
 
         // it's potentially infinite, add a Count for protection
-        const child = new CountGrammar(g.child, g.tapeName, env.opt.maxChars, false, false);
+        let maxChars: number;
+        if (typeof env.opt.maxChars === 'number')
+            maxChars = env.opt.maxChars;
+        else if (g.tapeName in env.opt.maxChars)
+            maxChars = env.opt.maxChars[g.tapeName];
+        else
+            maxChars = DEFAULT_MAX_CHARS;
+        const child = new CountGrammar(g.child, g.tapeName, maxChars, false, false);
         return update(g, {child}).tapify(env);
     }
 }
@@ -69,7 +77,10 @@ export function infinityProtection(
         const len = lengthRange(grammar, tape, stack, env);
         if (len.null == true) continue;
         if (len.max == Infinity && env.opt.maxChars != Infinity) {
-            maxCharsDict[tape] = env.opt.maxChars;
+            if (typeof env.opt.maxChars === 'number')
+                maxCharsDict[tape] = env.opt.maxChars;
+            else if (tape in maxCharsDict)
+                maxCharsDict[tape] = env.opt.maxChars[tape];
             foundInfinite = true;
         }
     }
