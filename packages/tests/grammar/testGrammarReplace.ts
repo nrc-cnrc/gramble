@@ -1,7 +1,6 @@
 import {
-    BoundingSet, Count, Cursor, Epsilon,
-    OptionalReplace, OptionalRewrite, Query, Replace, 
-    Rewrite, 
+    BoundingSet, Count, Epsilon,
+    OptionalRewrite, Rewrite, 
     Uni, WithVocab
 } from "../../interpreter/src/grammarConvenience";
 
@@ -1122,7 +1121,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'haa', $o: 'ha'}, {$i: 'laa', $o: 'la'},
             // See test 26a for a discussion of the following 2 results.
             {$i: 'aaaa', $o: 'aa'},  // (aa)(aa) -> (a)(a)
-            {$i: 'aaaa', $o: 'aaa'}, // a(aa)a -> a(a)a which is valid
+            // New Rewrite algorithm is greedy, so the following result is not possible.
+            // {$i: 'aaaa', $o: 'aaa'}, // a(aa)a -> a(a)a which is valid
             {$i: 'aaah', $o: 'aah'},  {$i: 'aaal', $o: 'aal'},
             {$i: 'aaha', $o: 'aha'},  {$i: 'aahh', $o: 'ahh'},
             {$i: 'aahl', $o: 'ahl'},  {$i: 'aala', $o: 'ala'},
@@ -1988,6 +1988,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {$i: 'aba', $o: 'X'},
         ],
+        // verbose: VERBOSE_DEBUG,
     });
 
     testGrammar({
@@ -2000,13 +2001,16 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {$i: 'aba', $o: 'X'},
         ],
+        verbose: VERBOSE_DEBUG,
     });
 
     // 26a-b: Tests exploring the ways for replacements to yield multiple
     // outputs for an input.
     // This is a phenomenon that occurs with repeated overlapping patterns
-    // in a string. For example, the pattern ABA in the string ABABABA can
+    // in a string. For example, the pattern ABA in the string ABABABA could
     // be found as (ABA)B(ABA) or AB(ABA)BA.
+    // The new Rewrite algorithm is greedy, so some results that used to be
+    // returned are no longer possible.
     // Test 26a is based on test 17.
 
     testGrammar({
@@ -2019,10 +2023,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'aa', $o: 'a'},
             {$i: 'aaa', $o: 'aa'},      // 2 ways: (aa)a, a(aa)
             {$i: 'aaaa', $o: 'aa'},     // (aa)(aa) -> (a)(a)
-            {$i: 'aaaa', $o: 'aaa'},    // a(aa)a -> a(a)a which is valid
+            // {$i: 'aaaa', $o: 'aaa'},    // a(aa)a -> a(a)a which is valid
             {$i: 'aaaaa', $o: 'aaa'},   // 3 ways: a(aa)(aa), (aa)a(aa), (aa)(aa)a
             {$i: 'aaaaaa', $o: 'aaa'},  // (aa)(aa)(aa) -> (a)(a)(a)
-            {$i: 'aaaaaa', $o: 'aaaa'}, // a(aa)a(aa) -> a(a)a(a)
+            // {$i: 'aaaaaa', $o: 'aaaa'}, // a(aa)a(aa) -> a(a)a(a)
                                         // (aa)a(aa)a -> (a)a(a)a
                                         // a(aa)(aa)a -> a(a)(a)a
             // Copy-through
@@ -2034,7 +2038,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     // Note: test 26b is affected by the issue explored in tests 25a-c.
     const io_26b: StringDict[] = [
-        {$i: 'abababa', $o: 'abXba'},
+        // {$i: 'abababa', $o: 'abXba'},
         {$i: 'abababa', $o: 'XbX'},
     ];
 
