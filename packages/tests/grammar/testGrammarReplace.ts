@@ -1500,21 +1500,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         {$i: 'hiliiihhhlllhil', t3: EMPTY},
     ];
 
-    /*
-    testGrammar({
-        desc: '22. Replace i by a in hil: Spotchk_14 i -> a || h_l + t3:[1SG]',
-        grammar: Count({$i:14, $o:14},
-                    Rewrite("i", "a", "h", "l", t3("[1SG]"))),
-        //vocab: {
-        //    $i:["a","h","i","l"], 
-        //    $o:["a","h","i","l"], 
-        //    t3:["[","1","S","G","]"]
-        //},
-        query: inputs(io_22),
-        results: outputs(io_22),
-    });
-    */
-
     testGrammar({
         desc: '23a. Replace ε by a: Cnt_o:3 ε -> a || #_ ($o:ahl)',
         grammar: Count({$o:3},
@@ -2001,7 +1986,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {$i: 'aba', $o: 'X'},
         ],
-        verbose: VERBOSE_DEBUG,
+        //verbose: VERBOSE_DEBUG,
     });
 
     // 26a-b: Tests exploring the ways for replacements to yield multiple
@@ -2101,4 +2086,5 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'ih', $o: 'ih'}, {$i: 'ii', $o: 'ii'},
         ],
     });
+
 });

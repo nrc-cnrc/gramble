@@ -888,7 +888,7 @@ class RewriteExpr extends Expr {
         public postChild: Expr = EPSILON,
         public beginsWith: boolean = false,
         public endsWith: boolean = false,
-        public optional: boolean = false,
+        public optional: boolean = false
     ) {
         super();
     }
@@ -903,9 +903,11 @@ class RewriteExpr extends Expr {
         tapeName: string,
         env: DerivEnv
     ): Expr {
-        if (tapeName != INPUT_TAPE) {
+        
+        if (tapeName != INPUT_TAPE && tapeName != OUTPUT_TAPE) {
             return this;
         }
+
         const inputMaterial = constructSeq(env, this.preChild, this.inputChild, this.postChild);
         const inputDelta = inputMaterial.delta(tapeName, env);
         if (!(inputDelta instanceof NullExpr)) {
@@ -922,7 +924,7 @@ class RewriteExpr extends Expr {
         env: DerivEnv
     ): Derivs {
 
-        if (query.tapeName != INPUT_TAPE) {
+        if (query.tapeName != INPUT_TAPE && query.tapeName != OUTPUT_TAPE) {
             return;
         }
 
@@ -2058,8 +2060,6 @@ export class CorrespondExpr extends UnaryExpr {
                                             this.outputTape));
             }
 
-            // the output tape is special, if it's nullable but has emitted fewer tokens than
-            // the input tape has, it can emit an epsilon
             const cNext = this.child.delta(query.tapeName, env);
             if (!(cNext instanceof NullExpr)) {
                 const wrapped = constructCorrespond(env, cNext, 
@@ -2152,7 +2152,7 @@ export class MatchExpr extends UnaryExpr {
             for (const c of d.result.expandStrings(env)) {
                 //if (!oppositeTape.vocab.has(c)) continue;
                 
-                const lit = constructToken(oppositeTapeName, c);
+                const lit = constructLiteral(env, oppositeTapeName, c, [c]);
                 const next = constructPrecede(env, lit, wrapped);
                 const token = constructToken(query.tapeName, c);
                 yield new Deriv(token, next);
