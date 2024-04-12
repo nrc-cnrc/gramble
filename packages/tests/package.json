@@ -52,6 +52,7 @@
     "testGrammarRename": "mocha -r ts-node/register grammar/testGrammarRename.ts",
     "testGrammarRepeat": "mocha -r ts-node/register grammar/testGrammarRepeat.ts",
     "testGrammarReplace": "mocha -r ts-node/register grammar/testGrammarReplace.ts",
+    "testGrammarReplaceEpsilon": "mocha -r ts-node/register grammar/testGrammarReplaceEpsilon.ts",
     "testGrammarRewrite": "mocha -r ts-node/register grammar/testGrammarRewrite.ts",
     "testGrammarShort": "mocha -r ts-node/register grammar/testGrammarShort.ts",
     "testGrammarSingleTape": "mocha -r ts-node/register grammar/testGrammarSingleTape.ts",
