@@ -83,6 +83,7 @@ export class ConstructReplaceBlocks extends AutoPass<Grammar> {
                               ` in "pre/from/post": ${inputMaterial.tapeNames}`);
         }
 
+        /*
         const inputTape = inputMaterial.tapeNames[0];
         const inputLength = lengthRange(inputMaterial, inputTape, stack, env);
         if (inputLength.null == false && inputLength.min == 0 && 
@@ -93,7 +94,7 @@ export class ConstructReplaceBlocks extends AutoPass<Grammar> {
                         "This rule can execute unconditionally " +
                         "(i.e. can trigger on an empty input).");
         }
-
+        */
         const outputTape = g.outputChild.tapeNames[0];
         const outputLength = lengthRange(g.outputChild, outputTape, stack, env);
         if (outputLength.null == false && outputLength.max == Infinity) {
