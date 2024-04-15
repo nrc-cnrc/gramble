@@ -1,6 +1,7 @@
 import { 
     Count, Epsilon, Null, Rep,
     Rewrite, ReplaceBlock, Uni, WithVocab,
+    OptionalRewrite,
 } from "../../interpreter/src/grammarConvenience";
 
 import { DEFAULT_TAPE } from "../../interpreter/src/utils/constants";
@@ -579,27 +580,60 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     });
 
-    /*
     testGrammar({
-        desc: '14. Unconditional generation: abc ⨝ "" -> D (vocab abcdABCD)',
-        grammar: WithVocab({t1: "abcABC"},
-        			 Count({t1:5},
-                         ReplaceBlock("t1", "ab",
-                                      OptionalRewrite("", "C")))),
+        desc: '14a. Unconditional generation: ab ⨝ "" -> C',
+        grammar: ReplaceBlock("t1", "ab",
+                    Rewrite("", "C")),
         results: [
-            {t1: 'CCaCb'}, {t1: 'CCabC'}, {t1: 'CCab'},
-            {t1: 'CCCab'}, {t1: 'CaCbC'}, {t1: 'CaCb'},
-            {t1: 'CaCCb'}, {t1: 'CabCC'}, {t1: 'CabC'},
-            {t1: 'Cab'},   {t1: 'aCCbC'}, {t1: 'aCCb'},
-            {t1: 'aCCCb'}, {t1: 'aCbCC'}, {t1: 'aCbC'},
-            {t1: 'aCb'},   {t1: 'abCCC'}, {t1: 'abCC'},
-            {t1: 'abC'},   {t1: 'ab'},
+            {t1: 'CaCbC'},
         ],
     });
-    */
 
     testGrammar({
-        desc: '15. Rewritement of ε ⨝ e -> a',
+        desc: '14b. Unconditional generation, cascading: ab ⨝ "" -> C, "" -> D',
+        grammar: ReplaceBlock("t1", "ab",
+                            Rewrite("", "C"),
+                            Rewrite("", "D")),
+        results: [
+            {t1: 'DCDaDCDbDCD'},
+        ],
+    });
+
+    testGrammar({
+        desc: '14c. Unconditional generation, optional: ab ⨝ "" -> C',
+        grammar: ReplaceBlock("t1", "ab",
+                        OptionalRewrite("", "C")),
+        results: [
+            {t1: 'CaCbC'},
+            {t1: 'CaCb'}, 
+            {t1: 'CabC'},
+            {t1: 'Cab'},  
+            {t1: 'aCbC'},
+            {t1: 'aCb'},  
+            {t1: 'abC'},
+            {t1: 'ab'},
+        ],
+    });
+
+    testGrammar({
+        desc: '14d. Unconditional generation, cascading, first optional',
+        grammar: ReplaceBlock("t1", "ab",
+                    OptionalRewrite("", "C"),
+                    Rewrite("C", "D")),
+        results: [
+            {t1: 'DaDbD'},
+            {t1: 'DaDb'}, 
+            {t1: 'DabD'},
+            {t1: 'Dab'},  
+            {t1: 'aDbD'},
+            {t1: 'aDb'},  
+            {t1: 'abD'},
+            {t1: 'ab'},
+        ],
+    });
+
+    testGrammar({
+        desc: '15. Replacement of ε ⨝ e -> a',
         grammar: ReplaceBlock(DEFAULT_TAPE,
                               Epsilon(),
                               Rewrite("e", "a")),
@@ -610,7 +644,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '16a. Rewritement of alternation: hello|hell ⨝ e -> a',
+        desc: '16a. Replacement of alternation: hello|hell ⨝ e -> a',
         grammar: ReplaceBlock(DEFAULT_TAPE, 
                               Uni("hello", "hell"),
                               Rewrite("e", "a")),
@@ -621,7 +655,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
     
     testGrammar({
-        desc: '16b. Rewritement of alternation: h|hi ⨝ e -> a',
+        desc: '16b. Replacement of alternation: h|hi ⨝ e -> a',
         grammar: ReplaceBlock(DEFAULT_TAPE, 
                               Uni("h", "hi"),
                               Rewrite("e", "a")),
@@ -632,7 +666,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '16c. Rewritement of alternation: hello|hell|ε ⨝ e -> a',
+        desc: '16c. Replacement of alternation: hello|hell|ε ⨝ e -> a',
         grammar: ReplaceBlock(DEFAULT_TAPE, 
                               Uni("hello", "hell", Epsilon()),
                               Rewrite("e", "a")),
@@ -644,7 +678,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '17a. Rewritement of repetition: hello* ⨝ e -> a',
+        desc: '17a. Replacement of repetition: hello* ⨝ e -> a',
         grammar: Count({[DEFAULT_TAPE]:10}, 
                     ReplaceBlock(DEFAULT_TAPE, 
                                  Rep("hello"),
@@ -657,7 +691,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '17b. Rewritement of repetition: (hello|hi)* ⨝ e -> a',
+        desc: '17b. Replacement of repetition: (hello|hi)* ⨝ e -> a',
         grammar: Count({[DEFAULT_TAPE]:6}, 
                     ReplaceBlock(DEFAULT_TAPE, 
                                  Rep(Uni("hello", "hi")),
@@ -672,7 +706,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
     
     testGrammar({
-        desc: '17c. Rewritement of repetition: (hello|hi|ε)* ⨝ e -> a',
+        desc: '17c. Replacement of repetition: (hello|hi|ε)* ⨝ e -> a',
         grammar: Count({[DEFAULT_TAPE]:6}, 
                     ReplaceBlock(DEFAULT_TAPE, 
                                  Rep(Uni("hello", "hi", Epsilon())),
@@ -687,7 +721,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '18. Rewritement of null ⨝ e -> a',
+        desc: '18. Replacement of null ⨝ e -> a',
         grammar: ReplaceBlock(DEFAULT_TAPE, 
                     Null(), Rewrite("e","a")),
         results: [],
