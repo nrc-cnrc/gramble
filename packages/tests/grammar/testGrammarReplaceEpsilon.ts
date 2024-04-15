@@ -2,7 +2,7 @@ import {
     BoundingSet, Count, Epsilon,
     Join,
     Lit,
-    OptionalRewrite, Rewrite, 
+    OptionalReplace, Replace, 
     Uni, WithVocab
 } from "../../interpreter/src/grammarConvenience";
 
@@ -33,8 +33,8 @@ function vb(verbosity: number): number {
 
 const EMPTY_CONTEXT = Epsilon();
 
-type RewriteTest = Partial<GrammarTestAux> & { io?: [string, string][] };
-function testIO(params: RewriteTest): () => void {
+type ReplaceTest = Partial<GrammarTestAux> & { io?: [string, string][] };
+function testIO(params: ReplaceTest): () => void {
     if (params.io !== undefined) {
         params.results = params.io.map(([i,o]) => {
             const result: StringDict = {};
@@ -57,56 +57,56 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     logTestSuite(this.title);
 
     describe("1a. Replace epsilon in 'abc'", testIO({
-        grammar: Join(Input("abc"), Rewrite("", "X", Epsilon(), Epsilon(), false, false)),
+        grammar: Join(Input("abc"), Replace("", "X", Epsilon(), Epsilon(), false, false)),
         io: [
             ["abc", "XaXbXcX"]
         ],
     }));
 
     describe("1b. Replace epsilon in 'abc', beginsWith", testIO({
-        grammar: Join(Input("abc"), Rewrite("", "X", Epsilon(), Epsilon(), true, false)),
+        grammar: Join(Input("abc"), Replace("", "X", Epsilon(), Epsilon(), true, false)),
         io: [
             ["abc", "Xabc"]
         ],
     }));
 
     describe("1c. Replace epsilon in 'abc', endsWith", testIO({
-        grammar: Join(Input("abc"), Rewrite("", "X", Epsilon(), Epsilon(), false, true)),
+        grammar: Join(Input("abc"), Replace("", "X", Epsilon(), Epsilon(), false, true)),
         io: [
             ["abc", "abcX"]
         ],
     }));
     
     describe("1d. Replace epsilon in 'abc', beginsWith endsWith", testIO({
-        grammar: Join(Input("abc"), Rewrite("", "X", Epsilon(), Epsilon(), true, true)),
+        grammar: Join(Input("abc"), Replace("", "X", Epsilon(), Epsilon(), true, true)),
         io: [
             ["abc", "abc"]
         ],
     }));
 
     describe("2a. Replace epsilon in ''", testIO({
-        grammar: Join(Input(""), Rewrite("", "X", Epsilon(), Epsilon(), false, false)),
+        grammar: Join(Input(""), Replace("", "X", Epsilon(), Epsilon(), false, false)),
         io: [
             ["", "X"]
         ],
     }));
 
     describe("2b. Replace epsilon in '', beginsWith", testIO({
-        grammar: Join(Input(""), Rewrite("", "X", Epsilon(), Epsilon(), true, false)),
+        grammar: Join(Input(""), Replace("", "X", Epsilon(), Epsilon(), true, false)),
         io: [
             ["", "X"]
         ],
     }));
     
     describe("2c. Replace epsilon in '', endsWith", testIO({
-        grammar: Join(Input(""), Rewrite("", "X", Epsilon(), Epsilon(), false, true)),
+        grammar: Join(Input(""), Replace("", "X", Epsilon(), Epsilon(), false, true)),
         io: [
             ["", "X"]
         ],
     }));
 
     describe("2d. Replace epsilon in '', beginsWith endsWith", testIO({
-        grammar: Join(Input(""), Rewrite("", "X", Epsilon(), Epsilon(), true, true)),
+        grammar: Join(Input(""), Replace("", "X", Epsilon(), Epsilon(), true, true)),
         io: [
             ["", "X"]
         ],
@@ -114,7 +114,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     
     describe("3a. Replace epsilon in 'ab', optional", testIO({
-        grammar: Join(Input("ab"), OptionalRewrite("", "X", Epsilon(), Epsilon(), false, false)),
+        grammar: Join(Input("ab"), OptionalReplace("", "X", Epsilon(), Epsilon(), false, false)),
         io: [
             ["ab", "ab"],
             ["ab", "abX"],
@@ -128,7 +128,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     }));
 
     describe("3b. Replace epsilon in 'ab', beginsWith optional", testIO({
-        grammar: Join(Input("ab"), OptionalRewrite("", "X", Epsilon(), Epsilon(), true, false)),
+        grammar: Join(Input("ab"), OptionalReplace("", "X", Epsilon(), Epsilon(), true, false)),
         io: [
             ["ab", "ab"],
             ["ab", "Xab"],
@@ -136,7 +136,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     }));
 
     describe("3c. Replace epsilon in 'ab', endsWith optional", testIO({
-        grammar: Join(Input("ab"), OptionalRewrite("", "X", Epsilon(), Epsilon(), false, true)),
+        grammar: Join(Input("ab"), OptionalReplace("", "X", Epsilon(), Epsilon(), false, true)),
         io: [
             ["ab", "ab"],
             ["ab", "abX"]
@@ -144,14 +144,14 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     }));
     
     describe("3d. Replace epsilon in 'ab', beginsWith endsWith optional", testIO({
-        grammar: Join(Input("ab"), OptionalRewrite("", "X", Epsilon(), Epsilon(), true, true)),
+        grammar: Join(Input("ab"), OptionalReplace("", "X", Epsilon(), Epsilon(), true, true)),
         io: [
             ["ab", "ab"]
         ],
     }));
 
     describe("4a. Replace epsilon in '', optional", testIO({
-        grammar: Join(Input(""), OptionalRewrite("", "X", Epsilon(), Epsilon(), false, false)),
+        grammar: Join(Input(""), OptionalReplace("", "X", Epsilon(), Epsilon(), false, false)),
         io: [
             ["", ""],
             ["", "X"]
@@ -159,7 +159,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     }));
 
     describe("4b. Replace epsilon in '', beginsWith optional", testIO({
-        grammar: Join(Input(""), OptionalRewrite("", "X", Epsilon(), Epsilon(), true, false)),
+        grammar: Join(Input(""), OptionalReplace("", "X", Epsilon(), Epsilon(), true, false)),
         io: [
             ["", ""],
             ["", "X"]
@@ -167,7 +167,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     }));
     
     describe("4c. Replace epsilon in '', endsWith optional", testIO({
-        grammar: Join(Input(""), OptionalRewrite("", "X", Epsilon(), Epsilon(), false, true)),
+        grammar: Join(Input(""), OptionalReplace("", "X", Epsilon(), Epsilon(), false, true)),
         io: [
             ["", ""],
             ["", "X"]
@@ -175,7 +175,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     }));
 
     describe("4d. Replace epsilon in '', beginsWith endsWith optional", testIO({
-        grammar: Join(Input(""), OptionalRewrite("", "X", Epsilon(), Epsilon(), true, true)),
+        grammar: Join(Input(""), OptionalReplace("", "X", Epsilon(), Epsilon(), true, true)),
         io: [
             ["", ""],
             ["", "X"]
@@ -186,7 +186,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '5a. Replace ε by a: Cnt_o:3 ε -> a || #_ ($o:ahl)',
         grammar: Count({$o:3},
         			 WithVocab({$o:'ahl'},
-                        Rewrite("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT, true, false))),
+                        Replace("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT, true, false))),
         //vocab: {$i:3, $o:3},
         results: [
             {$o: 'a'},  // equivalent to {$i: '', $o: 'a'}
@@ -204,7 +204,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '5b. Replace ε by a: Cnt_o:3 ε -> a || _# (vocab $o:ahl)',
         grammar: Count({$o:3},
         			 WithVocab({$o:'ahl'},
-                        Rewrite("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT, false, true))),
+                        Replace("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT, false, true))),
         //vocab: {$i:3, $o:3},
         results: [
             {$o: 'a'},  // equivalent to {$i: '', $o: 'a'}
@@ -222,7 +222,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '5c. Replace ε by a: Cnt_i:2_o:3 ε -> a || #_# (vocab $o:ahl)',
         grammar: Count({$i:2, $o:3},
         			 WithVocab({$o:'ahl'},
-                        Rewrite("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT, true, true))),
+                        Replace("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT, true, true))),
         //vocab: {$i:3, $o:3},
         results: [
             // Insertions
@@ -242,7 +242,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '5d. Replace ε by a: Cnt_3 ε -> a (vocab $o:ahl)',
         grammar: Count({$i:3},
         			 WithVocab({$o:'ahl'},
-                         Rewrite("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT))),
+                         Replace("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT))),
         results: [
             { "$o": "a" },
             { "$i": "a", "$o": "aaa" },
@@ -291,7 +291,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '6a. Replace ε by a, optional: Cnt_3 ε -> a (vocab $o:ahl)',
         grammar: Count({$i:3, $o:3},
         			 WithVocab({$o:'ahl'},
-                     	 OptionalRewrite("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT))),
+                     	 OptionalReplace("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT))),
         results: [
             // Insertions
             {$o: 'a'},      // equivalent to {$i: '', $o: 'a'}\
@@ -340,7 +340,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '6b. Replace ε by a, optional: Cnt_i:1_2:5 ε -> a (vocab $i:ah)',
         grammar: Count({$i:1, $o:5},
         			 WithVocab({$i:'ah'},
-                     	 OptionalRewrite("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT))),
+                     	 OptionalReplace("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT))),
         results: [
             // Insertions
             {$o: 'a'},
@@ -359,7 +359,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '6c. Replace ε by a, optional: Cnt_i:2_o:4 ε -> a (vocab $i:ah)',
         grammar: Count({$i:2, $o:4},
         			 WithVocab({$i:'ah'},
-                     	 OptionalRewrite("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT))),
+                     	 OptionalReplace("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT))),
         results: [
             // Insertions
             {$o: 'a'},      // equivalent to {$i: '', $o: 'a'}
@@ -398,7 +398,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '7a. Replace ε|h by a, optional: Cnt_i:2_o:3 ε|h -> a (vocab $i:ahl)',
         grammar: Count({$i:2, $o:3},
         			 WithVocab({$i:'ahl'},
-                     	 OptionalRewrite(Uni("", "h"), "a",
+                     	 OptionalReplace(Uni("", "h"), "a",
                                          EMPTY_CONTEXT, EMPTY_CONTEXT))),
         results: [
             // 1-2 Insertions, 0 Replacements
@@ -447,7 +447,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '7b. Replace ε|h by a, optional: Cnt_i:3_o:4 ε|h -> a (vocab $i:ah)',
         grammar: Count({$i:3, $o:4},
         			 WithVocab({$i:'ah'},
-                         OptionalRewrite(Uni("", "h"), "a",
+                         OptionalReplace(Uni("", "h"), "a",
                                          EMPTY_CONTEXT, EMPTY_CONTEXT))),
         //vocab: {$i:2, $o:2},
         results: [
@@ -531,7 +531,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '8a. Replace a by ε: Cnt_o:2 a -> ε || #_ (vocab $i:ahl)',
         grammar: Count({$o:2},
         			 WithVocab({$i:'ahl'},
-                     	 Rewrite("a", "", EMPTY_CONTEXT, EMPTY_CONTEXT, true, false))),
+                     	 Replace("a", "", EMPTY_CONTEXT, EMPTY_CONTEXT, true, false))),
         //vocab: {$i:3, $o:3},
         results: [
             // Deletions
@@ -555,7 +555,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '8b. Replace a by ε: Cnt_o:2 a -> ε || _# (vocab $i:ahl)',
         grammar: Count({$o:2},
         			 WithVocab({$i:'ahl'},
-                     	 Rewrite("a", "", EMPTY_CONTEXT, EMPTY_CONTEXT, false, true))),
+                     	 Replace("a", "", EMPTY_CONTEXT, EMPTY_CONTEXT, false, true))),
         //vocab: {$i:3, $o:3},
         results: [
             // Deletions
@@ -579,7 +579,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '8c. Replace a by ε: Cnt_o:2 a -> ε || #_# (vocab $i:ahl)',
         grammar: Count({$o:2},
         			 WithVocab({$i:'ahl'},
-                     	 Rewrite("a", "", EMPTY_CONTEXT, EMPTY_CONTEXT, true, true))),
+                     	 Replace("a", "", EMPTY_CONTEXT, EMPTY_CONTEXT, true, true))),
         //vocab: {$i:3, $o:3},
         results: [
             // Deletions
@@ -599,7 +599,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '8d. Replace a by ε: Cnt_3 a -> ε (vocab $i:ahl)',
         grammar: Count({$i:3, $o:3},
         			 WithVocab({$i:'ahl'},
-                     	 Rewrite("a", "", EMPTY_CONTEXT, EMPTY_CONTEXT))),
+                     	 Replace("a", "", EMPTY_CONTEXT, EMPTY_CONTEXT))),
         //vocab: {$i:3, $o:3},
         results: [
             // Deletions

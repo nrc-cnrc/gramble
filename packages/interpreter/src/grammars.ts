@@ -42,7 +42,6 @@ export type Grammar = EpsilonGrammar
              | ContainsGrammar
              | FilterGrammar
              | PriorityUnionGrammar
-             | RewriteGrammar
              | SingleTapeGrammar
              | RenameGrammar
              | RepeatGrammar
@@ -229,8 +228,8 @@ export class PriorityUnionGrammar extends BinaryGrammar {
     public readonly tag = "priority";
 }
 
-export class RewriteGrammar extends AbstractGrammar {
-    public readonly tag = "rewrite";
+export class ReplaceGrammar extends AbstractGrammar {
+    public readonly tag = "replace";
     constructor(
         public inputChild: Grammar,
         public outputChild: Grammar,
@@ -461,7 +460,7 @@ export class ReplaceBlockGrammar extends AbstractGrammar {
     constructor(
         public inputTape: string,
         public child: Grammar,
-        public rules: RewriteGrammar[]
+        public rules: ReplaceGrammar[]
     ) {
         super();
     }
@@ -476,32 +475,6 @@ export class CorrespondGrammar extends UnaryGrammar {
         public outputTape: string = OUTPUT_TAPE
     ) {
         super(child);
-    }
-
-}
-
-export class ReplaceGrammar extends AbstractGrammar {
-    public readonly tag = "replace";
-
-    constructor(
-        public inputGrammar: Grammar,
-        public outputGrammar: Grammar,
-        public preContext: Grammar,
-        public postContext: Grammar, 
-        public otherContext: Grammar,
-        public beginsWith: boolean = false,
-        public endsWith: boolean = false,
-        public minReps: number = 0,
-        public maxReps: number = Infinity,
-        public hiddenTapeName: string = "",
-        public optional: boolean
-    ) {
-        super();
-        if (this.hiddenTapeName.length == 0) {
-            this.hiddenTapeName = `${HIDDEN_PREFIX}R${INDICES.REPLACE++}`;
-        } else if (!this.hiddenTapeName.startsWith(HIDDEN_PREFIX)) {
-            this.hiddenTapeName = HIDDEN_PREFIX + this.hiddenTapeName;
-        }
     }
 
 }

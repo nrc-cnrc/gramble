@@ -11,8 +11,8 @@ import {
     NullGrammar, PreTapeGrammar, 
     PriorityUnionGrammar, 
     RenameGrammar, RepeatGrammar, 
-    ReplaceBlockGrammar, ReplaceGrammar, 
-    RewriteGrammar, 
+    ReplaceBlockGrammar,
+    ReplaceGrammar, 
     SequenceGrammar, ShortGrammar, 
     SingleTapeGrammar, 
     StartsGrammar 
@@ -30,99 +30,36 @@ export function SingleTape(
     return new SingleTapeGrammar(tapeName, child);
 }
 
-export function Rewrite(
-    inputChild: Grammar|string, 
-    outputChild: Grammar|string,
-    preChild: Grammar|string = Epsilon(),
-    postChild: Grammar|string = Epsilon(),
-    beginsWith: boolean = false,
-    endsWith: boolean = false,
-    name: string = "",
-): RewriteGrammar {
-    inputChild = SingleTape(INPUT_TAPE, inputChild);
-    outputChild = SingleTape(OUTPUT_TAPE, outputChild);
-    preChild = SingleTape(INPUT_TAPE, preChild);
-    postChild = SingleTape(INPUT_TAPE, postChild);
-    return new RewriteGrammar(inputChild, outputChild, preChild, postChild, beginsWith, endsWith, false, name);
-}
-
-export function OptionalRewrite(
-    inputChild: Grammar|string, 
-    outputChild: Grammar|string,
-    preChild: Grammar|string = Epsilon(),
-    postChild: Grammar|string = Epsilon(),
-    beginsWith: boolean = false,
-    endsWith: boolean = false,
-    name: string = "",
-): RewriteGrammar {
-    inputChild = SingleTape(INPUT_TAPE, inputChild);
-    outputChild = SingleTape(OUTPUT_TAPE, outputChild);
-    preChild = SingleTape(INPUT_TAPE, preChild);
-    postChild = SingleTape(INPUT_TAPE, postChild);
-    return new RewriteGrammar(inputChild, outputChild, preChild, postChild, beginsWith, endsWith, true, name);
-}
-
-
-/**
-  * Replace implements general phonological replacement rules.
-  * 
-  * NOTE: The defaults for this convenience function differ from those 
-  * in the constructor of ReplaceGrammar.  These are the defaults appropriate
-  * for testing, whereas the defaults in ReplaceGrammar are appropriate for
-  * the purposes of converting tabular syntax into grammars.
-  * 
-  * inputGrammar: input (target) Grammar (on inputTape)
-  * toGrammar: output (change) Grammar (on one or more outputTapes)
-  * preContext: context to match before the target inputGrammar (on inputTape)
-  * postContext: context to match after the target inputGrammar (on inputTape)
-  * otherContext: context to match on other tapes (other than inputTape & outputTapes)
-  * beginsWith: set to True to match at the start of inputTape
-  * endsWith: set to True to match at the end of inputTape
-  * minReps: minimum number of times the replace rule is applied; normally 0
-  * maxReps: maximum number of times the replace rule is applied
-*/
 export function Replace(
-    inputGrammar: Grammar | string, 
-    outputGrammar: Grammar | string,
-    preContext: Grammar | string = Epsilon(),
-    postContext: Grammar | string = Epsilon(),
-    otherContext: Grammar | string = Epsilon(),
-    beginsWith: boolean = false, 
+    inputChild: Grammar|string, 
+    outputChild: Grammar|string,
+    preChild: Grammar|string = Epsilon(),
+    postChild: Grammar|string = Epsilon(),
+    beginsWith: boolean = false,
     endsWith: boolean = false,
-    minReps: number = 0, 
-    maxReps: number = Infinity,
-    hiddenTapeName: string = "",
-    optional: boolean = false
+    name: string = "",
 ): ReplaceGrammar {
-    if (typeof preContext === 'string' && preContext.startsWith("#"))
-        beginsWith = true;
-    if (typeof postContext === 'string' && postContext.endsWith("#"))
-        endsWith = true;
-    inputGrammar = SingleTape(INPUT_TAPE, inputGrammar);
-    outputGrammar = SingleTape(OUTPUT_TAPE, outputGrammar);
-    preContext = SingleTape(INPUT_TAPE, preContext);
-    postContext = SingleTape(INPUT_TAPE, postContext);
-    otherContext = makeGrammar(otherContext);
-    return new ReplaceGrammar(inputGrammar, outputGrammar, 
-        preContext, postContext, otherContext, beginsWith, endsWith, 
-        minReps, maxReps, hiddenTapeName, optional);
+    inputChild = SingleTape(INPUT_TAPE, inputChild);
+    outputChild = SingleTape(OUTPUT_TAPE, outputChild);
+    preChild = SingleTape(INPUT_TAPE, preChild);
+    postChild = SingleTape(INPUT_TAPE, postChild);
+    return new ReplaceGrammar(inputChild, outputChild, preChild, postChild, beginsWith, endsWith, false, name);
 }
 
 export function OptionalReplace(
-    inputGrammar: Grammar | string, 
-    outputGrammar: Grammar | string,
-    preContext: Grammar | string = Epsilon(), 
-    postContext: Grammar | string = Epsilon(),
-    otherContext: Grammar | string = Epsilon(),
-    beginsWith: boolean = false, 
+    inputChild: Grammar|string, 
+    outputChild: Grammar|string,
+    preChild: Grammar|string = Epsilon(),
+    postChild: Grammar|string = Epsilon(),
+    beginsWith: boolean = false,
     endsWith: boolean = false,
-    minReps: number = 0, 
-    maxReps: number = Infinity,
-    hiddenTapeName: string = ""
+    name: string = "",
 ): ReplaceGrammar {
-    return Replace(inputGrammar, outputGrammar, 
-        preContext, postContext, otherContext, beginsWith, endsWith, 
-        minReps, maxReps, hiddenTapeName, true);
+    inputChild = SingleTape(INPUT_TAPE, inputChild);
+    outputChild = SingleTape(OUTPUT_TAPE, outputChild);
+    preChild = SingleTape(INPUT_TAPE, preChild);
+    postChild = SingleTape(INPUT_TAPE, postChild);
+    return new ReplaceGrammar(inputChild, outputChild, preChild, postChild, beginsWith, endsWith, true, name);
 }
 
 export function BoundingSet(
@@ -164,10 +101,10 @@ export function BoundingSet(
 export function ReplaceBlock(
     inputTape: string,
     child: Grammar | string,
-    ...rules: RewriteGrammar[]
+    ...rules: ReplaceGrammar[]
 ): ReplaceBlockGrammar {
     child = makeGrammar(child, inputTape);
-    if (rules instanceof RewriteGrammar) rules = [rules];
+    if (rules instanceof ReplaceGrammar) rules = [rules];
     return new ReplaceBlockGrammar(inputTape, child, rules);
 }
 

@@ -5,11 +5,11 @@ import {
     Embed, Ends, Epsilon,
     Hide, Join, Match, Not,
     Null, Rename, Rep,
-    Replace, ReplaceBlock, Rewrite, Seq, 
+    ReplaceBlock, Replace, Seq, 
     Short, SingleTape, Starts, Uni
 } from "../../interpreter/src/grammarConvenience";
 
-import { Grammar, ReplaceGrammar, RewriteGrammar } from "../../interpreter/src/grammars";
+import { Grammar, ReplaceGrammar } from "../../interpreter/src/grammars";
 import { CalculateTapes } from "../../interpreter/src/passes/calculateTapes";
 import { FlattenCollections } from "../../interpreter/src/passes/flattenCollections";
 import { SelectSymbol } from "../../interpreter/src/passes/selectSymbol";
@@ -105,8 +105,8 @@ function NamedReplace(
     o: string,
     pre: string = "",
     post: string = ""
-): RewriteGrammar {
-    return Rewrite(i, o, pre, post, false, false, name)
+): ReplaceGrammar {
+    return Replace(i, o, pre, post, false, false, name)
 }
 
 describe(`Pass ${testSuiteName(module)}`, function() {
@@ -1486,26 +1486,5 @@ describe(`Pass ${testSuiteName(module)}`, function() {
             "t1": ["h","i"],
             "t2": ["h","i"]
         }
-    });
-
-    testGrammarTapes({
-        desc: "38a",
-        grammar: Replace("e", "a", "h", "llo", t3("1SG")),
-        tapes: {
-            "$i": ["h","e","l","o","a"],
-            "$o": ["h","e","l","o","a"],
-            "t3": ["1","S","G"],
-        },
-    });
-
-    testGrammarTapes({
-        desc: "38a-atom",
-        atomicity: true,
-        grammar: Replace("e", "a", "h", "llo", t3("1SG")),
-        tapes: {
-            "$i": ["h","e","l","o","a"],
-            "$o": ["h","e","l","o","a"],
-            "t3": ["1SG"],
-        },
     });
 });

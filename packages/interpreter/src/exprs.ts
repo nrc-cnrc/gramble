@@ -877,7 +877,7 @@ export class UnionExpr extends Expr {
     }
 }
 
-class RewriteExpr extends Expr {
+class ReplaceExpr extends Expr {
 
     public derivExpr: Expr | undefined = undefined;
 
@@ -1015,7 +1015,7 @@ class RewriteExpr extends Expr {
     }
 }
 
-export function constructRewrite(
+export function constructReplace(
     env: Env, 
     inputChild: Expr, 
     outputChild: Expr,
@@ -1025,7 +1025,7 @@ export function constructRewrite(
     endsWith: boolean = false,
     optional: boolean = false,
 ): Expr {
-    return new RewriteExpr(inputChild, outputChild, preChild, postChild, beginsWith, endsWith, optional);
+    return new ReplaceExpr(inputChild, outputChild, preChild, postChild, beginsWith, endsWith, optional);
 }
 
 /**

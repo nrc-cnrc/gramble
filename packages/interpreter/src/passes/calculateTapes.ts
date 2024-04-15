@@ -6,7 +6,6 @@ import {
     HideGrammar,
     RenameGrammar,
     FilterGrammar,
-    ReplaceGrammar,
     ReplaceBlockGrammar,
     EpsilonGrammar,
     LiteralGrammar,
@@ -23,7 +22,7 @@ import {
     NegationGrammar,
     CorrespondGrammar,
     CursorGrammar,
-    RewriteGrammar,
+    ReplaceGrammar,
 } from "../grammars";
 import { AutoPass } from "../passes";
 import { 
@@ -139,10 +138,9 @@ export class CalculateTapes extends AutoPass<Grammar> {
             case "rename":       return getTapesRename(g);
             case "hide":         return getTapesHide(g);
             case "match":        return getTapesMatch(g);
-            case "replace":      return getTapesReplace(g, env);
             case "replaceblock": return getTapesReplaceBlock(g);
             
-            case "rewrite":     return getTapesRewrite(g, env);
+            case "replace":     return getTapesReplace(g, env);
             case "correspond":  return getTapesCorrespond(g, env);
 
             default: exhaustive(g);
@@ -246,8 +244,8 @@ function getTapesShort(g: ShortGrammar): Grammar {
     return updateTapes(g, tapes);
 }
 
-function getTapesRewrite(
-    g: RewriteGrammar,
+function getTapesReplace(
+    g: ReplaceGrammar,
     env: TapesEnv
 ): Grammar | Msg<Grammar> {
     let tapes = getChildTapes(g);
@@ -462,39 +460,6 @@ function getTapesFilter(g: FilterGrammar): Grammar {
     return getTapesJoin(g);
 }
 
-function getTapesReplace(g: ReplaceGrammar, env: TapesEnv): Grammar {
-
-    // during normal construction it shouldn't be possible to construct
-    // multitape rules, but just in case...
-    const childrenToCheck: [string, Grammar][] = [
-        ["from", g.inputGrammar],
-        ["to", g.outputGrammar],
-        ["pre", g.preContext],
-        ["post", g.postContext]
-    ];
-
-    const msgs: Message[] = [];
-    for (const [childName, child] of childrenToCheck) {
-        if (child.tapes.tag !== Tapes.Tag.Lit) continue; // nothing to check
-        if (dictLen(child.tapes.vocabMap) <= 1) continue;
-        msgs.push(Err( "Multitape rule", 
-                    "This rule has the wrong number of tapes " +
-                    ` in ${childName}: ${toStr(child.tapes)}`));
-    }
-
-    if (msgs.length > 0)
-        throw new EpsilonGrammar().tapify(env).msg(msgs);
-
-    let tapes = getChildTapes(g);
-    const wildcard: TapeSet = Tapes.Lit(
-        new Set([INPUT_TAPE]), 
-        { [INPUT_TAPE]: Vocabs.Tokenized(),}
-    );
-    tapes = Tapes.Sum(wildcard, tapes);
-    tapes = Tapes.Match(tapes, INPUT_TAPE, OUTPUT_TAPE);
-    return updateTapes(g, tapes);
-}
-                
 function getTapesReplaceBlock(g: ReplaceBlockGrammar): Grammar {
 
     // make sure the tape we're replacing exists, otherwise
@@ -507,8 +472,8 @@ function getTapesReplaceBlock(g: ReplaceBlockGrammar): Grammar {
     }
 
     // filter out Tapes.Any non-rules caused by children disappearing
-    const isReplace = (r: Grammar): r is RewriteGrammar => 
-                        r instanceof RewriteGrammar;
+    const isReplace = (r: Grammar): r is ReplaceGrammar => 
+                        r instanceof ReplaceGrammar;
     g.rules = g.rules.filter(isReplace);
 
     if (g.rules.length == 0) {

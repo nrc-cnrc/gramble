@@ -1,7 +1,7 @@
 import { 
     Count, Epsilon, Null, Rep,
-    Rewrite, ReplaceBlock, Uni, WithVocab,
-    OptionalRewrite,
+    Replace, ReplaceBlock, Uni, WithVocab,
+    OptionalReplace,
 } from "../../interpreter/src/grammarConvenience";
 
 import { DEFAULT_TAPE } from "../../interpreter/src/utils/constants";
@@ -30,7 +30,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '1. hello ⨝ e -> a',
         grammar: ReplaceBlock("t1", "hello", 
-                              Rewrite("e", "a")),
+                              Replace("e", "a")),
         tapes: ["t1"],
         results: [
             {t1: 'hallo'},
@@ -40,37 +40,37 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '2. hello ⨝ e -> a, a -> uT',
         grammar: ReplaceBlock("t1", "hello",
-                              Rewrite("e", "a"),
-                              Rewrite("a", "u")),
+                              Replace("e", "a"),
+                              Replace("a", "u")),
         results: [
             {t1: 'hullo'},
         ],
     });
 
     testGrammar({
-        desc: '3a. Rewrite e -> a, then l -> w, in hello',
+        desc: '3a. Replace e -> a, then l -> w, in hello',
         grammar: ReplaceBlock("t1", "hello",
-                              Rewrite("e", "a"),
-                              Rewrite("l", "w")),
+                              Replace("e", "a"),
+                              Replace("l", "w")),
         results: [
             {t1: 'hawwo'},
         ],
     });
 
     testGrammar({
-		desc: '3b. Rewrite l -> w, then e -> a, in hello',
+		desc: '3b. Replace l -> w, then e -> a, in hello',
         grammar: ReplaceBlock("t1", "hello",
-                              Rewrite("l", "w"),
-                              Rewrite("e", "a")),
+                              Replace("l", "w"),
+                              Replace("e", "a")),
         results: [
             {t1: 'hawwo'},
         ],
     });
 
     testGrammar({
-		desc: '4. Rewrite e -> e, in hello',
+		desc: '4. Replace e -> e, in hello',
         grammar: ReplaceBlock("t1", "hello",
-                              Rewrite("e", "e")),
+                              Replace("e", "e")),
         results: [
             {t1: 'hello'},
         ],
@@ -80,7 +80,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 		desc: '5a. 1-char deletion: abc ⨝ a -> "" (vocab abcx)',
         grammar: WithVocab({t1: "abcx"},
                      ReplaceBlock("t1", "abc",
-                                  Rewrite("a", ""))),
+                                  Replace("a", ""))),
         results: [
             {t1: 'bc'},
         ],
@@ -90,7 +90,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 		desc: '5b. 2-char deletion: abc ⨝ ab -> "" (vocab abcx)',
         grammar: WithVocab({t1: "abcx"},
                      ReplaceBlock("t1", "abc",
-                                  Rewrite("ab", ""))),
+                                  Replace("ab", ""))),
         results: [
             {t1: 'c'},
         ],
@@ -101,7 +101,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'abc ⨝ bc -> "" (vocab abcx)',
         grammar: WithVocab({t1: "abcx"},
                      ReplaceBlock("t1", "abc",
-                                  Rewrite("bc", ""))),
+                                  Replace("bc", ""))),
         results: [
             {t1: 'a'},
         ],
@@ -115,8 +115,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'abcd ⨝ a -> A, b -> B (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "abcd",
-                                  Rewrite("a", "A"),
-                                  Rewrite("b", "B"))),
+                                  Replace("a", "A"),
+                                  Replace("b", "B"))),
         results: [
             {t1: 'ABcd'},
         ],
@@ -129,8 +129,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'abcd ⨝ a -> "", b -> B (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcABC"},
                      ReplaceBlock("t1", "abc",
-                                  Rewrite("a", ""),
-                                  Rewrite("b", "B"))),
+                                  Replace("a", ""),
+                                  Replace("b", "B"))),
         results: [
             {t1: 'Bc'},
         ],
@@ -143,9 +143,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'abcd ⨝ a -> A, b -> B, c -> C (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "abcd",
-                                  Rewrite("a", "A"),
-                                  Rewrite("b", "B"),
-                                  Rewrite("c", "C"))),
+                                  Replace("a", "A"),
+                                  Replace("b", "B"),
+                                  Replace("c", "C"))),
         results: [
             {t1: 'ABCd'},
         ],
@@ -158,9 +158,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'abcd ⨝ a -> "", b -> B, c -> C (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "abcd",
-                                  Rewrite("a", ""),
-                                  Rewrite("b", "B"),
-                                  Rewrite("c", "C"))),
+                                  Replace("a", ""),
+                                  Replace("b", "B"),
+                                  Replace("c", "C"))),
         results: [
             {t1: 'BCd'},
         ],
@@ -174,10 +174,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               '(vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "abcd",
-                                  Rewrite("a", "A"),
-                                  Rewrite("b", "B"),
-                                  Rewrite("c", "C"),
-                                  Rewrite("d", "D"))),
+                                  Replace("a", "A"),
+                                  Replace("b", "B"),
+                                  Replace("c", "C"),
+                                  Replace("d", "D"))),
         results: [
             {t1: 'ABCD'},
         ],
@@ -191,10 +191,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               '(vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "abcd",
-                                  Rewrite("a", ""),
-                                  Rewrite("b", "B"),
-                                  Rewrite("c", "C"),
-                                  Rewrite("d", "D"))),
+                                  Replace("a", ""),
+                                  Replace("b", "B"),
+                                  Replace("c", "C"),
+                                  Replace("d", "D"))),
         results: [
             {t1: 'BCD'},
         ],
@@ -209,8 +209,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'CCCCCabcdCCCCC ⨝ a -> A, b -> B (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "CCCCCabcdCCCCC",
-                                  Rewrite("a", "A"),
-                                  Rewrite("b", "B"))),
+                                  Replace("a", "A"),
+                                  Replace("b", "B"))),
         results: [
             {t1: 'CCCCCABcdCCCCC'},
         ],
@@ -223,8 +223,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'BBBBBCCCCCabcdCCCCCBBBBB ⨝ a -> A, b -> B (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "BBBBBCCCCCabcdCCCCCBBBBB",
-                                  Rewrite("a", "A"),
-                                  Rewrite("b", "B"))),
+                                  Replace("a", "A"),
+                                  Replace("b", "B"))),
         results: [
             {t1: 'BBBBBCCCCCABcdCCCCCBBBBB'},
         ],
@@ -238,10 +238,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               '(vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "CCCCCabcdCCCCC",
-                                  Rewrite("a", "A"),
-                                  Rewrite("b", "B"),
-                                  Rewrite("c", "C"),
-                                  Rewrite("d", "D"))),
+                                  Replace("a", "A"),
+                                  Replace("b", "B"),
+                                  Replace("c", "C"),
+                                  Replace("d", "D"))),
         results: [
             {t1: 'CCCCCABCDCCCCC'},
         ],
@@ -255,10 +255,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               '(vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "CCCCCabcdCCCCC",
-                                  Rewrite("a", ""),
-                                  Rewrite("b", "B"),
-                                  Rewrite("c", "C"),
-                                  Rewrite("d", "D"))),
+                                  Replace("a", ""),
+                                  Replace("b", "B"),
+                                  Replace("c", "C"),
+                                  Replace("d", "D"))),
         results: [
             {t1: 'CCCCCBCDCCCCC'},
         ],
@@ -272,10 +272,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               '(vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "BBBBBCCCCCabcdCCCCCBBBBB",
-                                  Rewrite("a", ""),
-                                  Rewrite("b", "B"),
-                                  Rewrite("c", "C"),
-                                  Rewrite("d", "D"))),
+                                  Replace("a", ""),
+                                  Replace("b", "B"),
+                                  Replace("c", "C"),
+                                  Replace("d", "D"))),
         results: [
             {t1: 'BBBBBCCCCCBCDCCCCCBBBBB'},
         ],
@@ -290,7 +290,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'abcd ⨝ a -> A (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "abcd",
-                                  Rewrite("a", "A"))),
+                                  Replace("a", "A"))),
         results: [
             {t1: 'Abcd'}
         ],
@@ -303,7 +303,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'aabcd ⨝ aa -> A (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "aabcd",
-                                  Rewrite("aa", "A"))),
+                                  Replace("aa", "A"))),
         results: [
             {t1: 'Abcd'},
         ],
@@ -316,7 +316,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'aaabcd ⨝ aaa -> A (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "aaabcd",
-                                  Rewrite("aaa", "A"))),
+                                  Replace("aaa", "A"))),
         results: [
             {t1: 'Abcd'},
         ],
@@ -329,7 +329,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'aaaabcd ⨝ aaaa -> A (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "aaaabcd",
-                                  Rewrite("aaaa", "A"))),
+                                  Replace("aaaa", "A"))),
         results: [
             {t1: 'Abcd'},
         ],
@@ -342,7 +342,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'aaaaabcd ⨝ aaaaa -> A (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "aaaaabcd",
-                                  Rewrite("aaaaa", "A"))),
+                                  Replace("aaaaa", "A"))),
         results: [
             {t1: 'Abcd'},
         ],
@@ -355,8 +355,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'aabcd ⨝ aa -> A, b -> B (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "aabcd",
-                                  Rewrite("aa", "A"),
-                                  Rewrite("b", "B"))),
+                                  Replace("aa", "A"),
+                                  Replace("b", "B"))),
         results: [
             {t1: 'ABcd'},
         ],
@@ -369,8 +369,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'aaabcd ⨝ aaa -> A, b -> B (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "aaabcd",
-                                  Rewrite("aaa", "A"),
-                                  Rewrite("b", "B"))),
+                                  Replace("aaa", "A"),
+                                  Replace("b", "B"))),
         results: [
             {t1: 'ABcd'},
         ],
@@ -383,10 +383,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'abcd ⨝ a -> A, b -> B, c -> C, d -> D (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "abcd",
-                                  Rewrite("a", "A"),
-                                  Rewrite("b", "B"),
-                                  Rewrite("c", "C"),
-                                  Rewrite("d", "D"))),
+                                  Replace("a", "A"),
+                                  Replace("b", "B"),
+                                  Replace("c", "C"),
+                                  Replace("d", "D"))),
         results: [
             {t1: 'ABCD'},
         ],
@@ -399,10 +399,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'aabcd ⨝ aa -> A, b -> B, c -> C, d -> D (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "aabcd",
-                                  Rewrite("aa", "A"),
-                                  Rewrite("b", "B"),
-                                          Rewrite("c", "C"),
-                                          Rewrite("d", "D"))),
+                                  Replace("aa", "A"),
+                                  Replace("b", "B"),
+                                          Replace("c", "C"),
+                                          Replace("d", "D"))),
         results: [
             {t1: 'ABCD'},
         ],
@@ -415,10 +415,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'aaabcd ⨝ aaa -> A, b -> B, c -> C, d -> D (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "aaabcd",
-                                  Rewrite("aaa", "A"),
-                                  Rewrite("b", "B"),
-                                  Rewrite("c", "C"),
-                                  Rewrite("d", "D"))),
+                                  Replace("aaa", "A"),
+                                  Replace("b", "B"),
+                                  Replace("c", "C"),
+                                  Replace("d", "D"))),
         results: [
             {t1: 'ABCD'},
         ],
@@ -431,10 +431,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'aaaabcd ⨝ aaaa -> A, b -> B, c -> C, d -> D (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "aaaabcd",
-                                  Rewrite("aaaa", "A"),
-                                  Rewrite("b", "B"),
-                                  Rewrite("c", "C"),
-                                  Rewrite("d", "D"))),
+                                  Replace("aaaa", "A"),
+                                  Replace("b", "B"),
+                                  Replace("c", "C"),
+                                  Replace("d", "D"))),
         results: [
             {t1: 'ABCD'},
         ],
@@ -447,8 +447,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'abcd ⨝ a -> "", b -> B (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "abcd",
-                                  Rewrite("a", ""),
-                                  Rewrite("b", "B"))),
+                                  Replace("a", ""),
+                                  Replace("b", "B"))),
         results: [
             {t1: 'Bcd'},
         ],
@@ -461,8 +461,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'aabcd ⨝ aa -> "", b -> B (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "aabcd",
-                                  Rewrite("aa", ""),
-                                  Rewrite("b", "B"))),
+                                  Replace("aa", ""),
+                                  Replace("b", "B"))),
         results: [
             {t1: 'Bcd'},
         ],
@@ -475,8 +475,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'aaabcd ⨝ aaa -> "", b -> B (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "aaabcd",
-                                  Rewrite("aaa", ""),
-                                  Rewrite("b", "B"))),
+                                  Replace("aaa", ""),
+                                  Replace("b", "B"))),
         results: [
             {t1: 'Bcd'},
         ],
@@ -489,10 +489,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'abcd ⨝ a -> "", b -> B, c -> C, d -> D (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "abcd",
-                                  Rewrite("a", ""),
-                                  Rewrite("b", "B"),
-                                  Rewrite("c", "C"),
-                                  Rewrite("d", "D"))),
+                                  Replace("a", ""),
+                                  Replace("b", "B"),
+                                  Replace("c", "C"),
+                                  Replace("d", "D"))),
         results: [
             {t1: 'BCD'},
         ],
@@ -505,10 +505,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'aabcd ⨝ aa -> "", b -> B, c -> C, d -> D (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
                      ReplaceBlock("t1", "aabcd",
-                                  Rewrite("aa", ""),
-                                  Rewrite("b", "B"),
-                                  Rewrite("c", "C"),
-                                  Rewrite("d", "D"))),
+                                  Replace("aa", ""),
+                                  Replace("b", "B"),
+                                  Replace("c", "C"),
+                                  Replace("d", "D"))),
         results: [
             {t1: 'BCD'},
         ],
@@ -523,7 +523,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'abcd ⨝ a -> AA (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
         			 ReplaceBlock("t1", "abcd",
-                                  Rewrite("a", "AA"))),
+                                  Replace("a", "AA"))),
         results: [
             {t1: 'AAbcd'},
         ],
@@ -536,7 +536,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'abcd ⨝ a -> AAAAA (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
         			 ReplaceBlock("t1", "abcd",
-                                  Rewrite("a", "AAAAA"))),
+                                  Replace("a", "AAAAA"))),
         results: [
             {t1: 'AAAAAbcd'},
         ],
@@ -549,7 +549,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'abcd ⨝ c -> CCCCC (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
         			 ReplaceBlock("t1", "abcd",
-                                  Rewrite("c", "CCCCC"))),
+                                  Replace("c", "CCCCC"))),
         results: [
             {t1: 'abCCCCCd'},
         ],
@@ -562,7 +562,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'abcd ⨝ d -> DDDDD (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
         			 ReplaceBlock("t1", "abcd",
-                                  Rewrite("d", "DDDDD"))),
+                                  Replace("d", "DDDDD"))),
         results: [
             {t1: 'abcDDDDD'},
         ],
@@ -574,7 +574,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
               'abcdabcd ⨝ a -> "" (vocab abcdABCD)',
         grammar: WithVocab({t1: "abcdABCD"},
         			 ReplaceBlock("t1", "abcdabcd",
-                                  Rewrite("a", ""))),
+                                  Replace("a", ""))),
         results: [
             {t1: 'bcdbcd'},
         ],
@@ -583,7 +583,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '14a. Unconditional generation: ab ⨝ "" -> C',
         grammar: ReplaceBlock("t1", "ab",
-                    Rewrite("", "C")),
+                    Replace("", "C")),
         results: [
             {t1: 'CaCbC'},
         ],
@@ -592,8 +592,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '14b. Unconditional generation, cascading: ab ⨝ "" -> C, "" -> D',
         grammar: ReplaceBlock("t1", "ab",
-                            Rewrite("", "C"),
-                            Rewrite("", "D")),
+                            Replace("", "C"),
+                            Replace("", "D")),
         results: [
             {t1: 'DCDaDCDbDCD'},
         ],
@@ -602,7 +602,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '14c. Unconditional generation, optional: ab ⨝ "" -> C',
         grammar: ReplaceBlock("t1", "ab",
-                        OptionalRewrite("", "C")),
+                        OptionalReplace("", "C")),
         results: [
             {t1: 'CaCbC'},
             {t1: 'CaCb'}, 
@@ -618,8 +618,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '14d. Unconditional generation, cascading, first optional',
         grammar: ReplaceBlock("t1", "ab",
-                    OptionalRewrite("", "C"),
-                    Rewrite("C", "D")),
+                    OptionalReplace("", "C"),
+                    Replace("C", "D")),
         results: [
             {t1: 'DaDbD'},
             {t1: 'DaDb'}, 
@@ -636,7 +636,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '15. Replacement of ε ⨝ e -> a',
         grammar: ReplaceBlock(DEFAULT_TAPE,
                               Epsilon(),
-                              Rewrite("e", "a")),
+                              Replace("e", "a")),
         results: [
             {},
         ],
@@ -647,7 +647,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '16a. Replacement of alternation: hello|hell ⨝ e -> a',
         grammar: ReplaceBlock(DEFAULT_TAPE, 
                               Uni("hello", "hell"),
-                              Rewrite("e", "a")),
+                              Replace("e", "a")),
         results: [
             {"$T": 'hall'},
             {"$T": 'hallo'},
@@ -658,7 +658,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '16b. Replacement of alternation: h|hi ⨝ e -> a',
         grammar: ReplaceBlock(DEFAULT_TAPE, 
                               Uni("h", "hi"),
-                              Rewrite("e", "a")),
+                              Replace("e", "a")),
         results: [
             {"$T": 'h'},
             {"$T": 'hi'},
@@ -669,7 +669,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '16c. Replacement of alternation: hello|hell|ε ⨝ e -> a',
         grammar: ReplaceBlock(DEFAULT_TAPE, 
                               Uni("hello", "hell", Epsilon()),
-                              Rewrite("e", "a")),
+                              Replace("e", "a")),
         results: [
             {"$T": 'hall'},
             {"$T": 'hallo'},
@@ -682,7 +682,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({[DEFAULT_TAPE]:10}, 
                     ReplaceBlock(DEFAULT_TAPE, 
                                  Rep("hello"),
-                                 Rewrite("e", "a"))),
+                                 Replace("e", "a"))),
         results: [
             {},
             {"$T": 'hallo'},
@@ -695,7 +695,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({[DEFAULT_TAPE]:6}, 
                     ReplaceBlock(DEFAULT_TAPE, 
                                  Rep(Uni("hello", "hi")),
-                                 Rewrite("e", "a"))),
+                                 Replace("e", "a"))),
         results: [
             {},
             {"$T": 'hi'},
@@ -710,7 +710,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({[DEFAULT_TAPE]:6}, 
                     ReplaceBlock(DEFAULT_TAPE, 
                                  Rep(Uni("hello", "hi", Epsilon())),
-                                 Rewrite("e", "a"))),
+                                 Replace("e", "a"))),
         results: [
             {},
             {"$T": 'hi'},
@@ -723,7 +723,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '18. Replacement of null ⨝ e -> a',
         grammar: ReplaceBlock(DEFAULT_TAPE, 
-                    Null(), Rewrite("e","a")),
+                    Null(), Replace("e","a")),
         results: [],
         numErrors: 1
     });

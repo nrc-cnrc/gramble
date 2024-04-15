@@ -7,7 +7,7 @@ import {
     LiteralGrammar, 
     PreTapeGrammar, 
     RenameGrammar, 
-    RewriteGrammar, 
+    ReplaceGrammar, 
     StringPairSet 
 } from "../grammars";
 import { 
@@ -82,7 +82,6 @@ function getTapePriority(
         case "testnot": 
         case "short":
         case "match":
-        case "replace":
         case "correspond":  return getTapePriorityDefault(g, tape, symbolsVisited, env);
 
         // literals & similar start things out, they're priority 1 for their tape
@@ -91,7 +90,7 @@ function getTapePriority(
 
         // joins & similar increase the priority of their intersecting tapes
         case "join":        return getTapePriorityJoin(g, tape, symbolsVisited, env);
-        case "rewrite":     return getTapePriorityRewrite(g, tape, symbolsVisited, env);
+        case "replace":     return getTapePriorityReplace(g, tape, symbolsVisited, env);
 
         // cursor and pretape handle priority on their own, so they're -1 for the tape they handle
         case "pretape":     return getTapePriorityPreTape(g, tape, symbolsVisited, env);
@@ -228,8 +227,8 @@ function getTapePriorityJoin(
     return (c1priority + c2priority);
 }
 
-function getTapePriorityRewrite(
-    g: RewriteGrammar,
+function getTapePriorityReplace(
+    g: ReplaceGrammar,
     tapeName: string,
     symbolsVisited: StringPairSet,
     env: SymbolEnv

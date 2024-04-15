@@ -1,8 +1,7 @@
 import { 
     CharSet, Count, Cursor,
     Dot, Epsilon, Not, Rep, 
-    Replace, ReplaceBlock, 
-    Rewrite, 
+    Replace, ReplaceBlock,  
     Seq, Uni, WithVocab,
 } from "../../interpreter/src/grammarConvenience";
 
@@ -78,55 +77,55 @@ describe(`Sampling tests`, function() {
     testSample({
         desc: '8. Replacement: hello ⨝ e -> a',
         grammar: ReplaceBlock("t1", "hello",
-                              Rewrite("e", "a")),
+                              Replace("e", "a")),
     });
 
     testSample({
         desc: '8a. Replacement: hello ⨝ e -> a',
         grammar: ReplaceBlock(DEFAULT_TAPE, "hello",
-                              Rewrite("e", "a")),
+                              Replace("e", "a")),
     });
 
     testSample({
         desc: '8b. Replacement: hello|hell ⨝ e -> a',
         grammar: ReplaceBlock(DEFAULT_TAPE, 
                               Uni("hello", "hell"),
-                              Rewrite("e", "a")),
+                              Replace("e", "a")),
     });
 
     testSample({
         desc: '8c. Replacement: h|hi ⨝ e -> a',
         grammar: ReplaceBlock(DEFAULT_TAPE, 
                               Uni("h", "hi"),
-                              Rewrite("e", "a")),
+                              Replace("e", "a")),
     });
     
     testSample({
         desc: '9. Replacement of ε ⨝ e -> a',
         grammar: ReplaceBlock(DEFAULT_TAPE, 
                               Epsilon(),
-                              Rewrite("e", "a"))
+                              Replace("e", "a"))
     });
 
     testSample({
         desc: '10a. Replacement of alternation: hello|hell ⨝ e -> a',
         grammar: ReplaceBlock(DEFAULT_TAPE, 
                               Uni("hello", "hell"),
-                              Rewrite("e", "a")),
+                              Replace("e", "a")),
     });
     
     testSample({
         desc: '10b. Replacement of alternation: h|hi ⨝ e -> a',
         grammar: ReplaceBlock(DEFAULT_TAPE, 
                               Uni("h", "hi"),
-                              Rewrite("e", "a")),
+                              Replace("e", "a")),
     });
 
     testSample({
         desc: '10c. Replacement of alternation: hello|hell|ε ⨝ e -> a',
         grammar: ReplaceBlock(DEFAULT_TAPE, 
                               Uni("hello", "hell", Epsilon()),
-                              Rewrite("e", "a")),
+                              Replace("e", "a")),
     });
 
     testSample({
@@ -134,7 +133,7 @@ describe(`Sampling tests`, function() {
         grammar: Count({[DEFAULT_TAPE]:10}, 
                      ReplaceBlock(DEFAULT_TAPE, 
                                   Rep("hello"),
-                                  Rewrite("e", "a"))),
+                                  Replace("e", "a"))),
     });
 
     testSample({
@@ -142,7 +141,7 @@ describe(`Sampling tests`, function() {
         grammar: Count({[DEFAULT_TAPE]:6}, 
                      ReplaceBlock(DEFAULT_TAPE, 
                                   Rep(Uni("hello", "hi")),
-                                  Rewrite("e", "a"))),
+                                  Replace("e", "a"))),
     });
     
     testSample({
@@ -150,7 +149,7 @@ describe(`Sampling tests`, function() {
         grammar: Count({[DEFAULT_TAPE]:6}, 
                      ReplaceBlock(DEFAULT_TAPE, 
                                   Rep(Uni("hello", "hi", Epsilon())),
-                                  Rewrite("e", "a"))),
+                                  Replace("e", "a"))),
     });
 
 });
