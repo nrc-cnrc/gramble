@@ -401,8 +401,9 @@ describe(`Source ${DIR}`, function() {
 
     describe('21a. Rule with an empty from', test({
         id: "21a",
-        errors: [ Error(3,1), Warning(3,1) ],
-        results: [{text: "aba"}]
+        results: [
+            {text: "cacbcac"}
+        ]
     }));
 
     describe('21b. Rule with an empty from, with pre and post', test({

@@ -928,30 +928,32 @@ class RewriteExpr extends Expr {
             return;
         }
 
+        const allDerivs: Derivs[] = [];
+
         const dotStar = constructDotStar(INPUT_TAPE);
         const matchDotStar = constructMatch(env, dotStar, INPUT_TAPE, OUTPUT_TAPE);
         
         const inputMaterial = constructSeq(env, this.preChild, this.inputChild, this.postChild);
         
-        let firstBranchContinuation: Expr;
-        let secondBranchContinuation: Expr;
+        let branch1continuation: Expr;
+        let branch2continuation: Expr;
         let negationContinuation: Expr;
         if (this.beginsWith && this.endsWith) {
-            firstBranchContinuation = EPSILON;
+            branch1continuation = EPSILON;
             negationContinuation = EPSILON;
-            secondBranchContinuation = matchDotStar;
+            branch2continuation = matchDotStar;
         } else if (this.beginsWith) {
-            firstBranchContinuation = matchDotStar;
+            branch1continuation = matchDotStar;
             negationContinuation = dotStar;
-            secondBranchContinuation = matchDotStar;
+            branch2continuation = matchDotStar;
         } else if (this.endsWith) {
-            firstBranchContinuation = EPSILON;
+            branch1continuation = EPSILON;
             negationContinuation = EPSILON;
-            secondBranchContinuation = this;
+            branch2continuation = this;
         } else {
-            firstBranchContinuation = this;
+            branch1continuation = this;
             negationContinuation = dotStar;
-            secondBranchContinuation = this;
+            branch2continuation = this;
         }
 
         const preMatch = constructMatch(env, this.preChild, INPUT_TAPE, OUTPUT_TAPE);
@@ -969,15 +971,14 @@ class RewriteExpr extends Expr {
 
         const pattern = constructSeq(env, preMatch, patternCorrespond, postMatch);
         const patternDerivs = pattern.deriv(query, env);
-        const branch1derivs = wrap(patternDerivs, e => constructPrecede(env, e, firstBranchContinuation));
-
+        const branch1derivs = wrap(patternDerivs, e => constructPrecede(env, e, branch1continuation));
         //const branch1 = constructSeq(env, preMatch, patternCorrespond, postMatch, firstBranchContinuation);
 
         //const branch1derivs = branch1.deriv(query, env);
 
         // the second branch is the one where the current character isn't part of that match
         const matchAnything = constructMatch(env, constructDot(INPUT_TAPE), INPUT_TAPE, OUTPUT_TAPE);
-        const anythingConcat = constructConcat(env, matchAnything, secondBranchContinuation);
+        const anythingConcat = constructConcat(env, matchAnything, branch2continuation);
 
         // the second branch also requires a constraint that the resulting output does not begin with the
         // pattern
@@ -990,8 +991,23 @@ class RewriteExpr extends Expr {
             new Set([INPUT_TAPE]), new Set([INPUT_TAPE, OUTPUT_TAPE]));
 
         const branch2derivs = branch2.deriv(query, env);
+        
+        // branch 3 is for when the input material is nullable.  this is similar to the way RepeatExpr adds
+        // a delta
+        const inputDelta = pattern.delta(INPUT_TAPE, env);
+        if (!(inputDelta instanceof NullExpr) && !this.endsWith) {
+            
+            const forwardOne = constructAlternation(env, pattern, matchAnything);
+            const forwardOneDerivs = forwardOne.deriv(query, env);
+            const forwardAndContDerivs = wrap(forwardOneDerivs, e => constructPrecede(env, e, branch1continuation));
+            const branch3derivs = wrap(forwardAndContDerivs, e => constructPrecede(env, inputDelta, e));
+            allDerivs.push(branch3derivs);
+        } else {
+            allDerivs.push(branch1derivs);
+            allDerivs.push(branch2derivs);
+        }
 
-        yield* randomCutIter([branch1derivs, branch2derivs], env.random);
+        yield* randomCutIter(allDerivs, env.random);
     }
 
     public simplify(env: Env): Expr {

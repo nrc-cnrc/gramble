@@ -585,22 +585,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
 
-    describe("19a. Replace epsilon at the beginning, endsWith", test({
-        grammar: Join(Input("abc"), Rewrite("", "X", Epsilon(), Epsilon(), true, false)),
-        io: [
-            ["abc", "Xabc"]
-        ],
-        verbose: VERBOSE_DEBUG
-    }));
-
-    describe("19b. Replace epsilon at the end, endsWith", test({
-        grammar: Join(Input("abc"), Rewrite("", "X", Epsilon(), Epsilon(), false, true)),
-        io: [
-            ["abc", "abcX"]
-        ],
-        verbose: VERBOSE_DEBUG
-    }));
-
     // Optional rewrite
     
     describe("20a. Generation from a rewrite a->X with vocab a,b", test({

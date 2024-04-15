@@ -3,14 +3,3 @@ word=, table:, text
     ,       ,     ,
     , replace text:, from, to
     ,         , , c,
-    ,
-    , join:, text
-    ,      , aba
-    ,      , abca
-    ,      , abcca
-    ,      , abccca
-    ,      , abaccc
-    ,      , acbca
-    ,      , cabac
-    ,      , ccccaba
-    ,      , abba

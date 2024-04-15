@@ -1,5 +1,7 @@
 import {
     BoundingSet, Count, Epsilon,
+    Join,
+    Lit,
     OptionalRewrite, Rewrite, 
     Uni, WithVocab
 } from "../../interpreter/src/grammarConvenience";
@@ -11,12 +13,15 @@ import {
     grammarTestSuiteName,
     testGrammar,
     t3,
+    GrammarTestAux,
+    testGrammarAux,
 } from "./testGrammarUtil";
 
 import { 
     logTestSuite, VERBOSE_TEST_L2, verbose,
 } from '../testUtil';
 import { allowedParams } from "@gramble/interpreter/src/ops";
+import { INPUT_TAPE } from "@gramble/interpreter/src/utils/constants";
 
 // File level control over verbose output
 // const VERBOSE = VERBOSE_TEST_L2;
@@ -61,12 +66,68 @@ function outputs(expectedOutputs: StringDict[]): StringDict[] {
 
 const EMPTY_CONTEXT = Epsilon();
 
+type RewriteTest = Partial<GrammarTestAux> & { io?: [string, string][] };
+function testIO(params: RewriteTest): () => void {
+    if (params.io !== undefined) {
+        params.results = params.io.map(([i,o]) => {
+            const result: StringDict = {};
+            if (i.length > 0) result["$i"] = i;
+            if (o.length > 0) result["$o"] = o;
+            return result;
+        });
+    }
+    return function() {
+        return testGrammarAux({...params});
+    };
+}
+
+const Input = (s: string) => Lit(INPUT_TAPE, s);
 
 
 
 describe(`${grammarTestSuiteName(module)}`, function() {
 
     logTestSuite(this.title);
+
+    describe("19a. Replace epsilon at the beginning, beginsWith", testIO({
+        grammar: Join(Input("abc"), Rewrite("", "X", Epsilon(), Epsilon(), true, false)),
+        io: [
+            ["abc", "Xabc"]
+        ],
+        verbose: VERBOSE_DEBUG
+    }));
+
+    describe("19b. Replace epsilon at the end, endsWith", testIO({
+        grammar: Join(Input("abc"), Rewrite("", "X", Epsilon(), Epsilon(), false, true)),
+        io: [
+            ["abc", "abcX"]
+        ],
+        verbose: VERBOSE_DEBUG
+    }));
+    
+    describe("19c. Replace epsilon everywhere", testIO({
+        grammar: Join(Input("abc"), Rewrite("", "X", Epsilon(), Epsilon(), false, false)),
+        io: [
+            ["abc", "XaXbXcX"]
+        ],
+        verbose: VERBOSE_DEBUG
+    }));
+
+    describe("19d. Replace epsilon for abc, beginsWith endsWith", testIO({
+        grammar: Join(Input("abc"), Rewrite("", "X", Epsilon(), Epsilon(), true, true)),
+        io: [
+            ["abc", "abc"]
+        ],
+        verbose: VERBOSE_DEBUG
+    }));
+
+    describe("19e. Replace epsilon for empty string, beginsWith endsWith", testIO({
+        grammar: Join(Input(""), Rewrite("", "X", Epsilon(), Epsilon(), true, true)),
+        io: [
+            ["", "X"]
+        ],
+        verbose: VERBOSE_DEBUG
+    }));
 
     testGrammar({
         desc: '23a. Replace ε by a: Cnt_o:3 ε -> a || #_ ($o:ahl)',
@@ -126,15 +187,51 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '23d. Replace ε by a: Cnt_3 ε -> a (vocab $o:ahl)',
-        // This replacement is not allowed for Replace with optional=flase.
-        grammar: Count({$i:3, $o:3},
+        grammar: Count({$i:3},
         			 WithVocab({$o:'ahl'},
                          Rewrite("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT))),
-        //vocab: {$i:3, $o:3},
         results: [
-            {},
+            { "$o": "a" },
+            { "$i": "a", "$o": "aaa" },
+            { "$i": "aa", "$o": "aaaaa" },
+            { "$i": "aaa", "$o": "aaaaaaa" },
+            { "$i": "aah", "$o": "aaaaaha" },
+            { "$i": "aal", "$o": "aaaaala" },
+            { "$i": "ah", "$o": "aaaha" },
+            { "$i": "aha", "$o": "aaahaaa" },
+            { "$i": "ahh", "$o": "aaahaha" },
+            { "$i": "ahl", "$o": "aaahala" },
+            { "$i": "al", "$o": "aaala" },
+            { "$i": "ala", "$o": "aaalaaa" },
+            { "$i": "alh", "$o": "aaalaha" },
+            { "$i": "all", "$o": "aaalala" },
+            { "$i": "h", "$o": "aha" },
+            { "$i": "ha", "$o": "ahaaa" },
+            { "$i": "haa", "$o": "ahaaaaa" },
+            { "$i": "hah", "$o": "ahaaaha" },
+            { "$i": "hal", "$o": "ahaaala" },
+            { "$i": "hh", "$o": "ahaha" },
+            { "$i": "hha", "$o": "ahahaaa" },
+            { "$i": "hhh", "$o": "ahahaha" },
+            { "$i": "hhl", "$o": "ahahala" },
+            { "$i": "hl", "$o": "ahala" },
+            { "$i": "hla", "$o": "ahalaaa" },
+            { "$i": "hlh", "$o": "ahalaha" },
+            { "$i": "hll", "$o": "ahalala" },
+            { "$i": "l", "$o": "ala" },
+            { "$i": "la", "$o": "alaaa" },
+            { "$i": "laa", "$o": "alaaaaa" },
+            { "$i": "lah", "$o": "alaaaha" },
+            { "$i": "lal", "$o": "alaaala" },
+            { "$i": "lh", "$o": "alaha" },
+            { "$i": "lha", "$o": "alahaaa" },
+            { "$i": "lhh", "$o": "alahaha" },
+            { "$i": "lhl", "$o": "alahala" },
+            { "$i": "ll", "$o": "alala" },
+            { "$i": "lla", "$o": "alalaaa" },
+            { "$i": "llh", "$o": "alalaha" },
+            { "$i": "lll", "$o": "alalala" },
         ],
-        numErrors: 1,
     });
 
     testGrammar({
@@ -142,18 +239,14 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({$i:3, $o:3},
         			 WithVocab({$o:'ahl'},
                      	 OptionalRewrite("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT))),
-        //vocab: {$i:3, $o:3},
         results: [
-            // 1, 2 or 3 insertions
-            {$o: 'a'},      // equivalent to {$i: '', $o: 'a'}
-            {$o: 'aa'},     // equivalent to {$i: '', $o: 'aa'}
-            {$o: 'aaa'},    // equivalent to {$i: '', $o: 'aaa'}
+            // Insertions
+            {$o: 'a'},      // equivalent to {$i: '', $o: 'a'}\
             {$i: 'a', $o: 'aa'},    {$i: 'h', $o: 'ah'},
             {$i: 'h', $o: 'ha'},    {$i: 'l', $o: 'al'},
             {$i: 'l', $o: 'la'},    {$i: 'a', $o: 'aaa'},
-            {$i: 'h', $o: 'aah'},   {$i: 'h', $o: 'aha'},
-            {$i: 'h', $o: 'haa'},   {$i: 'l', $o: 'aal'},
-            {$i: 'l', $o: 'ala'},   {$i: 'l', $o: 'laa'},
+            {$i: 'h', $o: 'aha'},
+            {$i: 'l', $o: 'ala'},   
             {$i: 'aa', $o: 'aaa'},  {$i: 'ah', $o: 'aah'},
             {$i: 'ah', $o: 'aha'},  {$i: 'al', $o: 'aal'},
             {$i: 'al', $o: 'ala'},  {$i: 'ha', $o: 'aha'},
@@ -195,23 +288,14 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({$i:1, $o:5},
         			 WithVocab({$i:'ah'},
                      	 OptionalRewrite("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT))),
-        //vocab: {$i:2, $o:2},
         results: [
-            // 1-5 Insertions
-            {$o: 'a'},      // equivalent to {$i: '', $o: 'a'}
-            {$o: 'aa'},     // equivalent to {$i: '', $o: 'aa'}
-            {$o: 'aaa'},    // equivalent to {$i: '', $o: 'aaa'}
-            {$o: 'aaaa'},   // equivalent to {$i: '', $o: 'aaaa'}
-            {$o: 'aaaaa'},  // equivalent to {$i: '', $o: 'aaaaa'}
-            {$i: 'a', $o: 'aa'},    {$i: 'h', $o: 'ah'},
-            {$i: 'h', $o: 'ha'},    {$i: 'a', $o: 'aaa'},
-            {$i: 'h', $o: 'aah'},   {$i: 'h', $o: 'aha'},
-            {$i: 'h', $o: 'haa'},   {$i: 'a', $o: 'aaaa'},
-            {$i: 'h', $o: 'aaah'},  {$i: 'h', $o: 'aaha'},
-            {$i: 'h', $o: 'ahaa'},  {$i: 'h', $o: 'haaa'},
-            {$i: 'a', $o: 'aaaaa'}, {$i: 'h', $o: 'aaaah'},
-            {$i: 'h', $o: 'aaaha'}, {$i: 'h', $o: 'aahaa'},
-            {$i: 'h', $o: 'ahaaa'}, {$i: 'h', $o: 'haaaa'},
+            // Insertions
+            {$o: 'a'},
+            {$i: 'a', $o: 'aa'},    
+            {$i: 'h', $o: 'ah'},
+            {$i: 'h', $o: 'ha'},    
+            {$i: 'a', $o: 'aaa'},
+            {$i: 'h', $o: 'aha'},
             // Copy-through: 0 insertions (because optional is set)
             {},             // equivalent to {$i: '', $o: ''}
             {$i: 'a', $o: 'a'},     {$i: 'h', $o: 'h'},
@@ -223,30 +307,32 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({$i:2, $o:4},
         			 WithVocab({$i:'ah'},
                      	 OptionalRewrite("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT))),
-        //vocab: {$i:2, $o:2},
         results: [
-            // 1-4 Insertions
+            // Insertions
             {$o: 'a'},      // equivalent to {$i: '', $o: 'a'}
-            {$o: 'aa'},     // equivalent to {$i: '', $o: 'aa'}
-            {$o: 'aaa'},    // equivalent to {$i: '', $o: 'aaa'}
-            {$o: 'aaaa'},   // equivalent to {$i: '', $o: 'aaaa'}
+            //{$o: 'aa'},     // equivalent to {$i: '', $o: 'aa'}
+            //{$o: 'aaa'},    // equivalent to {$i: '', $o: 'aaa'}
+            //{$o: 'aaaa'},   // equivalent to {$i: '', $o: 'aaaa'}
             {$i: 'a', $o: 'aa'},    {$i: 'h', $o: 'ah'},
             {$i: 'h', $o: 'ha'},    {$i: 'a', $o: 'aaa'},
-            {$i: 'h', $o: 'aah'},   {$i: 'h', $o: 'aha'},
-            {$i: 'h', $o: 'haa'},   {$i: 'a', $o: 'aaaa'},
-            {$i: 'h', $o: 'aaah'},  {$i: 'h', $o: 'aaha'},
-            {$i: 'h', $o: 'ahaa'},  {$i: 'h', $o: 'haaa'},
+            //{$i: 'h', $o: 'aah'},   
+            {$i: 'h', $o: 'aha'},
+            //{$i: 'h', $o: 'haa'},   {$i: 'a', $o: 'aaaa'},
+            //{$i: 'h', $o: 'aaah'},  {$i: 'h', $o: 'aaha'},
+            //{$i: 'h', $o: 'ahaa'},  {$i: 'h', $o: 'haaa'},
             {$i: 'aa', $o: 'aaa'},  {$i: 'ah', $o: 'aah'},
             {$i: 'ah', $o: 'aha'},  {$i: 'ha', $o: 'aha'},
             {$i: 'ha', $o: 'haa'},  {$i: 'hh', $o: 'ahh'},
             {$i: 'hh', $o: 'hah'},  {$i: 'hh', $o: 'hha'},
             {$i: 'aa', $o: 'aaaa'}, {$i: 'ah', $o: 'aaah'},
-            {$i: 'ah', $o: 'aaha'}, {$i: 'ah', $o: 'ahaa'},
-            {$i: 'ha', $o: 'aaha'}, {$i: 'ha', $o: 'ahaa'},
-            {$i: 'ha', $o: 'haaa'}, {$i: 'hh', $o: 'aahh'},
+            {$i: 'ah', $o: 'aaha'}, //{$i: 'ah', $o: 'ahaa'},
+            //{$i: 'ha', $o: 'aaha'}, 
+            {$i: 'ha', $o: 'ahaa'},
+            {$i: 'ha', $o: 'haaa'}, //{$i: 'hh', $o: 'aahh'},
             {$i: 'hh', $o: 'ahah'}, {$i: 'hh', $o: 'ahha'},
-            {$i: 'hh', $o: 'haah'}, {$i: 'hh', $o: 'haha'},
-            {$i: 'hh', $o: 'hhaa'},
+            //$i: 'hh', $o: 'haah'}, 
+            {$i: 'hh', $o: 'haha'},
+            //{$i: 'hh', $o: 'hhaa'},
             // Copy-through: 0 insertions
             {},              // equivalent to {$i: '', $o: ''}
             {$i: 'a', $o: 'a'},     {$i: 'h', $o: 'h'},
@@ -261,18 +347,14 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         			 WithVocab({$i:'ahl'},
                      	 OptionalRewrite(Uni("", "h"), "a",
                                          EMPTY_CONTEXT, EMPTY_CONTEXT))),
-        //vocab: {$i:3, $o:3},
         results: [
-            // 1-3 Insertions, 0 Replacements
+            // 1-2 Insertions, 0 Replacements
             {$o: 'a'},      // equivalent to {$i: '', $o: 'a'}
-            {$o: 'aa'},     // equivalent to {$i: '', $o: 'aa'}
-            {$o: 'aaa'},    // equivalent to {$i: '', $o: 'aaa'}
             {$i: "a", $o: "aa"},   {$i: "h", $o: "ah"},
             {$i: "h", $o: "ha"},   {$i: "l", $o: "al"},
             {$i: "l", $o: "la"},   {$i: "a", $o: "aaa"},
-            {$i: "h", $o: "aah"},  {$i: "h", $o: "aha"},
-            {$i: "h", $o: "haa"},  {$i: "l", $o: "aal"},
-            {$i: "l", $o: "ala"},  {$i: "l", $o: "laa"},
+            {$i: "h", $o: "aha"},
+            {$i: "l", $o: "ala"}, 
             {$i: "aa", $o: "aaa"}, {$i: "ah", $o: "aah"},
             {$i: "ah", $o: "aha"}, {$i: "al", $o: "aal"},
             {$i: "al", $o: "ala"}, {$i: "ha", $o: "aha"},
@@ -298,7 +380,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: "hl", $o: "hl"},  {$i: "la", $o: "la"},
             {$i: "lh", $o: "lh"},  {$i: "ll", $o: "ll"},
             // 1-2 Insertions, 1-2 Replacements
-            {$i: "h", $o: "aa"},   {$i: "h", $o: "aaa"},
+            {$i: "h", $o: "aa"}, {$i: "h", $o: "aaa"},
             {$i: "ah", $o: "aaa"}, {$i: "ha", $o: "aaa"},
             {$i: "hh", $o: "aaa"}, {$i: "hh", $o: "aah"},
             {$i: "hh", $o: "aha"}, {$i: "hh", $o: "haa"},
@@ -316,28 +398,22 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                                          EMPTY_CONTEXT, EMPTY_CONTEXT))),
         //vocab: {$i:2, $o:2},
         results: [
-            // 1-4 Insertions, 0 Replacements
+            // 1-2 Insertions, 0 Replacements
             {$o: 'a'},      // equivalent to {$i: '', $o: 'a'}
-            {$o: 'aa'},     // equivalent to {$i: '', $o: 'aa'}
-            {$o: 'aaa'},    // equivalent to {$i: '', $o: 'aaa'}
-            {$o: 'aaaa'},   // equivalent to {$i: '', $o: 'aaaa'}
             {$i: "a", $o: "aa"},     {$i: "h", $o: "ah"},
             {$i: "h", $o: "ha"},     {$i: "a", $o: "aaa"},
-            {$i: "h", $o: "aah"},    {$i: "h", $o: "aha"},
-            {$i: "h", $o: "haa"},    {$i: "a", $o: "aaaa"},
-            {$i: "h", $o: "aaah"},   {$i: "h", $o: "aaha"},
-            {$i: "h", $o: "ahaa"},   {$i: "h", $o: "haaa"},
+            {$i: "h", $o: "aha"},
             {$i: "aa", $o: "aaa"},   {$i: "ah", $o: "aah"},
             {$i: "ah", $o: "aha"},   {$i: "ha", $o: "aha"},
             {$i: "ha", $o: "haa"},   {$i: "hh", $o: "ahh"},
             {$i: "hh", $o: "hah"},   {$i: "hh", $o: "hha"},
             {$i: "aa", $o: "aaaa"},  {$i: "ah", $o: "aaah"},
-            {$i: "ah", $o: "aaha"},  {$i: "ah", $o: "ahaa"},
-            {$i: "ha", $o: "aaha"},  {$i: "ha", $o: "ahaa"},
-            {$i: "ha", $o: "haaa"},  {$i: "hh", $o: "aahh"},
+            {$i: "ah", $o: "aaha"}, 
+            {$i: "ha", $o: "ahaa"},
+            {$i: "ha", $o: "haaa"},  
             {$i: "hh", $o: "ahah"},  {$i: "hh", $o: "ahha"},
-            {$i: "hh", $o: "haah"},  {$i: "hh", $o: "haha"},
-            {$i: "hh", $o: "hhaa"},  {$i: "aaa", $o: "aaaa"},
+            {$i: "hh", $o: "haha"},
+            {$i: "aaa", $o: "aaaa"},
             {$i: "aah", $o: "aaah"}, {$i: "aah", $o: "aaha"},
             {$i: "aha", $o: "aaha"}, {$i: "aha", $o: "ahaa"},
             {$i: "ahh", $o: "aahh"}, {$i: "ahh", $o: "ahah"},
@@ -373,12 +449,13 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: "hha", $o: "hha"},  {$i: "hhh", $o: "hhh"},
             // 1-3 Insertions, 1-3 Replacements
             {$i: "h", $o: "aa"},     {$i: "h", $o: "aaa"},
-            {$i: "h", $o: "aaaa"},   {$i: "ah", $o: "aaa"},
+            {$i: "ah", $o: "aaa"},
             {$i: "ha", $o: "aaa"},   {$i: "hh", $o: "aaa"},
             {$i: "hh", $o: "aah"},   {$i: "hh", $o: "aha"},
             {$i: "hh", $o: "haa"},   {$i: "ah", $o: "aaaa"},
             {$i: "ha", $o: "aaaa"},  {$i: "hh", $o: "aaaa"},
-            {$i: "hh", $o: "aaah"},  {$i: "hh", $o: "aaha"},
+            {$i: "hh", $o: "aaah"},  
+            {$i: "hh", $o: "aaha"},
             {$i: "hh", $o: "ahaa"},  {$i: "hh", $o: "haaa"},
             {$i: "aah", $o: "aaaa"}, {$i: "aha", $o: "aaaa"},
             {$i: "ahh", $o: "aaaa"}, {$i: "ahh", $o: "aaah"},
