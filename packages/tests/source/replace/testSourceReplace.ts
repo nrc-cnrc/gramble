@@ -1,10 +1,10 @@
-import { VERBOSE_DEBUG } from "../../../interpreter/src/utils/logging";
+import { VERBOSE_DEBUG } from "@gramble/interpreter/src/utils/logging";
 import { 
     testProject, ProjectTest, 
     Error, Warning 
 } from "../testSourceUtil";
 
-const DIR = "rule";
+const DIR = "replace";
 
 function test(params: Partial<ProjectTest>): () => void {
     return function() {
@@ -88,7 +88,7 @@ describe(`Source ${DIR}`, function() {
     }));
 
     
-    describe('8b. Rule cascade, embedded', test({
+    describe('8b. Replace cascade, embedded', test({
         id: "8b",
         results: [
             {text: "awa"}
@@ -137,14 +137,14 @@ describe(`Source ${DIR}`, function() {
         ]
     }));
     
-    describe('10a. Rule cascade', test({
+    describe('10a. Replace cascade', test({
         id: "10a",
         results: [
             {text: "w"}
         ]
     }));
     
-    describe('10b. Rule cascade 2', test({
+    describe('10b. Replace cascade 2', test({
         id: "10b",
         results: [
             {text: "ev"}
@@ -264,7 +264,7 @@ describe(`Source ${DIR}`, function() {
         ]
     }));
 
-    // word boundary-sensitive rule tests
+    // word boundary-sensitive replace tests
     describe('16a. Replace at beginning', test({
         id: "16a",
         results: [
@@ -371,70 +371,70 @@ describe(`Source ${DIR}`, function() {
         ]
     }));
 
-    describe('20a. Rule with an empty to', test({
+    describe('20a. Replace with an empty to', test({
         id: "20a",
         results: [
             {text: "aa"}
         ]
     }));
 
-    describe('20b. Shortening rule', test({
+    describe('20b. Shortening replace', test({
         id: "20b",
         results: [
             {text: "aba"}
         ]
     }));
 
-    describe('20c. Shortening rule long', test({
+    describe('20c. Shortening replace long', test({
         id: "20c",
         results: [
             {text: "aba"}
         ]
     }));
 
-    describe('20d. Shortening rule empty to', test({
+    describe('20d. Shortening replace empty to', test({
         id: "20d",
         results: [
             {text: "aa"}
         ]
     }));
 
-    describe('21a. Rule with an empty from', test({
+    describe('21a. Replace with an empty from', test({
         id: "21a",
         results: [
             {text: "cacbcac"}
         ]
     }));
 
-    describe('21b. Rule with an empty from, with pre and post', test({
+    describe('21b. Replace with an empty from, with pre and post', test({
         id: "21b",
         results: [
             {text: "abca"},
         ]
     }));
 
-    describe('21c. Rule with an empty from, with pre', test({
+    describe('21c. Replace with an empty from, with pre', test({
         id: "21c",
         results: [
             {text: "abca"},
         ]
     }));
 
-    describe('21d. Rule with an empty from, with post', test({
+    describe('21d. Replace with an empty from, with post', test({
         id: "21d",
         results: [
             {text: "cabca"}
         ]
     }));
     
-    describe('21e. Rule with an empty from, begins', test({
+    describe('21e. Replace with an empty from, begins', test({
         id: "21e",
         results: [
             {text: "caba"}
         ]
     }));
 
-    describe('21f. Rule with an empty from, ends', test({
+    describe('21f. Replace with an empty from, ends', test({
         id: "21f",
         results: [
             {text: "abac"}
@@ -442,7 +442,7 @@ describe(`Source ${DIR}`, function() {
         verbose: VERBOSE_DEBUG
     }));
 
-    describe('22. Rule cascade with an empty to', test({
+    describe('22. Replace cascade with an empty to', test({
         id: "22",
         results: [
             {text: "BC"}
