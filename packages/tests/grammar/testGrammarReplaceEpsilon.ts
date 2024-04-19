@@ -56,6 +56,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     logTestSuite(this.title);
 
+    /*
     describe("1a. Replace epsilon in 'abc'", testIO({
         grammar: Join(Input("abc"), Replace("", "X", Epsilon(), Epsilon(), false, false)),
         io: [
@@ -82,6 +83,41 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         io: [
             ["abc", "abc"]
         ],
+    }));
+    */
+    
+    describe("1a-OI. Replace epsilon in 'abc'", testIO({
+        grammar: Join(Input("abc"), Replace("", "X", Epsilon(), Epsilon(), false, false)),
+        io: [
+            ["abc", "XaXbXcX"]
+        ],
+        priority: ["$o", "$i"],
+        verbose: VERBOSE_DEBUG
+    }));
+
+    /*
+    describe("1b-OI. Replace epsilon in 'abc', beginsWith", testIO({
+        grammar: Join(Input("abc"), Replace("", "X", Epsilon(), Epsilon(), true, false)),
+        io: [
+            ["abc", "Xabc"]
+        ],
+        priority: ["$o", "$i"]
+    }));
+
+    describe("1c-OI. Replace epsilon in 'abc', endsWith", testIO({
+        grammar: Join(Input("abc"), Replace("", "X", Epsilon(), Epsilon(), false, true)),
+        io: [
+            ["abc", "abcX"]
+        ],
+        priority: ["$o", "$i"]
+    }));
+    
+    describe("1d-OI. Replace epsilon in 'abc', beginsWith endsWith", testIO({
+        grammar: Join(Input("abc"), Replace("", "X", Epsilon(), Epsilon(), true, true)),
+        io: [
+            ["abc", "abc"]
+        ],
+        priority: ["$o", "$i"]
     }));
 
     describe("2a. Replace epsilon in ''", testIO({
@@ -628,4 +664,5 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'llh', $o: 'llh'}, {$i: 'lll', $o: 'lll'},
         ],
     });
+    */
 });
