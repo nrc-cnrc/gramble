@@ -1555,7 +1555,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {$i: 'aba', $o: 'X'},
         ],
-        //verbose: VERBOSE_DEBUG,
+        verbose: VERBOSE_DEBUG,
     });
 
     // 26a-b: Tests exploring the ways for replacements to yield multiple

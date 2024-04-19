@@ -17,6 +17,7 @@ import { Namespace } from "./utils/namespace";
 import { Env, Options } from "./utils/options";
 import { CounterStack } from "./utils/counter";
 import { randomCut, randomCutIter } from "./utils/random";
+import { InfinityProtection } from "./passes/infinityProtection";
 
 export type Query = TokenExpr | DotExpr;
 
@@ -924,7 +925,12 @@ class ReplaceExpr extends Expr {
         env: DerivEnv
     ): Derivs {
 
-        if (query.tapeName != INPUT_TAPE && query.tapeName != OUTPUT_TAPE) {
+        if (query.tapeName == OUTPUT_TAPE) {
+            yield new Deriv(EPSILON, this);
+            return;
+        }
+
+        if (query.tapeName != INPUT_TAPE) {
             return;
         }
 
@@ -994,13 +1000,16 @@ class ReplaceExpr extends Expr {
         
         // branch 3 is for when the input material is nullable.  this is similar to the way RepeatExpr adds
         // a delta
-        const inputDelta = pattern.delta(INPUT_TAPE, env);
+
+        const inputDelta = pattern.delta(query.tapeName, env);
         if (!(inputDelta instanceof NullExpr) && !this.endsWith) {
-            
+            console.log(`inputDelta_${query.tapeName} not null in deriv`);
             const forwardOne = constructAlternation(env, pattern, matchAnything);
-            const forwardOneDerivs = forwardOne.deriv(query, env);
-            const forwardAndContDerivs = wrap(forwardOneDerivs, e => constructPrecede(env, e, branch1continuation));
-            const branch3derivs = wrap(forwardAndContDerivs, e => constructPrecede(env, inputDelta, e));
+            const deltaAndForward = constructPrecede(env, inputDelta, forwardOne);
+
+            const deltaForwardDerivs = deltaAndForward.deriv(query, env);
+            const branch3derivs = wrap(deltaForwardDerivs, e => constructPrecede(env, e, branch1continuation));
+            //const branch3derivs = wrap(forwardAndContDerivs, e => constructPrecede(env, deltaTerm, e));
             allDerivs.push(branch3derivs);
         } else {
             allDerivs.push(branch1derivs);

@@ -56,7 +56,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     logTestSuite(this.title);
 
-    /*
     describe("1a. Replace epsilon in 'abc'", testIO({
         grammar: Join(Input("abc"), Replace("", "X", Epsilon(), Epsilon(), false, false)),
         io: [
@@ -84,7 +83,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             ["abc", "abc"]
         ],
     }));
-    */
     
     describe("1a-OI. Replace epsilon in 'abc'", testIO({
         grammar: Join(Input("abc"), Replace("", "X", Epsilon(), Epsilon(), false, false)),
@@ -95,7 +93,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         verbose: VERBOSE_DEBUG
     }));
 
-    /*
     describe("1b-OI. Replace epsilon in 'abc', beginsWith", testIO({
         grammar: Join(Input("abc"), Replace("", "X", Epsilon(), Epsilon(), true, false)),
         io: [
@@ -664,5 +661,4 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'llh', $o: 'llh'}, {$i: 'lll', $o: 'lll'},
         ],
     });
-    */
 });
