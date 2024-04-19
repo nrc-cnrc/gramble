@@ -3,6 +3,7 @@ import {
     Join,
     Lit,
     OptionalReplace, Replace, 
+    Seq, 
     Uni, WithVocab
 } from "../../interpreter/src/grammarConvenience";
 
@@ -21,7 +22,7 @@ import {
     logTestSuite, VERBOSE_TEST_L2, verbose,
 } from '../testUtil';
 import { allowedParams } from "@gramble/interpreter/src/ops";
-import { INPUT_TAPE } from "@gramble/interpreter/src/utils/constants";
+import { INPUT_TAPE, OUTPUT_TAPE } from "@gramble/interpreter/src/utils/constants";
 
 // File level control over verbose output
 // const VERBOSE = VERBOSE_TEST_L2;
@@ -48,106 +49,104 @@ function testIO(params: ReplaceTest): () => void {
     };
 }
 
-const Input = (s: string) => Lit(INPUT_TAPE, s);
-
-
+const I = (s: string) => Lit(INPUT_TAPE, s);
+const O = (s: string) => Lit(OUTPUT_TAPE, s);
 
 describe(`${grammarTestSuiteName(module)}`, function() {
 
     logTestSuite(this.title);
 
-    describe("1a. Replace epsilon in 'abc'", testIO({
-        grammar: Join(Input("abc"), Replace("", "X", Epsilon(), Epsilon(), false, false)),
+    describe("1a. Replace ε -> X in 'abc'", testIO({
+        grammar: Join(I("abc"), Replace("", "X", Epsilon(), Epsilon(), false, false)),
         io: [
             ["abc", "XaXbXcX"]
         ],
     }));
 
-    describe("1b. Replace epsilon in 'abc', beginsWith", testIO({
-        grammar: Join(Input("abc"), Replace("", "X", Epsilon(), Epsilon(), true, false)),
+    describe("1b. Replace ε -> X in 'abc', beginsWith", testIO({
+        grammar: Join(I("abc"), Replace("", "X", Epsilon(), Epsilon(), true, false)),
         io: [
             ["abc", "Xabc"]
         ],
     }));
 
-    describe("1c. Replace epsilon in 'abc', endsWith", testIO({
-        grammar: Join(Input("abc"), Replace("", "X", Epsilon(), Epsilon(), false, true)),
+    describe("1c. Replace ε -> X in 'abc', endsWith", testIO({
+        grammar: Join(I("abc"), Replace("", "X", Epsilon(), Epsilon(), false, true)),
         io: [
             ["abc", "abcX"]
         ],
     }));
     
-    describe("1d. Replace epsilon in 'abc', beginsWith endsWith", testIO({
-        grammar: Join(Input("abc"), Replace("", "X", Epsilon(), Epsilon(), true, true)),
+    describe("1d. Replace ε -> X in 'abc', beginsWith endsWith", testIO({
+        grammar: Join(I("abc"), Replace("", "X", Epsilon(), Epsilon(), true, true)),
         io: [
             ["abc", "abc"]
         ],
     }));
     
-    describe("1a-OI. Replace epsilon in 'abc'", testIO({
-        grammar: Join(Input("abc"), Replace("", "X", Epsilon(), Epsilon(), false, false)),
+    describe("1a-OI. Replace ε -> X in 'abc'", testIO({
+        grammar: Join(I("abc"), Replace("", "X", Epsilon(), Epsilon(), false, false)),
         io: [
             ["abc", "XaXbXcX"]
         ],
         priority: ["$o", "$i"],
-        verbose: VERBOSE_DEBUG
     }));
 
-    describe("1b-OI. Replace epsilon in 'abc', beginsWith", testIO({
-        grammar: Join(Input("abc"), Replace("", "X", Epsilon(), Epsilon(), true, false)),
+    describe("1b-OI. Replace ε -> X in 'abc', beginsWith", testIO({
+        grammar: Join(I("abc"), Replace("", "X", Epsilon(), Epsilon(), true, false)),
         io: [
             ["abc", "Xabc"]
         ],
         priority: ["$o", "$i"]
     }));
 
-    describe("1c-OI. Replace epsilon in 'abc', endsWith", testIO({
-        grammar: Join(Input("abc"), Replace("", "X", Epsilon(), Epsilon(), false, true)),
+    describe("1c-OI. Replace ε -> X in 'abc', endsWith", testIO({
+        grammar: Join(I("abc"), Replace("", "X", Epsilon(), Epsilon(), false, true)),
         io: [
             ["abc", "abcX"]
         ],
         priority: ["$o", "$i"]
     }));
     
-    describe("1d-OI. Replace epsilon in 'abc', beginsWith endsWith", testIO({
-        grammar: Join(Input("abc"), Replace("", "X", Epsilon(), Epsilon(), true, true)),
+    describe("1d-OI. Replace ε -> X in 'abc', beginsWith endsWith", testIO({
+        grammar: Join(I("abc"), Replace("", "X", Epsilon(), Epsilon(), true, true)),
         io: [
             ["abc", "abc"]
         ],
         priority: ["$o", "$i"]
     }));
 
-    describe("2a. Replace epsilon in ''", testIO({
-        grammar: Join(Input(""), Replace("", "X", Epsilon(), Epsilon(), false, false)),
+    describe("2a. Replace ε -> X in ''", testIO({
+        grammar: Join(I(""), Replace("", "X", Epsilon(), Epsilon(), false, false)),
         io: [
             ["", "X"]
         ],
     }));
 
-    describe("2b. Replace epsilon in '', beginsWith", testIO({
-        grammar: Join(Input(""), Replace("", "X", Epsilon(), Epsilon(), true, false)),
+    describe("2b. Replace ε -> X in '', beginsWith", testIO({
+        grammar: Join(I(""), Replace("", "X", Epsilon(), Epsilon(), true, false)),
         io: [
             ["", "X"]
         ],
     }));
     
-    describe("2c. Replace epsilon in '', endsWith", testIO({
-        grammar: Join(Input(""), Replace("", "X", Epsilon(), Epsilon(), false, true)),
+    describe("2c. Replace ε -> X in '', endsWith", testIO({
+        grammar: Join(I(""), Replace("", "X", Epsilon(), Epsilon(), false, true)),
         io: [
             ["", "X"]
         ],
     }));
 
-    describe("2d. Replace epsilon in '', beginsWith endsWith", testIO({
-        grammar: Join(Input(""), Replace("", "X", Epsilon(), Epsilon(), true, true)),
+    describe("2d. Replace ε -> X in '', beginsWith endsWith", testIO({
+        grammar: Join(I(""), Replace("", "X", Epsilon(), Epsilon(), true, true)),
         io: [
             ["", "X"]
         ],
     }));
 
     
-    describe("3a. Replace epsilon in 'ab', optional", testIO({
-        grammar: Join(Input("ab"), OptionalReplace("", "X", Epsilon(), Epsilon(), false, false)),
+    describe("3a. Replace ε -> X in 'ab', optional", testIO({
+        grammar: Join(I("ab"), OptionalReplace("", "X", Epsilon(), Epsilon(), false, false)),
         io: [
             ["ab", "ab"],
             ["ab", "abX"],
@@ -160,55 +159,55 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
 
-    describe("3b. Replace epsilon in 'ab', beginsWith optional", testIO({
-        grammar: Join(Input("ab"), OptionalReplace("", "X", Epsilon(), Epsilon(), true, false)),
+    describe("3b. Replace ε -> X in 'ab', beginsWith optional", testIO({
+        grammar: Join(I("ab"), OptionalReplace("", "X", Epsilon(), Epsilon(), true, false)),
         io: [
             ["ab", "ab"],
             ["ab", "Xab"],
         ],
     }));
 
-    describe("3c. Replace epsilon in 'ab', endsWith optional", testIO({
-        grammar: Join(Input("ab"), OptionalReplace("", "X", Epsilon(), Epsilon(), false, true)),
+    describe("3c. Replace ε -> X in 'ab', endsWith optional", testIO({
+        grammar: Join(I("ab"), OptionalReplace("", "X", Epsilon(), Epsilon(), false, true)),
         io: [
             ["ab", "ab"],
             ["ab", "abX"]
         ],
     }));
     
-    describe("3d. Replace epsilon in 'ab', beginsWith endsWith optional", testIO({
-        grammar: Join(Input("ab"), OptionalReplace("", "X", Epsilon(), Epsilon(), true, true)),
+    describe("3d. Replace ε -> X in 'ab', beginsWith endsWith optional", testIO({
+        grammar: Join(I("ab"), OptionalReplace("", "X", Epsilon(), Epsilon(), true, true)),
         io: [
             ["ab", "ab"]
         ],
     }));
 
-    describe("4a. Replace epsilon in '', optional", testIO({
-        grammar: Join(Input(""), OptionalReplace("", "X", Epsilon(), Epsilon(), false, false)),
+    describe("4a. Replace ε -> X in '', optional", testIO({
+        grammar: Join(I(""), OptionalReplace("", "X", Epsilon(), Epsilon(), false, false)),
         io: [
             ["", ""],
             ["", "X"]
         ],
     }));
 
-    describe("4b. Replace epsilon in '', beginsWith optional", testIO({
-        grammar: Join(Input(""), OptionalReplace("", "X", Epsilon(), Epsilon(), true, false)),
+    describe("4b. Replace ε -> X in '', beginsWith optional", testIO({
+        grammar: Join(I(""), OptionalReplace("", "X", Epsilon(), Epsilon(), true, false)),
         io: [
             ["", ""],
             ["", "X"]
         ],
     }));
     
-    describe("4c. Replace epsilon in '', endsWith optional", testIO({
-        grammar: Join(Input(""), OptionalReplace("", "X", Epsilon(), Epsilon(), false, true)),
+    describe("4c. Replace ε -> X in '', endsWith optional", testIO({
+        grammar: Join(I(""), OptionalReplace("", "X", Epsilon(), Epsilon(), false, true)),
         io: [
             ["", ""],
             ["", "X"]
         ],
     }));
 
-    describe("4d. Replace epsilon in '', beginsWith endsWith optional", testIO({
-        grammar: Join(Input(""), OptionalReplace("", "X", Epsilon(), Epsilon(), true, true)),
+    describe("4d. Replace ε -> X in '', beginsWith endsWith optional", testIO({
+        grammar: Join(I(""), OptionalReplace("", "X", Epsilon(), Epsilon(), true, true)),
         io: [
             ["", ""],
             ["", "X"]
@@ -661,4 +660,81 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'llh', $o: 'llh'}, {$i: 'lll', $o: 'lll'},
         ],
     });
+
+    // These are versions of the 1x tests, except that instead of joining with the input strings, we're
+    // joining with BOTH input and output strings.  (Otherwise possible bugs related to fumbling epsilon-token
+    // returns won't show up.)
+    
+    describe("9a. Replace ε -> X in 'abc'", testIO({
+        grammar: Join(Seq(I("abc"), O("XaXbXcX")), 
+                    Replace("", "X", Epsilon(), Epsilon(), false, false)),
+        io: [
+            ["abc", "XaXbXcX"]
+        ],
+        priority: ["$i", "$o"],
+    }));
+
+    describe("9b. Replace ε -> X in 'abc', beginsWith", testIO({
+        grammar: Join(Seq(I("abc"), O("Xabc")), 
+                    Replace("", "X", Epsilon(), Epsilon(), true, false)),
+        io: [
+            ["abc", "Xabc"]
+        ],
+        priority: ["$i", "$o"],
+    }));
+
+    describe("9c. Replace ε -> X in 'abc', endsWith", testIO({
+        grammar: Join(Seq(I("abc"), O("abcX")), 
+                    Replace("", "X", Epsilon(), Epsilon(), false, true)),
+        io: [
+            ["abc", "abcX"]
+        ],
+        priority: ["$i", "$o"],
+    }));
+    
+    describe("9d. Replace ε -> X in 'abc', beginsWith endsWith", testIO({
+        grammar: Join(Seq(I("abc"), O("abc")), 
+                    Replace("", "X", Epsilon(), Epsilon(), true, true)),
+        io: [
+            ["abc", "abc"]
+        ],
+        priority: ["$i", "$o"],
+    }));
+
+    describe("9a-OI. Replace ε -> X in 'abc'", testIO({
+        grammar: Join(Seq(I("abc"), O("XaXbXcX")), 
+                    Replace("", "X", Epsilon(), Epsilon(), false, false)),
+        io: [
+            ["abc", "XaXbXcX"]
+        ],
+        priority: ["$o", "$i"],
+    }));
+
+    describe("9b-OI. Replace ε -> X in 'abc', beginsWith", testIO({
+        grammar: Join(Seq(I("abc"), O("Xabc")), 
+                    Replace("", "X", Epsilon(), Epsilon(), true, false)),
+        io: [
+            ["abc", "Xabc"]
+        ],
+        priority: ["$o", "$i"],
+    }));
+
+    describe("9c-OI. Replace ε -> X in 'abc', endsWith", testIO({
+        grammar: Join(Seq(I("abc"), O("abcX")), 
+                    Replace("", "X", Epsilon(), Epsilon(), false, true)),
+        io: [
+            ["abc", "abcX"]
+        ],
+        priority: ["$o", "$i"],
+    }));
+    
+    describe("9d-OI. Replace ε -> X in 'abc', beginsWith endsWith", testIO({
+        grammar: Join(Seq(I("abc"), O("abc")), 
+                    Replace("", "X", Epsilon(), Epsilon(), true, true)),
+        io: [
+            ["abc", "abc"]
+        ],
+        priority: ["$o", "$i"],
+    }));
+
 });
