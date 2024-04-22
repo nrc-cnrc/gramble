@@ -19,7 +19,7 @@ import { CounterStack } from "./utils/counter";
 import { randomCut, randomCutIter } from "./utils/random";
 import { InfinityProtection } from "./passes/infinityProtection";
 
-export type Query = TokenExpr | DotExpr;
+export type Query = TokenExpr | DotExpr | EpsilonTokenExpr;
 
 export class DerivStats {
     public statesVisited: number = 0;
@@ -29,7 +29,7 @@ export class DerivStats {
 export class Deriv {
     
     constructor(
-        public result: TokenExpr | EpsilonExpr,
+        public result: TokenExpr | EpsilonTokenExpr,
         public next: Expr
     ) { }
 
@@ -264,7 +264,7 @@ function *disjoin(
         return;
     }
 
-    const results: {[c: string]: [TokenExpr|EpsilonExpr, Expr[]]} = {};
+    const results: {[c: string]: [TokenExpr|EpsilonTokenExpr, Expr[]]} = {};
     for (const d of ds) {
         const cString = d.result.id;
         if (!(cString in results)) {
@@ -403,6 +403,49 @@ export class EpsilonExpr extends Expr {
 
 }
 
+export class EpsilonTokenExpr extends Expr {
+
+    public text: string = '';
+
+    constructor(
+        public tapeName: string
+    ) {
+        super();
+    }
+
+    public get id(): string {
+        return `${this.tapeName}_`;
+    }
+
+    public delta(
+        tapeName: string,
+        env: DerivEnv
+    ): Expr {
+        return NULL;
+    }
+
+    public *deriv(
+        query: Query,
+        env: DerivEnv
+    ): Derivs {
+
+        if (query.tapeName != this.tapeName) {
+            return;
+        }
+
+        yield new Deriv(this, EPSILON);
+    }
+
+    public rename(newTapeName: string): EpsilonTokenExpr {
+        return constructEpsilonToken(newTapeName);
+    }
+
+}
+
+export function constructEpsilonToken(tapeName: string): EpsilonTokenExpr {
+    return new EpsilonTokenExpr(tapeName);
+}
+
 /**
  * An expression denoting the empty language {}
  */
@@ -467,6 +510,11 @@ class DotExpr extends Expr {
         env: DerivEnv
     ): Derivs { 
         if (query.tapeName != this.tapeName) return;
+        if (query instanceof EpsilonTokenExpr) {
+            yield new Deriv(query, EPSILON);
+            return;
+        }
+
         const cs = [... query.expandStrings(env)];
         const csCut = randomCut(cs, env.random);
         for (const c of csCut) {
@@ -503,6 +551,11 @@ class DotStarExpr extends Expr {
         env: DerivEnv
     ): Derivs {
         if (query.tapeName != this.tapeName) {
+            return;
+        }
+        
+        if (query instanceof EpsilonTokenExpr) {
+            yield new Deriv(query, this);
             return;
         }
         
@@ -926,7 +979,7 @@ class ReplaceExpr extends Expr {
     ): Derivs {
 
         if (query.tapeName == OUTPUT_TAPE) {
-            yield new Deriv(EPSILON, this);
+            yield new Deriv(constructEpsilonToken(OUTPUT_TAPE), this);
             return;
         }
 
@@ -1085,7 +1138,7 @@ export function constructPriorityUnion(env: Env, c1: Expr, c2: Expr): Expr {
 
 
 function dictifyDerivs(env: Env, ds: Derivs): Dict<Deriv> {
-    const results: {[c: string]: [TokenExpr|EpsilonExpr, Expr[]]} = {};
+    const results: {[c: string]: [TokenExpr|EpsilonTokenExpr, Expr[]]} = {};
     for (const d of ds) {
         const cString = d.result.id;
         if (!(cString in results)) {
@@ -1129,7 +1182,8 @@ class JoinExpr extends BinaryExpr {
         child1: Expr,
         child2: Expr,
         public tapes1: Set<string>,
-        public tapes2: Set<string>
+        public tapes2: Set<string>,
+        public ignoreEpsilon: boolean = true
     ) {
         super(child1, child2);
     }
@@ -1142,7 +1196,7 @@ class JoinExpr extends BinaryExpr {
         for (const [handled1, next1] of this.child1.forward(env)) {
             for (const [handled2, next2] of this.child2.forward(env)) {
                 const wrapped = constructJoin(env, next1, next2, 
-                                    this.tapes1, this.tapes2);
+                                    this.tapes1, this.tapes2, this.ignoreEpsilon);
                 yield [handled1 || handled2, wrapped];
             }
         }
@@ -1155,7 +1209,7 @@ class JoinExpr extends BinaryExpr {
         const newChild1 = this.child1.delta(tapeName, env);
         const newChild2 = this.child2.delta(tapeName, env);
         return constructJoin(env, newChild1, newChild2, 
-                        this.tapes1, this.tapes2);
+                this.tapes1, this.tapes2, this.ignoreEpsilon);
     }
 
     public *deriv(
@@ -1167,7 +1221,7 @@ class JoinExpr extends BinaryExpr {
             const c1derivs = this.child1.deriv(query, env);
             for (const d1 of disjoin(c1derivs, env)) {
                 yield d1.wrap(c => constructJoin(env, c, this.child2, 
-                                        this.tapes1, this.tapes2));
+                                    this.tapes1, this.tapes2, this.ignoreEpsilon));
             }
             return;
         }
@@ -1176,7 +1230,7 @@ class JoinExpr extends BinaryExpr {
             const c2derivs = this.child2.deriv(query, env);
             for (const d2 of disjoin(c2derivs, env)) {
                 yield d2.wrap(c => constructJoin(env, this.child1, c, 
-                                        this.tapes1, this.tapes2));
+                                    this.tapes1, this.tapes2, this.ignoreEpsilon));
             }
             return;
         }
@@ -1184,17 +1238,18 @@ class JoinExpr extends BinaryExpr {
         const c1derivs = this.child1.deriv(query, env);
         for (const d1 of disjoin(c1derivs, env)) {
 
-            if (d1.result instanceof EpsilonExpr) {
+            if (this.ignoreEpsilon && d1.result instanceof EpsilonTokenExpr) {
+                console.log(`eps on left, not testing right`);
                 yield d1.wrap(c => constructJoin(env, c, this.child2, 
-                                            this.tapes1, this.tapes2));
+                                    this.tapes1, this.tapes2, this.ignoreEpsilon));
                 continue;
             }
 
             const c2derivs = this.child2.deriv(d1.result, env)
             for (const d2 of disjoin(c2derivs, env)) {
-                const c1nxt = (d2.result instanceof EpsilonExpr) ? this.child1 : d1.next;
+                const c1nxt = (this.ignoreEpsilon && d2.result instanceof EpsilonTokenExpr) ? this.child1 : d1.next;
                 yield d2.wrap(c => constructJoin(env, c1nxt, c, 
-                                            this.tapes1, this.tapes2));
+                                            this.tapes1, this.tapes2, this.ignoreEpsilon));
             }
         }
     } 
@@ -1994,7 +2049,7 @@ class NegationExpr extends UnaryExpr {
         env: DerivEnv
     ): Derivs {
 
-        if (!this.tapes.has(query.tapeName)) {
+        if (!this.tapes.has(query.tapeName) || query instanceof EpsilonTokenExpr) {
             return;
         }
 
@@ -2031,6 +2086,8 @@ class NegationExpr extends UnaryExpr {
         return this;
     }
 }
+
+/*
 
 export class CorrespondExpr extends UnaryExpr {
 
@@ -2103,14 +2160,31 @@ export class CorrespondExpr extends UnaryExpr {
 
 }
 
+*/
+
 export function constructCorrespond(
     env: Env,
     child: Expr,
     inputTape: string = INPUT_TAPE,
     outputTape: string = OUTPUT_TAPE
 ): Expr {
-    return new CorrespondExpr(child, inputTape, outputTape).simplify(env);
+
+    // first, construct a bounding set (i:. ⋅ o:.)* that ensures 
+    // that input and output end up the same length
+    const oneOfEach = constructConcat(env, constructDot(INPUT_TAPE), constructDot(OUTPUT_TAPE));
+    const sameLengthGuard = constructRepeat(env, oneOfEach);
+
+    // also, one tape (but not both) can emit epsilons
+    const inputEpsilons = constructRepeat(env, constructEpsilonToken(inputTape));
+    const outputEpsilons = constructRepeat(env, constructEpsilonToken(outputTape));
+    const epsilons = constructAlternation(env, inputEpsilons, outputEpsilons);
+
+    const childAndEpsilons = constructPrecede(env, child, epsilons);
+    const tapes = new Set([inputTape, outputTape]);
+    const sameLengthChild = constructJoin(env, childAndEpsilons, sameLengthGuard, tapes, tapes, false);
+    return sameLengthChild;
 }
+
 
 export class MatchExpr extends UnaryExpr {
 
@@ -2167,7 +2241,7 @@ export class MatchExpr extends UnaryExpr {
         for (const d of 
                 this.child.deriv(fromQuery, env)) {
             const wrapped = constructMatch(env, d.next, this.inputTape, this.outputTape);
-            if (d.result instanceof EpsilonExpr) {
+            if (d.result instanceof EpsilonTokenExpr) {
                 env.logDebug("========= EpsilonToken ==========");
                 yield d;
                 continue;
@@ -2319,9 +2393,10 @@ export function constructJoin(
     c1: Expr, 
     c2: Expr, 
     tapes1: Set<string>, 
-    tapes2: Set<string>
+    tapes2: Set<string>,
+    ignoreEpsilon: boolean = true
 ): Expr {
-    return new JoinExpr(c1, c2, tapes1, tapes2).simplify(env);
+    return new JoinExpr(c1, c2, tapes1, tapes2, ignoreEpsilon).simplify(env);
 }
 
 export function constructToken(

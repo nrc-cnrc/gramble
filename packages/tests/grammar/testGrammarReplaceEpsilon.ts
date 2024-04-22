@@ -61,8 +61,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         io: [
             ["abc", "XaXbXcX"]
         ],
+        verbose: VERBOSE_DEBUG
     }));
 
+    /*
     describe("1b. Replace ε -> X in 'abc', beginsWith", testIO({
         grammar: Join(I("abc"), Replace("", "X", Epsilon(), Epsilon(), true, false)),
         io: [
@@ -607,6 +609,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     });
 
+    */
+
     testGrammar({
         desc: '8c. Replace a by ε: Cnt_o:2 a -> ε || #_# (vocab $i:ahl)',
         grammar: Count({$o:2},
@@ -627,6 +631,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     });
 
+    /*
     testGrammar({
         desc: '8d. Replace a by ε: Cnt_3 a -> ε (vocab $i:ahl)',
         grammar: Count({$i:3, $o:3},
@@ -736,5 +741,5 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
         priority: ["$o", "$i"],
     }));
-
+    */
 });

@@ -17,6 +17,7 @@ import {
 import {
     logTestSuite, VERBOSE_TEST_L2,
 } from "../testUtil";
+import { VERBOSE_DEBUG } from "@gramble/interpreter/src/utils/logging";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -44,6 +45,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {$i: 'hello', $o: 'bye'},
         ],
+        verbose: VERBOSE_DEBUG,
     }));
 
     describe('1b. o shorter than i, priority i>o', test({
@@ -61,7 +63,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'hello', $o: 'bye'},
         ],
     }));
-    
+
     describe('2a. o equal length to i, priority i>o', test({
         grammar: Cursor(["$i", "$o"], 
                     Correspond(Seq(i("hello"), o("world")))),

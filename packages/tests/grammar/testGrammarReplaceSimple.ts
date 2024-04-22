@@ -188,6 +188,28 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
 
+    describe("2d. Replace a single-character pattern with multiple, at the beginning", test({
+        grammar: Join(Input("abc"), Replace("a", "XY")),
+        io: [
+            ["abc", "XYbc"]
+        ],
+    }));
+    
+    describe("2e. Replace a single-character pattern with multiple, at the end", test({
+        grammar: Join(Input("abc"), Replace("c", "XY")),
+        io: [
+            ["abc", "abXY"]
+        ],
+    }));
+    
+    describe("2f. Replace a single-character pattern with multiple, several times", test({
+        grammar: Join(Input("abaca"), Replace("a", "XY")),
+        io: [
+            ["abaca", "XYbXYcXY"]
+        ],
+        verbose: VERBOSE_DEBUG
+    }));
+
     describe("3a. Replace with a pre-condition", test({
         grammar: Join(Input("azbc"), Replace("z", "X", "a")),
         io: [
@@ -714,5 +736,4 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             ["bbb", "bbb"]
         ]
     }));
-
 });
