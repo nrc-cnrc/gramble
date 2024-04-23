@@ -302,6 +302,31 @@ describe(`Source ${DIR}`, function() {
         ]
     }));
 
+    describe('22a. Unit test of a replace', test({
+        id: "22a",
+        errors: [],
+        results: [
+            { text: "Xbc" }
+        ]
+    }));
+    
+    describe('22b. Unit test of a replace, deletion at beginning', test({
+        id: "22b",
+        errors: [],
+        results: [
+            { text: "bc" }
+        ]
+    }));
+
+    describe('22c. Unit test of a replace, deletion at end', test({
+        id: "22c",
+        errors: [],
+        results: [
+            { text: "ab" }
+        ]
+    }));
+
+
 });
 
 

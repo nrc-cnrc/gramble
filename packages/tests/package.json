@@ -52,6 +52,7 @@
     "testGrammarRename": "mocha -r ts-node/register grammar/testGrammarRename.ts",
     "testGrammarRepeat": "mocha -r ts-node/register grammar/testGrammarRepeat.ts",
     "testGrammarReplace": "mocha -r ts-node/register grammar/testGrammarReplace.ts",
+    "testGrammarReplaceEmbed": "mocha -r ts-node/register grammar/testGrammarReplaceEmbed.ts",
     "testGrammarReplaceEpsilon": "mocha -r ts-node/register grammar/testGrammarReplaceEpsilon.ts",
     "testGrammarReplaceSimple": "mocha -r ts-node/register grammar/testGrammarReplaceSimple.ts",
     "testGrammarShort": "mocha -r ts-node/register grammar/testGrammarShort.ts",
@@ -89,7 +90,7 @@
     "testSourceOp": "mocha -r ts-node/register source/op/*.ts",
     "testSourceCell": "mocha -r ts-node/register source/cell/*.ts",
     "testSourceRename": "mocha -r ts-node/register source/rename/*.ts",
-    "testSourceRule": "mocha -r ts-node/register source/rule/*.ts",
+    "testSourceReplace": "mocha -r ts-node/register source/replace/*.ts",
     "testSourceTest": "mocha -r ts-node/register source/test/*.ts",
 
     "testSampling": "mocha -r ts-node/register sampling/*.ts"

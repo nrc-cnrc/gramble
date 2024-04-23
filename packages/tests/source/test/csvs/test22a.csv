@@ -1,0 +1,8 @@
+word=, text,
+     , abc
+     ,
+replace text:, from, to,
+             , a, X
+
+test:, text,
+     , Xbc

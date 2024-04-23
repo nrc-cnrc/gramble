@@ -738,7 +738,34 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ]
     }));
 
-    describe("21a. Replace a multiple-character pattern with a single, beginning of word, with output join", test({
+    describe("21a. Replacement, beginning of word, with output join", test({
+        grammar: Join(Seq(I("abc"), O("Xbc")), 
+                    Replace("a", "X")),
+        io: [
+            ["abc", "Xbc"]
+        ],
+        priority: ["$i", "$o"]
+    }));
+    
+    describe("21b. Replacement, middle of word, with output join", test({
+        grammar: Join(Seq(I("abc"), O("aXc")), 
+                    Replace("b", "X")),
+        io: [
+            ["abc", "aXc"]
+        ],
+        priority: ["$i", "$o"]
+    }));
+
+    describe("21c. Replacement, end of word, with output join", test({
+        grammar: Join(Seq(I("abc"), O("abX")), 
+                    Replace("c", "X")),
+        io: [
+            ["abc", "abX"]
+        ],
+        priority: ["$i", "$o"]
+    }));
+
+    describe("22a. Replace a multiple-character pattern with a single, beginning of word, with output join", test({
         grammar: Join(Seq(I("azbc"), O("Xbc")), 
                     Replace("az", "X")),
         io: [
@@ -747,7 +774,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         priority: ["$i", "$o"]
     }));
 
-    describe("21b. Replace a multiple-character pattern with a single, end of word, with output join", test({
+    describe("22b. Replace a multiple-character pattern with a single, end of word, with output join", test({
         grammar: Join(Seq(I("abcz"), O("abX")), 
                     Replace("cz", "X")),
         io: [
@@ -755,8 +782,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
         priority: ["$i", "$o"],
     }));
-    
-    describe("21b. Replace a multiple-character pattern with a single, several times", test({
+
+    describe("22c. Replace a multiple-character pattern with a single, several times", test({
         grammar: Join(Seq(I("azbazcaz"), O("XbXcX")),
                     Replace("az", "X")),
         io: [
@@ -765,7 +792,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         priority: ["$i", "$o"]
     }));
     
-    describe("21c. Replace a multiple-character pattern with a single, several times, with distractors", test({
+    describe("22d. Replace a multiple-character pattern with a single, several times, with distractors", test({
         grammar: Join(Seq(I("azabzaazcaaz"), O("XabzaXcaX")),
                     Replace("az", "X")),
         io: [
@@ -774,7 +801,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         priority: ["$i", "$o"]
     }));
     
-    describe("21d. Replace a single-character pattern with multiple, at the beginning", test({
+    describe("23a. Replace a single-character pattern with multiple, at the beginning", test({
         grammar: Join(Seq(I("abc"), O("XYbc")),
                     Replace("a", "XY")),
         io: [
@@ -783,7 +810,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         priority: ["$i", "$o"]
     }));
     
-    describe("21e. Replace a single-character pattern with multiple, at the end", test({
+    describe("23b. Replace a single-character pattern with multiple, at the end", test({
         grammar: Join(Seq(I("abc"), O("abXY")),
                     Replace("c", "XY")),
         io: [
@@ -792,7 +819,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         priority: ["$i", "$o"]
     }));
     
-    describe("21f. Replace a single-character pattern with multiple, several times", test({
+    describe("23c. Replace a single-character pattern with multiple, several times", test({
         grammar: Join(Seq(I("abaca"), O("XYbXYcXY")),
                     Replace("a", "XY")),
         io: [

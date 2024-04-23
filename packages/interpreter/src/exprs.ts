@@ -1003,7 +1003,6 @@ class ReplaceExpr extends Expr {
 
         const inputDelta = pattern.delta(query.tapeName, env);
         if (!(inputDelta instanceof NullExpr) && !this.endsWith) {
-            console.log(`inputDelta_${query.tapeName} not null in deriv`);
             const forwardOne = constructAlternation(env, pattern, matchAnything);
             const deltaAndForward = constructPrecede(env, inputDelta, forwardOne);
 

@@ -439,7 +439,6 @@ describe(`Source ${DIR}`, function() {
         results: [
             {text: "abac"}
         ],
-        verbose: VERBOSE_DEBUG
     }));
 
     describe('22. Replace cascade with an empty to', test({
@@ -545,5 +544,55 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", "gloss":"jump-2SG"},
             {text: "moobar", "gloss":"jump-1SG"}
         ]
+    }));
+
+    describe('26a. Filtering a deletion at beginning of word', test({
+        id: "26a",
+        results: [
+            {text: "bc"}
+        ]
+    }));
+
+    describe('26b. Filtering a deletion at middle of word', test({
+        id: "26b",
+        results: [
+            {text: "ac"}
+        ]
+    }));
+
+    describe('26c. Filtering a deletion at end of word', test({
+        id: "26c",
+        results: [
+            {text: "ab"}
+        ]
+    }));
+    
+    describe('27a. Joining a deletion at beginning of word', test({
+        id: "27a",
+        results: [
+            {text: "bc"}
+        ]
+    }));
+
+    describe('27b. Joining a deletion at middle of word', test({
+        id: "27b",
+        results: [
+            {text: "ac"}
+        ]
+    }));
+
+    describe('27c. Joining a deletion at end of word', test({
+        id: "27c",
+        results: [
+            {text: "ab"}
+        ]
+    }));
+
+    describe('28a. Joining a replacement at beginning of word, other direction', test({
+        id: "28a",
+        results: [
+            {text: "Xbc"}
+        ],
+        verbose: VERBOSE_DEBUG
     }));
 });
