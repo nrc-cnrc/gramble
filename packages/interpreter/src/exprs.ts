@@ -1673,8 +1673,8 @@ export class PreTapeExpr extends UnaryExpr {
                 yield* childDelta.deriv(query, env);
             }
 
-            const t1query = query.rename(this.inputTape);
-            
+            const t1query = constructDot(this.inputTape);
+
             for (const d1 of this.child.deriv(t1query, env)) {
                 if (d1.next instanceof NullExpr) {
                     continue;

@@ -6,7 +6,7 @@ import {
 } from "../../interpreter/src/grammarConvenience";
 
 import { DEFAULT_TAPE } from "../../interpreter/src/utils/constants";
-import { SILENT, VERBOSE_STATES } from "../../interpreter/src/utils/logging";
+import { SILENT, VERBOSE_DEBUG, VERBOSE_STATES } from "../../interpreter/src/utils/logging";
 
 import {
     grammarTestSuiteName,
@@ -748,9 +748,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'Xbc'},
         ],
-        verbose: vb(VERBOSE_STATES),
     });
-    
+
     testGrammar({
         desc: '20b. Replacement at the beginning, on the right side of a join',
         grammar: Join(t1("Xbc"), ReplaceBlock("t1", "abc",
@@ -758,9 +757,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'Xbc'},
         ],
-        verbose: vb(VERBOSE_STATES),
     });
-    
+  
     testGrammar({
         desc: '20c. Replacement at the end, on the left side of a join',
         grammar: Join(ReplaceBlock("t1", "abc",
