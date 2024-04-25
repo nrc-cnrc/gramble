@@ -1,0 +1,8 @@
+verb=, table:, text
+    ,       , abc
+    ,       ,     ,
+    , replace text:, from, to
+    ,         , b, ,
+
+word=, embed, equals text,
+     , verb, ac

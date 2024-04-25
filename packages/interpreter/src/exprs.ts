@@ -1056,7 +1056,6 @@ class ReplaceExpr extends Expr {
 
         const inputDelta = pattern.delta(query.tapeName, env);
         if (!(inputDelta instanceof NullExpr) && !this.endsWith) {
-            console.log(`inputDelta_${query.tapeName} not null in deriv`);
             const forwardOne = constructAlternation(env, pattern, matchAnything);
             const deltaAndForward = constructPrecede(env, inputDelta, forwardOne);
 
@@ -1729,8 +1728,8 @@ export class PreTapeExpr extends UnaryExpr {
                 yield* childDelta.deriv(query, env);
             }
 
-            const t1query = query.rename(this.inputTape);
-            
+            const t1query = constructDot(this.inputTape);
+
             for (const d1 of this.child.deriv(t1query, env)) {
                 if (d1.next instanceof NullExpr) {
                     continue;

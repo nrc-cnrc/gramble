@@ -2,10 +2,11 @@ import {
     Count, Epsilon, Null, Rep,
     Replace, ReplaceBlock, Uni, WithVocab,
     OptionalReplace,
+    Join,
 } from "../../interpreter/src/grammarConvenience";
 
 import { DEFAULT_TAPE } from "../../interpreter/src/utils/constants";
-import { SILENT, VERBOSE_STATES } from "../../interpreter/src/utils/logging";
+import { SILENT, VERBOSE_DEBUG, VERBOSE_STATES } from "../../interpreter/src/utils/logging";
 
 import {
     grammarTestSuiteName,
@@ -13,7 +14,7 @@ import {
 } from "./testGrammarUtil";
 
 import { 
-    logTestSuite, VERBOSE_TEST_L2,
+    logTestSuite, t1, VERBOSE_TEST_L2,
 } from '../testUtil';
 
 // File level control over verbose output
@@ -727,4 +728,75 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [],
         numErrors: 1
     });
+
+    testGrammar({
+		desc: '19. 2-rule cascade starting with 1-char deletion at the end: ' +
+              'abc ⨝ c -> "", b -> B',
+        grammar: ReplaceBlock("t1", "abc",
+                                  Replace("c", ""),
+                                  Replace("b", "B")),
+        results: [
+            {t1: 'aB'},
+        ],
+        verbose: vb(VERBOSE_STATES),
+    });
+
+    testGrammar({
+        desc: '20a. Replacement at the beginning, on the left side of a join',
+        grammar: Join(ReplaceBlock("t1", "abc",
+                        Replace("a", "X")), t1('Xbc')),
+        results: [
+            {t1: 'Xbc'},
+        ],
+    });
+
+    testGrammar({
+        desc: '20b. Replacement at the beginning, on the right side of a join',
+        grammar: Join(t1("Xbc"), ReplaceBlock("t1", "abc",
+                        Replace("a", "X"))),
+        results: [
+            {t1: 'Xbc'},
+        ],
+    });
+  
+    testGrammar({
+        desc: '20c. Replacement at the end, on the left side of a join',
+        grammar: Join(ReplaceBlock("t1", "abc",
+                        Replace("c", "X")), t1('abX')),
+        results: [
+            {t1: 'abX'},
+        ],
+        verbose: vb(VERBOSE_STATES),
+    });
+    
+    testGrammar({
+        desc: '20d. Replacement at the end, on the right side of a join',
+        grammar: Join(t1("abX"), ReplaceBlock("t1", "abc",
+                        Replace("c", "X"))),
+        results: [
+            {t1: 'abX'},
+        ],
+        verbose: vb(VERBOSE_STATES),
+    });
+
+    testGrammar({
+        desc: '21a. 1-char deletion at the end, on the left side of a join',
+        grammar: Join(ReplaceBlock("t1", "abc",
+                        Replace("c", "")), t1('ab')),
+        results: [
+            {t1: 'ab'},
+        ],
+        verbose: vb(VERBOSE_STATES),
+    });
+    
+    testGrammar({
+        desc: '21b. 1-char deletion at the end, on the right side of a join',
+        grammar: Join(t1("ab"), ReplaceBlock("t1", "abc",
+                        Replace("c", ""))),
+        results: [
+            {t1: 'ab'},
+        ],
+        verbose: vb(VERBOSE_STATES),
+    });
+
 });

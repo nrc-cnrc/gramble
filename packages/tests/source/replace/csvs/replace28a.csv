@@ -1,0 +1,11 @@
+verb=, text
+    , abc
+
+replace text:, from, to
+             , a, X
+
+word=, text
+     , Xbc
+
+join:, embed
+     , verb
