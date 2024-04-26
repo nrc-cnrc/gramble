@@ -19,7 +19,7 @@ import { CounterStack } from "./utils/counter";
 import { randomCut, randomCutIter } from "./utils/random";
 import { InfinityProtection } from "./passes/infinityProtection";
 
-export type Query = TokenExpr | DotExpr;
+export type Query = TokenExpr | DotExpr | EpsilonTokenExpr;
 
 export class DerivStats {
     public statesVisited: number = 0;
@@ -403,6 +403,41 @@ export class EpsilonExpr extends Expr {
 
 }
 
+
+/**
+ * This is a special epsilon-like expression used only in queries.
+ */
+export class EpsilonTokenExpr extends Expr {
+
+    constructor(
+        public tapeName: string
+    ) {
+        super();
+    }
+
+    public get id(): string {
+        return `${this.tapeName}:ε`;
+    }
+
+    public delta(
+        tapeName: string,
+        env: DerivEnv
+    ): Expr {
+        return this;
+    }
+
+    public *deriv(
+        query: Query,
+        env: DerivEnv
+    ): Derivs { }
+
+    public rename(tapeName: string) {
+        return this;
+    }
+
+}
+
+
 /**
  * An expression denoting the empty language {}
  */
@@ -467,6 +502,8 @@ class DotExpr extends Expr {
         env: DerivEnv
     ): Derivs { 
         if (query.tapeName != this.tapeName) return;
+        if (query instanceof EpsilonTokenExpr) return;
+
         const cs = [... query.expandStrings(env)];
         const csCut = randomCut(cs, env.random);
         for (const c of csCut) {
@@ -502,9 +539,8 @@ class DotStarExpr extends Expr {
         query: Query, 
         env: DerivEnv
     ): Derivs {
-        if (query.tapeName != this.tapeName) {
-            return;
-        }
+        if (query.tapeName != this.tapeName) return;
+        if (query instanceof EpsilonTokenExpr) return;
         
         const cs = [... query.expandStrings(env)];
         const csCut = randomCut(cs, env.random);
@@ -561,7 +597,8 @@ export class TokenExpr extends Expr {
         query: Query,
         env: DerivEnv
     ): Derivs {
-        if (query.tapeName != this.tapeName) return;
+        if (query.tapeName != this.tapeName) return;        if (query.tapeName != this.tapeName) return;
+        if (query instanceof EpsilonTokenExpr) return;
         if (!(query instanceof DotExpr) && query.text != this.text) return;
         yield new Deriv(this, EPSILON);
     }
@@ -598,6 +635,7 @@ class LiteralExpr extends Expr {
     ): Derivs {
         if (this.index >= this.tokens.length) return;
         if (query.tapeName != this.tapeName) return;
+        if (query instanceof EpsilonTokenExpr) return;
 
         //const tape = env.getTape(query.tapeName);
         if (env.atomic) {
@@ -652,6 +690,7 @@ class RTLLiteralExpr extends LiteralExpr {
     ): Derivs {
         if (this.index < 0) return;
         if (query.tapeName != this.tapeName) return;
+        if (query instanceof EpsilonTokenExpr) return;
 
         //const tape = env.getTape(query.tapeName);
         if (env.atomic) {
@@ -1996,6 +2035,7 @@ class NegationExpr extends UnaryExpr {
         if (!this.tapes.has(query.tapeName)) {
             return;
         }
+        if (query instanceof EpsilonTokenExpr) return;
 
         let results: Deriv[] = [];
         let remainder: Set<string> = new Set(query.expandStrings(env));
