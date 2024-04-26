@@ -780,7 +780,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '21a. 1-char deletion at the end, on the left side of a join',
+        desc: '21a. Shortening at the end, on the left side of a join',
         grammar: Join(ReplaceBlock("t1", "abc",
                         Replace("c", "")), t1('ab')),
         results: [
@@ -790,13 +790,13 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
     
     testGrammar({
-        desc: '21b. 1-char deletion at the end, on the right side of a join',
+        desc: '21b. Shortening at the end, on the right side of a join',
         grammar: Join(t1("ab"), ReplaceBlock("t1", "abc",
                         Replace("c", ""))),
         results: [
             {t1: 'ab'},
         ],
-        verbose: vb(VERBOSE_STATES),
+        verbose: VERBOSE_DEBUG
     });
 
 });

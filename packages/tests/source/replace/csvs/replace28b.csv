@@ -2,10 +2,10 @@ verb=, text
     , abc
 
 replace text:, from, to
-             , a, 
+             , b, 
 
 word=, text
-     , bc
+     , ac
 
 join:, embed
      , verb

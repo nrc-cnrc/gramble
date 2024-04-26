@@ -432,7 +432,7 @@ export class EpsilonTokenExpr extends Expr {
     ): Derivs { }
 
     public rename(tapeName: string) {
-        return this;
+        return new EpsilonTokenExpr(tapeName);
     }
 
 }
@@ -1200,7 +1200,7 @@ class JoinExpr extends BinaryExpr {
         query: Query,
         env: DerivEnv
     ): Derivs {
-
+        
         if (!this.tapes2.has(query.tapeName)) {
             const c1derivs = this.child1.deriv(query, env);
             for (const d1 of disjoin(c1derivs, env)) {
@@ -1234,6 +1234,18 @@ class JoinExpr extends BinaryExpr {
                 yield d2.wrap(c => constructJoin(env, c1nxt, c, 
                                             this.tapes1, this.tapes2));
             }
+        }
+
+        // one more possibility, the left side is nullable but the right side still
+        // has epsilon transitions to get to before it's nullable.  (the opposite configuration
+        // is already handled above.)
+        const child1delta = this.child1.delta(query.tapeName, env);
+        if (child1delta instanceof NullExpr) return;
+        const eosQuery = new EpsilonTokenExpr(query.tapeName);
+        for (const d2 of disjoin(this.child2.deriv(eosQuery, env), env)) {
+            if (d2 instanceof EpsilonExpr || d2 instanceof OutputExpr) continue;
+            yield d2.wrap(c => constructJoin(env, child1delta, d2.next, 
+                            this.tapes1, this.tapes2));
         }
     } 
 

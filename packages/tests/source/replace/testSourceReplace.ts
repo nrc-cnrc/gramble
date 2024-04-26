@@ -588,11 +588,24 @@ describe(`Source ${DIR}`, function() {
         ]
     }));
 
-    describe('28a. Joining a replacement at beginning of word, other direction', test({
+    describe('28a. Joining a deletion at beginning of word, other direction', test({
         id: "28a",
         results: [
-            {text: "Xbc"}
+            {text: "bc"}
         ],
-        verbose: VERBOSE_DEBUG
+    }));
+    
+    describe('28b. Joining a deletion at middle of word, other direction', test({
+        id: "28b",
+        results: [
+            {text: "ac"}
+        ],
+    }));
+    
+    describe('28c. Joining a deletion at end of word, other direction', test({
+        id: "28c",
+        results: [
+            {text: "ab"}
+        ],
     }));
 });
