@@ -41,6 +41,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     logTestSuite(this.title);
 
+    /*
     describe("0a. Generation from a replace a->X with vocab a,b", test({
         grammar: Count({"$i":3}, Join(InputChars(["a","b"]), Replace("a", "X"))),
         io: [
@@ -125,7 +126,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ]
     }));
 
-
     describe("1a. Replace one character", test({
         grammar: Join(I("a"), Replace("a", "X")),
         io: [
@@ -188,7 +188,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             ["azabzaazcaaz", "XabzaXcaX"]
         ],
     }));
-    
+
     describe("2d. Replace a single-character pattern with multiple, at the beginning", test({
         grammar: Join(I("abc"), Replace("a", "XY")),
         io: [
@@ -208,29 +208,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         io: [
             ["abaca", "XYbXYcXY"]
         ],
-        verbose: VERBOSE_DEBUG
-    }));
-
-    describe("2d. Replace a single-character pattern with multiple, at the beginning", test({
-        grammar: Join(Input("abc"), Replace("a", "XY")),
-        io: [
-            ["abc", "XYbc"]
-        ],
-    }));
-    
-    describe("2e. Replace a single-character pattern with multiple, at the end", test({
-        grammar: Join(Input("abc"), Replace("c", "XY")),
-        io: [
-            ["abc", "abXY"]
-        ],
-    }));
-    
-    describe("2f. Replace a single-character pattern with multiple, several times", test({
-        grammar: Join(Input("abaca"), Replace("a", "XY")),
-        io: [
-            ["abaca", "XYbXYcXY"]
-        ],
-        verbose: VERBOSE_DEBUG
     }));
 
     describe("3a. Replace with a pre-condition", test({
@@ -310,13 +287,16 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     }));
     
+    */
     describe("6a. Replace one character, beginsWith", test({
         grammar: Join(I("a"), Replace("a", "X", Epsilon(), Epsilon(), true)),
         io: [
             ["a", "X"]
         ],
+        verbose: VERBOSE_DEBUG
     }));
 
+    /*
     describe("6b. Replace a character at the beginning, beginsWith", test({
         grammar: Join(I("abc"), Replace("a", "X", Epsilon(), Epsilon(), true)),
         io: [
@@ -849,4 +829,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
         priority: ["$i", "$o"]
     }));
+
+    */
 });

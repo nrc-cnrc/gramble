@@ -19,7 +19,7 @@ import { CounterStack } from "./utils/counter";
 import { randomCut, randomCutIter } from "./utils/random";
 import { InfinityProtection } from "./passes/infinityProtection";
 
-export type Query = TokenExpr | DotExpr | EpsilonTokenExpr;
+export type Query = TokenExpr | DotExpr | EpsilonTokenExpr | EOSTokenExpr;
 
 export class DerivStats {
     public statesVisited: number = 0;
@@ -414,7 +414,7 @@ export class EpsilonTokenExpr extends Expr {
     }
 
     public get id(): string {
-        return `${this.tapeName}_`;
+        return `${this.tapeName}:_`;
     }
 
     public delta(
@@ -442,6 +442,39 @@ export class EpsilonTokenExpr extends Expr {
 
 }
 
+export class EOSTokenExpr extends Expr {
+
+    constructor(
+        public tapeName: string
+    ) {
+        super();
+    }
+
+    public get id(): string {
+        return `${this.tapeName}:EOS`;
+    }
+
+    public delta(
+        tapeName: string,
+        env: DerivEnv
+    ): Expr {
+        throw new Error("not implemented");
+    }
+
+    public *deriv(
+        query: Query,
+        env: DerivEnv
+    ): Derivs {
+        throw new Error("not implemented");
+    }
+
+    public rename(newTapeName: string): EpsilonTokenExpr {
+        return constructEpsilonToken(newTapeName);
+    }
+
+}
+
+
 export function constructEpsilonToken(tapeName: string): EpsilonTokenExpr {
     return new EpsilonTokenExpr(tapeName);
 }
@@ -467,6 +500,12 @@ export class NullExpr extends Expr {
         env: DerivEnv
     ): Derivs { }
 }
+
+
+export function constructEOSToken(tapeName: string): EOSTokenExpr {
+    return new EOSTokenExpr(tapeName);
+}
+
 
 
 /**
@@ -510,10 +549,14 @@ class DotExpr extends Expr {
         env: DerivEnv
     ): Derivs { 
         if (query.tapeName != this.tapeName) return;
+        
+        if (query instanceof EOSTokenExpr) return;
+
         if (query instanceof EpsilonTokenExpr) {
             yield new Deriv(query, EPSILON);
             return;
         }
+
 
         const cs = [... query.expandStrings(env)];
         const csCut = randomCut(cs, env.random);
@@ -550,10 +593,9 @@ class DotStarExpr extends Expr {
         query: Query, 
         env: DerivEnv
     ): Derivs {
-        if (query.tapeName != this.tapeName) {
-            return;
-        }
-        
+        if (query.tapeName != this.tapeName) return;
+        if (query instanceof EOSTokenExpr) return;
+
         if (query instanceof EpsilonTokenExpr) {
             yield new Deriv(query, this);
             return;
@@ -615,6 +657,7 @@ export class TokenExpr extends Expr {
         env: DerivEnv
     ): Derivs {
         if (query.tapeName != this.tapeName) return;
+        if (query instanceof EOSTokenExpr) return;
         if (!(query instanceof DotExpr) && query.text != this.text) return;
         yield new Deriv(this, EPSILON);
     }
@@ -650,6 +693,9 @@ class LiteralExpr extends Expr {
         env: DerivEnv
     ): Derivs {
         if (this.index >= this.tokens.length) return;
+
+        if (query instanceof EOSTokenExpr) return;
+
         if (query.tapeName != this.tapeName) return;
 
         //const tape = env.getTape(query.tapeName);
@@ -705,7 +751,7 @@ class RTLLiteralExpr extends LiteralExpr {
     ): Derivs {
         if (this.index < 0) return;
         if (query.tapeName != this.tapeName) return;
-
+        if (query instanceof EOSTokenExpr) return;
         //const tape = env.getTape(query.tapeName);
         if (env.atomic) {
             if (query instanceof DotExpr || query.text == this.text) {
@@ -978,6 +1024,8 @@ class ReplaceExpr extends Expr {
         env: DerivEnv
     ): Derivs {
 
+        if (query instanceof EOSTokenExpr) return;
+
         if (query.tapeName == OUTPUT_TAPE) {
             yield new Deriv(constructEpsilonToken(OUTPUT_TAPE), this);
             return;
@@ -1238,7 +1286,6 @@ class JoinExpr extends BinaryExpr {
         for (const d1 of disjoin(c1derivs, env)) {
 
             if (this.ignoreEpsilon && d1.result instanceof EpsilonTokenExpr) {
-                console.log(`eps on left, not testing right`);
                 yield d1.wrap(c => constructJoin(env, c, this.child2, 
                                     this.tapes1, this.tapes2, this.ignoreEpsilon));
                 continue;
@@ -1250,6 +1297,22 @@ class JoinExpr extends BinaryExpr {
                 yield d2.wrap(c => constructJoin(env, c1nxt, c, 
                                             this.tapes1, this.tapes2, this.ignoreEpsilon));
             }
+        }
+
+        // one more possibility, the left side is nullable but the right side still
+        // has epsilon transitions to get to before it's nullable.  (the opposite configuration
+        // is already handled above.)
+
+        if (!this.ignoreEpsilon) return;
+
+        const child1delta = this.child1.delta(query.tapeName, env);
+        if (child1delta instanceof NullExpr) return;
+        const eosQuery = new EOSTokenExpr(query.tapeName);
+        for (const d2 of disjoin(this.child2.deriv(eosQuery, env), env)) {
+            console.log(`found a continuation in D_${query.tapeName}(${this.child2.id}), it's ${d2.next.id}`);
+            if (d2 instanceof EpsilonExpr || d2 instanceof OutputExpr) continue;
+            yield d2.wrap(c => constructJoin(env, child1delta, d2.next, 
+                            this.tapes1, this.tapes2, this.ignoreEpsilon));
         }
     } 
 
@@ -2052,6 +2115,8 @@ class NegationExpr extends UnaryExpr {
             return;
         }
 
+        if (query instanceof EOSTokenExpr) return;
+
         let results: Deriv[] = [];
         let remainder: Set<string> = new Set(query.expandStrings(env));
 
@@ -2170,7 +2235,9 @@ export function constructCorrespond(
 
     // first, construct a bounding set (i:. ⋅ o:.)* that ensures 
     // that input and output end up the same length
-    const oneOfEach = constructConcat(env, constructDot(INPUT_TAPE), constructDot(OUTPUT_TAPE));
+    const inputDotOrEps = constructAlternation(env, constructDot(INPUT_TAPE), constructEpsilonToken(INPUT_TAPE));
+    const outputDotOrEps = constructAlternation(env, constructDot(OUTPUT_TAPE), constructEpsilonToken(OUTPUT_TAPE));
+    const oneOfEach = constructConcat(env, inputDotOrEps, outputDotOrEps);
     const sameLengthGuard = constructRepeat(env, oneOfEach);
 
     // also, one tape (but not both) can emit epsilons
