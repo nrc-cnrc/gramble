@@ -1,6 +1,6 @@
 {
   "name": "@gramble/interpreter",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "description": "The parse library that underlies Gramble",
   "keywords": [
     "parse",

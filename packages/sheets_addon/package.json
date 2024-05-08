@@ -1,6 +1,6 @@
 {
   "name": "@gramble/sheets_addon",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "description": "Google Sheets addon for Gramble",
   "keywords": [
     "gramble",
