@@ -19,6 +19,7 @@
                 return `${sheet}!${letterFromNumber(col)}${(row+1)}`;
             }
 
+            let currentSheetName = "";
             let previousSheetName = "";
             let previousSymbol = ""; // the symbol that the user selected is stored even
                                           // between grammar reloads, so that they're not surprised
@@ -135,7 +136,7 @@
                         `${responseFromGSuite["message"]}`);
                 }
 
-                const currentSheetName = responseFromGSuite["payload"]["startSheet"];
+                currentSheetName = responseFromGSuite["payload"]["startSheet"];
                 const cellsBySheet = responseFromGSuite["payload"]["sheets"];
 
                 // if there's not yet been a previous symbol chosen, or if the user
@@ -151,8 +152,8 @@
                 project = gramble.Interpreter.fromSheet(devEnv, currentSheetName, 
                         {verbose: gramble.VERBOSE_TIME});
 
-                createErrorButtons(devEnv.errors, currentSheetName);
-                reloadSymbols(currentSheetName);
+                createErrorButtons(devEnv.errors);
+                reloadSymbols();
                 reloadInputFields();
 
                 reloadGrammarLock = false;
@@ -179,10 +180,10 @@
                 }
 
                 project.runTests();
-                createErrorButtons(devEnv.errors, currentSheetName);
+                createErrorButtons(devEnv.errors);
             }
 
-            function createErrorButtons(errors, currentSheetName) {
+            function createErrorButtons(errors) {
 
                 const errorArea = document.getElementById("errorArea");
                 
@@ -205,7 +206,7 @@
             }
 
             
-            function reloadSymbols(currentSheetName) {
+            function reloadSymbols() {
 
                 if (project == undefined) {
                     throw new Error("Trying to reload symbols without a project");
@@ -407,7 +408,7 @@
                 // create a temporary link element to download from
                 let element = document.createElement('a');
                 element.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(text));
-                element.setAttribute('download', 'singleSource.csv');
+                element.setAttribute('download', `${currentSheetName}_single.csv`);
                 element.style.display = 'none';
                 document.body.appendChild(element);
                 element.click();
