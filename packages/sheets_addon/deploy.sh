@@ -35,7 +35,7 @@ cat <(echo '<script>') gramble.js <(echo '</script>') >> grambleWrapped.html
 # make sure the target directory exists, and copy the project files to it
 echo "Copying project files to '$PWD'/$TARGET_DIR" >&2
 mkdir -p $TARGET_DIR
-cp Code.js gramble.js grambleWrapped.html sidebar.html style.html $TARGET_DIR
+cp Code.js gramble.js grambleWrapped.html sidebar.html style.html appsscript.json $TARGET_DIR
 rm gramble.js grambleWrapped.html 
 
 cd $TARGET_DIR
