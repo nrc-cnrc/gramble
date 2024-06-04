@@ -1,13 +1,7 @@
 import {
-    SingleTape,
-    Lit,
-    Dot,
-    Join,
-    Collection,
-    Embed,
-    Epsilon,
-    Seq,
-    Uni, 
+    Dot, Embed, Epsilon,
+    Join, Lit, Seq,
+    SingleTape, Uni, 
 } from "../../interpreter/src/grammarConvenience";
 
 import { DEFAULT_TAPE } from "../../interpreter/src/utils/constants";
@@ -65,10 +59,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     }));
 
     describe('3a. Single_t1(embed(t1:hello))', test({
-        grammar: Collection({
-                    "a": t1("hello"),
-                    "b": SingleTape("t1", Embed("a"))
-        }),
+        grammar: {
+            "a": t1("hello"),
+            "b": SingleTape("t1", Embed("a"))
+        },
         symbol: "b",
         tapes: ["t1"],
         results: [
@@ -77,10 +71,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     }));
 
     describe('3b. Single_t1(embed(t2:hello))', test({
-        grammar: Collection({
-                    "a": t2("hello"),
-                    "b": SingleTape("t1", Embed("a"))
-        }),
+        grammar: {
+            "a": t2("hello"),
+            "b": SingleTape("t1", Embed("a"))
+        },
         symbol: "b",
         tapes: ["t1"],
         results: [
@@ -89,10 +83,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     }));
 
     describe('3c. Single_t1(embed(T:hello))', test({
-        grammar: Collection({
-                    "a": T("hello"),
-                    "b": SingleTape("t1", Embed("a"))
-        }),
+        grammar: {
+            "a": T("hello"),
+            "b": SingleTape("t1", Embed("a"))
+        },
         symbol: "b",
         tapes: ["t1"],
         results: [
@@ -127,10 +121,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     }));
 
     describe('E2. Single_t1(embed(eps))', test({
-        grammar: Collection({
-                    "a": Epsilon(),
-                    "b": SingleTape("t1", Embed("a"))
-        }),
+        grammar: {
+            "a": Epsilon(),
+            "b": SingleTape("t1", Embed("a"))
+        },
         symbol: "b",
         tapes: [],
         results: [
@@ -139,10 +133,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     }));
 
     describe('E3. Single_t1(embed(t1:hello,t2:world))', test({
-        grammar: Collection({
-                    "a": Seq(t1("hello"), t2("world")),
-                    "b": SingleTape("t1", Embed("a"))
-        }),
+        grammar: {
+            "a": Seq(t1("hello"), t2("world")),
+            "b": SingleTape("t1", Embed("a"))
+        },
         symbol: "b",
         tapes: [],
         results: [

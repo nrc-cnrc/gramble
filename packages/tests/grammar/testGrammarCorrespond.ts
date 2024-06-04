@@ -1,6 +1,5 @@
 import {
     Correspond, 
-    Cursor, 
     Epsilon, 
     Join, 
     Lit, 
@@ -292,7 +291,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'hello', $o: 'bye'},
         ],
         priority: ["$i", "$o"],
-        verbose: VERBOSE_DEBUG,
+        // verbose: VERBOSE_DEBUG,
     }));
 
     describe('11a-OI. o shorter than i, priority OI, joined on left', test({

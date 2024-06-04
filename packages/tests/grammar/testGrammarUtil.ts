@@ -12,19 +12,19 @@ import {
     DEFAULT_MAX_CHARS,
     DEFAULT_MAX_RECURSION
 } from "../../interpreter/src/utils/constants";
-
-import { StringDict } from "../../interpreter/src/utils/func";
-import { SILENT, timeIt, } from "../../interpreter/src/utils/logging";
+import { Dict, StringDict } from "../../interpreter/src/utils/func";
+import {
+    timeIt, SILENT,
+    VERBOSE_DEBUG, VERBOSE_GRAMMAR
+} from "../../interpreter/src/utils/logging";
 import { Options } from "../../interpreter/src/utils/options";
 
 import {
     testSuiteName, verbose,
-    testHasTapes, testHasVocab, 
-    testGenerate, 
-    generateOutputs, testNumOutputs, 
-    testMatchOutputs,
+    testHasTapes, testHasVocab,
+    testGenerate, generateOutputs,
+    testNumErrors, testNumOutputs, testMatchOutputs,
     prepareInterpreter,
-    testNumErrors,
     VERBOSE_TEST_L2    
 } from '../testUtil';
 
@@ -39,7 +39,7 @@ export const t4 = (s: string) => Lit("t4", s);
 export const t5 = (s: string) => Lit("t5", s);
 
 export interface GrammarTestAux extends Options {
-    grammar: Grammar,
+    grammar: Grammar | Dict<Grammar>,
     tapes: string[],
     vocab: {[tape: string]: number|string[]},
     results: StringDict[],
@@ -98,7 +98,7 @@ export function testGrammarAux({
         testHasTapes(grammar, tapes, symbol, stripHidden);
     }
     if (vocab !== undefined) {
-        testHasVocab(grammar, vocab);
+        testHasVocab(grammar, vocab, symbol, stripHidden);
     }
 
     const interpreter = prepareInterpreter(grammar, opt);

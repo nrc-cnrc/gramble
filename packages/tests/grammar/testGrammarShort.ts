@@ -25,7 +25,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '1. Short(t1:h)',
         grammar: Short(t1("h")),
         tapes: ['t1'],
-        //vocab: {t1:1},
+        vocab: {t1: [..."h"]},
         results: [
             {t1: 'h'},
         ],
@@ -35,7 +35,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '2. Short(t1:h|t1:hh)',
         grammar: Short(Uni(t1("h"), t1("hh"))),
         tapes: ['t1'],
-        //vocab: {t1:1},
+        vocab: {t1: [..."h"]},
         results: [
             {t1: 'h'},
         ],
@@ -45,7 +45,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '3. Short(t1:h*)',
         grammar: Short(Rep(t1("h"))),
         tapes: ['t1'],
-        //vocab: {t1:1},
+        vocab: {t1: [..."h"]},
         results: [
             {},
         ],
@@ -55,7 +55,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '4. Short(t1:h+)',
         grammar: Short(Rep(t1("h"), 1, Infinity)),
         tapes: ['t1'],
-        //vocab: {t1:1},
+        vocab: {t1: [..."h"]},
         results: [
             {t1: 'h'},
         ],
@@ -65,7 +65,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '5. Short(t1:h{2,})',
         grammar: Short(Rep(t1("h"), 2, Infinity)),
         tapes: ['t1'],
-        //vocab: {t1:1},
+        vocab: {t1: [..."h"]},
         results: [
             {t1: 'hh'},
         ],
@@ -76,7 +76,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: WithVocab({t1:'hi'},
                      Short(Rep(Dot("t1"), 1, Infinity))),
         tapes: ['t1'],
-        //vocab: {t1:2},
+        vocab: {t1: [..."hi"]},
         results: [
             {t1: 'h'}, 
             {t1: 'i'},
@@ -90,9 +90,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '7-ltr. Short(t1:h|hi|hello|goo|goodbye|golf)',
         grammar: Short(Uni(t1("h"), t1("hi"), t1("hello"),
-                            t1("goo"), t1("goodbye"), t1("golf"))),
+                           t1("goo"), t1("goodbye"), t1("golf"))),
         tapes: ['t1'],
-        //vocab: {t1:10},
+        vocab: {t1: [..."hielogdbyf"]},
         results: [
             {t1: 'h'},
             {t1: 'goo'},
@@ -104,10 +104,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '8-ltr. Short(t1:.*i) (vocab t1:hi)',
         grammar: Count({t1:4},
-                        WithVocab({t1:'hi'},
-                            Short(Seq(Rep(Dot("t1")), t1("i"))))),
+                    WithVocab({t1:'hi'},
+                        Short(Seq(Rep(Dot("t1")), t1("i"))))),
         tapes: ['t1'],
-        //vocab: {t1:2},
+        vocab: {t1: [..."hi"]},
         results: [
             {t1: 'i'}, 
             {t1: 'hi'},
@@ -121,11 +121,11 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '9-ltr. Contains at least one i: ' +
                 'Short(t1:.*i) + t1.* (vocab t1:hi)',
         grammar: Count({t1:4},
-                        WithVocab({t1:'hi'},
-                            Seq(Short(Seq(Rep(Dot("t1")), t1("i"))),
-                                Rep(Dot("t1"))))),
+                    WithVocab({t1:'hi'},
+                        Seq(Short(Seq(Rep(Dot("t1")), t1("i"))),
+                            Rep(Dot("t1"))))),
         tapes: ['t1'],
-        //vocab: {t1:2},
+        vocab: {t1: [..."hi"]},
         results: [
             {t1: 'hi'},   {t1: 'hhi'},
             {t1: 'hih'},  {t1: 'hii'},
@@ -149,11 +149,11 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '10-ltr. Does not contain any i: ' +
                 '~(Short(t1:.*i) + t1:.*) (vocab t1:hi)',
         grammar: Count({t1:4},
-                        WithVocab({t1:'hi'},
-                            Not(Seq(Short(Seq(Rep(Dot("t1")), t1("i"))),
-                                    Rep(Dot("t1")))))),
+                    WithVocab({t1:'hi'},
+                        Not(Seq(Short(Seq(Rep(Dot("t1")), t1("i"))),
+                                Rep(Dot("t1")))))),
         tapes: ['t1'],
-        //vocab: {t1:2},
+        vocab: {t1: [..."hi"]},
         results: [
             {},
             {t1: 'h'},
@@ -168,11 +168,11 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '11a-ltr. t1:abcdef ⨝ not-contain(t1:i): ' +
                 't1:abcdef ⨝ ~(Short(t1:.*i) + t1:.*) (vocab t1:hi)',
         grammar: WithVocab({t1:'hi'},
-                        Join(t1("abcdef"),
-                            Not(Seq(Short(Seq(Rep(Dot("t1")), t1("i"))),
-                                    Rep(Dot("t1")))))),
+                    Join(t1("abcdef"),
+                        Not(Seq(Short(Seq(Rep(Dot("t1")), t1("i"))),
+                                Rep(Dot("t1")))))),
         tapes: ['t1'],
-        //vocab: {t1:8},
+        vocab: {t1: [..."abcdefhi"]},
         results: [
             {t1: 'abcdef'},
         ],
@@ -183,11 +183,11 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '11b-ltr. not-contain(t1:i) ⨝ t1:abcdef: ' +
                 '~(Short(t1:.*i) + t1:.*) ⨝ t1:abcdef (vocab t1:hi)',
         grammar: WithVocab({t1:'hi'},
-                        Join(Not(Seq(Short(Seq(Rep(Dot("t1")), t1("i"))),
-                                    Rep(Dot("t1")))),
-                            t1("abcdef"))),
+                    Join(Not(Seq(Short(Seq(Rep(Dot("t1")), t1("i"))),
+                                Rep(Dot("t1")))),
+                        t1("abcdef"))),
         tapes: ['t1'],
-        //vocab: {t1:8},
+        vocab: {t1: [..."abcdefhi"]},
         results: [
             {t1: 'abcdef'},
         ],
@@ -198,10 +198,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '12a-ltr. t1:abcdef ⨝ not-contain(t1:b): ' +
                 't1:abcdef ⨝ ~(Short(t1:.*b) + t1:.*)',
         grammar: Join(t1("abcdef"),
-                        Not(Seq(Short(Seq(Rep(Dot("t1")), t1("b"))),
-                                Rep(Dot("t1"))))),
+                    Not(Seq(Short(Seq(Rep(Dot("t1")), t1("b"))),
+                            Rep(Dot("t1"))))),
         tapes: ['t1'],
-        //vocab: {t1:6},
+        vocab: {t1: [..."abcdef"]},
         results: [],
         directionLTR: true
     });
@@ -210,10 +210,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '12b-ltr. not-contain(t1:b) ⨝ t1:abcdef: ' +
                 '~(Short(t1:.*b) + t1:.*) ⨝ t1:abcdef',
         grammar: Join(Not(Seq(Short(Seq(Rep(Dot("t1")), t1("b"))),
-                                Rep(Dot("t1")))),
-                        t1("abcdef")),
+                              Rep(Dot("t1")))),
+                      t1("abcdef")),
         tapes: ['t1'],
-        //vocab: {t1:6},
+        vocab: {t1: [..."abcdef"]},
         results: [],
         directionLTR: true
     });

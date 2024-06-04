@@ -37,7 +37,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     describe('2. Literal t1:""', test({
         grammar: t1(""),
         tapes: ["t1"],
-        //vocab: {t1: 0},
+        vocab: {t1: 0},
         results: [
             {},
         ],
@@ -54,7 +54,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     describe('4. Sequence t1:hello + t1:world', test({
         grammar: Seq(t1("hello"), t1("world")),
         tapes: ["t1"],
-        // vocab: {t1: 7},
+        vocab: {t1: [..."helowrld"]},
         results: [
             {t1: 'helloworld'},
         ]
@@ -195,7 +195,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     describe('22. t1:hi + t2:yo', test({
         grammar: Seq(t1("hi"), t2("yo")),
         tapes: ["t1", "t2"],
-        // vocab: {t1: 2, t2: 2},
+        vocab: {t1: [..."hi"], t2: [..."yo"]},
         results: [
             {t1: 'hi', t2: 'yo'},
         ],
@@ -204,7 +204,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     describe('23. t1:hi + t2:yo + t3:hey', test({
         grammar: Seq(t1("hi"), t2("yo"), t3("hey")),
         tapes: ["t1", "t2", "t3"],
-        // vocab: {t1: 2, t2: 2, t3: 3},
+        vocab: {t1: [..."hi"], t2: [..."yo"], t3: [..."hey"]},
         results: [
             {t1: 'hi', t2: 'yo', t3: 'hey'},
         ],
@@ -213,7 +213,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     describe('24. t1:hi + (t2:yo + t3:hey)', test({
         grammar: Seq(t1("hi"), Seq(t2("yo"), t3("hey"))),
         tapes: ["t1", "t2", "t3"],
-        // vocab: {t1: 2, t2: 2, t3: 3},
+        vocab: {t1: [..."hi"], t2: [..."yo"], t3: [..."hey"]},
         results: [
             {t1: 'hi', t2: 'yo', t3: 'hey'},
         ],
@@ -222,7 +222,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     describe('25. (t1:hi + t2:yo) + t3:hey', test({
         grammar: Seq(Seq(t1("hi"), t2("yo")), t3("hey")),
         tapes: ["t1", "t2", "t3"],
-        // vocab: {t1: 2, t2: 2, t3: 3},
+        vocab: {t1: [..."hi"], t2: [..."yo"], t3: [..."hey"]},
         results: [
             {t1: 'hi', t2: 'yo', t3: 'hey'},
         ],

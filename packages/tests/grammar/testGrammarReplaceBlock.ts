@@ -796,7 +796,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'ab'},
         ],
-        verbose: VERBOSE_DEBUG
+        verbose: vb(VERBOSE_STATES),
     });
 
 });

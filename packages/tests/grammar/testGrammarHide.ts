@@ -1,7 +1,6 @@
 import { 
-    Seq, Join, Hide, 
-    Rename, Collection, 
-    Embed, Lit 
+    Embed, Hide, Join,
+    Lit, Rename, Seq,
 } from "../../interpreter/src/grammarConvenience";
 
 import {
@@ -30,7 +29,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     describe('1a. hide(t1, t1:hello)', test({
         grammar: Hide(t1("hello"), "t1"),
         tapes: [],
-        // vocab: {t1: 4},
+        vocab: {t1: []},
         results: [
             {},
         ],
@@ -48,7 +47,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     describe('2a. hide(t2, t1:hello+t2:foo)', test({
         grammar: Hide(Seq(t1("hello"), t2("foo")), "t2"),
         tapes: ["t1"],
-        // vocab: {t1: 4},
+        vocab: {t1: [..."helo"]},
         results: [
             {t1: 'hello'},
         ],
@@ -58,7 +57,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Hide(Seq(t1("hello"), t2("foo")), "t2", "HIDDEN"),
         stripHidden: false,
         tapes: ["t1", ".HIDDEN"],
-        // vocab: {t1: 4, '.HIDDEN': 2},
+        vocab: {t1: [..."helo"], '.HIDDEN': [..."fo"]},
         results: [
             {t1: 'hello', '.HIDDEN': 'foo'},
         ],
@@ -188,7 +187,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Rename(Hide(Seq(t1("hello"), t2("foo")), "t2"),
                         "t1", "t2"),
         tapes: ["t2"],
-        // vocab: {t2: 4},
+        vocab: {t2: [..."helo"]},
         results: [
             {t2: 'hello'},
         ],
@@ -199,7 +198,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                         "t1", "t2"),
         stripHidden: false,
         tapes: ["t2", ".HIDDEN"],
-        // vocab: {t1: 4, '.HIDDEN': 2},
+        vocab: {t2: [..."helo"], '.HIDDEN': [..."fo"]},
         results: [
             {t2: 'hello', '.HIDDEN': 'foo'},
         ],
@@ -209,7 +208,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Rename(Hide(Seq(t1("hello"), t2("foo")), "t2"),
                         "t1", "t3"),
         tapes: ["t3"],
-        // vocab: {t3: 4},
+        vocab: {t3: [..."helo"]},
         results: [
             {t3: 'hello'},
         ],
@@ -220,7 +219,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                         "t1", "t3"),
         stripHidden: false,
         tapes: ["t3", ".HIDDEN"],
-        // vocab: {t3: 4, '.HIDDEN': 2},
+        vocab: {t3: [..."helo"], '.HIDDEN': [..."fo"]},
         results: [
             {t3: 'hello', '.HIDDEN': 'foo'},
         ],
@@ -249,10 +248,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     
     describe('13c. Join using a field, embed it, and then hide it: ' +
              'hide(t2, symbol (t1:hello+t2:foo) ⨝ t2:foo)', test({
-        grammar: Collection({
+        grammar: {
             a: Join(Seq(t1("hello"), t2("foo")), t2("foo")),
             default: Hide(Embed("a"), "t2", "HIDDEN")
-        }),
+        },
         stripHidden: false,
         tapes: ["t1", ".HIDDEN"],
         results: [
@@ -283,50 +282,54 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     }));
 
     describe('15a. hide(t2, symbol t1:hi+t2:world)', test({
-        grammar: Collection({ 
+        grammar: { 
             a: Seq(t1("hi"), t2("world")),
             default: Hide(Embed("a"), "t2") 
-        }),
+        },
+        symbol: "default",
         tapes: ["t1"],
-        // vocab: {t1: 2},
+        vocab: {t1: [..."hi"]},
         results: [
             {t1: 'hi'},
         ],
     }));
 
     describe('15b. hide(t2, symbol t1:hi+t2:world)', test({
-        grammar: Collection({ 
+        grammar: { 
             a: Seq(t1("hi"), t2("world")),
             default: Hide(Embed("a"), "t2", "HIDDEN") 
-        }),
+        },
+        symbol: "default",
         stripHidden: false,
         tapes: ["t1", ".HIDDEN"],
-        // vocab: {t1: 2, '.HIDDEN': 2},
+        vocab: {t1: [..."hi"], '.HIDDEN': [..."world"]},
         results: [
             {t1: 'hi', '.HIDDEN': 'world'},
         ],
     }));
 
     describe('16a. Embed hide(t2, t1:hi+t2:foo)', test({
-        grammar: Collection({
+        grammar: {
             b: Hide(Seq(t1("hi"), t2("foo")), "t2"),
             default: Embed("b")
-        }),
+        },
+        symbol: "default",
         tapes: ["t1"],
-        // vocab: {t1: 2},
+        vocab: {t1: [..."hi"]},
         results: [
             {t1: 'hi'},
         ],
     }));
 
     describe('16b. Embed hide(t2, t1:hi+t2:foo)', test({
-        grammar: Collection({
+        grammar: {
             b: Hide(Seq(t1("hi"), t2("foo")), "t2", "HIDDEN"),
             default: Embed("b")
-        }),
+        },
+        symbol: "default",
         stripHidden: false,
         tapes: ["t1", ".HIDDEN"],
-        // vocab: {t1: 2, '.HIDDEN': 2},
+        vocab: {t1: [..."hi"], '.HIDDEN': [..."fo"]},
         results: [
             {t1: 'hi', '.HIDDEN': 'foo'},
         ],
@@ -335,7 +338,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     describe('17. Hide a hidden tape: hide(t2, t1(hello) + .t2:foo)', test({
         grammar: Hide(Seq(t1("hello"), Lit(".t2", "foo")), ".t2"),
         tapes: ["t1"],
-        // vocab: {t1: 4},
+        vocab: {t1: [..."helo"]},
         results: [
             {t1: 'hello'},
         ],
@@ -345,7 +348,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     describe('E1a. hide(t2, t1:hello)', test({
         grammar: Hide(t1("hello"), "t2"),
         tapes: ["t1"],
-        // vocab: {t1: 4},
+        vocab: {t1: [..."helo"]},
         results: [
             {t1: 'hello'},
         ],
@@ -356,7 +359,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Hide(t1("hello"), "t2", "HIDDEN"),
         stripHidden: false,
         tapes: ["t1"],
-        // vocab: {t1: 4},
+        vocab: {t1: [..."helo"]},
         results: [
             {t1: 'hello'},
         ],
@@ -368,7 +371,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Rename(Hide(Seq(t1("hello"), t2("foo")), "t2"),
                         "t2", "t3"),
         tapes: ["t1"],
-        // vocab: {t1: 4},
+        vocab: {t1: [..."helo"]},
         results: [
             {t1: 'hello'},
         ],
@@ -380,7 +383,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                         "t2", "t3"),
         stripHidden: false,
         tapes: ["t1", ".HIDDEN"],
-        // vocab: {t1: 4, '.HIDDEN': 2},
+        vocab: {t1: [..."helo"], '.HIDDEN': [..."fo"]},
         results: [
             {t1: 'hello', '.HIDDEN': 'foo'},
         ],

@@ -1,7 +1,6 @@
 import {
-    Collection, Dot, Embed, Epsilon, Join,
-    Rename,
-    Seq, Uni, WithVocab,
+    Dot, Embed, Epsilon, Join,
+    Rename, Seq, Uni, WithVocab,
 } from "../../interpreter/src/grammarConvenience";
 
 import {
@@ -25,7 +24,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 		desc: '1. t1:hi + t1:.',
         grammar: Seq(t1("hi"), Dot("t1")),
         tapes: ["t1"],
-        //vocab: {t1: 2},
+        vocab: {t1: [...'hi']},
         results: [
             {t1: 'hih'},
             {t1: 'hii'},
@@ -210,10 +209,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '23. Embedded dot',
-        grammar: Collection({
-                    "a": Seq(t1("hi"), Embed("b")),
-                    "b": Dot("t1")
-        }),
+        grammar: {
+            "a": Seq(t1("hi"), Embed("b")),
+            "b": Dot("t1")
+        },
         symbol: "a",
         tapes: ["t1"],
         results: [
@@ -234,10 +233,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     
     testGrammar({
         desc: '24b. Embedded dot and a query',
-        grammar: Collection({
-                    "a": Seq(t1("hi"), Embed("b")),
-                    "b": Dot("t1")
-        }),
+        grammar: {
+            "a": Seq(t1("hi"), Embed("b")),
+            "b": Dot("t1")
+        },
         symbol: "a",
         query: { t1: "hip" },
         tapes: ["t1"],
@@ -247,10 +246,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
     
     testGrammar({
-		desc: '25. t1:hi + t1:.',
+		desc: '25. Rename t1>t2, t1:hi + t1:.',
         grammar: Rename(Seq(t1("hi"), Dot("t1")), "t1", "t2"),
         tapes: ["t2"],
-        //vocab: {t1: 2},
+        vocab: {t2: [...'hi']},
         results: [
             {t2: 'hih'},
             {t2: 'hii'},
@@ -258,10 +257,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
     
     testGrammar({
-		desc: '26. t1:hi + t1:.',
+		desc: '26. t2:hi + (Rename t1>t2, t1:.)',
         grammar: Seq(t2("hi"), Rename(Dot("t1"), "t1", "t2")),
         tapes: ["t2"],
-        //vocab: {t1: 2},
+        vocab: {t2: [...'hi']},
         results: [
             {t2: 'hih'},
             {t2: 'hii'},

@@ -1,5 +1,6 @@
 import {
-    CharSet, Count, Cursor, Epsilon, Join, Lit, Null, OptionalReplace, PriUni, Query, Rep, Replace, Seq, Uni, WithVocab,
+    CharSet, Count, Epsilon, Join, Lit,
+    OptionalReplace, Rep, Replace, Seq,
 } from "@gramble/interpreter/src/grammarConvenience";
 
 import {
@@ -208,7 +209,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         io: [
             ["abaca", "XYbXYcXY"]
         ],
-        verbose: VERBOSE_DEBUG
+        // verbose: VERBOSE_DEBUG
     }));
 
     describe("3a. Replace with a pre-condition", test({

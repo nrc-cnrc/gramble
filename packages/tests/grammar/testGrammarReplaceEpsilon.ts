@@ -219,7 +219,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({$o:3},
         			 WithVocab({$o:'ahl'},
                         Replace("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT, true, false))),
-        //vocab: {$i:3, $o:3},
+        vocab: {$i: [..."ahl"], $o: [..."ahl"]},
         results: [
             {$o: 'a'},  // equivalent to {$i: '', $o: 'a'}
             {$i: 'a', $o: 'aa'},   {$i: 'h', $o: 'ah'},
@@ -237,7 +237,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({$o:3},
         			 WithVocab({$o:'ahl'},
                         Replace("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT, false, true))),
-        //vocab: {$i:3, $o:3},
+        vocab: {$i: [..."ahl"], $o: [..."ahl"]},
         results: [
             {$o: 'a'},  // equivalent to {$i: '', $o: 'a'}
             {$i: 'a', $o: 'aa'},   {$i: 'h', $o: 'ha'},
@@ -255,7 +255,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({$i:2, $o:3},
         			 WithVocab({$o:'ahl'},
                         Replace("", "a", EMPTY_CONTEXT, EMPTY_CONTEXT, true, true))),
-        //vocab: {$i:3, $o:3},
+        vocab: {$i: [..."ahl"], $o: [..."ahl"]},
         results: [
             // Insertions
             {$o: 'a'},  // equivalent to {$i: '', $o: 'a'}
@@ -481,7 +481,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         			 WithVocab({$i:'ah'},
                          OptionalReplace(Uni("", "h"), "a",
                                          EMPTY_CONTEXT, EMPTY_CONTEXT))),
-        //vocab: {$i:2, $o:2},
+        vocab: {$i: [..."ah"], $o: [..."ah"]},
         results: [
             // 1-2 Insertions, 0 Replacements
             {$o: 'a'},      // equivalent to {$i: '', $o: 'a'}
@@ -564,7 +564,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({$o:2},
         			 WithVocab({$i:'ahl'},
                      	 Replace("a", "", EMPTY_CONTEXT, EMPTY_CONTEXT, true, false))),
-        //vocab: {$i:3, $o:3},
+        vocab: {$i: [..."ahl"], $o: [..."ahl"]},
         results: [
             // Deletions
             {$i: 'a'},  // equivalent to {$i: 'a', $o: ''}
@@ -588,7 +588,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({$o:2},
         			 WithVocab({$i:'ahl'},
                      	 Replace("a", "", EMPTY_CONTEXT, EMPTY_CONTEXT, false, true))),
-        //vocab: {$i:3, $o:3},
+        vocab: {$i: [..."ahl"], $o: [..."ahl"]},
         results: [
             // Deletions
             {$i: 'a'},  // equivalent to {$i: 'a', $o: ''}
@@ -612,7 +612,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({$o:2},
         			 WithVocab({$i:'ahl'},
                      	 Replace("a", "", EMPTY_CONTEXT, EMPTY_CONTEXT, true, true))),
-        //vocab: {$i:3, $o:3},
+        vocab: {$i: [..."ahl"], $o: [..."ahl"]},
         results: [
             // Deletions
             {$i: 'a'},  // equivalent to {$i: 'a', $o: ''}
@@ -632,7 +632,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({$i:3, $o:3},
         			 WithVocab({$i:'ahl'},
                      	 Replace("a", "", EMPTY_CONTEXT, EMPTY_CONTEXT))),
-        //vocab: {$i:3, $o:3},
+        vocab: {$i: [..."ahl"], $o: [..."ahl"]},
         results: [
             // Deletions
             {$i: 'a'},      // equivalent to {$i: 'a', $o: ''}

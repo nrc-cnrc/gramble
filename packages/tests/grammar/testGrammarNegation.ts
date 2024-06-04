@@ -26,7 +26,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Join(t1("foo"),
         		 	  Not(t1("hello"))),
         tapes: ['t1'],
-        // vocab: {t1:5},
+        vocab: {t1: [..."fohel"]},
         results: [
             {t1: 'foo'},
         ],
@@ -203,7 +203,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({t1:4},
                  	   Not(t1("hi"))),
         tapes: ['t1'],
-        // vocab: {t1:2},
+        vocab: {t1: [..."hi"]},
         results: [
             {},           {t1: 'h'},    {t1: 'i'},
             {t1: 'hh'},   {t1: 'ih'},   {t1: 'ii'},
@@ -223,7 +223,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({t1:4},
                  	   Not(Seq(t1("h"), t1("i")))),
         tapes: ['t1'],
-        // vocab: {t1:2},
+        vocab: {t1: [..."hi"]},
         results: [
             {},           {t1: 'h'},    {t1: 'i'},
             {t1: 'hh'},   {t1: 'ih'},   {t1: 'ii'},
@@ -253,7 +253,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({t1:4, t2:4},
                  	   Uni(Not(t1("hi")), t2("hi"))),
         tapes: ['t1', 't2'],
-        // vocab: {t1:2, t2:2},
+        vocab: {t1: [..."hi"], t2: [..."hi"]},
         results: [
             {},           {t1: 'h'},    {t1: 'i'},
             {t1: 'hh'},   {t1: 'ih'},   {t1: 'ii'},
@@ -273,7 +273,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '25. ~t1:h',
         grammar: Count({t1:4},
                        Not(t1("h"))),
-        // vocab: {t1:1},
+        vocab: {t1: [..."h"]},
         results: [
             {}, {t1: 'hh'}, {t1: 'hhh'}, {t1: 'hhhh'},
         ],
@@ -283,7 +283,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '26. t1:h + (~t1:h)',
         grammar: Count({t1:5},
                  	   Seq(t1("h"), Not(t1("h")))),
-        // vocab: {t1:1},
+        vocab: {t1: [..."h"]},
         results: [
             {t1: 'h'}, {t1: 'hhh'}, {t1: 'hhhh'}, {t1: 'hhhhh'},
         ],
@@ -293,7 +293,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '27. (~t1:h) + t1:h',
         grammar: Count({t1:5},
                  	   Seq(Not(t1("h")), t1("h"))),
-        // vocab: {t1:1},
+        vocab: {t1: [..."h"]},
         results: [
             {t1: 'h'}, {t1: 'hhh'}, {t1: 'hhhh'}, {t1: 'hhhhh'},
         ],
@@ -303,7 +303,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '28. ~t1:h{0,1}',
         grammar: Count({t1:4},
                  	   Not(Rep(t1("h"), 0, 1))),
-        // vocab: {t1:1},
+        vocab: {t1: [..."h"]},
         results: [
             {t1: 'hh'}, {t1: 'hhh'}, {t1: 'hhhh'},
         ],
@@ -313,7 +313,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '29. ~t1:h{1,3}',
         grammar: Count({t1:4},
                  	   Not(Rep(t1("h"), 1, 3))),
-        // vocab: {t1:1},
+        vocab: {t1: [..."h"]},
         results: [
             {}, {t1: 'hhhh'},
         ],
@@ -323,7 +323,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '30. Join ~t1:hi ⨝ t2:hi',
         grammar: Count({t1:4, t2:2},
                  	   Join(Not(t1("hi")), t2("hi"))),
-        // vocab: {t1:2, t2:2},
+        vocab: {t1: [..."hi"], t2: [..."hi"]},
         results: [
             {t2: 'hi'},             {t1: 'h', t2: 'hi'},
             {t1: 'i', t2: 'hi'},    {t1: 'hh', t2: 'hi'},
@@ -347,7 +347,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '31. Join t2:hi ⨝ ~t1:hi',
         grammar: Count({t1:4, t2:2},
                  	   Join(t2("hi"), Not(t1("hi")))),
-        // vocab: {t1:2, t2:2},
+        vocab: {t1: [..."hi"], t2: [..."hi"]},
         results: [
             {t2: 'hi'},             {t1: 'h', t2: 'hi'},
             {t1: 'i', t2: 'hi'},    {t1: 'hh', t2: 'hi'},
@@ -403,7 +403,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({t1:3},
                  	   Not(t1("he"))),
         tapes: ['t1'],
-        // vocab: {t1:2},
+        vocab: {t1: [..."he"]},
         results: [
             {},          {t1: 'h'},   {t1: 'e'},
             {t1: 'hh'},  {t1: 'eh'},  {t1: 'ee'},
@@ -419,7 +419,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '35. ~(t1:.i)',
         grammar: Count({t1:3},
                  	   Not(Seq(Dot('t1'), t1('i')))),
-        // vocab: {t1:1},
+        vocab: {t1: [..."i"]},
         results: [
             {}, {t1: 'i'}, {t1: 'iii'},
         ],
@@ -431,7 +431,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		     WithVocab({t1:'hi'},
                  	     Not(Dot('t1')))),
         tapes: ['t1'],
-        //vocab: {t1:2},
+        vocab: {t1: [..."hi"]},
         results: [
             {},
             {t1: 'hh'}, {t1: 'hi'},
@@ -444,8 +444,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({t1:2},
         		     WithVocab({t1:'hi'},
                  	     Not(Seq(Dot('t1'), t1('i'))))),
-        // tapes: ['t1'],
-        // vocab: {t1:2},
+        tapes: ['t1'],
+        vocab: {t1: [..."hi"]},
         results: [
             {},
             {t1: 'h'},  {t1: 'i'},
@@ -458,8 +458,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({t1:2},
         		     WithVocab({t1:'hi'},
                  	     Not(Seq(Dot('t1'), t1('i'))))),
-        // tapes: ['t1'],
-        // vocab: {t1:2},
+        tapes: ['t1'],
+        vocab: {t1: [..."hi"]},
         results: [
             {},
             {t1: 'h'},  {t1: 'i'},
@@ -472,8 +472,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({t1:3},
         		     WithVocab({t1:'hi'},
                  	     Not(Seq(Rep(Dot('t1'), 0, 1), t1('i'))))),
-        // tapes: ['t1'],
-        // vocab: {t1:2},
+        tapes: ['t1'],
+        vocab: {t1: [..."hi"]},
         results: [
             {},
             {t1: 'h'},   {t1: 'hh'},  {t1: 'ih'},
@@ -488,8 +488,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({t1:3},
         		     WithVocab({t1:'hi'},
                  	     Not(Seq(Rep(Dot('t1'), 0, 3), t1('i'))))),
-        // tapes: ['t1'],
-        // vocab: {t1:2},
+        tapes: ['t1'],
+        vocab: {t1: [..."hi"]},
         results: [
             {},
             {t1: 'h'},   {t1: 'hh'},  {t1: 'ih'},
@@ -503,8 +503,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({t1:3},
         		     WithVocab({t1:'hi'},
                  	     Not(Seq(Rep(Dot('t1')), t1('i'))))),
-        // tapes: ['t1'],
-        // vocab: {t1:2},
+        tapes: ['t1'],
+        vocab: {t1: [..."hi"]},
         results: [
             {},
             {t1: 'h'},   {t1: 'hh'},  {t1: 'ih'},
