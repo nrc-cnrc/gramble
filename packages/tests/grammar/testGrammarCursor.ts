@@ -50,10 +50,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '2b. Epsilon alone',
         grammar: Cursor("t1", Epsilon()),
-        numErrors: 1,
         results: [
             {},
         ],
+        numErrors: 1,
     });
 
     testGrammar({
@@ -253,20 +253,20 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '10. Irrelevant cursor',
         grammar: Cursor("t2", (Cursor("t1", t1("hello")))),
         //tapes: [],
-        numErrors: 1,
         results: [
             {t1: 'hello'}, 
         ],
+        numErrors: 1,
     });
 
     testGrammar({
         desc: '11a. Repeated cursor',
         grammar: Cursor("t1", (Cursor("t1", t1("hello")))),
         //tapes: [],
-        numErrors: 1,
         results: [
             {t1: 'hello'}, 
         ],
+        numErrors: 1,
     });    
     
     testGrammar({
@@ -276,40 +276,40 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Cursor(["t1", "t1"],
                     Seq(t1("h"), t1("e"), t1("l"), t1("l"), t1("o"))),
         //tapes: [],
-        numErrors: 1,
         results: [
             {t1: 'hello'},
         ],
+        numErrors: 1,
     });
 
     testGrammar({
         desc: '12a. Cursor inside a rename',
         grammar: Rename(Cursor("t1", t1("hello")), "t1", "t2"),
         //tapes: [],
-        numErrors: 1,
         results: [
             {t1: 'hello'}, 
         ],
+        numErrors: 1,
     });        
     
     testGrammar({
         desc: '12b. Cursor inside an irrelevant rename',
         grammar: Rename(Cursor("t1", t1("hello")), "t2", "t3"),
         //tapes: [],
-        numErrors: 1,
         results: [
             {t1: 'hello'}, 
-        ]
+        ],
+        numErrors: 1,
     });    
 
     testGrammar({
         desc: '12c. Cursor inside a rename with another tape inside',
         grammar: Rename(Cursor("t1", Seq(t1("hello"), t3("world"))), "t1", "t2"),
         //tapes: ["t3"],
-        numErrors: 1,
         results: [
             {t1: 'hello', t3: "world"},
         ],
+        numErrors: 1,
     });  
 
     testGrammar({
@@ -319,10 +319,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                         Seq(t1("hello"), t3("world"))),
                     "t1", "t2"),
         //tapes: [],
-        numErrors: 1,
         results: [
             {t1: 'hello', t3: "world"},
         ],
+        numErrors: 1,
     });    
     
     testGrammar({

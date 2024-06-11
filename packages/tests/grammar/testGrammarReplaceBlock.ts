@@ -11,10 +11,11 @@ import { SILENT, VERBOSE_DEBUG, VERBOSE_STATES } from "../../interpreter/src/uti
 import {
     grammarTestSuiteName,
     testGrammar,
+    t1,
 } from "./testGrammarUtil";
 
 import { 
-    logTestSuite, t1, VERBOSE_TEST_L2,
+    logTestSuite, VERBOSE_TEST_L2,
 } from '../testUtil';
 
 // File level control over verbose output

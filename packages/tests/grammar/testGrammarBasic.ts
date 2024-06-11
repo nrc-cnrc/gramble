@@ -4,7 +4,7 @@ import {
 
 import {
     grammarTestSuiteName,
-    testGrammarAux, GrammarTestAux,
+    testGrammar,
     t1, t2, t3,
 } from "./testGrammarUtil";
 
@@ -15,290 +15,315 @@ import {
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
 
-function test(params: Partial<GrammarTestAux>): () => void {
-    return function() {
-        return testGrammarAux({...params});
-    };
-}
-
 describe(`${grammarTestSuiteName(module)}`, function() {
 
     logTestSuite(this.title);
 
-    describe('1. Literal t1:hello', test({
+    testGrammar({
+		desc: '1. Literal t1:hello',
         grammar: t1("hello"),
         tapes: ["t1"],
         vocab: {t1: ["h","e","l","o"]},
         results: [
             {t1: 'hello'},
         ],
-    }));
+    });
 
-    describe('2. Literal t1:""', test({
+    testGrammar({
+		desc: '2. Literal t1:""',
         grammar: t1(""),
         tapes: ["t1"],
         vocab: {t1: 0},
         results: [
             {},
         ],
-    }));
+    });
 
-    describe('3. Just ε', test({
+    testGrammar({
+		desc: '3. Just ε',
         grammar: Epsilon(),
         tapes: [],
         results: [
             {},
         ],
-    }));
+    });
 
-    describe('4. Sequence t1:hello + t1:world', test({
+    testGrammar({
+		desc: '4. Sequence t1:hello + t1:world',
         grammar: Seq(t1("hello"), t1("world")),
         tapes: ["t1"],
         vocab: {t1: [..."helowrld"]},
         results: [
             {t1: 'helloworld'},
         ]
-    }));
+    });
 
-    describe('5. Empty sequence', test({
+    testGrammar({
+		desc: '5. Empty sequence',
         grammar: Seq(),
         tapes: [],
         results: [
             {},
         ],
-    }));
+    });
 
-    describe('6 Null', test({
+    testGrammar({
+		desc: '6 Null',
         grammar: Null(),
         tapes: [],
         results: [],     
-    }));
+    });
 
-    describe('7a. Sequence of one ε', test({
+    testGrammar({
+		desc: '7a. Sequence of one ε',
         grammar: Seq(Epsilon()),
         tapes: [],
         results: [
             {},
         ],
-    }));
+    });
 
-    describe('7b. ε+ε', test({
+    testGrammar({
+		desc: '7b. ε+ε',
         grammar: Seq(Epsilon(), Epsilon()),
         tapes: [],
         results: [
             {},
         ],
-    }));
+    });
 
-    describe('8. t1:hello + Seq()', test({
+    testGrammar({
+		desc: '8. t1:hello + Seq()',
         grammar: Seq(t1("hello"), Seq()),
         tapes: ["t1"],
         results: [
             {t1: 'hello'},
         ],
-    }));
+    });
 
-    describe('9. Seq() + t1:hello', test({
+    testGrammar({
+		desc: '9. Seq() + t1:hello',
         grammar: Seq(Seq(), t1("hello")),
         tapes: ["t1"],
         results: [
             {t1: 'hello'},
         ],
-    }));
+    });
 
-    describe('10. t1:hello + Seq(ε)', test({
+    testGrammar({
+		desc: '10. t1:hello + Seq(ε)',
         grammar: Seq(t1("hello"), Seq(Epsilon())),
         tapes: ["t1"],
         results: [
             {t1: 'hello'},
         ],
-    }));
+    });
     
-    describe('11. t1:hello + (ε+ε)', test({
+    testGrammar({
+		desc: '11. t1:hello + (ε+ε)',
         grammar: Seq(t1("hello"), Seq(Epsilon(), Epsilon())),
         tapes: ["t1"],
         results: [
             {t1: 'hello'},
         ],
-    }));
+    });
 
-    describe('12. Sequence t1:hello + t1:""', test({
+    testGrammar({
+		desc: '12. Sequence t1:hello + t1:""',
         grammar: Seq(t1("hello"), t1("")),
         results: [
             {t1: 'hello'},
         ],
-    }));
+    });
 
-    describe('13. Sequence t1:"" + t1:hello', test({
+    testGrammar({
+		desc: '13. Sequence t1:"" + t1:hello',
         grammar: Seq(t1(""), t1("hello")),
         results: [
             {t1: 'hello'},
         ],
-    }));
+    });
 
-    describe('14. Sequence t1:hello + ε', test({
+    testGrammar({
+		desc: '14. Sequence t1:hello + ε',
         grammar: Seq(t1("hello"), Epsilon()),
         results: [
             {t1: 'hello'},
         ],
-    }));
+    });
 
-    describe('15. Sequence ε + t1:hello', test({
+    testGrammar({
+		desc: '15. Sequence ε + t1:hello',
         grammar: Seq(Epsilon(), t1("hello")),
         results: [
             {t1: 'hello'},
         ],
-    }));
+    });
 
-    describe('16. Sequence t1:hello + ε + world', test({
+    testGrammar({
+		desc: '16. Sequence t1:hello + ε + world',
         grammar: Seq(t1("hello"), Epsilon(), t1("world")),
         results: [
             {t1: 'helloworld'},
         ],
-    }));
+    });
 
-    describe('17. Sequence t1:hello + ε + ε + world', test({
+    testGrammar({
+		desc: '17. Sequence t1:hello + ε + ε + world',
         grammar: Seq(t1("hello"), Epsilon(), Epsilon(), t1("world")),
         results: [
             {t1: 'helloworld'},
         ],
-    }));
+    });
 
-    describe('18. Sequence t1:ab + t1:cd + t1:ef', test({
+    testGrammar({
+		desc: '18. Sequence t1:ab + t1:cd + t1:ef',
         grammar: Seq(t1("ab"), t1("cd"), t1("ef")),
         results: [
             {t1: 'abcdef'},
         ],
-    }));
+    });
 
-    describe('19. Nested sequence (t1:ab + t1:cd) + t1:ef', test({
+    testGrammar({
+		desc: '19. Nested sequence (t1:ab + t1:cd) + t1:ef',
         grammar: Seq(Seq(t1("ab"), t1("cd")), t1("ef")),
         results: [
             {t1: 'abcdef'},
         ],
-    }));
+    });
 
-    describe('20. Nested sequence t1:ab + (t1:cd + t1:ef)', test({
+    testGrammar({
+		desc: '20. Nested sequence t1:ab + (t1:cd + t1:ef)',
         grammar: Seq(t1("ab"), Seq(t1("cd"), t1("ef"))),
         results: [
             {t1: 'abcdef'},
         ],
-    }));
+    });
 
-    describe('21. Nested sequence t1:ab + (t1:cd) + t1:ef', test({
+    testGrammar({
+		desc: '21. Nested sequence t1:ab + (t1:cd) + t1:ef',
         grammar: Seq(t1("ab"), Seq(t1("cd")), t1("ef")),
         results: [
             {t1: 'abcdef'},
         ],
-    }));
+    });
 
-    describe('22. t1:hi + t2:yo', test({
+    testGrammar({
+		desc: '22. t1:hi + t2:yo',
         grammar: Seq(t1("hi"), t2("yo")),
         tapes: ["t1", "t2"],
         vocab: {t1: [..."hi"], t2: [..."yo"]},
         results: [
             {t1: 'hi', t2: 'yo'},
         ],
-    }));
+    });
 
-    describe('23. t1:hi + t2:yo + t3:hey', test({
+    testGrammar({
+		desc: '23. t1:hi + t2:yo + t3:hey',
         grammar: Seq(t1("hi"), t2("yo"), t3("hey")),
         tapes: ["t1", "t2", "t3"],
         vocab: {t1: [..."hi"], t2: [..."yo"], t3: [..."hey"]},
         results: [
             {t1: 'hi', t2: 'yo', t3: 'hey'},
         ],
-    }));
+    });
 
-    describe('24. t1:hi + (t2:yo + t3:hey)', test({
+    testGrammar({
+		desc: '24. t1:hi + (t2:yo + t3:hey)',
         grammar: Seq(t1("hi"), Seq(t2("yo"), t3("hey"))),
         tapes: ["t1", "t2", "t3"],
         vocab: {t1: [..."hi"], t2: [..."yo"], t3: [..."hey"]},
         results: [
             {t1: 'hi', t2: 'yo', t3: 'hey'},
         ],
-    }));
+    });
 
-    describe('25. (t1:hi + t2:yo) + t3:hey', test({
+    testGrammar({
+		desc: '25. (t1:hi + t2:yo) + t3:hey',
         grammar: Seq(Seq(t1("hi"), t2("yo")), t3("hey")),
         tapes: ["t1", "t2", "t3"],
         vocab: {t1: [..."hi"], t2: [..."yo"], t3: [..."hey"]},
         results: [
             {t1: 'hi', t2: 'yo', t3: 'hey'},
         ],
-    }));
+    });
 
-    describe('26. Alt t1:hello | t1:goodbye', test({
+    testGrammar({
+		desc: '26. Alt t1:hello | t1:goodbye',
         grammar: Uni(t1("hello"), t1("goodbye")),
         results: [
             {t1: 'hello'},
             {t1: 'goodbye'},
         ],
-    }));
+    });
 
-    describe('27. Alt t1:hello | ε', test({
+    testGrammar({
+		desc: '27. Alt t1:hello | ε',
         grammar: Uni(t1("hello"), Epsilon()),
         results: [
             {t1: 'hello'},
             {},
         ],
-    }));
+    });
 
-    describe('28. t1:hello + (t1:world | ε)', test({
+    testGrammar({
+		desc: '28. t1:hello + (t1:world | ε)',
         grammar: Seq(t1("hello"), Uni(t1("world"), Epsilon())),
         results: [
             {t1: 'hello'},
             {t1: 'helloworld'},
         ],
-    }));
+    });
 
-    describe('29. (t1:hello | ε) + t1:world', test({
+    testGrammar({
+		desc: '29. (t1:hello | ε) + t1:world',
         grammar: Seq(Uni(t1("hello"), Epsilon()), t1("world")),
         results: [
             {t1: 'world'},
             {t1: 'helloworld'},
         ],
-    }));
+    });
 
-    describe('30. Alt of different tapes: t1:hello | t2:goodbye', test({
+    testGrammar({
+		desc: '30. Alt of different tapes: t1:hello | t2:goodbye',
         grammar: Uni(t1("hello"), t2("goodbye")),
         tapes: ["t1", "t2"],
         results: [
             {t1: 'hello'},
             {t2: 'goodbye'},
         ],
-    }));
+    });
 
-    describe('31. Alt of sequences: ' +
-             '(t1:hello+t2:kitty) | (t1:goodbye+t2:world)', test({
+    testGrammar({
+		desc: '31. Alt of sequences: (t1:hello+t2:kitty) | (t1:goodbye+t2:world)',
         grammar: Uni(Seq(t1("hello"), t2("kitty")),
                      Seq(t1("goodbye"), t2("world"))),
         results: [
             { t1: 'hello', t2: 'kitty' },
             { t1: 'goodbye', t2: 'world' },
         ],
-    }));
+    });
 
-    describe('32. Sequence with alt: ' +
-             '(t1:hello | t1:goodbye) + t1:world', test({
+    testGrammar({
+		desc: '32. Sequence with alt: (t1:hello | t1:goodbye) + t1:world',
         grammar: Seq(Uni(t1("hello"), t1("goodbye")), t1("world")),
         results: [
             {t1: 'helloworld'},
             {t1: 'goodbyeworld'},
         ],
-    }));
+    });
 
-    describe('33. Sequence with alt: ' +
-             't1:say + (t1:hello | t1:goodbye)', test({
+    testGrammar({
+		desc: '33. Sequence with alt: t1:say + (t1:hello | t1:goodbye)',
         grammar: Seq(t1("say"), Uni(t1("hello"), t1("goodbye"))),
         results: [
             {t1: 'sayhello'},
             {t1: 'saygoodbye'},
         ],
-    }));
+    });
 
-    describe('34. Sequence with alt: ' +
-             '(t1:hello | t1:goodbye) + (t1:world | t1:kitty)', test({
+    testGrammar({
+		desc: '34. Sequence with alt: (t1:hello | t1:goodbye) + (t1:world | t1:kitty)',
         grammar: Seq(Uni(t1("hello"), t1("goodbye")),
                      Uni(t1("world"), t1("kitty"))),
         results: [
@@ -307,49 +332,55 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'hellokitty'},
             {t1: 'goodbyekitty'},
         ],
-    }));
+    });
 
-    describe('35. Empty union', test({
+    testGrammar({
+		desc: '35. Empty union',
         grammar: Uni(),
         tapes: [],
         results: [
         ],
-    }));
+    });
 
-    describe('36. Union of one ε', test({
+    testGrammar({
+		desc: '36. Union of one ε',
         grammar: Uni(Epsilon()),
         tapes: [],
         results: [
             {},
         ],
-    }));
+    });
 
-    describe('37. ε|ε', test({
+    testGrammar({
+		desc: '37. ε|ε',
         grammar: Uni(Epsilon(), Epsilon()),
         tapes: [],
         results: [
             {},
         ],
-    }));
+    });
 
-    describe('38. t1:hello + (ε|ε)', test({
+    testGrammar({
+		desc: '38. t1:hello + (ε|ε)',
         grammar: Seq(t1("hello"), Uni(Epsilon(), Epsilon())),
         tapes: ["t1"],
         results: [
             {t1: 'hello'},
         ],
-    }));
+    });
 
-    describe('39. t1:[hi]', test({
+    testGrammar({
+		desc: '39. t1:[hi]',
         grammar: CharSet("t1", ["h", "i"]),
         tapes: ["t1"],
         results: [
             {t1: 'h'},
             {t1: 'i'},
         ],
-    }));
+    });
 
-    describe('40. t1:[hi] + t1:[hi]', test({
+    testGrammar({
+		desc: '40. t1:[hi] + t1:[hi]',
         grammar: Seq(CharSet("t1", ["h", "i"]), 
                      CharSet("t1", ["h", "i"])),
         tapes: ["t1"],
@@ -359,5 +390,5 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'ih'}, 
             {t1: 'ii'}
         ],
-    }));
+    });
 });

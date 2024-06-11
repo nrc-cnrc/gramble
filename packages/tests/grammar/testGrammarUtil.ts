@@ -144,7 +144,7 @@ function testDefault(params: Partial<GrammarTest>): () => void {
 }
 
 export function testGrammar(params: Partial<GrammarTest>): void {
-    if (params['desc'] === undefined){
+    if (params['desc'] === undefined) {
         it(`desc must be defined`, function() {
             expect(params['desc']).to.not.be.undefined;
         });
@@ -156,6 +156,20 @@ export function testGrammar(params: Partial<GrammarTest>): void {
     params['test'] = undefined;
 
     describe(params['desc'], test(params));
+}
+
+type GrammarIOTest = Partial<GrammarTest> & { io?: [string, string][] };
+
+export function testGrammarIO(params: Partial<GrammarIOTest>): void {
+    if (params.io !== undefined) {
+        params.results = params.io.map(([i,o]) => {
+            const result: StringDict = {};
+            if (i.length > 0) result["$i"] = i;
+            if (o.length > 0) result["$o"] = o;
+            return result;
+        });
+    }
+    testGrammar(params);
 }
 
 interface GrammarEqualTest {

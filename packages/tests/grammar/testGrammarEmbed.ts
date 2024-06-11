@@ -5,15 +5,12 @@ import {
 
 import { Grammar } from "../../interpreter/src/grammars";
 
-import {
-    VERBOSE_GRAMMAR,
-} from "../../interpreter/src/utils/logging";
-
 import { Dict } from "../../interpreter/src/utils/func";
+import { VERBOSE_GRAMMAR, } from "../../interpreter/src/utils/logging";
 
 import {
     grammarTestSuiteName,
-    testGrammarAux, GrammarTestAux, testGrammar,
+    testGrammar,
     t1, t2, t3,
 } from "./testGrammarUtil";
 
