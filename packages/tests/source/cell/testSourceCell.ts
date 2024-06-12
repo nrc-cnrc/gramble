@@ -1,126 +1,124 @@
-import { 
-    testProject, ProjectTest, 
+import {
+    testSource, SourceTest, 
     Error, Warning 
 } from "../testSourceUtil";
 
 const DIR = "cell";
 
-function test(params: Partial<ProjectTest>): () => void {
-    return function() {
-        return testProject({ dir: DIR, ...params });
-    };
+function testSrc(params: Partial<SourceTest>): void {
+    testSource({dir: DIR, ...params});
 }
 
 describe(`Source ${DIR}`, function() {
 
-    describe('1a. Content with space', test({
-        id: "1a",
+    testSrc({
+		desc: '1a. Content with space',
         results: [
-            { text: "moofoo", gloss: "run" }
+            {text: "moofoo", gloss: "run"}
         ]
-    }));
+    });
 
-    describe('1b. Content with escaped space', test({
-        id: "1b",
+    testSrc({
+		desc: '1b. Content with escaped space',
         results: [
-            { text: "moo foo", gloss: "run" }
+            {text: "moo foo", gloss: "run"}
         ]
-    }));
+    });
 
-    describe('2a. Content including alternation', test({
-        id: "2a",
+    testSrc({
+		desc: '2a. Content including alternation',
         results: [
-            { text: "foo", gloss: "run" },
-            { text: "moo", gloss: "run" },
+            {text: "foo", gloss: "run"},
+            {text: "moo", gloss: "run"},
         ]
-    }));
+    });
     
-    describe('2b. Content including escaped |', test({
-        id: "2b",
+    testSrc({
+		desc: '2b. Content including escaped |',
         results: [
-            { text: "moo|foo", gloss: "run" },
+            {text: "moo|foo", gloss: "run"},
         ]
-    }));
+    });
     
-    describe('3a. Content including alternation and spaces', test({
-        id: "3a",
+    testSrc({
+		desc: '3a. Content including alternation and spaces',
         results: [
-            { text: "foo", gloss: "run" },
-            { text: "moo", gloss: "run" },
+            {text: "foo", gloss: "run"},
+            {text: "moo", gloss: "run"},
         ]
-    }));
+    });
 
-    describe('3b. Content including alternation and spaces 2', test({
-        id: "3b",
+    testSrc({
+		desc: '3b. Content including alternation and spaces 2',
         results: [
             {text: "foogoo", gloss: "run"},
             {text: "moo", gloss: "run"}
         ]
-    }));
+    });
 
-    describe('3c. Content including alternation and spaces 3', test({
-        id: "3c",
+    testSrc({
+		desc: '3c. Content including alternation and spaces 3',
         results: [
             {text: "foo", gloss: "run"},
             {text: "goomoo", gloss: "run"}
         ]
-    }));
+    });
 
-    describe('3d. Content including alternation and spaces 4', test({
-        id: "3d",
+    testSrc({
+		desc: '3d. Content including alternation and spaces 4',
         results: [
-            { text: "foo", gloss: "run" },
-            { text: "goo moo", gloss: "run" },
+            {text: "foo", gloss: "run"},
+            {text: "goo moo", gloss: "run"},
         ]
-    }));
+    });
 
-    describe('4a. Content including one backslash', test({
-        id: "4a",
+    testSrc({
+		desc: '4a. Content including one backslash',
         results: [
-            { text: "foo", gloss: "run" },
+            {text: "foo", gloss: "run"},
         ]
-    }));
+    });
 
-    describe('4b. Content including two backslashes', test({
-        id: "4b",
+    testSrc({
+		desc: '4b. Content including two backslashes',
         results: [
-            { text: "\\foo", gloss: "run" },
+            {text: "\\foo", gloss: "run"},
         ]
-    }));
+    });
 
-    describe('4c. Content including escaped backslash', test({
-        id: "4c",
+    testSrc({
+		desc: '4c. Content including escaped backslash',
         results: [
-            { text: "\\foo", gloss: "run" },
+            {text: "\\foo", gloss: "run"},
         ]
-    }));
+    });
     
-    describe('5a. Content including parens', test({
-        id: "5a",
+    testSrc({
+		desc: '5a. Content including parens',
         results: [
-            { text: "(foo)", gloss: "run" },
+            {text: "(foo)", gloss: "run"},
         ]
-    }));
+    });
 
-    describe('5b. Content including escaped parens', test({
-        id: "5b",
+    testSrc({
+		desc: '5b. Content including escaped parens',
         results: [
-            { text: "(foo)", gloss: "run" },
+            {text: "(foo)", gloss: "run"},
         ]
-    }));
+    });
 
-    describe('6a. Embed with alternation', test({
-        id: "6a",
+    testSrc({
+		desc: '6a. Embed with alternation',
         results: [
             {"text":"boobar"},
             {"text":"goobar"},
             {"text":"foobar"},
             {"text":"moobar"}
         ]
-    }));
+    });
     
-    describe('6b. Embed with three-way alternation', test({
-        id: "6b",
+    testSrc({
+		desc: '6b. Embed with three-way alternation',
         results: [
             {"text":"boobar"},
             {"text":"goobar"},
@@ -129,52 +127,62 @@ describe(`Source ${DIR}`, function() {
             {"text":"noobar"},
             {"text":"soobar"}
         ]
-    }));
+    });
     
-    describe('7a. Embed with curly braces', test({
-        id: "7a",
+    testSrc({
+		desc: '7a. Embed with curly braces',
         results: [
             {"text":"foobar"},
             {"text":"moobar"}
         ],
-        errors: [ Warning(5,2) ]
-    }));
+        errors: [
+            Warning(5,2)
+        ]
+    });
     
-    describe('7b. Embed with alt and curly braces', test({
-        id: "7b",
-        results: [
-            {"text":"boobar"},
-            {"text":"goobar"},
-            {"text":"foobar"},
-            {"text":"moobar"}
-        ],
-        errors: [ Warning(9,2) ]
-    }));
-    
-    describe('7c. Embed with alt and curly braces 2', test({
-        id: "7c",
+    testSrc({
+		desc: '7b. Embed with alt and curly braces',
         results: [
             {"text":"boobar"},
             {"text":"goobar"},
             {"text":"foobar"},
             {"text":"moobar"}
         ],
-        errors: [ Warning(9,2) ]
-    }));
+        errors: [
+            Warning(9,2)
+        ]
+    });
+    
+    testSrc({
+		desc: '7c. Embed with alt and curly braces 2',
+        results: [
+            {"text":"boobar"},
+            {"text":"goobar"},
+            {"text":"foobar"},
+            {"text":"moobar"}
+        ],
+        errors: [
+            Warning(9,2)
+        ]
+    });
 
-    describe('8a. Embed with sequence', test({
-        id: "8a",
+    testSrc({
+		desc: '8a. Embed with sequence',
         results: [
             {"text":"bar"},
         ],
-        errors: [ Error(9,2) ]
-    }));
+        errors: [
+            Error(9,2)
+        ]
+    });
     
-    describe('8b. Embed with alternation and space', test({
-        id: "8b",
+    testSrc({
+		desc: '8b. Embed with alternation and space',
         results: [
             {"text":"bar"},
         ],
-        errors: [ Error(13,2) ]
-    }));
+        errors: [
+            Error(13,2)
+        ]
+    });
 });
