@@ -1,0 +1,5 @@
+word=, text
+    , bacada
+
+replace text:, from, to, context
+             , a,    X,  .&~(b|d)_

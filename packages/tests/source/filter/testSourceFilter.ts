@@ -519,6 +519,20 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump[1SG.SUBJ]", subj: "[1SG.SUBJ]"},
         ]
     });
+
+    testSrc({
+		desc: '58. Starts single-char negation',
+        results: [
+            {text: "foobar", gloss: "run[1SG.SUBJ]"},
+        ]
+    });    
+    
+    testSrc({
+		desc: '59. Ends single-char negation',
+        results: [
+            {text: "oofbar", gloss: "run[1SG.SUBJ]"},
+        ]
+    });    
     
     testSrc({
 		desc: 'E1. Equals with an ill-formed filter',
