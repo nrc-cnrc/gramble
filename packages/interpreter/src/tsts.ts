@@ -34,6 +34,7 @@ export type TST = TstHeader
          | TstOr
          | TstJoin
          | TstReplace
+         | TstReplacePar
          | TstTest
          | TstTestNot
          | TstParamList
@@ -362,6 +363,20 @@ export class TstJoin extends TstBinary {
 
 export class TstReplace extends TstCellComponent {
     public readonly tag = "replace";
+
+    constructor(
+        cell: Cell,
+        public tape: string,
+        public sibling: TST,
+        public child: TstParamList
+    ) { 
+        super(cell);
+    }
+
+}
+
+export class TstReplacePar extends TstCellComponent {
+    public readonly tag = "replacePar";
 
     constructor(
         cell: Cell,

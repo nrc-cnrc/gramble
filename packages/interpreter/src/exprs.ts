@@ -959,6 +959,28 @@ class ReplaceExpr extends Expr {
         return EPSILON;
     }
 
+    public constructInputPattern(env: DerivEnv): Expr {
+        return constructSeq(env, this.preChild, this.inputChild, this.postChild);
+    }
+
+    public constructPattern(env: DerivEnv): Expr {
+
+        const preMatch = constructMatch(env, this.preChild, INPUT_TAPE, OUTPUT_TAPE);
+        const postMatch = constructMatch(env, this.postChild, INPUT_TAPE, OUTPUT_TAPE);
+
+        // the first branch is the one where we've [begun to] match the pattern
+        const patternToMatch = constructConcat(env, this.inputChild, this.outputChild);
+        let patternCorrespond = constructCorrespond(env, patternToMatch, INPUT_TAPE, OUTPUT_TAPE);
+
+        if (this.optional) {
+            // if the rule is optional, there's also a possibility to just match the input
+            const matchedInput = constructMatch(env, this.inputChild, INPUT_TAPE, OUTPUT_TAPE);
+            patternCorrespond = constructAlternation(env, patternCorrespond, matchedInput);
+        }
+
+        return constructSeq(env, preMatch, patternCorrespond, postMatch);
+    }
+
     public *deriv(
         query: Query,
         env: DerivEnv
@@ -978,7 +1000,7 @@ class ReplaceExpr extends Expr {
         const dotStar = constructDotStar(INPUT_TAPE);
         const matchDotStar = constructMatch(env, dotStar, INPUT_TAPE, OUTPUT_TAPE);
         
-        const inputMaterial = constructSeq(env, this.preChild, this.inputChild, this.postChild);
+        const inputMaterial = this.constructInputPattern(env);
         
         let branch1continuation: Expr;
         let branch2continuation: Expr;
@@ -1001,20 +1023,7 @@ class ReplaceExpr extends Expr {
             branch2continuation = this;
         }
 
-        const preMatch = constructMatch(env, this.preChild, INPUT_TAPE, OUTPUT_TAPE);
-        const postMatch = constructMatch(env, this.postChild, INPUT_TAPE, OUTPUT_TAPE);
-
-        // the first branch is the one where we've [begun to] match the pattern
-        const patternToMatch = constructConcat(env, this.inputChild, this.outputChild);
-        let patternCorrespond = constructCorrespond(env, patternToMatch, INPUT_TAPE, OUTPUT_TAPE);
-
-        if (this.optional) {
-            // if the rule is optional, there's also a possibility to just match the input
-            const matchedInput = constructMatch(env, this.inputChild, INPUT_TAPE, OUTPUT_TAPE);
-            patternCorrespond = constructAlternation(env, patternCorrespond, matchedInput);
-        }
-
-        const pattern = constructSeq(env, preMatch, patternCorrespond, postMatch);
+        const pattern = this.constructPattern(env);
         const patternDerivs = pattern.deriv(query, env);
         const branch1derivs = wrap(patternDerivs, e => constructPrecede(env, e, branch1continuation));
         //const branch1 = constructSeq(env, preMatch, patternCorrespond, postMatch, firstBranchContinuation);

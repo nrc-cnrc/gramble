@@ -23,6 +23,7 @@ import {
     CorrespondGrammar,
     CursorGrammar,
     ReplaceGrammar,
+    ReplaceParGrammar,
 } from "../grammars";
 import { AutoPass } from "../passes";
 import { 
@@ -133,12 +134,13 @@ export class CalculateTapes extends AutoPass<Grammar> {
             case "repeat":      return getTapesRepeat(g);
 
             // something special
-            case "embed":        return getTapesEmbed(g, env);
-            case "collection":   return this.getTapesCollection(g, env);
-            case "rename":       return getTapesRename(g);
-            case "hide":         return getTapesHide(g);
-            case "match":        return getTapesMatch(g);
-            case "replaceblock": return getTapesReplaceBlock(g);
+            case "embed":           return getTapesEmbed(g, env);
+            case "collection":      return this.getTapesCollection(g, env);
+            case "rename":          return getTapesRename(g);
+            case "hide":            return getTapesHide(g);
+            case "match":           return getTapesMatch(g);
+            case "replaceblock":    return getTapesReplaceBlock(g);
+            case "replacePar":      return getTapesReplacePar(g);
             
             case "replace":     return getTapesReplace(g, env);
             case "correspond":  return getTapesCorrespond(g, env);
@@ -488,6 +490,36 @@ function getTapesReplaceBlock(g: ReplaceBlockGrammar): Grammar {
         current = Tapes.Join(current, r.tapes);
         current = Tapes.Rename(current, INPUT_TAPE, r.hiddenTapeName);
     }
+    current = Tapes.Rename(current, OUTPUT_TAPE, g.inputTape);
+    return updateTapes(g, current);
+}
+
+function getTapesReplacePar(g: ReplaceParGrammar): Grammar {
+
+    // make sure the tape we're replacing exists, otherwise
+    // we generate infinitely
+    if (g.child.tapes.tag === Tapes.Tag.Lit &&
+        g.child.tapes.vocabMap[g.inputTape] === undefined) {
+        throw g.child.err("Replacing non-existent tape",
+                    `The grammar above does not have a tape ` +
+                    `${g.inputTape} to replace on`);
+    }
+
+    // filter out Tapes.Any non-rules caused by children disappearing
+    const isReplace = (r: Grammar): r is ReplaceGrammar => 
+                        r instanceof ReplaceGrammar;
+    g.rules = g.rules.filter(isReplace);
+
+    if (g.rules.length == 0) {
+        throw g.child.warn("This replace has no valid rules");
+    }
+
+    let current = g.child.tapes;
+    current = Tapes.Rename(current, g.inputTape, INPUT_TAPE);
+    for (const r of g.rules) {
+        current = Tapes.Join(current, r.tapes);
+    }
+    current = Tapes.Rename(current, INPUT_TAPE, g.hiddenTapeName);
     current = Tapes.Rename(current, OUTPUT_TAPE, g.inputTape);
     return updateTapes(g, current);
 }

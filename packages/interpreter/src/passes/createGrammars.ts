@@ -6,7 +6,8 @@ import {
     TstHide, TstCollection, 
     TstTestNot, TstRename,
     TstReplace, TstSequence, 
-    TstTable, TstTest, TstJoin, TST 
+    TstTable, TstTest, TstJoin, TST, 
+    TstReplacePar
 } from "../tsts";
 import { Pass } from "../passes";
 import { 
@@ -23,7 +24,8 @@ import {
     JoinGrammar,
     RuleContextGrammar,
     FilterGrammar,
-    ReplaceGrammar
+    ReplaceGrammar,
+    ReplaceParGrammar
 } from "../grammars";
 import { parseClass, TapeHeader } from "../headers";
 import { Err, Msg, Message, msgList } from "../utils/msgs";
@@ -54,6 +56,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
             case "or":         return this.handleOr(t, env);
             case "join":       return this.handleJoin(t, env);
             case "replace":    return this.handleReplace(t, env);
+            case "replacePar": return this.handleReplacePar(t, env);
             case "test":       return this.handleTest(t, env);
             case "testnot":    return this.handleNegativeTest(t, env);
             case "seq":        return this.handleSequence(t, env);
@@ -172,6 +175,44 @@ export class CreateGrammars extends Pass<TST,Grammar> {
         let result: Grammar = new ReplaceBlockGrammar(t.tape, sibling, replaceRules);
         return result.locate(t.cell.pos).msg(sibMsgs).msg(newMsgs);
     }
+    
+    public handleReplacePar(t: TstReplacePar, env: PassEnv): Msg<Grammar> {
+
+        let [sibling, sibMsgs] = this.transform(t.sibling, env).destructure();
+        const replaceRules: ReplaceGrammar[] = [];
+        const newMsgs: Message[] = [];
+
+        for (const params of t.child.rows) {
+            const fromArg = this.transform(params.getParam("from"), env).msgTo(newMsgs);
+            const toArg = this.transform(params.getParam("to"), env).msgTo(newMsgs);
+            let preArg: Grammar = new EpsilonGrammar();
+            let postArg: Grammar = new EpsilonGrammar();
+            let contextArg = this.transform(params.getParam("context"), env).msgTo(newMsgs);
+            let begins = false;
+            let ends = false;
+
+            if (contextArg instanceof RuleContextGrammar) {
+                begins = contextArg.begins;
+                ends = contextArg.ends;
+                preArg = contextArg.preContext.locate(contextArg.pos);
+                postArg = contextArg.postContext.locate(contextArg.pos);
+            }
+            
+            const replaceRule = new ReplaceGrammar(fromArg, toArg,
+                                                   preArg, postArg,
+                                                   begins, ends, false,
+                                                   `${params.pos.sheet}_${params.pos.row}`);
+            replaceRules.push(replaceRule);
+        }
+
+        if (replaceRules.length == 0) {
+            return sibling.msg(sibMsgs).msg(newMsgs);  // in case every rule fails, at least generate something
+        }
+
+        let result: Grammar = new ReplaceParGrammar(t.tape, sibling, replaceRules);
+        return result.locate(t.cell.pos).msg(sibMsgs).msg(newMsgs);
+    }
+    
     
     public handleTest(t: TstTest, env: PassEnv): Msg<Grammar> {
         let result = this.transform(t.sibling, env);

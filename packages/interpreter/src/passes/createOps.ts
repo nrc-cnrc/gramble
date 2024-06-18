@@ -1,6 +1,7 @@
 import { exhaustive } from "../utils/func";
 import { 
     ReplaceOp,
+    ReplaceParOp,
     SymbolOp, 
 } from "../ops";
 import { AutoPass } from "../passes";
@@ -8,7 +9,8 @@ import {
     TstOp, 
     TstTest, 
     TstTable, TstTestNot, TstReplace, 
-    TstOr, TstAssignment, TstParamList, TstJoin, TST
+    TstOr, TstAssignment, TstParamList, TstJoin, TST,
+    TstReplacePar
 } from "../tsts";
 import { PassEnv } from "../components";
 
@@ -23,6 +25,7 @@ import { PassEnv } from "../components";
             case "testnot":    return this.handleTestNot(t);
             case "table":      return this.handleOp(t);
             case "replace":    return this.handleReplace(t);
+            case "replacePar": return this.handleReplacePar(t);
             case "or":         return this.handleOr(t);
             case "join":       return this.handleJoin(t);
             case "symbol":     return this.handleAssignment(t);
@@ -49,6 +52,12 @@ import { PassEnv } from "../components";
     public handleReplace(t: TstOp): TST {
         const tapeName = (t.op as ReplaceOp).child.text;
         return new TstReplace(t.cell, tapeName, 
+                    t.sibling, t.child as TstParamList);
+    }
+
+    public handleReplacePar(t: TstOp): TST {
+        const tapeName = (t.op as ReplaceParOp).child.text;
+        return new TstReplacePar(t.cell, tapeName, 
                     t.sibling, t.child as TstParamList);
     }
     

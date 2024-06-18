@@ -19,6 +19,7 @@ export type Op = TableOp
                | TestOp
                | TestNotOp
                | ReplaceOp
+               | ReplaceParOp
                | OrOp
                | JoinOp
                | SymbolOp
@@ -42,6 +43,16 @@ export class TestNotOp extends Component {
 
 export class ReplaceOp extends Component {
     public readonly tag = "replace";
+
+    constructor(
+        public child: SymbolOp
+    ) { 
+        super();
+    }
+}
+
+export class ReplaceParOp extends Component {
+    public readonly tag = "replacePar";
 
     constructor(
         public child: SymbolOp
@@ -180,6 +191,7 @@ export function siblingRequired(op: Op): Requirement {
         case "test":
         case "testnot":
         case "replace":
+        case "replacePar":
         case "or": 
         case "join":       return "required";
         default: exhaustive(op);
@@ -192,7 +204,8 @@ export function childMustBeGrid(op: Op): Requirement {
         case "table":
         case "test":
         case "testnot": 
-        case "replace":    return "required";
+        case "replace":    
+        case "replacePar": return "required";
 
         // if the child is a grid, we automatically wrap
         // a table op around it
@@ -220,7 +233,8 @@ export function allowedParams(op: Op): Set<string> {
         case "testnot":    return TEST_PARAM_SET;
 
         // replace only allows from/to/context
-        case "replace":    return REPLACE_PARAMS;
+        case "replace":    
+        case "replacePar": return REPLACE_PARAMS;
         default: exhaustive(op);
     }
 }
@@ -239,7 +253,8 @@ export function requiredParams(op: Op): Set<string> {
         case "error":      return BLANK_PARAM_SET;
         
         // replace requires from/to/context
-        case "replace":    return REQUIRED_REPLACE_PARAMS;
+        case "replace":    
+        case "replacePar": return REQUIRED_REPLACE_PARAMS;
 
         default: exhaustive(op);
     }
@@ -264,7 +279,8 @@ export function paramsMustBePerfect(op: Op): boolean {
         // things can go wrong if not everything is perfect
         case "test": 
         case "testnot": 
-        case "replace":    return true;
+        case "replace":    
+        case "replacePar":  return true;
 
         default: exhaustive(op);
     }
@@ -280,6 +296,7 @@ export function paramsMustBeLiteral(op: Op): boolean {
         case "table":   
         case "collection": 
         case "replace": 
+        case "replacePar":
         case "or":  
         case "join":  
         case "symbol":   

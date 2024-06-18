@@ -129,6 +129,8 @@ export function lengthRange(
             return { null: false, min: 1, max: 1 };
         case "replace": 
             return { null: false, min: 0, max: Infinity };
+            
+        case "replacePar":
         case "replaceblock":
             if (tapeName !== g.inputTape) 
                 return lengthRange(g.child, tapeName, stack, env);

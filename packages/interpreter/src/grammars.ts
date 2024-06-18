@@ -55,6 +55,7 @@ export type Grammar = EpsilonGrammar
              | TestGrammar
              | TestNotGrammar
              | ReplaceBlockGrammar
+             | ReplaceParGrammar 
              | ReplaceGrammar
              | CorrespondGrammar
              | RuleContextGrammar;
@@ -463,6 +464,25 @@ export class ReplaceBlockGrammar extends AbstractGrammar {
         public rules: ReplaceGrammar[]
     ) {
         super();
+    }
+} 
+
+export class ReplaceParGrammar extends AbstractGrammar {
+    public readonly tag = "replacePar";
+
+    constructor(
+        public inputTape: string,
+        public child: Grammar,
+        public rules: ReplaceGrammar[],
+        public hiddenTapeName: string = "",
+    ) {
+        super();
+        
+        if (this.hiddenTapeName.length == 0) {
+            this.hiddenTapeName = `${HIDDEN_PREFIX}R${INDICES.REPLACE++}`;
+        } else if (!this.hiddenTapeName.startsWith(HIDDEN_PREFIX)) {
+            this.hiddenTapeName = HIDDEN_PREFIX + this.hiddenTapeName;
+        }
     }
 } 
 
