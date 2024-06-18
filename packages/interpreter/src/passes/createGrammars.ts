@@ -89,6 +89,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
     public handleHide(t: TstHide, env: PassEnv): Msg<Grammar> {
         let result = this.transform(t.prev, env);
         for (const tape of t.cell.text.split("/")) {
+            if (tape.trim().length == 0) continue;  // empty strings are meaningless here, don't try to hide them as tapes
             result = result.bind(c => new HideGrammar(c, tape.trim()));
         }
         return result.bind(g => g.locate(t.pos));

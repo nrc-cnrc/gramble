@@ -75,4 +75,14 @@ describe(`Source ${DIR}`, function() {
             {text: "moo", gloss: "jump[3SG]"}
         ]
     });
+    
+    testSrc({
+		desc: '7. Hide header with empty value',
+        results: [
+            {text: "foo", gloss: "run"},
+            {text: "moo", gloss: "stand"},
+            {text: "goo", gloss: "monkey"},
+            {text: "zoo", gloss: "aquarium"},
+        ]
+    });
 });
