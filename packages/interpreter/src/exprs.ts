@@ -1027,8 +1027,7 @@ class ReplaceExpr extends Expr {
 
         // the second branch also requires a constraint that the resulting output does not begin with the
         // pattern
-        const shortFrom = constructShort(env, inputMaterial);
-        const beginsWith = constructPrecede(env, shortFrom, negationContinuation);
+        const beginsWith = constructPrecede(env, inputMaterial, negationContinuation);
         const notBeginsWith = constructNegation(env, beginsWith, new Set([INPUT_TAPE]));
 
         // apply the not-begins-with constraint to the second branch

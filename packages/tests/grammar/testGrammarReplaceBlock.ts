@@ -3,9 +3,10 @@ import {
     Replace, ReplaceBlock, Uni, WithVocab,
     OptionalReplace,
     Join,
+    Lit,
 } from "../../interpreter/src/grammarConvenience";
 
-import { DEFAULT_TAPE } from "../../interpreter/src/utils/constants";
+import { DEFAULT_TAPE, INPUT_TAPE, OUTPUT_TAPE } from "../../interpreter/src/utils/constants";
 import { SILENT, VERBOSE_DEBUG, VERBOSE_STATES } from "../../interpreter/src/utils/logging";
 
 import {
@@ -24,6 +25,9 @@ const VERBOSE = VERBOSE_TEST_L2;
 function vb(verbosity: number): number {
     return VERBOSE ? verbosity : SILENT;
 }
+
+const I = (s: string) => Lit(INPUT_TAPE, s);
+const O = (s: string) => Lit(OUTPUT_TAPE, s);
 
 describe(`${grammarTestSuiteName(module)}`, function() {
 
@@ -798,6 +802,16 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'ab'},
         ],
         verbose: vb(VERBOSE_STATES),
+    });
+
+    testGrammar({
+        desc: '22. Replacing before an epsilon',
+        grammar: ReplaceBlock("t1", "abc",
+                        Replace("b", "B", "", Uni(I("c"), I("")), false, true)),
+        results: [
+            {t1: 'aBc'},
+        ],
+        verbose: VERBOSE_DEBUG
     });
 
 });
