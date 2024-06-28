@@ -375,9 +375,48 @@ const SAMPLE_PAGE = [
     ["",        "ikarta", "climb[1subj]"]	
 ];
 
-function makeSampleSheet() {
+const TUTORIAL_1 = [
+    ["Root = ", "text"],
+    ["", "call"],
+    ["", "jump"],
+    [],
+    ["Suffix = ", "text"],
+    ["", "s"],
+    ["", "ed"],
+    ["", "ing"],
+    [],
+    ["Verb = ", "embed", "embed"],
+    ["", "Root", "Suffix"]
+]
 
-    const sheetName = "Sample";
+const TUTORIAL_2 = [
+    ["Root = ", "text/gloss"],
+    ["", "call"],
+    ["", "jump"],
+    [],
+    ["Suffix = ", "text", "gloss"],
+    ["", "s", "-3SG.PRES"],
+    ["", "ed", "-PAST"],
+    ["", "ing", "-PRES"],
+    [],
+    ["Verb = ", "embed", "embed"],
+    ["", "Root", "Suffix"]
+]
+
+function makeSampleSheet() {
+    makeSampleSheetAux("Sample", SAMPLE_PAGE);
+}
+
+function makeTutorial1() {
+    makeSampleSheetAux("Tutorial_1", TUTORIAL_1);
+}
+
+function makeTutorial2() {
+    makeSampleSheetAux("Tutorial_2", TUTORIAL_2);
+}
+
+function makeSampleSheetAux(sheetName, cells) {
+
     let activeSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
     let newSheet = activeSpreadsheet.getSheetByName(sheetName);
 
@@ -386,7 +425,7 @@ function makeSampleSheet() {
         newSheet.setName(sheetName);
     }
 
-    setDataInSheet(newSheet, 1, 1, SAMPLE_PAGE);
+    setDataInSheet(newSheet, 1, 1, cells);
 
     highlight();
 
@@ -509,6 +548,10 @@ function autoEnabled_(optSet) {
 function onOpen() {
     const ui = SpreadsheetApp.getUi();
 
+    const tutorialMenu = ui.createMenu('Tutorial sheets')
+                           .addItem('Tutorial 1', "makeTutorial1")
+                           .addItem('Tutorial 2', "makeTutorial2")
+
     ui.createMenu('Gramble')
     
         .addItem('Show sidebar', 'showSidebar')
@@ -520,6 +563,7 @@ function onOpen() {
         .addItem('Uncomment', 'GrambleUncomment')
         .addSeparator()
         .addItem('Create sample project', 'makeSampleSheet')
+        .addSubMenu(tutorialMenu)
         .addSeparator()
         .addItem('About Gramble', 'showAbout')
         .addToUi();

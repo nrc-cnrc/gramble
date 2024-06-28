@@ -21,4 +21,10 @@ COMING SOON: If you're an experienced "linguist-programmer" (for example, if you
 
 The easiest way to get started with Gramble is by using our Google Sheets Add-on.  This will let you develop and test Gramble programs without having to download or install anything on your own computer/server.
 
-The Add-on is not yet public, but it will be soon.  That kind of makes this tutorial impossible, huh?  Yeah, sorry.
+The Add-on is currently undergoing the approval process to appear on Google Marketplace (verifying that it doesn't do anything inappropriate with the data it's permitted to access, basically).  Hopefully that will be through soon and these instructions will be much easier.
+
+In the meantime, you have two options:
+
+* If you want to use the Google Sheets Add-on, you can actually deploy it inside your own workplaces yourself, without going through the Marketplace.  You can clone our GitHub at http://github.com/nrc-cnrc/gramble, and run `npm run deploy <projectName>`.  Further instructions on how to do that can be found in the README file there.
+
+* If you don't want to use Google Sheets, there's actually nothing Google-specific about the language.  You could program it in LibreOffice or Excel or even a text editor like `vim`.  Clone the GitHub above and then look in the `packages/cli` directory for information on how to use the command-line interface.

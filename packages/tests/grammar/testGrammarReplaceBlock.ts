@@ -743,7 +743,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'aB'},
         ],
-        verbose: vb(VERBOSE_STATES),
     });
 
     testGrammar({
@@ -771,7 +770,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'abX'},
         ],
-        verbose: vb(VERBOSE_STATES),
     });
     
     testGrammar({
@@ -781,7 +779,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'abX'},
         ],
-        verbose: vb(VERBOSE_STATES),
     });
 
     testGrammar({
@@ -791,7 +788,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'ab'},
         ],
-        verbose: vb(VERBOSE_STATES),
     });
     
     testGrammar({
@@ -801,7 +797,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'ab'},
         ],
-        verbose: vb(VERBOSE_STATES),
     });
 
     testGrammar({
@@ -811,7 +806,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'aBc'},
         ],
-        verbose: VERBOSE_DEBUG
     });
 
 });
