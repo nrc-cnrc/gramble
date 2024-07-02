@@ -92,8 +92,10 @@ Now, we make a table that takes every form in the Root table and concatenates it
 
 ## Try it out in the Gramble sheet
 
-Go ahead and paste these into a Google Sheet where the Gramble plugin has been installed.
+Go ahead and paste these into a Google Sheet where the Gramble plugin has been installed, or go up to the Gramble menu (it's up towards the top of the screen, to the left of File, Edit, etc.) and choose "Example pages" -> "Example 1".
 
-To check that everything's working properly, go up to the Gramble menu (it's up towards the top of the screen, to the left of File, Edit, etc.), and choose "Show sidebar".  This lets you interact with your Gramble grammar.
+To check that everything's working properly, go up to the Gramble menu and choose "Show sidebar".  This sidebar interface lets you interact with your Gramble grammar.
 
 Go to the dropdown menu at the top, it'll probably say something like `YourSheetName.Root`.  Choose `YourSheetName.Verb`, because we want to test whether this generates all six forms.  Now, you can generate (either to a new sheet or as a file you can download), or you can just keep clicking "Sample here" to get a single random verb.  You should be able to generate/sample all six possible forms.
+
+Try adding a third root, like `walk`.  The go back to the sidebar and click "Sync & Validate", which will let it see your new changes.  (The sidebar is NOT able to follow your changes automatically.  For security/efficiency reasons, the sidebar doesn't anything without you clicking something; only you can ask it to look at the spreadsheet again to see that you've made changes.)

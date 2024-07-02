@@ -403,6 +403,34 @@ const TUTORIAL_2 = [
     ["", "Root", "Suffix"]
 ]
 
+const TUTORIAL_3 = [
+    ["Root = ", "text/root"],
+    ["", "call"],
+    ["", "jump"],
+    [],
+    ["Suffix = ", "text", "tense"],
+    ["", "s", "3SG.PRES"],
+    ["", "ed", "PAST"],
+    ["", "ing", "PRES"],
+    [],
+    ["Verb = ", "embed", "embed"],
+    ["", "Root", "Suffix"]
+]
+
+const TUTORIAL_4 = [
+    ["Root = ", "text/root/gloss"],
+    ["", "call"],
+    ["", "jump"],
+    [],
+    ["Suffix = ", "text", "tense/gloss"],
+    ["", "s", "[3SG.PRES]"],
+    ["", "ed", "[PAST]"],
+    ["", "ing", "[PRES]"],
+    [],
+    ["Verb = ", "embed", "embed"],
+    ["", "Root", "Suffix"]
+]
+
 function makeSampleSheet() {
     makeSampleSheetAux("Sample", SAMPLE_PAGE);
 }
@@ -414,6 +442,15 @@ function makeTutorial1() {
 function makeTutorial2() {
     makeSampleSheetAux("Tutorial_2", TUTORIAL_2);
 }
+
+function makeTutorial3() {
+    makeSampleSheetAux("Tutorial_3", TUTORIAL_3);
+}
+
+function makeTutorial4() {
+    makeSampleSheetAux("Tutorial_4", TUTORIAL_4);
+}
+
 
 function makeSampleSheetAux(sheetName, cells) {
 
@@ -549,8 +586,10 @@ function onOpen() {
     const ui = SpreadsheetApp.getUi();
 
     const tutorialMenu = ui.createMenu('Tutorial sheets')
-                           .addItem('Tutorial 1', "makeTutorial1")
-                           .addItem('Tutorial 2', "makeTutorial2")
+                           .addItem('1: Simple English', "makeTutorial1")
+                           .addItem('2: Text <-> Gloss', "makeTutorial2")
+                           .addItem('3: Adding another field', "makeTutorial3")
+                           .addItem('4: Multi-field with glosses', "makeTutorial4")
 
     ui.createMenu('Gramble')
     

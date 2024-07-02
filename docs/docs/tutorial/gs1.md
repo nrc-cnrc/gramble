@@ -13,9 +13,9 @@ Some of the tools you can easily make using Gramble include:
 * Pronunciation guides for computer systems that generate or respond to speech
 * "Mad-lib"-style text generators ("I'm so proud of my ______ for ________!")
 
-This tutorial will take you through a lot of the "background" ideas that you'll need to understand to make language technologies like these, and show you how to make them yourself. 
+Gramble isn't for making the *user interfaces* for these; those we still make in other languages like HTML and JavaScript.  Gramble is just for the linguistic part of those -- it's a way of making a sort of "database" that another program can query when it needs to know an answer like "What's this conjugation of this verb?" or "How is this pronounced?"
 
-COMING SOON: If you're an experienced "linguist-programmer" (for example, if you already know a toolkit like XFST), we're writing a different version of this specifically for you, outlining the differences between languages like XFST and this language.
+This tutorial will take you through a lot of the "background" ideas that you'll need to understand to make language technologies like these, and show you how to make them yourself. 
 
 ## Getting started
 

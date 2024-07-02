@@ -1,7 +1,7 @@
 ---
 id: gs2
-title: What is a Gramble program?
-sidebar_label: What's a Gramble program?
+title: Linguistic programs as databases
+sidebar_label: Linguistic programs as databases
 ---
 
 A Gramble program is a way of specifying a *linguistic database* in an efficient manner, without having to list out every possible entry.  This is useful for very complex languages like Swahili or Kanyen'keha (in which there are millions of possible verb forms), or for syntactic phenomena like sentences (where we can't possibly list every possible sentence), or for procedures like Romanization where you want to produce a Roman-alphabet version of any user input, even if it's not a word you've ever seen before.
@@ -60,6 +60,30 @@ So you could use a database like this to *parse* a known word into meaningful co
 | uliona | 2 | past |  ona |
 | aliona | 3 | past | ona |
 
+## I thought this was basically a finite-state transducer language like XFST, that takes an input string and gives you an output string.  This seems more like a database language like SQL.
+
+(If you didn't understand that question, that's okay, move on to the next question.  This is just to address a common question we get.)
+
+Yes, you can kind of think of Gramble as the baby of XFST and SQL.
+
+But stepping back a little further, you can think of any transducer as a (potentially infinite) database, just a database with only two fields.  In FST-land we often refer to the input as 'up' and 'down', so I'll use that convention here.  
+
+Say you made an FST from a gloss like `1-past-pend` to a word like `nilipenda`.  When making an FST we often think of that as a process, but you could also think of that as a giant database, like:
+
+| up | down |
+|-----------|
+| 1-past-pend | nilipenda |
+| 2-past-pend | ulipenda |
+| 3-past-pend | alipenda |
+| etc... |
+
+And then instead of saying "I put in `1-past-pend` and got `nilipenda`", in database terms we might say "I made a query to select all rows where `up='1-past-pend`, and got one result: `{up:1-past-pend, down:nilipenda}`."  Same information in, same information out, we're just thinking about it in a different way.
+
+Why would we want to think more like a database?  Well, it's quite frequent that we want to ask for more complex queries, like "Give me everything with the root 'pend', but only in past or present tense, and only in this dialect".  Or we want more information in the result.  Or, when making the database in the first place, we are trying to program complex linguistic phenomena, where this suffix has a particular form only when the mood is subjunctive and the subject is first-singular.  All of those can get complicated to do when we limit the number of "fields" in our database to two.
+
+So Gramble is like XFST, except it doesn't have the two-field restriction; it lets you do transductions but isn't limited to things with one input field and one output field.  That sort of "generalized transduction" already has a whole rich vocabulary associated with it -- it's a database query! -- and so we often use database language when talking about Gramble programs.  But it's not a fundamentally different thing than a transduction, a transduction is just a special case of a bigger idea.
+
+
 ## How do we make one?
 
 That's all well and good, but in reality there are so many possible Swahili verbs forms (thousands of them for every verb) that writing this database by hand would be effectively impossble.  There aren't just three persons and three tenses, there are more than a dozen persons (for both subjects and objects) and more than a dozen tenses, and thousands of verb roots, as well as a lot of other verb suffixes.  You simply can't specify them all, not by writing out each possible form.
@@ -67,29 +91,3 @@ That's all well and good, but in reality there are so many possible Swahili verb
 So what you really need to do is write a *program* that generates Swahili verbs from their component parts ("ni" and "u" and "a" and "li" etc.), while associating the parts with their appropriate labels/meanings, specifying any changes that they undergo during combination, etc. 
 
 A lot of linguistic phenomena are like that, not just verb conjugation.  For another example, we might want to convert words between different writing systems (like converting "ᓄᓇᕗᑦ" from Canadian Aboriginal Syllabics into its Roman form "nunavut"), or words into their pronunciation in the International Phonetic Alphabet.  You can't specify every possible Canadian Aboriginal Syllabics word as a list; the user might input a word you've never even heard of.  Rather, you have to write a program for how to do it.
-
-## Enter Gramble
-
-*Gramble* is a tabular programming language intended to make it easy to write these kinds of programs.  You interact with a Gramble program just like you would interact with a database, by inputting queries and getting answers in return.  The neat thing about Gramble is that the programs are both readable *descriptions* of the phenomena in question (e.g., they look like fairly ordinary verb conjugation tables or phoneme conversion charts) as well as being the *code* that turns a query into its correct answers.
-
-For example, the following little Gramble program has the same effect as the Swahili database above:
-
-| **SUBJECT =** | **text** | **person** ||
-|----|----|----|---|
-|              | ni   | 1 |
-|              | u   | 2 |
-|              | a   | 3 |
-| &nbsp; |
-| **TENSE =** | **text** | **tense** |
-|         | na | present |
-|         | li | past |
-|         | me | perfect |
-| &nbsp; |
-| **ROOT =** | **text/root** |
-|         | pend |
-|         | ona |
-| &nbsp; |
-| **VERB =** | **embed** | **embed** | **embed** |
-|           | SUBJECT | TENSE | ROOT |
-
-To add a new verb, you don't have to specify nine new forms (in our little database above) or thousands of new forms (in real Swahili).  You just add one line to the ROOT chart with the new verb.  You've saved yourself a lot of time in the future, at the cost of some programming work right now.
