@@ -113,6 +113,35 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'world'},
         ],
     });
+
+    testGrammar({
+		desc: '5a. Alternating an embed and a literal in a singletape',
+        grammar: {
+            "a": t2("world"),
+            "b": SingleTape("t1", Uni(Embed("a"), T("hello")))
+        },
+        symbol: "b",
+        tapes: [],
+        results: [
+            {t1: "hello"},
+            {t2: "world"}
+        ],
+    });
+
+    testGrammar({
+		desc: '5b. Alternating two embeds with different tapes in a singletape',
+        grammar: {
+            "a": t1("hello"),
+            "b": t2("world"),
+            "c": SingleTape("t3", Uni(Embed("a"), Embed("b")))
+        },
+        symbol: "c",
+        tapes: [],
+        results: [
+            {t1: "hello"},
+            {t2: "world"}
+        ],
+    });
     
     testGrammar({
 		desc: 'E1. Single_t1(t1(hello)+t2(world))',
