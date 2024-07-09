@@ -62,7 +62,7 @@ So you could use a database like this to *parse* a known word into meaningful co
 
 ## I thought this was basically a finite-state transducer language like XFST, that takes an input string and gives you an output string.  This seems more like a database language like SQL.
 
-(If you didn't understand that question, that's okay, move on to the next question.  This is just to address a common question we get.)
+(If you don't understand this question, that's okay, move on to the next question.  This is just to address a common question we get.)
 
 Yes, you can kind of think of Gramble as the baby of XFST and SQL.
 
