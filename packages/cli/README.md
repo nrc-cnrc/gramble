@@ -32,7 +32,7 @@ For help for a **specific command**, type
 Generate all words from your Gramble grammar:
 
     gramble generate [--symbol|-s <name>] [--format|-f csv|json] [--max|-m <n>]
-                     [--output|-o <file>] <source>
+                     [--output|-o <file>] [--query|-q <str>] <source>
 
   | | |
   ---|---
@@ -41,13 +41,16 @@ Generate all words from your Gramble grammar:
   -f, --format csv\|json | write output in CSV or JSON formats
   -m, --max \<n\> | generate at most \<n\> terms [default: unlimited]
   -v, --verbose | log error and info messages
+  -q, --query | restrict the outputs to those matching particular key:value pairs
+
+Query strings are formatted as comma-separated key:value pairs, e.g. "text:ninapenda" or "root:pend, subj:1SG, tense:PRES".  
 
 ### Sample
 
 Sample a few words from your Gramble grammar:
 
     gramble sample [--symbol|-s <name>] [--format|-f csv|json] [--num|-n <n>]
-                   [--output|-o <file>] <source>
+                   [--output|-o <file>] [--query|-q <str>] <source>
 
   | | |
   ---|---
@@ -56,6 +59,9 @@ Sample a few words from your Gramble grammar:
   -f, --format csv\|json | write output in CSV or JSON formats
   -n, --num \<n\> | sample \<n\> terms [default: 5]
   -v, --verbose | log error and info messages
+  -q, --query | restrict the outputs to those matching particular key:value pairs
+
+Query strings are formatted as comma-separated key:value pairs, e.g. "text:ninapenda" or "root:pend, subj:1SG, tense:PRES".  
 
 Tutorials and documentation
 ---------------

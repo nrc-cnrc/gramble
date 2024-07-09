@@ -1,52 +1,17 @@
 #!/usr/bin/env ts-node-script
 
 import { 
-    Interpreter, 
     SILENT, 
-    TextDevEnvironment,
     timeIt,
     VERBOSE_TIME,
     VERBOSE_STATES
 } from "@gramble/interpreter";
-import { createWriteStream, existsSync } from "fs";
-import { basename, dirname, parse } from "path";
-import { Writable } from "stream";
+import { parse } from "path";
 import * as commandLineArgs from "command-line-args";
 import * as commandLineUsage from "command-line-usage";
+import { EXIT_USAGE, fileExistsOrFail, generateToCSV, generateToJSON, getOutputStream, parseQuery, programName, sheetFromFile, StringDict } from "./util";
+import { StringDecoder } from "string_decoder";
 
-// Status code of an invalid usage invocation:
-// See: man 3 sysexits
-const EXIT_USAGE = 64;
-
-type StringDict = {[key: string]: string};
-
-export function sheetFromFile(
-    path: string, 
-    verbose: number = SILENT
-): Interpreter {
-
-    const dir = dirname(path);
-    const sheetName = basename(path, ".csv");
-    const devEnv = new TextDevEnvironment(dir);
-    const project = Interpreter.fromSheet(devEnv, sheetName, {verbose:verbose});
-    return project;
-}
-
-function fileExistsOrFail(filename: string) {
-    if (filename == undefined) {
-        usageError(`Must provide a filename`);
-    }
-    if (!existsSync(filename)) {
-        usageError(`Cannot find file ${filename}`);
-    }
-}
-
-function getOutputStream(output: string | undefined): Writable {
-  if (output == undefined) {
-      return process.stdout;
-  }
-  return createWriteStream(output, "utf8");
-}
 
 /* first - parse the main command */
 const commandDefinition = [{ name: "command", defaultOption: true }];
@@ -54,14 +19,13 @@ const command = commandLineArgs(commandDefinition, {
     stopAtFirstUnknown: true,
 });
 const argv = command._unknown || [];
-// TODO: determine from argv?
-const programName = "gramble";
 
 interface Command {
   run(options: commandLineArgs.CommandLineOptions): void;
   synopsis: string | string[];
   options: (commandLineArgs.OptionDefinition & commandLineUsage.OptionDefinition)[];
 }
+
 
 const commands: { [name: string]: Command } = {
     help: {
@@ -142,7 +106,15 @@ const commands: { [name: string]: Command } = {
                 defaultValue: false,
                 description:
                 "log error and info messages",
-            },
+            },            
+            {
+                name: "query",
+                alias: "q",
+                type: String,
+                defaultValue: "",
+                typeLabel: "{underline string}",
+                description: "Query as key:value pairs, joined by commas, e.g. {underline \"root:kan,subj:1SG\"}"
+            }
         ],
 
         run(options: commandLineArgs.CommandLineOptions) {
@@ -162,8 +134,11 @@ const commands: { [name: string]: Command } = {
                 interpreter.devEnv.logErrors();
             }
 
+            let query: StringDict = parseQuery(options.query);
+            console.log(`query = ${JSON.stringify(query)}`);
+
             const labels = interpreter.getTapeNames(options.symbol);
-            const generator = interpreter.generateStream(options.symbol, {});
+            const generator = interpreter.generateStream(options.symbol, query);
             timeIt(() => {
                 if (options.format.toLowerCase() == 'csv') {
                     generateToCSV(outputStream, generator, labels);
@@ -221,7 +196,15 @@ const commands: { [name: string]: Command } = {
                 defaultValue: false,
                 description:
                 "log error and info messages",
-            },  
+            },
+            {
+                name: "query",
+                alias: "q",
+                type: String,
+                defaultValue: "",
+                typeLabel: "{underline string}",
+                description: "Query as key:value pairs, joined by commas, e.g. {underline \"root:kan,subj:1SG\"}"
+            }
         ],
 
         run(options: commandLineArgs.CommandLineOptions) {
@@ -240,9 +223,12 @@ const commands: { [name: string]: Command } = {
                 //interpreter.runChecks();
                 interpreter.devEnv.logErrors();
             }
+            
+            let query: StringDict = parseQuery(options.query);
+            console.log(`query = ${JSON.stringify(query)}`);
 
             const labels = interpreter.getTapeNames(options.symbol);
-            const generator = interpreter.sampleStream(options.symbol, options.num, {});
+            const generator = interpreter.sampleStream(options.symbol, options.num, query);
             timeIt(() => {
                 if (options.format.toLowerCase() == 'csv') {
                     generateToCSV(outputStream, generator, labels);
@@ -274,6 +260,11 @@ const sections = [
     },
 ];
 
+export function printUsage() {
+    let usage = commandLineUsage(sections);
+    console.log(usage);
+}
+
 /* second - parse the generate command options */
 if (command.command in commands) {
     try {    
@@ -289,46 +280,4 @@ if (command.command in commands) {
     console.error(`${programName}: unknown command: ${command.command}`);
     printUsage();
     process.exit(EXIT_USAGE);
-}
-
-function usageError(message: string): never {
-    console.error(`${programName}: Error: ${message}`);
-    process.exit(EXIT_USAGE);
-}
-
-function printUsage() {
-    let usage = commandLineUsage(sections);
-    console.log(usage);
-}
-
-type Gen<T> = Generator<T, void, undefined>;
-
-function generateToCSV(
-    outputStream: Writable,    
-    generator: Gen<StringDict>, 
-    labels: string[]
-): void {
-    const replacer = (key: string, value:string | null) => value === null ? '' : value;
-    outputStream.write(labels.join(",") + "\n");
-    for (const entry of generator) {
-        const line = labels.map(label =>  JSON.stringify(entry[label], replacer));
-        outputStream.write(line.join(",") + "\n");
-    }
-}
-
-function generateToJSON(
-    outputStream: Writable,
-    generator: Gen<StringDict>
-): void {
-    outputStream.write("[\n");
-    let firstLine = true;
-    for (const entry of generator) {
-        if (!firstLine) {
-            outputStream.write(",\n");
-        }
-        firstLine = false;
-        const line = JSON.stringify(entry);
-        outputStream.write("  " + line);
-    }
-    outputStream.write("\n]");
 }
