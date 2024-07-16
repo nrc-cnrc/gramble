@@ -14,7 +14,7 @@ A Gramble program is a way of specifying a *linguistic database* in an efficient
 
 In the abstract sense, a database is an organized collection of entries, stored on a computer, that you can access ("query") in various ways.  
 
-For example, imagine the following *very* simple and incomplete database of Swahili verb conjugations, along with the tense (past, present), person (first, second, or third), and verb root that they express.  ("Pend" means "love", if you're wondering, and "ona" means "see".  "Ninapenda" means "I love him/her/it".)
+For example, imagine the following *very* simple and incomplete database of Swahili verb conjugations, along with the tense (past, present), person (first, second, or third), and verb root that they express.  ("Penda" means "love", if you're wondering, and "on" means "see".  "Ninapenda" means "I love him/her/it".)
 
 | verb  | person | tense | root |
 |-----------|--------|-------|-----|
@@ -27,15 +27,15 @@ For example, imagine the following *very* simple and incomplete database of Swah
 | nimependa | 1 | perfect | pend |
 | umependa | 2 | perfect | pend |
 | amependa | 3 | perfect | pend |
-| ninaona | 1 | present | ona |
-| unaona | 2 | present |  ona |
-| anaona| 3 | present |  ona |
-| niliona | 1 | past |  ona |
-| uliona | 2 | past |  ona |
-| aliona | 3 | past | ona |
-| nimeona | 1 | perfect | ona |
-| umeona | 2 | perfect | ona |
-| ameona | 3 | perfect | ona |
+| ninaona | 1 | present | on |
+| unaona | 2 | present |  on |
+| anaona| 3 | present |  on |
+| niliona | 1 | past |  on |
+| uliona | 2 | past |  on |
+| aliona | 3 | past | on |
+| nimeona | 1 | perfect | on |
+| umeona | 2 | perfect | on |
+| ameona | 3 | perfect | on |
 
 With a database like this, if you know the verb *nilipenda* exists and want to know its details, you could make a query like ``verb: nilipenda``.  What you'd receive in response is a list of entries that are compatible with it; in this database, one entry is compatible with it:
 
@@ -56,9 +56,9 @@ So you could use a database like this to *parse* a known word into meaningful co
 | nilipenda | 1 | past |  pend |
 | ulipenda | 2 | past |  pend |
 | alipenda | 3 | past | pend |
-| niliona | 1 | past |  ona |
-| uliona | 2 | past |  ona |
-| aliona | 3 | past | ona |
+| niliona | 1 | past |  on |
+| uliona | 2 | past |  on |
+| aliona | 3 | past | on |
 
 ## I thought this was basically a finite-state transducer language like XFST, that takes an input string and gives you an output string.  This seems more like a database language like SQL.
 
@@ -81,7 +81,7 @@ And then instead of saying "I put in `1-past-pend` and got `nilipenda`", in data
 
 Why would we want to think more like a database?  Well, it's quite frequent that we want to ask for more complex queries, like "Give me everything with the root 'pend', but only in past or present tense, and only in this dialect".  Or we want more information in the result.  Or, when making the database in the first place, we are trying to program complex linguistic phenomena, where this suffix has a particular form only when the mood is subjunctive and the subject is first-singular.  All of those can get complicated to do when we limit the number of "fields" in our database to two.
 
-So Gramble is like XFST, except it doesn't have the two-field restriction; it lets you do transductions but isn't limited to things with one input field and one output field.  That sort of "generalized transduction" already has a whole rich vocabulary associated with it -- it's a database query! -- and so we often use database language when talking about Gramble programs.  But it's not a fundamentally different thing than a transduction, a transduction is just a special case of a bigger idea.
+So Gramble is like XFST, except it doesn't have the two-field restriction; it lets you do transductions, but isn't limited to things with one input field and one output field.  That sort of "generalized transduction" already has a whole rich vocabulary associated with it -- it's a database query! -- and so we often use database language when talking about Gramble programs.  But it's not a fundamentally different thing than a transduction, a transduction is just a special case of a bigger idea.
 
 
 ## How do we make one?

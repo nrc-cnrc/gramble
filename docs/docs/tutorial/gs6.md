@@ -1,5 +1,5 @@
 ---
-id: gs5
+id: gs6
 title: Flat vs. nested structure
 sidebar_label: Flat vs. nested
 ---
@@ -16,7 +16,7 @@ We'll use Swahili verbs for illustration.  Swahili is the first or second langua
 
 The first thing to do before you start writing a program is **understand exactly what phenonemon you want to model**, so that you can make a plan.  Let's say our goal is modeling Swahili verbs in the present, perfect, and past tenses, with 1st, 2nd, and 3rd person (I, you, he/she/it) singular subjects.  They look like this:
 
-| text | subj | tense | root |
+| **text** | **subj** | **tense** | **root** |
 |-----------|--------|-------|----|
 | ninapenda | 1 | pres | love |
 | unapenda | 2 | pres |  love |
@@ -47,19 +47,19 @@ Study that table for a few minutes to get a good sense of what we need to model.
 
 Here's the "flat" style of grammar that we've been using so far:
 
-| **Person =** | **text** | **subj** ||
+| **Person =** | **text** | **subj** |
 |----|----|----|
 |    | ni  | 1 |
 |    | u  | 2 |
 |    | a  | 3 |
 | &nbsp; |
-| **Tense =** | **text** | **tense** ||
+| **Tense =** | **text** | **tense** |
 |----|----|----|
 |    | na  | pres |
 |    | li  | past |
 |    | me | perf |
 | &nbsp; |
-| **Root =** | **text** | **root** ||
+| **Root =** | **text** | **root** |
 |----|----|-----|
 |    | penda  | love |
 |    | ona  | see |
@@ -74,8 +74,8 @@ Remember that an `embed` header causes the cell below it (say, `Person`) to be i
 
 Here's another way of structuring the same grammar, by building up the stem bit by bit.  For example, to build "ninapenda", we would start with the Root `penda`, then build a TenseStem `napenda` by adding a tense prefix, and finally building a Verb `ninapenda` by adding a person prefix.
 
-| **Root =** | **text** | **root** ||
-|----|----|-----|
+| **Root =** | **text** | **root** | |
+|----|----|-----|-----| 
 |    | penda  | love |
 |    | ona  | see |
 | &nbsp; |
