@@ -9,7 +9,7 @@ import {
 import { parse } from "path";
 import * as commandLineArgs from "command-line-args";
 import * as commandLineUsage from "command-line-usage";
-import { EXIT_USAGE, fileExistsOrFail, generateToCSV, generateToJSON, getOutputStream, parseQuery, programName, sheetFromFile, StringDict } from "./util";
+import { EXIT_USAGE, fileExistsOrFail, generateToCSV, generateToJSON, getOutputStream, parseQuery, programName, sheetFromSymbol, StringDict } from "./util";
 import { StringDecoder } from "string_decoder";
 
 
@@ -127,7 +127,7 @@ const commands: { [name: string]: Command } = {
 
             const outputStream = getOutputStream(options.output);
             const timeVerbose = (options.verbose) ? VERBOSE_TIME|VERBOSE_STATES : SILENT;
-            const interpreter = sheetFromFile(options.source, timeVerbose);
+            const interpreter = sheetFromSymbol(options.source, timeVerbose);
 
             if (options.verbose) {
                 //interpreter.runChecks();
@@ -135,7 +135,6 @@ const commands: { [name: string]: Command } = {
             }
 
             let query: StringDict = parseQuery(options.query);
-            console.log(`query = ${JSON.stringify(query)}`);
 
             const labels = interpreter.getTapeNames(options.symbol);
             const generator = interpreter.generateStream(options.symbol, query);
@@ -217,7 +216,7 @@ const commands: { [name: string]: Command } = {
 
             const outputStream = getOutputStream(options.output);
             const timeVerbose = (options.verbose) ? VERBOSE_TIME|VERBOSE_STATES : SILENT;
-            const interpreter = sheetFromFile(options.source, timeVerbose);
+            const interpreter = sheetFromSymbol(options.source, timeVerbose);
 
             if (options.verbose) {
                 //interpreter.runChecks();
@@ -225,7 +224,6 @@ const commands: { [name: string]: Command } = {
             }
             
             let query: StringDict = parseQuery(options.query);
-            console.log(`query = ${JSON.stringify(query)}`);
 
             const labels = interpreter.getTapeNames(options.symbol);
             const generator = interpreter.sampleStream(options.symbol, options.num, query);

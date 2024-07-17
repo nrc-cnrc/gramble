@@ -28,8 +28,8 @@ export class Workbook extends Component {
             results.push([]);  // add an extra line just to make it a little more readable
         }
 
-        results.push([DEFAULT_SYMBOL, "embed"]);
-        results.push([""                 , this.mainSheetName]);
+        results.push([DEFAULT_SYMBOL + " =", "embed"]);
+        results.push([""                 , this.mainSheetName + ".All"]);
         return results;
     }
 
@@ -49,7 +49,7 @@ export class Worksheet {
             return [];
         }
 
-        const results: string[][] = [[ this.name+":", "collection:" ]];
+        const results: string[][] = [[ this.name+" =", "collection:" ]];
 
         for (const row of this.cells) {
             if (row.length > 0 && row[0].startsWith("%%")) {

@@ -16,7 +16,6 @@ export function sheetFromFile(
     path: string, 
     verbose: number = SILENT
 ): Interpreter {
-
     const dir = dirname(path);
     const sheetName = basename(path, ".csv");
     const devEnv = new TextDevEnvironment(dir);

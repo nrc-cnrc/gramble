@@ -154,7 +154,7 @@ export class Interpreter {
     ): string[] {
         const referent = this.getSymbol(symbol);
         if (referent == undefined) {
-            throw new Error(`Cannot find symbol ${symbol}`);
+            throw new Error(`Cannot find symbol ${symbol}.  Choose from the following symbols: ${this.allSymbols()}`);
         }
         if (stripHidden) {
             return referent.tapeNames.filter(t => !t.startsWith(HIDDEN_PREFIX));
