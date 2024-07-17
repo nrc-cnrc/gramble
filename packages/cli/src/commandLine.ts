@@ -9,7 +9,7 @@ import {
 import { parse } from "path";
 import * as commandLineArgs from "command-line-args";
 import * as commandLineUsage from "command-line-usage";
-import { EXIT_USAGE, fileExistsOrFail, generateToCSV, generateToJSON, getOutputStream, parseQuery, programName, sheetFromSymbol, StringDict } from "./util";
+import { EXIT_USAGE, fileExistsOrFail, generateToCSV, generateToJSON, getOutputStream, parseQuery, programName, sheetFromFile, StringDict } from "./util";
 import { StringDecoder } from "string_decoder";
 
 
@@ -127,7 +127,7 @@ const commands: { [name: string]: Command } = {
 
             const outputStream = getOutputStream(options.output);
             const timeVerbose = (options.verbose) ? VERBOSE_TIME|VERBOSE_STATES : SILENT;
-            const interpreter = sheetFromSymbol(options.source, timeVerbose);
+            const interpreter = sheetFromFile(options.source, timeVerbose);
 
             if (options.verbose) {
                 //interpreter.runChecks();
@@ -216,7 +216,7 @@ const commands: { [name: string]: Command } = {
 
             const outputStream = getOutputStream(options.output);
             const timeVerbose = (options.verbose) ? VERBOSE_TIME|VERBOSE_STATES : SILENT;
-            const interpreter = sheetFromSymbol(options.source, timeVerbose);
+            const interpreter = sheetFromFile(options.source, timeVerbose);
 
             if (options.verbose) {
                 //interpreter.runChecks();
