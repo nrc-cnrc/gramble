@@ -5,7 +5,7 @@ import {
 
 import { Grammar } from "../../interpreter/src/grammars";
 import { INPUT_TAPE, OUTPUT_TAPE } from "../../interpreter/src/utils/constants";
-import { VERBOSE_DEBUG } from "@gramble/interpreter/src/utils/logging";
+import { VERBOSE_DEBUG } from "../../interpreter/src/utils/logging";
 
 import {
     grammarTestSuiteName,

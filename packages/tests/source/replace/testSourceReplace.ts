@@ -1,4 +1,4 @@
-import {VERBOSE_DEBUG } from "@gramble/interpreter/src/utils/logging";
+import {VERBOSE_DEBUG } from "../../../interpreter/src/utils/logging";
 import {
     testSource, SourceTest, 
     Error, Warning 

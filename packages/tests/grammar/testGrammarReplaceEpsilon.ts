@@ -4,7 +4,7 @@ import {
     Seq, Uni, WithVocab
 } from "../../interpreter/src/grammarConvenience";
 
-import {INPUT_TAPE, OUTPUT_TAPE } from "@gramble/interpreter/src/utils/constants";
+import {INPUT_TAPE, OUTPUT_TAPE } from "../../interpreter/src/utils/constants";
 import {SILENT, VERBOSE_DEBUG, VERBOSE_TIME } from "../../interpreter/src/utils/logging";
 
 import {

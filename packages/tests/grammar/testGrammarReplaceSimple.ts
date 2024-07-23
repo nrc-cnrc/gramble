@@ -1,7 +1,7 @@
 import {
     CharSet, Count, Epsilon, Join, Lit,
     OptionalReplace, Rep, Replace, Seq,
-} from "@gramble/interpreter/src/grammarConvenience";
+} from "../../interpreter/src/grammarConvenience";
 
 import {
     grammarTestSuiteName,
@@ -12,8 +12,8 @@ import {
     logTestSuite, VERBOSE_TEST_L2,
 } from "../testUtil";
 
-import { INPUT_TAPE, OUTPUT_TAPE } from "@gramble/interpreter/src/utils/constants";
-import { VERBOSE_DEBUG } from "@gramble/interpreter/src/utils/logging";
+import { INPUT_TAPE, OUTPUT_TAPE } from "../../interpreter/src/utils/constants";
+import { VERBOSE_DEBUG } from "../../interpreter/src/utils/logging";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
