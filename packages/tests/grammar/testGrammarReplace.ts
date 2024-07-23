@@ -1,23 +1,23 @@
 import {
     BoundingSet, Count, Epsilon,
-    Replace, Uni, WithVocab
+    Lit, Replace, Uni, WithVocab
 } from "../../interpreter/src/grammarConvenience";
 
+import {INPUT_TAPE, OUTPUT_TAPE } from "../../interpreter/src/utils/constants";
 import { StringDict } from "../../interpreter/src/utils/func";
 import { SILENT, VERBOSE_DEBUG } from "../../interpreter/src/utils/logging";
 
 import {
     grammarTestSuiteName,
-    testGrammar,
+    testGrammar, testGrammarIO
 } from "./testGrammarUtil";
 
 import { 
-    logTestSuite, VERBOSE_TEST_L2, verbose,
+    logTestSuite, VERBOSE_TEST_L2,
 } from '../testUtil';
 
 // File level control over verbose output
-// const VERBOSE = VERBOSE_TEST_L2;
-const VERBOSE = false;
+const VERBOSE = VERBOSE_TEST_L2;
 
 function vb(verbosity: number): number {
     return VERBOSE ? verbosity : SILENT;
@@ -58,6 +58,9 @@ function outputs(expectedOutputs: StringDict[]): StringDict[] {
 
 const EMPTY_CONTEXT = Epsilon();
 
+const I = (s: string) => Lit(INPUT_TAPE, s);
+const O = (s: string) => Lit(OUTPUT_TAPE, s);
+
 describe(`${grammarTestSuiteName(module)}`, function() {
 
     logTestSuite(this.title);
@@ -77,7 +80,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2a. Replace i by a in hill: maxChars_i:6(BS) i -> a || h_ll#',
+        desc: '2a. Replace i by a in hill: maxC_i:6(BS) i -> a || h_ll#',
         grammar: Replace("i", "a", "h", "ll", false, true),
         query: BoundingSet('hill', '', '', false, true),
         maxChars: {$i:6},
@@ -131,7 +134,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '3a. Replace i by a in hill: maxChars_i:6(BS) i -> a || #h_ll',
+        desc: '3a. Replace i by a in hill: maxC_i:6(BS) i -> a || #h_ll',
         grammar: Replace("i", "a", "h", "ll", true, false),
         query: BoundingSet('hill', '', '', true, false),
         maxChars: {$i:6},
@@ -184,7 +187,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '4a. Replace i by a in hil: maxChars_i:5(BS) i -> a || h_l',
+        desc: '4a. Replace i by a in hil: maxC_i:5(BS) i -> a || h_l',
         grammar: Replace("i", "a", "h", "l"),
         vocab: {$i: [..."hila"], $o: [..."hila"]},
         query: BoundingSet('hil'),
@@ -600,7 +603,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '9a. Replace a by aa in hal: maxChars_i:6(BS) a -> aa || #h_l',
+        desc: '9a. Replace a by aa in hal: maxC_i:6(BS) a -> aa || #h_l',
         grammar: Replace("a", "aa", "h", "l", true, false),
         vocab: {$i: [..."hal"], $o: [..."hal"]},
         query: BoundingSet('hal', '', '', true, false),
@@ -666,7 +669,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '10a. Replace a by aa in hal: maxChars_i:6(BS) a -> aa || h_l#',
+        desc: '10a. Replace a by aa in hal: maxC_i:6(BS) a -> aa || h_l#',
         grammar: Replace("a", "aa", "h", "l", false, true),
         vocab: {$i: [..."hal"], $o: [..."hal"]},
         query: BoundingSet('hal', '', '', false, true),
@@ -1500,7 +1503,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     // Tests to isolate an expression simplification issue in CorrespondExpr.
 
     testGrammar({
-        desc: '25a. Replace aba by X: maxChars_i:3(BS) aba -> X',
+        desc: '25a. Replace aba by X: maxC_i:3(BS) aba -> X',
         grammar: Replace("aba", "X", EMPTY_CONTEXT, EMPTY_CONTEXT),
         vocab: {$i: [..."abX"], $o: [..."abX"]},
         query: BoundingSet('aba'),
@@ -1530,7 +1533,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     // limits when using BoundingSet.
 
     testGrammar({
-        desc: '25b. Replace aba by X: maxChars_i:3(BS) aba -> X (priority: $i,$o)',
+        desc: '25b. Replace aba by X: maxC_i:3(BS) aba -> X (priority: $i,$o)',
         grammar: Replace("aba", "X", EMPTY_CONTEXT, EMPTY_CONTEXT),
         vocab: {$i: [..."abX"], $o: [..."abX"]},
         query: BoundingSet('aba'),
@@ -1543,7 +1546,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '25c. Replace aba by X: maxChars_i:3(BS) aba -> X (priority: $o,$i)',
+        desc: '25c. Replace aba by X: maxC_i:3(BS) aba -> X (priority: $o,$i)',
         grammar: Replace("aba", "X", EMPTY_CONTEXT, EMPTY_CONTEXT),
         vocab: {$i: [..."abX"], $o: [..."abX"]},
         query: BoundingSet('aba'),
@@ -1651,6 +1654,231 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'hi', $o: 'hi'}, {$i: 'ia', $o: 'ia'},
             {$i: 'ih', $o: 'ih'}, {$i: 'ii', $o: 'ii'},
         ],
+    });
+
+    // Replaces with context that is nullable
+
+    testGrammarIO({
+        desc: '28a. Replace i by a in #i(h|ε)#: maxC_i:2(BS) i -> a || #_(h|ε)#',
+        grammar: WithVocab({$i: 'hila'},
+                    Replace("i", "a", EMPTY_CONTEXT, Uni(I("h"),I("")), true, true)),
+        query: BoundingSet('i', '', '', false, false),
+        maxChars: {$i:2},
+        io: [
+            // Replacement
+            ['i', 'a'],   ['ih', 'ah'],
+            // Copy through only
+            ['ai', 'ai'], ['hi', 'hi'],
+            ['ia', 'ia'], ['ii', 'ii'],
+            ['il', 'il'], ['li', 'li'],
+        ],
+    });
+
+    testGrammarIO({
+        desc: '28b. Replace i by a in #i(h|ε): maxC_i:2(BS) i -> a || #_(h|ε)',
+        grammar: WithVocab({$i: 'hila'},
+                    Replace("i", "a", EMPTY_CONTEXT, Uni(I("h"),I("")), true, false)),
+        query: BoundingSet('i', '', '', false, false),
+        maxChars: {$i:2},
+        io: [
+            // Replacement
+            ['i', 'a'],   ['ia', 'aa'],
+            ['ih', 'ah'], ['ii', 'ai'],
+            ['il', 'al'],
+            // Copy through only
+            ['ai', 'ai'], ['hi', 'hi'],
+            ['li', 'li'],
+        ],
+        allowDuplicateOutputs: true,
+    });
+
+    testGrammarIO({
+        desc: '28c. Replace i by a in i(h|ε)#: maxC_i:2(BS) i -> a || _(h|ε)#',
+        grammar: WithVocab({$i: 'hila'},
+                    Replace("i", "a", EMPTY_CONTEXT, Uni(I("h"),I("")), false, true)),
+        query: BoundingSet('i', '', '', false, false),
+        maxChars: {$i:2},
+        io: [
+            // Replacement
+            ['i', 'a'],   ['ai', 'aa'],
+            ['hi', 'ha'], ['ih', 'ah'],
+            ['ii', 'ia'], ['li', 'la'],
+            // Copy through only
+            ['ia', 'ia'], ['il', 'il'],
+        ],
+    });
+
+    testGrammarIO({
+        desc: '28d. Replace i by a in i(h|ε): maxC_i:2(BS) i -> a || _(h|ε)',
+        grammar: WithVocab({$i: 'hila'},
+                    Replace("i", "a", EMPTY_CONTEXT, Uni(I("h"),I("")), false, false)),
+        query: BoundingSet('i', '', '', false, false),
+        maxChars: {$i:2},
+        io: [
+            // Replacement
+            ['i', 'a'],   ['ai', 'aa'],
+            ['hi', 'ha'], ['ia', 'aa'],
+            ['ih', 'ah'], ['ii', 'aa'],
+            ['il', 'al'], ['li', 'la'],
+        ],
+        allowDuplicateOutputs: true,
+    });
+
+    testGrammarIO({
+        desc: '29a. Replace i by a in #(h|ε)i#: maxC_i:2(BS) i -> a || #(h|ε)_#',
+        grammar: WithVocab({$i: 'hila'},
+                    Replace("i", "a", Uni(I("h"),I("")), EMPTY_CONTEXT, true, true)),
+        query: BoundingSet('i', '', '', false, false),
+        maxChars: {$i:2},
+        io: [
+            // Replacement
+            ['i', 'a'],   ['hi', 'ha'],
+            // Copy through only
+            ['ai', 'ai'], ['ia', 'ia'],
+            ['ih', 'ih'], ['ii', 'ii'],
+            ['il', 'il'], ['li', 'li'],
+        ],
+    });
+
+    testGrammarIO({
+        desc: '29b. Replace i by a in #(h|ε)i: maxC_i:2(BS) i -> a || #(h|ε)_',
+        grammar: WithVocab({$i: 'hila'},
+                    Replace("i", "a", Uni(I("h"),I("")), EMPTY_CONTEXT, true, false)),
+        query: BoundingSet('i', '', '', false, false),
+        maxChars: {$i:2},
+        io: [
+            // Replacement
+            ['i', 'a'],   ['hi', 'ha'],
+            ['ia', 'aa'], ['ih', 'ah'],
+            ['ii', 'ai'], ['il', 'al'],
+            // Copy through only
+            ['ai', 'ai'], ['li', 'li'],
+        ],
+    });
+
+    testGrammarIO({
+        desc: '29c. Replace i by a in (h|ε)i#: maxC_i:2(BS) i -> a || (h|ε)_#',
+        grammar: WithVocab({$i: 'hila'},
+                    Replace("i", "a", Uni(I("h"),I("")), EMPTY_CONTEXT, false, true)),
+        query: BoundingSet('i', '', '', false, false),
+        maxChars: {$i:2},
+        io: [
+            // Replacement
+            ['i', 'a'],   ['ai', 'aa'],
+            ['hi', 'ha'], ['ii', 'ia'],
+            ['li', 'la'],
+            // Copy through only
+            ['ia', 'ia'], ['ih', 'ih'],
+            ['il', 'il'],
+        ],
+    });
+
+    testGrammarIO({
+        desc: '29d. Replace i by a in (h|ε)i: maxC_i:2(BS) i -> a || (h|ε)_',
+        grammar: WithVocab({$i: 'hila'},
+                    Replace("i", "a", Uni(I("h"),I("")), EMPTY_CONTEXT, false, false)),
+        query: BoundingSet('i', '', '', false, false),
+        maxChars: {$i:2},
+        io: [
+            // Replacement
+            ['i', 'a'],   ['ai', 'aa'],
+            ['hi', 'ha'], ['ia', 'aa'],
+            ['ih', 'ah'], ['ii', 'aa'],
+            ['il', 'al'], ['li', 'la'],
+        ],
+    });
+
+    testGrammarIO({
+        desc: '30a. Replace i by a in #(h|ε)i(l|ε)#: maxC_i:3(BS) i -> a || #(h|ε)_(l|ε)#',
+        grammar: Replace("i", "a", Uni(I("h"),I("")), Uni(I("l"),I("")), true, true),
+        query: BoundingSet('i', '', '', false, false),
+        maxChars: {$i:3},
+        io: [
+            // Replacement
+            ['i', 'a'],     ['hi', 'ha'],   ['il', 'al'],   ['hil', 'hal'],
+            // Copy through only
+            ['ai', 'ai'],   ['ia', 'ia'],   ['ih', 'ih'],   ['ii', 'ii'],
+            ['li', 'li'],   ['aai', 'aai'], ['ahi', 'ahi'], ['aia', 'aia'],
+            ['aih', 'aih'], ['aii', 'aii'], ['ail', 'ail'], ['ali', 'ali'],
+            ['hai', 'hai'], ['hhi', 'hhi'], ['hia', 'hia'], ['hih', 'hih'],
+            ['hii', 'hii'], ['hli', 'hli'], ['iaa', 'iaa'], ['iah', 'iah'],
+            ['iai', 'iai'], ['ial', 'ial'], ['iha', 'iha'], ['ihh', 'ihh'],
+            ['ihi', 'ihi'], ['ihl', 'ihl'], ['iia', 'iia'], ['iih', 'iih'],
+            ['iii', 'iii'], ['iil', 'iil'], ['ila', 'ila'], ['ilh', 'ilh'],
+            ['ili', 'ili'], ['ill', 'ill'], ['lai', 'lai'], ['lhi', 'lhi'],
+            ['lia', 'lia'], ['lih', 'lih'], ['lii', 'lii'], ['lil', 'lil'],
+            ['lli', 'lli'],
+        ],
+    });
+
+    testGrammarIO({
+        desc: '30b. Replace i by a in #(h|ε)i(l|ε): maxC_i:3(BS) i -> a || #((h|ε)_(l|ε)',
+        grammar: Replace("i", "a", Uni(I("h"),I("")), Uni(I("l"),I("")), true, false),
+        query: BoundingSet('i', '', '', false, false),
+        maxChars: {$i:3},
+        io: [
+            // Replacement
+            ['i', 'a'],     ['hi', 'ha'],   ['ia', 'aa'],   ['ih', 'ah'],
+            ['ii', 'ai'],   ['il', 'al'],   ['hia', 'haa'], ['hih', 'hah'],
+            ['hii', 'hai'], ['hil', 'hal'], ['iaa', 'aaa'], ['iah', 'aah'],
+            ['iai', 'aai'], ['ial', 'aal'], ['iha', 'aha'], ['ihh', 'ahh'],
+            ['ihi', 'ahi'], ['ihl', 'ahl'], ['iia', 'aia'], ['iih', 'aih'],
+            ['iii', 'aii'], ['iil', 'ail'], ['ila', 'ala'], ['ilh', 'alh'],
+            ['ili', 'ali'], ['ill', 'all'],
+            // Copy through only
+            ['ai', 'ai'],   ['li', 'li'],   ['aai', 'aai'], ['ahi', 'ahi'],
+            ['aia', 'aia'], ['aih', 'aih'], ['aii', 'aii'], ['ail', 'ail'],
+            ['ali', 'ali'], ['hai', 'hai'], ['hhi', 'hhi'], ['hli', 'hli'],
+            ['lai', 'lai'], ['lhi', 'lhi'], ['lia', 'lia'], ['lih', 'lih'],
+            ['lii', 'lii'], ['lil', 'lil'], ['lli', 'lli'],
+        ],
+        allowDuplicateOutputs: true,
+    });
+
+    testGrammarIO({
+        desc: '30c. Replace i by a in (h|ε)i(l|ε)#: maxC_i:3(BS) i -> a || (h|ε)_(l|ε)#',
+        grammar: Replace("i", "a", Uni(I("h"),I("")), Uni(I("l"),I("")), false, true),
+        query: BoundingSet('i', '', '', false, false),
+        maxChars: {$i:3},
+        io: [
+            // Replacement
+            ['i', 'a'],     ['ai', 'aa'],   ['hi', 'ha'],   ['ii', 'ia'],
+            ['il', 'al'],   ['li', 'la'],   ['aai', 'aaa'], ['ahi', 'aha'],
+            ['aii', 'aia'], ['ail', 'aal'], ['ali', 'ala'], ['hai', 'haa'],
+            ['hhi', 'hha'], ['hii', 'hia'], ['hil', 'hal'], ['hli', 'hla'],
+            ['iai', 'iaa'], ['ihi', 'iha'], ['iii', 'iia'], ['iil', 'ial'],
+            ['ili', 'ila'], ['lai', 'laa'], ['lhi', 'lha'], ['lii', 'lia'],
+            ['lil', 'lal'], ['lli', 'lla'],
+            // Copy through only
+            ['ia', 'ia'],   ['ih', 'ih'],   ['aia', 'aia'], ['aih', 'aih'],
+            ['hia', 'hia'], ['hih', 'hih'], ['iaa', 'iaa'], ['iah', 'iah'],
+            ['ial', 'ial'], ['iha', 'iha'], ['ihh', 'ihh'], ['ihl', 'ihl'],
+            ['iia', 'iia'], ['iih', 'iih'], ['ila', 'ila'], ['ilh', 'ilh'],
+            ['ill', 'ill'], ['lia', 'lia'], ['lih', 'lih'],
+        ],
+    });
+
+    testGrammarIO({
+        desc: '30d. Replace i by a in (h|ε)i(l|ε): maxC_i:3(BS) i -> a || (h|ε)_(l|ε)',
+        grammar: Replace("i", "a", Uni(I("h"),I("")), Uni(I("l"),I("")), false, false),
+        query: BoundingSet('i', '', '', false, false),
+        maxChars: {$i:3},
+        io: [
+            // Replacement
+            ['i', 'a'],     ['ai', 'aa'],   ['hi', 'ha'],   ['ia', 'aa'],
+            ['ih', 'ah'],   ['ii', 'aa'],   ['il', 'al'],   ['li', 'la'],
+            ['aai', 'aaa'], ['ahi', 'aha'], ['aia', 'aaa'], ['aih', 'aah'],
+            ['aii', 'aaa'], ['ail', 'aal'], ['ali', 'ala'], ['hai', 'haa'],
+            ['hhi', 'hha'], ['hia', 'haa'], ['hih', 'hah'], ['hii', 'haa'],
+            ['hil', 'hal'], ['hli', 'hla'], ['iaa', 'aaa'], ['iah', 'aah'],
+            ['iai', 'aaa'], ['ial', 'aal'], ['iha', 'aha'], ['ihh', 'ahh'],
+            ['ihi', 'aha'], ['ihl', 'ahl'], ['iia', 'aaa'], ['iih', 'aah'],
+            ['iii', 'aaa'], ['iil', 'aal'], ['ila', 'ala'], ['ilh', 'alh'],
+            ['ili', 'ala'], ['ill', 'all'], ['lai', 'laa'], ['lhi', 'lha'],
+            ['lia', 'laa'], ['lih', 'lah'], ['lii', 'laa'], ['lil', 'lal'],
+            ['lli', 'lla'],
+        ],
+        allowDuplicateOutputs: true,
     });
 
 });
