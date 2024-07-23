@@ -8,7 +8,6 @@ import {
     RenameGrammar, 
     SingleTapeGrammar
 } from "../grammars";
-import { DEFAULT_TAPE } from "../utils/constants";
 import * as Tapes from "../tapes";
 import { Msg } from "../utils/msgs";
 import { PassEnv } from "../components";
@@ -84,7 +83,7 @@ export class HandleSingleTapes extends Pass<Grammar,Grammar> {
     }
 
     private handleDot(g: DotGrammar, env: PassEnv): Grammar {
-        if (g.tapeName == DEFAULT_TAPE && this.tapeName != undefined) {
+        if (this.tapeName != undefined) {
             return new DotGrammar(this.tapeName)
                         .tapify(env);
         }
@@ -92,7 +91,7 @@ export class HandleSingleTapes extends Pass<Grammar,Grammar> {
     }
 
     private handleLiteral(g: LiteralGrammar, env: PassEnv): Grammar {
-        if (g.tapeName == DEFAULT_TAPE && this.tapeName != undefined) {
+        if (this.tapeName != undefined) {
             return new LiteralGrammar(this.tapeName, g.text)
                         .tapify(env);
         }

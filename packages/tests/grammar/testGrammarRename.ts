@@ -3,7 +3,6 @@ import {
     Seq, 
     Join, 
     Uni, 
-    Collection,
     Embed,
     Epsilon,
     Null
@@ -30,7 +29,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: '1. Rename t1>t2, t1:hello',
         grammar: Rename(t1("hello"), "t1", "t2"),
         tapes: ['t2'],
-        // vocab: {t2: 4}},
+        vocab: {t2: [..."helo"]},
         results: [
             {t2: "hello"},
         ],
@@ -116,7 +115,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Uni(Rename(Seq(t1("hello"), t5("foo")), "t1", "t2"),
                      Rename(Seq(t1("hello"), t5("foo")), "t1", "t3")),
         tapes: ['t2', 't3', 't5'],
-        // vocab: {t2:4, t3:4, t5:2},
+        vocab: {t2: [..."helo"], t3: [..."helo"], t5: [..."fo"]},
         results: [
             {t2: "hello", t5: "foo"},
             {t3: "hello", t5: "foo"},
@@ -185,10 +184,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '23. Rename t2>t3 of symbol t1:hi+t2:world)',
-        grammar: Collection({ 
-                     a: Seq(t1("hi"), t2("world")),
-                     default: Rename(Embed("a"), "t2", "t3") 
-                 }),
+        grammar: { 
+            a: Seq(t1("hi"), t2("world")),
+            default: Rename(Embed("a"), "t2", "t3") 
+        },
         tapes: ['t1', 't3'],
         results: [
             {t1: "hi", t3: "world"},
@@ -197,10 +196,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: 'E1a. Rename t3>t4 of symbol t1:hi+t2:world',
-        grammar: Collection({ 
-                     a: Seq(t1("hi"), t2("world")),
-                     default: Rename(Embed("a"), "t3", "t4") 
-                 }),
+        grammar: { 
+            a: Seq(t1("hi"), t2("world")),
+            default: Rename(Embed("a"), "t3", "t4") 
+        },
         tapes: ['t1', 't2'],
         results: [
             {t1: "hi", t2: "world"},
@@ -210,10 +209,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     
     testGrammar({
         desc: 'E1b. Rename t1>t2 of symbol t1:hi+t2:world',
-        grammar: Collection({ 
-                     a: Seq(t1("hi"), t2("world")),
-                     default: Rename(Embed("a"), "t1", "t2") 
-                 }),
+        grammar: { 
+            a: Seq(t1("hi"), t2("world")),
+            default: Rename(Embed("a"), "t1", "t2") 
+        },
         tapes: ['t1', 't2'],
         results: [
             {t1: "hi", t2: "world"},
@@ -223,81 +222,81 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: 'E2a. Union with an erroneous rename and an embed of epsilon',
-        grammar: Collection({
+        grammar: {
             "X": Rename(Seq(Embed("Y"), t1("a"), t2("b")), "t1", "t2"),
             "Y": Epsilon(),
             "Z": Uni(Embed("X"), Embed("Y"))
-        }),
+        },
         symbol: "Z",
-        numErrors: 1,
         tapes: ["t1", "t2"],
         stripHidden: false,
         results: [
             { t1: 'a', t2: 'b' },
             {} 
         ],
+        numErrors: 1,
     });
     
     testGrammar({
         desc: 'E2b. Union with an erroneous rename and a nontrivial embed',
-        grammar: Collection({
+        grammar: {
             "X": Rename(Seq(Embed("Y"), t1("a"), t2("b")), "t1", "t2"),
             "Y": t3("c"),
             "Z": Uni(Embed("X"), Embed("Y"))
-        }),
+        },
         symbol: "Z",
-        numErrors: 1,
         tapes: ["t1", "t2", "t3"],
         stripHidden: false,
         results: [
             { t1: 'a', t2: 'b', t3: 'c' },
             { t3: 'c'} 
         ],
+        numErrors: 1,
     });
 
     
     testGrammar({
         desc: 'E3a. Join to an erroneous rename and an embed of epsilon',
-        grammar: Collection({
+        grammar: {
             "X": Rename(Seq(Embed("Y"), t1("a"), t2("b")), "t1", "t2"),
             "Y": Epsilon(),
             "Z": Join(Embed("X"), Embed("Y"))
-        }),
+        },
         symbol: "Z",
-        numErrors: 1,
         tapes: ["t1", "t2"],
         stripHidden: false,
         results: [
             { t1: 'a', t2: 'b' }
         ],
+        numErrors: 1,
     });
     
     testGrammar({
         desc: 'E3b. Join to an erroneous rename and a nontrivial embed',
-        grammar: Collection({
+        grammar: {
             "X": Rename(Seq(Embed("Y"), t1("a"), t2("b")), "t1", "t2"),
             "Y": t3("c"),
             "Z": Join(Embed("X"), Embed("Y"))
-        }),
+        },
         symbol: "Z",
-        numErrors: 1,
         tapes: ["t1", "t2", "t3"],
         stripHidden: false,
         results: [
             { t1: 'a', t2: 'b', t3: 'c' } 
         ],
+        numErrors: 1,
     });
 
     testGrammar({
         desc: 'E4. Recursive embed with tape change',
-        grammar: Collection({
+        grammar: {
             "X": Seq(t1("a"), Rename(Embed("X"), "t1", "t2")),
-        }),
+        },
         symbol: "X",
-        numErrors: 1,
         tapes: ["t1"],
         stripHidden: false,
-        results: []
+        results: [],
+        numErrors: 1,
     });
     
     /*

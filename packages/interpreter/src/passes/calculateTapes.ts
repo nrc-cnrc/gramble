@@ -345,25 +345,16 @@ function getTapesSingleTape(g: SingleTapeGrammar): Grammar {
         return updateTapes(g, tapes);
     }
 
-    if (dictLen(g.child.tapes.vocabMap) > 1) {
-        // shouldn't be possible in real source grammars
-        const result = new EpsilonGrammar();
-        throw updateTapes(result, Tapes.Lit())
-            .err("Multiple fields not allowed in this context",
-                `Only grammars with one field (e.g. just "text" but not Tapes.Any other fields) ` +
-                `can be embedded into a regex or rule context.`)
-            .localize(g.pos);
-    }
-
     if (dictLen(g.child.tapes.vocabMap) === 0) {
         return g.child;
     }
 
-    // there's just one tape, rename it
+    // this isn't quite correct (it misses some possible vocab coming from
+    // children beyond the first, but I don't think it matters given the restricted 
+    // contexts in which single tapes occur.
     const tapeToRename = Object.keys(g.child.tapes.vocabMap)[0];
     const tapes = Tapes.Rename(g.child.tapes, tapeToRename, g.tapeName);
     return updateTapes(g, tapes);
-
 }
 
 function getTapesDot(g: DotGrammar, env: TapesEnv): Grammar {

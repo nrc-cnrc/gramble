@@ -1,5 +1,5 @@
 import { 
-    CharSet, Count, Cursor, Dot,
+    CharSet, Count, Dot,
     Epsilon, Join, Match, Null,
     Rep, Seq, Uni, WithVocab,
 } from "../../interpreter/src/grammarConvenience";
@@ -29,8 +29,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      t1("hello"),
                      "t1", "t2"
                  ),
-        //tapes: ['t1', 't2'],
-        //vocab: {t1: 4, t2: 4},
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."helo"], t2: [..."helo"]},
         results: [
             {t1: 'hello', t2: 'hello'},
         ],
@@ -42,8 +42,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      Epsilon(),
                      "t1", "t2"
                  ),
-        //tapes: ['t2'],
-        //vocab: {t2: 0},
+        tapes: ['t2'],
+        vocab: {t2: 0},
         results: [
             {},
         ],
@@ -55,8 +55,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      Null(),
                      "t1", "t2"
                  ),
-        //tapes: ['t2'],
-        //vocab: {t2: 0},
+        tapes: ['t2'],
+        vocab: {t2: 0},
         results: [
         ],
     });
@@ -67,8 +67,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      Seq(t1("hello"), t1("world")),
                      "t1", "t2"
                  ),
-        //tapes: ['t1', 't2'],
-        //vocab: {t1: 7, t2: 7},
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."helowrd"], t2: [..."helowrd"]},
         results: [
             {t1: 'helloworld', t2: 'helloworld'},
         ],
@@ -80,8 +80,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      Seq(t1("hello"), t4("goodbye")),
                      "t1", "t2"
                  ),
-        //tapes: ['t1', 't2', 't4'],
-        // //vocab: {t1: 4, t2: 4, t4: 6},
+        tapes: ['t1', 't2', 't4'],
+        vocab: {t1: [..."helo"], t2: [..."helo"], t4: [..."godbye"]},
         results: [
             {t1: 'hello', t2: 'hello', t4: 'goodbye'},
         ],
@@ -93,8 +93,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      Seq(t4("goodbye"), t1("hello")),
                      "t1", "t2"
                  ),
-        //tapes: ['t1', 't2', 't4'],
-        // //vocab: {t1: 4, t2: 4, t4: 6},
+        tapes: ['t1', 't2', 't4'],
+        vocab: {t1: [..."helo"], t2: [..."helo"], t4: [..."godbye"]},
         results: [
             {t1: 'hello', t2: 'hello', t4: 'goodbye'},
         ],
@@ -107,8 +107,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      Seq(Seq(t1("hello"), t1(", ")), t1("world")),
                      "t1", "t2"
                  ),
-        //tapes: ['t1', 't2'],
-        //vocab: {t1: 9, t2: 9},
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."helo, wrd"], t2: [..."helo, wrd"]},
         results: [
             {t1: 'hello, world', t2: 'hello, world'},
         ],
@@ -120,8 +120,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      Uni(t1("hello"), t1("goodbye")),
                      "t1", "t2"
                  ),
-        //tapes: ['t1', 't2'],
-        //vocab: {t1: 8, t2: 8},
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."helogdby"], t2: [..."helogdby"]},
         results: [
             {t1: 'hello', t2: 'hello'},
             {t1: 'goodbye', t2: 'goodbye'},
@@ -134,8 +134,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      Uni(t1("hello"), t4("goodbye")),
                      "t1", "t2"
                  ),
-        //tapes: ['t1', 't2', 't4'],
-        // //vocab: {t1: 4, t2: 4, t4: 6},
+        tapes: ['t1', 't2', 't4'],
+        vocab: {t1: [..."helo"], t2: [..."helo"], t4: [..."godbye"]},
         results: [
             {t1: 'hello', t2: 'hello'},
             {t4: 'goodbye'},
@@ -148,8 +148,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      Uni(t4("goodbye"), t1("hello")),
                      "t1", "t2"
                  ),
-        //tapes: ['t1', 't2', 't4'],
-        // //vocab: {t1: 4, t2: 4, t4: 6},
+        tapes: ['t1', 't2', 't4'],
+        vocab: {t1: [..."helo"], t2: [..."helo"], t4: [..."godbye"]},
         results: [
             {t1: 'hello', t2: 'hello'},
             {t4: 'goodbye'},
@@ -164,8 +164,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          Uni(t1("world"), t1("kitty"))),
                      "t1", "t2"
                  ),
-        //tapes: ['t1', 't2'],
-        //vocab: {t1: 13, t2: 13},
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."helowrdgbykit"], t2: [..."helowrdgbykit"]},
         results: [
             {t1: 'helloworld', t2: 'helloworld'},
             {t1: 'goodbyeworld', t2: 'goodbyeworld'},
@@ -182,8 +182,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          Seq(t1("goodbye"), t1("world"))),
                      "t1", "t2"
                  ),
-        //tapes: ['t1', 't2'],
-        //vocab: {t1: 13, t2: 13},
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."helowrdgbykit"], t2: [..."helowrdgbykit"]},
         results: [
             {t1: 'hellokitty', t2: 'hellokitty'},
             {t1: 'goodbyeworld', t2: 'goodbyeworld'},
@@ -197,8 +197,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          Dot("t1"),
                          "t1", "t2"
                      )),
-        //tapes: ['t1', 't2'],
-        ////vocab: {t1: 2, t2: 2},
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."hi"], t2: [..."hi"]},
         results: [
             {t1: 'h', t2: 'h'},
             {t1: 'i', t2: 'i'},
@@ -211,8 +211,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      Seq(t1("hi"), Dot("t1")),
                      "t1", "t2"
                  ),
-        //tapes: ['t1', 't2'],
-        ////vocab: {t1: 2, t2: 2},
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."hi"], t2: [..."hi"]},
         results: [
             {t1: 'hih', t2: 'hih'},
             {t1: 'hii', t2: 'hii'},
@@ -226,8 +226,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                           Seq(Dot("t1"), t1('ello'))),
                      "t1", "t2"
                  ),
-        //tapes: ['t1', 't2'],
-        ////vocab: {t1: 4, t2: 4},
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."helo"], t2: [..."helo"]},
         results: [
             {t1: 'hello', t2: 'hello'},
         ],
@@ -239,8 +239,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      Join(t1("hello"), t4('world')),
                      "t1", "t2"
                  ),
-        //tapes: ['t1', 't2', 't4'],
-        // //vocab: {t1: 4, t2: 4, t4: 5},
+        tapes: ['t1', 't2', 't4'],
+        vocab: {t1: [..."helo"], t2: [..."helo"], t4: [..."world"]},
         results: [
             {t1: 'hello', t2: 'hello', t4: 'world'},
         ],
@@ -252,8 +252,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      Join(t4('world'), t1("hello")),
                      "t1", "t2"
                  ),
-        //tapes: ['t1', 't2', 't4'],
-        // //vocab: {t1: 4, t2: 4, t4: 5},
+        tapes: ['t1', 't2', 't4'],
+        vocab: {t1: [..."helo"], t2: [..."helo"], t4: [..."world"]},
         results: [
             {t1: 'hello', t2: 'hello', t4: 'world'},
         ],
@@ -268,8 +268,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                               t2("world"))),
                      "t2", "t3"
                  ),
-        //tapes: ['t1', 't2', 't3'],
-        //vocab: {t1: 8, t2: 9, t3: 9},
+        tapes: ['t1', 't2', 't3'],
+        vocab: {t1: [..."helokity"], t2: [..."godbyewrl"], t3: [..."godbyewrl"]},
         results: [
             {t1: 'hellokitty', t2: 'goodbyeworld', t3: 'goodbyeworld'},
         ],
@@ -284,8 +284,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                           Seq(t1("hello"), t1("kitty"))),
                      "t2", "t3"
                  ),
-        //tapes: ['t1', 't2', 't3'],
-        //vocab: {t1: 8, t2: 9, t3: 9},
+        tapes: ['t1', 't2', 't3'],
+        vocab: {t1: [..."helokity"], t2: [..."godbyewrl"], t3: [..."godbyewrl"]},
         results: [
             {t1: 'hellokitty', t2: 'goodbyeworld', t3: 'goodbyeworld'},
         ],
@@ -300,10 +300,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                               t2("world"))),
                      "t1", "t3"
                  ),
-        //tapes: ['t1', 't2', 't3'],
-        // //vocab: {t1: 8, t3: 8, t2: 9},
+        tapes: ['t1', 't2', 't3'],
+        vocab: {t1: [..."helokity"], t2: [..."godbyewrl"], t3: [..."helokity"]},
         results: [
-            {t1: 'hellokitty', t3: 'hellokitty', t2: 'goodbyeworld'},
+            {t1: 'hellokitty', t2: 'goodbyeworld', t3: 'hellokitty'},
         ],
     });
 
@@ -316,10 +316,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                           Seq(t1("hello"), t1("kitty"))),
                      "t1", "t3"
                  ),
-        //tapes: ['t1', 't2', 't3'],
-        // //vocab: {t1: 8, t3: 8, t2: 9},
+        tapes: ['t1', 't2', 't3'],
+        vocab: {t1: [..."helokity"], t2: [..."godbyewrl"], t3: [..."helokity"]},
         results: [
-            {t1: 'hellokitty', t3: 'hellokitty', t2: 'goodbyeworld'},
+            {t1: 'hellokitty', t2: 'goodbyeworld', t3: 'hellokitty'},
         ],
     });
 
@@ -332,10 +332,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                               t1("kitty"))),
                      "t1", "t3"
                  ),
-        //tapes: ['t1', 't2', 't3'],
-        // //vocab: {t1: 8, t3: 8, t2: 9},
+        tapes: ['t1', 't2', 't3'],
+        vocab: {t1: [..."helokity"], t2: [..."godbyewrl"], t3: [..."helokity"]},
         results: [
-            {t1: 'hellokitty', t3: 'hellokitty', t2: 'goodbyeworld'},
+            {t1: 'hellokitty', t2: 'goodbyeworld', t3: 'hellokitty'},
         ],
     });
 
@@ -348,10 +348,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                           Seq(t1("hello"), t1("kitty"))),
                      "t1", "t3"
                  ),
-        //tapes: ['t1', 't2', 't3'],
-        // //vocab: {t1: 8, t3: 8, t2: 9},
+        tapes: ['t1', 't2', 't3'],
+        vocab: {t1: [..."helokity"], t2: [..."godbyewrl"], t3: [..."helokity"]},
         results: [
-            {t1: 'hellokitty', t3: 'hellokitty', t2: 'goodbyeworld'},
+            {t1: 'hellokitty', t2: 'goodbyeworld', t3: 'hellokitty'},
         ],
     });
 
@@ -361,8 +361,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      Rep(t1("o"), 0, 1),
                      "t1", "t2"
                  ),
-        //tapes: ['t1', 't2'],
-        //vocab: {t1: 1, t2: 1},
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."o"], t2: [..."o"]},
         results: [
             {},
             {t1: 'o', t2: 'o'},
@@ -377,8 +377,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                           Seq(Rep(t1("h"), 1, 4), t4("world"), t1("ello"))),
                      "t1", "t2"
                  ),
-        //tapes: ['t1', 't2', 't4'],
-        // //vocab: {t1: 4, t2: 4, t4: 5},
+        tapes: ['t1', 't2', 't4'],
+        vocab: {t1: [..."helo"], t2: [..."helo"], t4: [..."world"]},
         results: [
             {t1: 'hello', t2: 'hello', t4: 'world'},
             {t1: 'hhello', t2: 'hhello', t4: 'world'},
@@ -395,8 +395,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                           Seq(t4("world"), Rep(t1("h"), 1, 4), t1("ello"))),
                      "t1", "t2"
                  ),
-        //tapes: ['t1', 't2', 't4'],
-        // //vocab: {t1: 4, t2: 4, t4: 5},
+        tapes: ['t1', 't2', 't4'],
+        vocab: {t1: [..."helo"], t2: [..."helo"], t4: [..."world"]},
         results: [
             {t1: 'hello', t2: 'hello', t4: 'world'},
             {t1: 'hhello', t2: 'hhello', t4: 'world'},
@@ -411,8 +411,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      Rep(t1("na"), 1, 4),
                      "t1", "t2"
                  ),
-        //tapes: ['t1', 't2'],
-        //vocab: {t1: 2, t2: 2},
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."na"], t2: [..."na"]},
         results: [
             {t1: 'na', t2: 'na'},
             {t1: 'nana', t2: 'nana'},
@@ -427,8 +427,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                      Seq(Rep(Dot("t1"), 0, 2), t1("hi")),
                      "t1", "t2"
                  ),
-        //tapes: ['t1', 't2'],
-        ////vocab: {t1: 2, t2: 2},
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."hi"], t2: [..."hi"]},
         results: [
             {t1: 'hi', t2: 'hi'},
             {t1: 'ihi', t2: 'ihi'},   {t1: 'hhi', t2: 'hhi'},
@@ -445,8 +445,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          Rep(Dot("t1"), 0, 1)),
                      "t1", "t2"
                  ),
-        //tapes: ['t1', 't2'],
-        ////vocab: {t1: 2, t2: 2},
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."hi"], t2: [..."hi"]},
         results: [
             {t1: 'hi', t2: 'hi'},
             {t1: 'hhi', t2: 'hhi'},   {t1: 'ihi', t2: 'ihi'},
@@ -465,8 +465,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                             Rep(Dot("t1")),
                             "t1", "t2"
                         ))),
-        //tapes: ['t1', 't2'],
-        ////vocab: {t1: 2, t2: 2},
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."hI"], t2: [..."hI"]},
         results: [
             {},
             {t1: 'h', t2: 'h'},     {t1: 'I', t2: 'I'},
@@ -487,8 +487,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 t1("hello"),
         		 	 "t1", "t2", "t3"
         		 ),
-        //tapes: ['t1', 't2', 't3'],
-        //vocab: {t1: 4, t2: 4, t3: 4},
+        tapes: ['t1', 't2', 't3'],
+        vocab: {t1: [..."helo"], t2: [..."helo"], t3: [..."helo"]},
         results: [
             {t1: 'hello', t2: 'hello', t3: 'hello'},
         ],
@@ -500,8 +500,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 Epsilon(),
         		 	 "t1", "t2", "t3"
         		 ),
-        //tapes: ['t2', 't3'],
-        //vocab: {t2: 0, t3: 0},
+        tapes: ['t2', 't3'],
+        vocab: {t2: 0, t3: 0},
         results: [
             {},
         ],
@@ -513,8 +513,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 Null(),
         		 	 "t1", "t2", "t3"
         		 ),
-        //tapes: ['t2', 't3'],
-        //vocab: {t2: 0, t3: 0},
+        tapes: ['t2', 't3'],
+        vocab: {t2: 0, t3: 0},
         results: [
         ],
     });
@@ -525,8 +525,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 Seq(t1("hello"), t1("world")),
         		 	 "t1", "t2", "t3"
         		 ),
-        //tapes: ['t1', 't2', 't3'],
-        //vocab: {t1: 7, t2: 7, t3: 7},
+        tapes: ['t1', 't2', 't3'],
+        vocab: {t1: [..."helowrd"], t2: [..."helowrd"], t3: [..."helowrd"]},
         results: [
             {t1: 'helloworld', t2: 'helloworld', t3: 'helloworld'},
         ],
@@ -538,8 +538,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 Seq(t1("hello"), t4("goodbye")),
         		 	 "t1", "t2", "t3"
         		 ),
-        //tapes: ['t1', 't2', 't3', 't4'],
-        // //vocab: {t1: 4, t2: 4, t3: 4, t4: 6},
+        tapes: ['t1', 't2', 't3', 't4'],
+        vocab: {t1: [..."helo"], t2: [..."helo"], t3: [..."helo"], t4: [..."godbye"]},
         results: [
             {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'goodbye'},
         ],
@@ -551,8 +551,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 Seq(t4("goodbye"), t1("hello")),
         		 	 "t1", "t2", "t3"
         		 ),
-        //tapes: ['t1', 't2', 't3', 't4'],
-        // //vocab: {t1: 4, t2: 4, t3: 4, t4: 6},
+        tapes: ['t1', 't2', 't3', 't4'],
+        vocab: {t1: [..."helo"], t2: [..."helo"], t3: [..."helo"], t4: [..."godbye"]},
         results: [
             {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'goodbye'},
         ],
@@ -566,8 +566,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          t1("world")),
         		 	 "t1", "t2", "t3"
         		 ),
-        //tapes: ['t1', 't2', 't3'],
-        //vocab: {t1: 9, t2: 9, t3: 9},
+        tapes: ['t1', 't2', 't3'],
+        vocab: {t1: [..."helo, wrd"], t2: [..."helo, wrd"], t3: [..."helo, wrd"]},
         results: [
             {t1: 'hello, world', t2: 'hello, world', t3: 'hello, world'},
         ],
@@ -579,8 +579,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 Uni(t1("hello"), t1("goodbye")),
         		 	 "t1", "t2", "t3"
         		 ),
-        //tapes: ['t1', 't2', 't3'],
-        //vocab: {t1: 8, t2: 8, t3: 8},
+        tapes: ['t1', 't2', 't3'],
+        vocab: {t1: [..."helogdby"], t2: [..."helogdby"], t3: [..."helogdby"]},
         results: [
             {t1: 'hello', t2: 'hello', t3: 'hello'},
             {t1: 'goodbye', t2: 'goodbye', t3: 'goodbye'},
@@ -593,8 +593,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 Uni(t1("hello"), t4("goodbye")),
         		 	 "t1", "t2", "t3"
         		 ),
-        //tapes: ['t1', 't2', 't3', 't4'],
-        // //vocab: {t1: 4, t2: 4, t3: 4, t4: 6},
+        tapes: ['t1', 't2', 't3', 't4'],
+        vocab: {t1: [..."helo"], t2: [..."helo"], t3: [..."helo"], t4: [..."godbye"]},
         results: [
             {t1: 'hello', t2: 'hello', t3: 'hello'},
             {t4: 'goodbye'},
@@ -607,8 +607,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 Uni(t4("goodbye"), t1("hello")),
         		 	 "t1", "t2", "t3"
         		 ),
-        //tapes: ['t1', 't2', 't3', 't4'],
-        // //vocab: {t1: 4, t2: 4, t3: 4, t4: 6},
+        tapes: ['t1', 't2', 't3', 't4'],
+        vocab: {t1: [..."helo"], t2: [..."helo"], t3: [..."helo"], t4: [..."godbye"]},
         results: [
             {t1: 'hello', t2: 'hello', t3: 'hello'},
             {t4: 'goodbye'},
@@ -623,8 +623,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          Uni(t1("world"), t1("kitty"))),
         		 	 "t1", "t2", "t3"
         		 ),
-        //tapes: ['t1', 't2', 't3'],
-        //vocab: {t1: 13, t2: 13, t3: 13},
+        tapes: ['t1', 't2', 't3'],
+        vocab: {t1: [..."helowrdgbykit"], t2: [..."helowrdgbykit"], t3: [..."helowrdgbykit"]},
         results: [
             {t1: 'helloworld', t2: 'helloworld', t3: 'helloworld'},
             {t1: 'goodbyeworld', t2: 'goodbyeworld', t3: 'goodbyeworld'},
@@ -641,8 +641,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          Seq(t1("goodbye"), t1("world"))),
         		 	 "t1", "t2", "t3"
         		 ),
-        //tapes: ['t1', 't2', 't3'],
-        //vocab: {t1: 13, t2: 13, t3: 13},
+        tapes: ['t1', 't2', 't3'],
+        vocab: {t1: [..."helowrdgbykit"], t2: [..."helowrdgbykit"], t3: [..."helowrdgbykit"]},
         results: [
             {t1: 'hellokitty', t2: 'hellokitty', t3: 'hellokitty'},
             {t1: 'goodbyeworld', t2: 'goodbyeworld', t3: 'goodbyeworld'},
@@ -656,8 +656,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	     Dot("t1"),
         		 	     "t1", "t2", "t3"
         		     )),
-        //tapes: ['t1', 't2', 't3'],
-        ////vocab: {t1: 2, t2: 2, t3: 2},
+        tapes: ['t1', 't2', 't3'],
+        vocab: {t1: [..."hi"], t2: [..."hi"], t3: [..."hi"]},
         results: [
             {t1: 'h', t2: 'h', t3: 'h'},
             {t1: 'i', t2: 'i', t3: 'i'},
@@ -670,8 +670,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 Seq(t1("hi"), Dot("t1")),
         		 	 "t1", "t2", "t3"
         		 ),
-        //tapes: ['t1', 't2', 't3'],
-        ////vocab: {t1: 2, t2: 2, t3: 2},
+        tapes: ['t1', 't2', 't3'],
+        vocab: {t1: [..."hi"], t2: [..."hi"], t3: [..."hi"]},
         results: [
             {t1: 'hih', t2: 'hih', t3: 'hih'},
             {t1: 'hii', t2: 'hii', t3: 'hii'},
@@ -685,8 +685,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                           Seq(Dot("t1"), t1('ello'))),
         		 	 "t1", "t2", "t3"
         		 ),
-        //tapes: ['t1', 't2', 't3'],
-        ////vocab: {t1: 4, t2: 4, t3: 4},
+        tapes: ['t1', 't2', 't3'],
+        vocab: {t1: [..."helo"], t2: [..."helo"], t3: [..."helo"]},
         results: [
             {t1: 'hello', t2: 'hello', t3: 'hello'},
         ],
@@ -698,8 +698,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 Join(t1("hello"), t4('world')),
         		 	 "t1", "t2", "t3"
         		 ),
-        //tapes: ['t1', 't2', 't3', 't4'],
-        // //vocab: {t1: 4, t2: 4, t3: 4, t4: 5},
+        tapes: ['t1', 't2', 't3', 't4'],
+        vocab: {t1: [..."helo"], t2: [..."helo"], t3: [..."helo"], t4: [..."world"]},
         results: [
             {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'world'},
         ],
@@ -711,8 +711,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 Join(t4('world'), t1("hello")),
         		 	 "t1", "t2", "t3"
         		 ),
-        //tapes: ['t1', 't2', 't3', 't4'],
-        // //vocab: {t1: 4, t2: 4, t3: 4, t4: 5},
+        tapes: ['t1', 't2', 't3', 't4'],
+        vocab: {t1: [..."helo"], t2: [..."helo"], t3: [..."helo"], t4: [..."world"]},
         results: [
             {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'world'},
         ],
@@ -727,8 +727,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                               t2("world"))),
         		 	 "t2", "t3", "t4"
         		 ),
-        //tapes: ['t1', 't2', 't3', 't4'],
-        //vocab: {t1: 8, t2: 9, t3: 9, t4: 9},
+        tapes: ['t1', 't2', 't3', 't4'],
+        vocab: {t1: [..."helokity"], t2: [..."godbyewrld"],
+                t3: [..."godbyewrld"], t4: [..."godbyewrld"]},
         results: [
             {t1: 'hellokitty', t2: 'goodbyeworld', t3: 'goodbyeworld', t4: 'goodbyeworld'},
         ],
@@ -743,8 +744,9 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                           Seq(t1("hello"), t1("kitty"))),
         		 	 "t2", "t3", "t4"
         		 ),
-        //tapes: ['t1', 't2', 't3', 't4'],
-        //vocab: {t1: 8, t2: 9, t3: 9, t4: 9},
+        tapes: ['t1', 't2', 't3', 't4'],
+        vocab: {t1: [..."helokity"], t2: [..."godbyewrld"],
+                t3: [..."godbyewrld"], t4: [..."godbyewrld"]},
         results: [
             {t1: 'hellokitty', t2: 'goodbyeworld', t3: 'goodbyeworld', t4: 'goodbyeworld'},
         ],
@@ -759,10 +761,11 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                               t2("world"))),
         		 	 "t1", "t3", "t4"
         		 ),
-        //tapes: ['t1', 't2', 't3', 't4'],
-        // //vocab: {t1: 8, t3: 8, t4: 8, t2: 9},
+        tapes: ['t1', 't2', 't3', 't4'],
+        vocab: {t1: [..."helokity"], t2: [..."godbyewrld"],
+                t3: [..."helokity"], t4: [..."helokity"]},
         results: [
-            {t1: 'hellokitty', t3: 'hellokitty', t4: 'hellokitty', t2: 'goodbyeworld'},
+            {t1: 'hellokitty', t2: 'goodbyeworld', t3: 'hellokitty', t4: 'hellokitty'},
         ],
     });
 
@@ -775,10 +778,11 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                           Seq(t1("hello"), t1("kitty"))),
         		 	 "t1", "t3", "t4"
         		 ),
-        //tapes: ['t1', 't2', 't3', 't4'],
-        // //vocab: {t1: 8, t3: 8, t4: 8, t2: 9},
+        tapes: ['t1', 't2', 't3', 't4'],
+        vocab: {t1: [..."helokity"], t2: [..."godbyewrld"],
+                t3: [..."helokity"], t4: [..."helokity"]},
         results: [
-            {t1: 'hellokitty', t3: 'hellokitty', t4: 'hellokitty', t2: 'goodbyeworld'},
+            {t1: 'hellokitty', t2: 'goodbyeworld', t3: 'hellokitty', t4: 'hellokitty'},
         ],
     });
 
@@ -791,10 +795,11 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                               t1("kitty"))),
         		 	 "t1", "t3", "t4"
         		 ),
-        //tapes: ['t1', 't2', 't3', 't4'],
-        // //vocab: {t1: 8, t3: 8, t4: 8, t2: 9},
+        tapes: ['t1', 't2', 't3', 't4'],
+        vocab: {t1: [..."helokity"], t2: [..."godbyewrld"],
+                t3: [..."helokity"], t4: [..."helokity"]},
         results: [
-            {t1: 'hellokitty', t3: 'hellokitty', t4: 'hellokitty', t2: 'goodbyeworld'},
+            {t1: 'hellokitty', t2: 'goodbyeworld', t3: 'hellokitty', t4: 'hellokitty'},
         ],
     });
 
@@ -807,10 +812,11 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                           Seq(t1("hello"), t1("kitty"))),
         		 	 "t1", "t3", "t4"
         		 ),
-        //tapes: ['t1', 't2', 't3', 't4'],
-        // //vocab: {t1: 8, t3: 8, t4: 8, t2: 9},
+        tapes: ['t1', 't2', 't3', 't4'],
+        vocab: {t1: [..."helokity"], t2: [..."godbyewrld"],
+                t3: [..."helokity"], t4: [..."helokity"]},
         results: [
-            {t1: 'hellokitty', t3: 'hellokitty', t4: 'hellokitty', t2: 'goodbyeworld'},
+            {t1: 'hellokitty', t2: 'goodbyeworld', t3: 'hellokitty', t4: 'hellokitty'},
         ],
     });
 
@@ -820,8 +826,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 Rep(t1("o"), 0, 1),
         		 	 "t1", "t2", "t3"
         		 ),
-        //tapes: ['t1', 't2', 't3'],
-        //vocab: {t1: 1, t2: 1, t3: 1},
+        tapes: ['t1', 't2', 't3'],
+        vocab: {t1: [..."o"], t2: [..."o"], t3: [..."o"]},
         results: [
             {},
             {t1: 'o', t2: 'o', t3: 'o'},
@@ -829,15 +835,14 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-25. Match t1>t2,t3, Join ' +
-              't1:h{1,4} + t4:world + t1:ello ⨝ the same',
+        desc: '2-25. Match t1>t2,t3, Join t1:h{1,4} + t4:world + t1:ello ⨝ the same',
         grammar: Match(
         		 	 Join(Seq(Rep(t1("h"), 1, 4), t4("world"), t1("ello")),
                           Seq(Rep(t1("h"), 1, 4), t4("world"), t1("ello"))),
         		 	 "t1", "t2", "t3"
         		 ),
-        //tapes: ['t1', 't2', 't3', 't4'],
-        // //vocab: {t1: 4, t2: 4, t3: 4, t4: 5},
+        tapes: ['t1', 't2', 't3', 't4'],
+        vocab: {t1: [..."helo"], t2: [..."helo"], t3: [..."helo"], t4: [..."world"]},
         results: [
             {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'world'},
             {t1: 'hhello', t2: 'hhello', t3: 'hhello', t4: 'world'},
@@ -847,15 +852,14 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '2-26. Match t1>t2,t3, Join ' +
-              't4:world+t1:h{1,4}+t1:ello ⨝ the same',
+        desc: '2-26. Match t1>t2,t3, Join t4:world + t1:h{1,4} + t1:ello ⨝ the same',
         grammar: Match(
         		 	 Join(Seq(t4("world"), Rep(t1("h"), 1, 4), t1("ello")),
                           Seq(t4("world"), Rep(t1("h"), 1, 4), t1("ello"))),
         		 	 "t1", "t2", "t3"
         		 ),
-        //tapes: ['t1', 't2', 't3', 't4'],
-        // //vocab: {t1: 4, t2: 4, t3: 4, t4: 5},
+        tapes: ['t1', 't2', 't3', 't4'],
+        vocab: {t1: [..."helo"], t2: [..."helo"], t3: [..."helo"], t4: [..."world"]},
         results: [
             {t1: 'hello', t2: 'hello', t3: 'hello', t4: 'world'},
             {t1: 'hhello', t2: 'hhello', t3: 'hhello', t4: 'world'},
@@ -870,8 +874,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 Rep(t1("na"), 1, 4),
         		 	 "t1", "t2", "t3"
         		 ),
-        //tapes: ['t1', 't2', 't3'],
-        //vocab: {t1: 2, t2: 2, t3: 2},
+        tapes: ['t1', 't2', 't3'],
+        vocab: {t1: [..."na"], t2: [..."na"], t3: [..."na"]},
         results: [
             {t1: 'na', t2: 'na', t3: 'na'},
             {t1: 'nana', t2: 'nana', t3: 'nana'},
@@ -886,8 +890,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 Seq(Rep(Dot("t1"), 0, 2), t1("hi")),
         		 	 "t1", "t2", "t3"
         		 ),
-        //tapes: ['t1', 't2', 't3'],
-        ////vocab: {t1: 2, t2: 2, t3: 2},
+        tapes: ['t1', 't2', 't3'],
+        vocab: {t1: [..."hi"], t2: [..."hi"], t3: [..."hi"]},
         results: [
             {t1: 'hi', t2: 'hi', t3: 'hi'},
             {t1: 'ihi', t2: 'ihi', t3: 'ihi'},
@@ -907,8 +911,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
                          Rep(Dot("t1"), 0, 1)),
         		 	 "t1", "t2", "t3"
         		 ),
-        //tapes: ['t1', 't2', 't3'],
-        ////vocab: {t1: 2, t2: 2, t3: 2},
+        tapes: ['t1', 't2', 't3'],
+        vocab: {t1: [..."hi"], t2: [..."hi"], t3: [..."hi"]},
         results: [
             {t1: 'hi', t2: 'hi', t3: 'hi'},
             {t1: 'hhi', t2: 'hhi', t3: 'hhi'},
@@ -928,8 +932,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Count({t1:3},
                     WithVocab({t1: "h", t2: "hI", t3: "X"},
                         Match(Rep(Dot("t1")), "t1", "t2", "t3"))),
-        //tapes: ['t1', 't2', 't3'],
-        ////vocab: {t1: 2, t2: 4, t3: 4},
+        tapes: ['t1', 't2', 't3'],
+        vocab: {t1: [..."hIX"], t2: [..."hIX"], t3: [..."hIX"]},
         results: [
             {},
             {t1: 'h', t2: 'h', t3: 'h'},
@@ -981,8 +985,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: WithVocab({t1: "hi"},
         		 	 Join(t1("h"),
         		 	 	  Match(Dot("t1"), "t1", "t2"))),
-        //tapes: ['t1', 't2'],
-        ////vocab: {t1: 2, t2: 2},
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."hi"], t2: [..."hi"]},
         results: [
             {t1: 'h', t2: 'h'},
         ],
@@ -993,8 +997,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: WithVocab({t1: "hi"},
         		 	 Join(Match(Dot("t1"), "t1", "t2"),
                           t1("h"))),
-        //tapes: ['t1', 't2'],
-        ////vocab: {t1: 2, t2: 2},
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."hi"], t2: [..."hi"]},
         results: [
             {t1: 'h', t2: 'h'},
         ],
@@ -1004,8 +1008,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: 'J-3. t2:hello ⨝ Match(t1>t2, t1:.*)',
         grammar: Join(t2("hello"),
         		 	  Match(Rep(Dot("t1")), "t1", "t2")),
-        //tapes: ['t1', 't2'],
-        ////vocab: {t1: 4, t2: 4},
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."helo"], t2: [..."helo"]},
         results: [
             {t1: 'hello', t2: 'hello'},
         ],
@@ -1015,8 +1019,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: 'J-4. t1:hello+t2:hello ⨝ Match(t1>t2, t1:.*)',
         grammar: Join(Seq(t1("hello"), t2("hello")),
         		 	  Match(Rep(Dot("t1")), "t1", "t2")),
-        //tapes: ['t1', 't2'],
-        ////vocab: {t1: 4, t2: 4},
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."helo"], t2: [..."helo"]},
         results: [
             {t1: 'hello', t2: 'hello'},
         ],
@@ -1029,8 +1033,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: WithVocab({t2: "hijk"},
         		 	 Join(Match(CharSet("t1", ["h","i"]), "t1", "t2"),
         		 	 	  Match(CharSet("t3", ["i","j"]), "t3", "t2"))),
-        //tapes: ['t1', 't2', 't3'],
-        //vocab: {t1: 2, t2: 3, t3: 2},
+        tapes: ['t1', 't2', 't3'],
+        vocab: {t1: [..."hijk"], t2: [..."hijk"], t3: [..."hijk"]},
         results: [
             {t1: 'i', t2: 'i', t3: 'i'},
         ],
@@ -1043,8 +1047,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: WithVocab({t2: "hijk"},
         		 	 Join(Match(CharSet("t1", ["h","i"]), "t1", "t2"),
         		 	 	  Match(CharSet("t2", ["i","j"]), "t2", "t3"))),
-        //tapes: ['t1', 't2', 't3'],
-        //vocab: {t1: 2, t2: 3, t3: 3},
+        tapes: ['t1', 't2', 't3'],
+        vocab: {t1: [..."hijk"], t2: [..."hijk"], t3: [..."hijk"]},
         results: [
             {t1: 'i', t2: 'i', t3: 'i'},
         ],
@@ -1057,8 +1061,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: WithVocab({t2: "hijk"},
         		 	 Join(Match(CharSet("t2", ["i","j"]), "t2", "t3"),
         		 	 	  Match(CharSet("t1", ["h","i"]), "t1", "t2"))),
-        //tapes: ['t1', 't2', 't3'],
-        //vocab: {t1: 2, t2: 3, t3: 3},
+        tapes: ['t1', 't2', 't3'],
+        vocab: {t1: [..."hijk"], t2: [..."hijk"], t3: [..."hijk"]},
         results: [
             {t1: 'i', t2: 'i', t3: 'i'},
         ],
@@ -1079,14 +1083,14 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: 'R-1a. Effectively insert e twice: ' +
               't2,t1: (t2:e+M(t1>t2,.*)){2} (vocab h/he)',
         // From and to vocabs are merged for Match, so both are he.
-        grammar: Cursor(["t2", "t1"],
-        			Count({t1:1, t2:3},
-                    	WithVocab({t1: "h", t2:"he"},
-                    		repMatchGrammar(2, 2,
-                            	Rep(Dot("t1"))
-                        	)))),
-        //tapes: ['t1', 't2'],
-        //vocab: {t1: 1, t2: 2},
+        grammar: Count({t1:1, t2:3},
+                    WithVocab({t1: "h", t2:"he"},
+                    	repMatchGrammar(2, 2,
+                            Rep(Dot("t1"))
+                        ))),
+        priority: ["t2", "t1"],
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."he"], t2: [..."he"]},
         results: [
             {t2: 'ee'},  // equivalent to {t1: '', t2: 'ee'}
             {t1: 'h', t2: 'ehe'},
@@ -1099,14 +1103,14 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: 'R-1b. Effectively insert e twice: ' +
               't1,t2: (t2:e+M(t1>t2,.*)){2} (vocab h/he)',
         // From and to vocabs are merged for Match, so both are he.
-        grammar: Cursor(["t1", "t2"],
-        			Count({t1:1, t2:3},
-                    	WithVocab({t1: "h", t2:"he"},
-                    		repMatchGrammar(2, 2,
-                            	Rep(Dot("t1"))
-                        	)))),
-        //tapes: ['t1', 't2'],
-        //vocab: {t1: 1, t2: 2},
+        grammar: Count({t1:1, t2:3},
+                    WithVocab({t1: "h", t2:"he"},
+                    	repMatchGrammar(2, 2,
+                            Rep(Dot("t1"))
+                        ))),
+        priority: ["t1", "t2"],
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."he"], t2: [..."he"]},
         results: [
             {t2: 'ee'},  // equivalent to {t1: '', t2: 'ee'}
             {t1: 'h', t2: 'ehe'},
@@ -1119,13 +1123,13 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: 'R-2a. Effectively insert e twice: t2,t1: (t2:e+M(t1>t2,h*)){2}',
         // From and to vocabs are merged for Match, so both are he.
-        grammar: Cursor(["t2", "t1"],
-        			Count({t1:1, t2:3},
-                    	repMatchGrammar(2, 2,
-                            Rep(t1("h"))
-                        ))),
-        //tapes: ['t1', 't2'],
-        //vocab: {t1: 1, t2: 2},
+        grammar: Count({t1:1, t2:3},
+                    repMatchGrammar(2, 2,
+                        Rep(t1("h"))
+                    )),
+        priority: ["t2", "t1"],
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."he"], t2: [..."he"]},
         results: [
             {t2: 'ee'},  // equivalent to {t1: '', t2: 'ee'}
             {t1: 'h', t2: 'ehe'},
@@ -1136,13 +1140,13 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: 'R-2b. Effectively insert e twice: t1,t2: (t2:e+M(t1>t2,h*)){2}',
         // From and to vocabs are merged for Match, so both are he.
-        grammar: Cursor(["t1", "t2"],
-        			Count({t1:1, t2:3},
-                    	repMatchGrammar(2, 2,
-                            Rep(t1("h"))
-                        ))),
-        //tapes: ['t1', 't2'],
-        //vocab: {t1: 1, t2: 2},
+        grammar: Count({t1:1, t2:3},
+                    repMatchGrammar(2, 2,
+                        Rep(t1("h"))
+                    )),
+        priority: ["t1", "t2"],
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."he"], t2: [..."he"]},
         results: [
             {t2: 'ee'},  // equivalent to {t1: '', t2: 'ee'}
             {t1: 'h', t2: 'ehe'},
@@ -1153,13 +1157,13 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: 'R-3a. Effectively insert e twice: t2,t1: (t2:e+M(t1>t2,h{0,1})){2}',
         // From and to vocabs are merged for Match, so both are he.
-        grammar: Cursor(["t2", "t1"],
-        			Count({t1:1, t2:3},
-                    	repMatchGrammar(2, 2,
-                            Rep(t1("h"), 0, 1)
-                        ))),
-        //tapes: ['t1', 't2'],
-        //vocab: {t1: 1, t2: 2},
+        grammar: Count({t1:1, t2:3},
+                    repMatchGrammar(2, 2,
+                        Rep(t1("h"), 0, 1)
+                    )),
+        priority: ["t2", "t1"],
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."he"], t2: [..."he"]},
         results: [
             {t2: 'ee'},  // equivalent to {t1: '', t2: 'ee'}
             {t1: 'h', t2: 'ehe'},
@@ -1170,13 +1174,13 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: 'R-3b. Effectively insert e twice: t1,t2: (t2:e+M(t1>t2,h{0,1})){2}',
         // From and to vocabs are merged for Match, so both are he.
-        grammar: Cursor(["t1", "t2"],
-        			Count({t1:1, t2:3},
-                    	repMatchGrammar(2, 2,
-                            Rep(t1("h"), 0, 1)
-                        ))),
-        //tapes: ['t1', 't2'],
-        //vocab: {t1: 1, t2: 2},
+        grammar: Count({t1:1, t2:3},
+                    repMatchGrammar(2, 2,
+                        Rep(t1("h"), 0, 1)
+                    )),
+        priority: ["t1", "t2"],
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."he"], t2: [..."he"]},
         results: [
             {t2: 'ee'},  // equivalent to {t1: '', t2: 'ee'}
             {t1: 'h', t2: 'ehe'},
@@ -1187,13 +1191,13 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: 'R-4a. Effectively insert e twice: t2,t1: (t2:e+M(t1>t2,ε|t1:h)){2}',
         // From and to vocabs are merged for Match, so both are he.
-        grammar: Cursor(["t2", "t1"],
-        			Count({t1:1, t2:3},
-                    	repMatchGrammar(2, 2,
-                            Uni(Epsilon(), t1("h"))
-                        ))),
-        //tapes: ['t1', 't2'],
-        //vocab: {t1: 1, t2: 2},
+        grammar: Count({t1:1, t2:3},
+                    repMatchGrammar(2, 2,
+                        Uni(Epsilon(), t1("h"))
+                    )),
+        priority: ["t2", "t1"],
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."he"], t2: [..."he"]},
         results: [
             {t2: 'ee'},  // equivalent to {t1: '', t2: 'ee'}
             {t1: 'h', t2: 'ehe'},
@@ -1204,13 +1208,13 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: 'R-4b. Effectively insert e twice: t1,t2: (t2:e+M(t1>t2,ε|t1:h)){2}',
         // From and to vocabs are merged for Match, so both are he.
-        grammar: Cursor(["t1", "t2"],
-        			Count({t1:1, t2:3},
-                    	repMatchGrammar(2, 2,
-                            Uni(Epsilon(), t1("h"))
-                        ))),
-        //tapes: ['t1', 't2'],
-        //vocab: {t1: 1, t2: 2},
+        grammar: Count({t1:1, t2:3},
+                    repMatchGrammar(2, 2,
+                        Uni(Epsilon(), t1("h"))
+                    )),
+        priority: ["t1", "t2"],
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."he"], t2: [..."he"]},
         results: [
             {t2: 'ee'},  // equivalent to {t1: '', t2: 'ee'}
             {t1: 'h', t2: 'ehe'},
@@ -1222,13 +1226,13 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: 'R-5. Effectively insert e 2 or more times: ' +
               't1,t2: (t2:e+M(t1>t2,ε|t1:h)){2,100}',
         // From and to vocabs are merged for Match, so both are he.
-        grammar: Cursor(["t1", "t2"],
-        			Count({t1:1, t2:4},
-                    	repMatchGrammar(2, 100,
-                            Uni(Epsilon(), t1("h"))
-                        ))),
-        //tapes: ['t1', 't2'],
-        //vocab: {t1: 1, t2: 2},
+        grammar: Count({t1:1, t2:4},
+                    repMatchGrammar(2, 100,
+                        Uni(Epsilon(), t1("h"))
+                    )),
+        priority: ["t1", "t2"],
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."he"], t2: [..."he"]},
         results: [
             {t2: 'ee'},   // equivalent to {t1: '', t2: 'ee'}
             {t2: 'eee'},  // equivalent to {t1: '', t2: 'eee'}
@@ -1243,13 +1247,13 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: 'R-6. Effectively insert e 2 or more times: ' +
               't1,t2: (t2:e+M(t1>t2,ε|t1:h)){2+}',
         // From and to vocabs are merged for Match, so both are he.
-        grammar: Cursor(["t1", "t2"],
-        			Count({t1:1, t2:4},
-                    	repMatchGrammar(2, Infinity,
-                            Uni(Epsilon(), t1("h"))
-                        ))),
-        //tapes: ['t1', 't2'],
-        //vocab: {t1: 1, t2: 2},
+        grammar: Count({t1:1, t2:4},
+                    repMatchGrammar(2, Infinity,
+                        Uni(Epsilon(), t1("h"))
+                    )),
+        priority: ["t1", "t2"],
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."he"], t2: [..."he"]},
         results: [
             {t2: 'ee'},   // equivalent to {t1: '', t2: 'ee'}
             {t2: 'eee'},  // equivalent to {t1: '', t2: 'eee'}
@@ -1264,13 +1268,13 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: 'R-7. Effectively insert e 2 or more times: ' +
               't1,t2: (t2:e+M(t1>t2,ε|t1:h)){2,6}',
         // From and to vocabs are merged for Match, so both are he.
-        grammar: Cursor(["t1", "t2"],
-        			Count({t1:1, t2:6},
-                    	repMatchGrammar(2, 6,
-                            Uni(Epsilon(), t1("h"))
-                        ))),
-        //tapes: ['t1', 't2'],
-        //vocab: {t1: 1, t2: 2},
+        grammar: Count({t1:1, t2:6},
+                    repMatchGrammar(2, 6,
+                        Uni(Epsilon(), t1("h"))
+                    )),
+        priority: ["t1", "t2"],
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."he"], t2: [..."he"]},
         results: [
             {t2: 'ee'},     // equivalent to {t1: '', t2: 'ee'}
             {t2: 'eee'},    // equivalent to {t1: '', t2: 'eee'}
@@ -1291,13 +1295,13 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: 'R-8. Effectively insert e 2 or more times: ' +
               't1,t2: (t2:e+M(t1>t2,ε|t1:h)){2+}',
         // From and to vocabs are merged for Match, so both are he.
-        grammar: Cursor(["t1", "t2"],
-        			Count({t1:1, t2:6},
-                    	repMatchGrammar(2, Infinity,
-                            Uni(Epsilon(), t1("h"))
-                        ))),
-        //tapes: ['t1', 't2'],
-        //vocab: {t1: 1, t2: 2},
+        grammar: Count({t1:1, t2:6},
+                    repMatchGrammar(2, Infinity,
+                        Uni(Epsilon(), t1("h"))
+                    )),
+        priority: ["t1", "t2"],
+        tapes: ['t1', 't2'],
+        vocab: {t1: [..."he"], t2: [..."he"]},
         results: [
             {t2: 'ee'},     // equivalent to {t1: '', t2: 'ee'}
             {t2: 'eee'},    // equivalent to {t1: '', t2: 'eee'}

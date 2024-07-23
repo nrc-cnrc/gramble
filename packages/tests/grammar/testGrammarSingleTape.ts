@@ -1,13 +1,7 @@
 import {
-    SingleTape,
-    Lit,
-    Dot,
-    Join,
-    Collection,
-    Embed,
-    Epsilon,
-    Seq,
-    Uni, 
+    Dot, Embed, Epsilon,
+    Join, Lit, Rep, Seq,
+    SingleTape, Uni, 
 } from "../../interpreter/src/grammarConvenience";
 
 import { DEFAULT_TAPE } from "../../interpreter/src/utils/constants";
@@ -15,21 +9,16 @@ import { Grammar } from "../../interpreter/src/grammars";
 
 import {
     grammarTestSuiteName,
-    testGrammarAux, GrammarTestAux
+    testGrammar,
+    t1, t2, t3
 } from "./testGrammarUtil";
 
 import {
-    logTestSuite, t1, t2, VERBOSE_TEST_L2,
+    logTestSuite, VERBOSE_TEST_L2,
 } from "../testUtil";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
-
-function test(params: Partial<GrammarTestAux>): () => void {
-    return function() {
-        return testGrammarAux({...params});
-    };
-}
 
 function T(s: string): Grammar {
     return Lit(DEFAULT_TAPE, s);
@@ -39,116 +28,249 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     logTestSuite(this.title);
 
-    describe('1. Single_t1($T:hello)', test({
+    testGrammar({
+		desc: '1. Single_t1($T:hello)',
         grammar: SingleTape("t1", T("hello")),
         tapes: ["t1"],
         results: [
             {t1: 'hello'},
         ],
-    }));
+    });
 
-    describe('1. Single_t1(ε)', test({
+    testGrammar({
+		desc: '1. Single_t1(ε)',
         grammar: SingleTape("t1", Epsilon()),
         tapes: [],
         results: [
             {},
         ],
-    }));
+    });
 
-    describe('2. Single_t1($T:.)', test({
+    testGrammar({
+		desc: '2. Single_t1($T:.)',
         grammar: Join(t1("h"), 
                       SingleTape("t1", Dot(DEFAULT_TAPE))),
         tapes: ["t1"],
         results: [
             {t1: 'h'},
         ],
-    }));
+    });
 
-    describe('3a. Single_t1(embed(t1:hello))', test({
-        grammar: Collection({
-                    "a": t1("hello"),
-                    "b": SingleTape("t1", Embed("a"))
-        }),
+    testGrammar({
+		desc: '3a. Single_t1(embed(t1:hello))',
+        grammar: {
+            "a": t1("hello"),
+            "b": SingleTape("t1", Embed("a"))
+        },
         symbol: "b",
         tapes: ["t1"],
         results: [
             {t1: 'hello'},
         ],
-    }));
+    });
 
-    describe('3b. Single_t1(embed(t2:hello))', test({
-        grammar: Collection({
-                    "a": t2("hello"),
-                    "b": SingleTape("t1", Embed("a"))
-        }),
+    testGrammar({
+		desc: '3b. Single_t1(embed(t2:hello))',
+        grammar: {
+            "a": t2("hello"),
+            "b": SingleTape("t1", Embed("a"))
+        },
         symbol: "b",
         tapes: ["t1"],
         results: [
             {t1: 'hello'},
         ],
-    }));
+    });
 
-    describe('3c. Single_t1(embed(T:hello))', test({
-        grammar: Collection({
-                    "a": T("hello"),
-                    "b": SingleTape("t1", Embed("a"))
-        }),
+    testGrammar({
+		desc: '3c. Single_t1(embed(T:hello))',
+        grammar: {
+            "a": T("hello"),
+            "b": SingleTape("t1", Embed("a"))
+        },
         symbol: "b",
         tapes: ["t1"],
         results: [
             {t1: 'hello'},
         ],
-    }));
+    });
     
-    describe('4a. Single_t1(T:hello+T:world))', test({
+    testGrammar({
+		desc: '4a. Single_t1(T:hello+T:world))',
         grammar: SingleTape("t1", Seq(T("hello"), T("world"))),
         tapes: ["t1"],
         results: [
             {t1: 'helloworld'},
         ],
-    }));
+    });
+    
+    testGrammar({
+		desc: '4b. Single_t1(t2:hello+t3:world))',
+        grammar: SingleTape("t1", Seq(t2("hello"), t3("world"))),
+        tapes: ["t1"],
+        results: [
+            {t1: 'helloworld'},
+        ],
+    });
 
-    describe('4b. Single_t1(T:hello|T:world))', test({
+    testGrammar({
+		desc: '5a. Single_t1(T:hello|T:world))',
         grammar: SingleTape("t1", Uni(T("hello"), T("world"))),
         tapes: ["t1"],
         results: [
             {t1: 'hello'},
             {t1: 'world'},
         ],
-    }));
+    });
+
+    testGrammar({
+		desc: '5b. Single_t1(t2:hello|t3:world))',
+        grammar: SingleTape("t1", Uni(t2("hello"), t3("world"))),
+        tapes: ["t1"],
+        results: [
+            {t1: 'hello'},
+            {t1: 'world'},
+        ],
+    });
+
+    testGrammar({
+		desc: '6. Single_t1((T:hello)*)',
+        grammar: SingleTape("t1", Rep(T("hello"))),
+        maxChars: 15,
+        tapes: ["t1"],
+        results: [
+            {},
+            {t1: 'hello'},
+            {t1: 'hellohello'},
+            {t1: 'hellohellohello'},
+        ],
+    });
     
-    describe('E1. Single_t1(t1(hello)+t2(world))', test({
-        grammar: SingleTape("t1", Seq(t1("hello"), t2("world"))),
-        tapes: [],
+    testGrammar({
+		desc: '7a. Alternating an embed and a literal in a singletape',
+        grammar: {
+            "a": t2("world"),
+            "b": SingleTape("t1", Uni(Embed("a"), T("hello")))
+        },
+        symbol: "b",
+        tapes: ["t1"],
+        results: [
+            {t1: "hello"},
+            {t1: "world"}
+        ],
+    });
+
+    testGrammar({
+		desc: '7b. Alternating two embeds with different tapes in a singletape',
+        grammar: {
+            "a": t1("hello"),
+            "b": t2("world"),
+            "c": SingleTape("t3", Uni(Embed("a"), Embed("b")))
+        },
+        symbol: "c",
+        tapes: ["t3"],
+        results: [
+            {t3: "hello"}, 
+            {t3: "world"}
+        ],
+    });
+    
+    testGrammar({
+		desc: '8a. Concatenating an embed and a literal in a singletape',
+        grammar: {
+            "a": t2("hello"),
+            "b": SingleTape("t1", Seq(Embed("a"), T("world")))
+        },
+        symbol: "b",
+        tapes: ["t1"],
+        results: [
+            {t1: "helloworld"}
+        ],
+    });
+
+    testGrammar({
+		desc: '8b. Concatenating two embeds with different tapes in a singletape',
+        grammar: {
+            "a": t1("hello"),
+            "b": t2("world"),
+            "c": SingleTape("t3", Seq(Embed("a"), Embed("b")))
+        },
+        symbol: "c",
+        tapes: ["t3"],
+        results: [
+            {t3: "helloworld"}
+        ],
+    });
+
+    testGrammar({
+		desc: '9. Repeating an embed in a singletape',
+        grammar: {
+            "a": t2("hello"),
+            "b": SingleTape("t1", Rep(Embed("a")))
+        },
+        symbol: "b",
+        tapes: ["t1"],        
+        maxChars: 15,
         results: [
             {},
+            {t1: 'hello'},
+            {t1: 'hellohello'},
+            {t1: 'hellohellohello'},
         ],
-        numErrors: 1
-    }));
+    });
 
-    describe('E2. Single_t1(embed(eps))', test({
-        grammar: Collection({
-                    "a": Epsilon(),
-                    "b": SingleTape("t1", Embed("a"))
-        }),
+    testGrammar({
+		desc: '10a. Joining an embed and a literal in a singletape',
+        grammar: {
+            "a": t2("hello"),
+            "b": SingleTape("t1", Join(Embed("a"), T("hello")))
+        },
+        symbol: "b",
+        tapes: ["t1"],
+        results: [
+            {t1: "hello"}
+        ],
+    });
+
+    testGrammar({
+		desc: '10b. Joining two embeds with different tapes in a singletape',
+        grammar: {
+            "a": t1("hello"),
+            "b": t2("hello"),
+            "c": SingleTape("t3", Join(Embed("a"), Embed("b")))
+        },
+        symbol: "c",
+        tapes: ["t3"],
+        results: [
+            {t3: "hello"}
+        ],
+    });
+
+    testGrammar({
+		desc: 'E1. Single_t1(embed(eps))',
+        grammar: {
+            "a": Epsilon(),
+            "b": SingleTape("t1", Embed("a"))
+        },
         symbol: "b",
         tapes: [],
         results: [
             {},
         ],
-    }));
+    });
 
-    describe('E3. Single_t1(embed(t1:hello,t2:world))', test({
-        grammar: Collection({
-                    "a": Seq(t1("hello"), t2("world")),
-                    "b": SingleTape("t1", Embed("a"))
-        }),
+    testGrammar({
+		desc: 'E2. Single_t1(embed(t1:hello,t2:world))',
+        grammar: {
+            "a": Seq(t1("hello"), t2("world")),
+            "b": SingleTape("t1", Embed("a"))
+        },
         symbol: "b",
         tapes: [],
         results: [
             {},
         ],
         numErrors: 1
-    }));
+    });
 
 });

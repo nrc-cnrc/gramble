@@ -1,259 +1,261 @@
-import { VERBOSE_DEBUG } from "@gramble/interpreter/src/utils/logging";
-import { 
-    testProject, ProjectTest, 
+import {VERBOSE_DEBUG } from "../../../interpreter/src/utils/logging";
+import {
+    testSource, SourceTest, 
     Error, Warning 
 } from "../testSourceUtil";
 
 const DIR = "replace";
 
-function test(params: Partial<ProjectTest>): () => void {
-    return function() {
-        return testProject({ dir: DIR, ...params });
-    };
+function testSrc(params: Partial<SourceTest>): void {
+    testSource({dir: DIR, ...params});
 }
 
 describe(`Source ${DIR}`, function() {
 
-    describe('1. Simple replace', test({
-        id: "1",
+    testSrc({
+		desc: '1. Simple replace',
         results: [
             {text: "ava"}
         ]
-    }));
+    });
 
-    describe('2. Trivial replace', test({
-        id: "2",
+    testSrc({
+		desc: '2. Trivial replace',
         results: [
             {text: "aba"}
         ]
-    }));
+    });
 
-    describe('3. Simple replace multiple times', test({
-        id: "3",
+    testSrc({
+		desc: '3. Simple replace multiple times',
         results: [
             {text: "avva"}
         ]
-    }));
+    });
 
-    describe('4. Simple replace under assignment', test({
-        id: "4",
+    testSrc({
+		desc: '4. Simple replace under assignment',
         results: [
             {text: "ava"}
         ]
-    }));
+    });
     
-    describe('5. Replacing wrong tape', test({
-        id: "5",
-        errors: [ Error(3,1) ],
+    testSrc({
+		desc: '5. Replacing wrong tape',
         results: [
             {text: "aba"}
+        ],
+        errors: [
+            Error(3,1)
         ]
-    }));
+    });
 
-    describe('6. Replace but the tape is a reserved word', test({
-        id: "6",
-        errors: [ Error(3,1) ],
+    testSrc({
+		desc: '6. Replace but the tape is a reserved word',
         results: [
             {text: "aba"}
+        ],
+        errors: [
+            Error(3,1)
         ]
-    }));
+    });
 
-    describe('7a. Simple replace with embed', test({
-        id: "7a",
+    testSrc({
+		desc: '7a. Simple replace with embed',
         results: [
             {text: "ava"}
         ]
-    }));
+    });
     
-    describe('7b. Simple replace with two embed', test({
-        id: "7b",
+    testSrc({
+		desc: '7b. Simple replace with two embed',
         results: [
             {text: "ava"}
         ]
-    }));
+    });
 
-    describe('7c. Simple replace with two embed 2', test({
-        id: "7c",
+    testSrc({
+		desc: '7c. Simple replace with two embed 2',
         results: [
             {text: "ava"}
         ]
-    }));
+    });
 
 
-    describe('8a. Replacing, embedded', test({
-        id: "8a",
+    testSrc({
+		desc: '8a. Replacing, embedded',
         results: [
             {text: "ava"}
         ]
-    }));
+    });
 
     
-    describe('8b. Replace cascade, embedded', test({
-        id: "8b",
+    testSrc({
+		desc: '8b. Replace cascade, embedded',
         results: [
             {text: "awa"}
         ]
-    }));
+    });
 
-    describe('8c. Replacing an embedded replace', test({
-        id: "8c",
+    testSrc({
+		desc: '8c. Replacing an embedded replace',
         results: [
             {text: "awa"}
         ]
-    }));
+    });
     
-    describe('8d. Cascading an embedded cascade', test({
-        id: "8d",
+    testSrc({
+		desc: '8d. Cascading an embedded cascade',
         results: [
             {text: "ABCD"}
         ]
-    }));
+    });
 
-    describe('9a. Nested replace', test({
-        id: "9a",
+    testSrc({
+		desc: '9a. Nested replace',
         results: [
             {text: "w"}
         ]
-    }));
+    });
     
-    describe('9b. Nested replace under assignment', test({
-        id: "9b",
+    testSrc({
+		desc: '9b. Nested replace under assignment',
         results: [
             {text: "w"}
         ]
-    }));
+    });
     
-    describe('9c. Nested replace with some unchanged letters', test({
-        id: "9c",
+    testSrc({
+		desc: '9c. Nested replace with some unchanged letters',
         results: [
             {text: "awc"}
         ]
-    }));
+    });
 
-    describe('9d. Nested replace 2', test({
-        id: "9d",
+    testSrc({
+		desc: '9d. Nested replace 2',
         results: [
             {text: "ev"}
         ]
-    }));
+    });
     
-    describe('10a. Replace cascade', test({
-        id: "10a",
+    testSrc({
+		desc: '10a. Replace cascade',
         results: [
             {text: "w"}
         ]
-    }));
+    });
     
-    describe('10b. Replace cascade 2', test({
-        id: "10b",
+    testSrc({
+		desc: '10b. Replace cascade 2',
         results: [
             {text: "ev"}
         ]
-    }));
+    });
 
-    describe('11a. Replace with pre context', test({
-        id: "11a",
+    testSrc({
+		desc: '11a. Replace with pre context',
         results: [
             {text: "ava"},
             {text: "arba"}
         ]
-    }));
+    });
 
-    describe('11b. Replace with post context', test({
-        id: "11b",
+    testSrc({
+		desc: '11b. Replace with post context',
         results: [
             {text: "ava"},
             {text: "abra"}
         ]
-    }));
+    });
     
-    describe('11c. Replace with pre and post context', test({
-        id: "11c",
+    testSrc({
+		desc: '11c. Replace with pre and post context',
         results: [
             {text: "ava"},
             {text: "abra"},
             {text: "arba"}
         ]
-    }));
+    });
 
-    describe('12a. Replace with an empty-string context', test({
-        id: "12a",
+    testSrc({
+		desc: '12a. Replace with an empty-string context',
         results: [
             {text: "ava"},
             {text: "arva"}
         ]
-    }));
+    });
     
-    describe('12b. Replace with an empty context', test({
-        id: "12b",
+    testSrc({
+		desc: '12b. Replace with an empty context',
         results: [
             {text: "ava"},
             {text: "arva"}
         ]
-    }));
+    });
 
-    describe('13a. Replace with an alternation in pre context', test({
-        id: "13a",
+    testSrc({
+		desc: '13a. Replace with an alternation in pre context',
         results: [
             {text: "ava"},
             {text: "arba"},
             {text: "iva"}
         ]
-    }));
+    });
 
-    describe('13b. Replace with an alternation in post context', test({
-        id: "13b",
+    testSrc({
+		desc: '13b. Replace with an alternation in post context',
         results: [
             {text: "ava"},
             {text: "abra"},
             {text: "avi"}
         ]
-    }));
+    });
 
     
-    describe('13c. Replace with an alternation in from', test({
-        id: "13c",
+    testSrc({
+		desc: '13c. Replace with an alternation in from',
         results: [
             {text: "ava"},
             {text: "ava"}
         ]
-    }));
+    });
 
-    describe('13d. Replace with an alternation in to', test({
-        id: "13d",
+    testSrc({
+		desc: '13d. Replace with an alternation in to',
         results: [
             {text: "apa"},
             {text: "ava"}
         ]
-    }));
+    });
     
-    describe('14. Replace with a repetition in to', test({
-        id: "14",
+    testSrc({
+		desc: '14. Replace with a repetition in to',
         results: [
             {text: "av*a"},
         ]
-    }));
+    });
 
-    describe('15a. Replace with a repetition in pre context', test({
-        id: "15a",
+    testSrc({
+		desc: '15a. Replace with a repetition in pre context',
         results: [
             {text: "aba"},
             {text: "dava"},
             {text: "daava"},
         ]
-    }));
+    });
 
-    describe('15b. Replace with a repetition in post context', test({
-        id: "15b",
+    testSrc({
+		desc: '15b. Replace with a repetition in post context',
         results: [
             {text: "aba"},
             {text: "avad"},
             {text: "avaad"},
         ]
-    }));
+    });
 
-    describe('15c. Replace with a repetition in from', test({
-        id: "15c",
+    testSrc({
+		desc: '15c. Replace with a repetition in from',
         results: [
             {"text":"ava"}, 
             {"text":"avva"},
@@ -262,11 +264,11 @@ describe(`Source ${DIR}`, function() {
                             // aba or from abba
             {"text":"aa"}
         ]
-    }));
+    });
 
     // word boundary-sensitive replace tests
-    describe('16a. Replace at beginning', test({
-        id: "16a",
+    testSrc({
+		desc: '16a. Replace at beginning',
         results: [
             {text: "a"},
             {text: "v"},
@@ -274,10 +276,10 @@ describe(`Source ${DIR}`, function() {
             {text: "va"},
             {text: "aba"}
         ]
-    }));
+    });
 
-    describe('16b. Replace at end', test({
-        id: "16b",
+    testSrc({
+		desc: '16b. Replace at end',
         results: [
             {text: "a"},
             {text: "v"},
@@ -285,10 +287,10 @@ describe(`Source ${DIR}`, function() {
             {text: "ba"},
             {text: "aba"}
         ]
-    }));
+    });
 
-    describe('16c. Replace at beginning and end', test({
-        id: "16c",
+    testSrc({
+		desc: '16c. Replace at beginning and end',
         results: [
             {text: "a"},
             {text: "v"},
@@ -296,316 +298,380 @@ describe(`Source ${DIR}`, function() {
             {text: "ba"},
             {text: "aba"}
         ]
-    }));
+    });
     
-    describe('17a. Replace with unnamed param', test({
-        id: "17a",
-        errors: [ Error(12,4), Warning(12,1) ],
+    testSrc({
+		desc: '17a. Replace with unnamed param',
         results: [
-            {text: "foo", "gloss":"run.3SG"},
-            {text: "foobaz", "gloss":"run-2SG"},
-            {text: "foobar", "gloss":"run-1SG"},
-            {text: "moo", "gloss":"jump.3SG"},
-            {text: "moobaz", "gloss":"jump-2SG"},
-            {text: "moobar", "gloss":"jump-1SG"}
+            {text: "foo", gloss: "run.3SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moo", gloss: "jump.3SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+            {text: "moobar", gloss: "jump-1SG"}
+        ],
+        errors: [
+            Error(12,4),
+            Warning(12,1)
         ]
-    }));
+    });
 
-    describe('17b. Replace with invalid param', test({
-        id: "17b",
-        errors: [ Error(12,4), Warning(12,1) ],
+    testSrc({
+		desc: '17b. Replace with invalid param',
         results: [
-            {text: "foo", "gloss":"run.3SG"},
-            {text: "foobaz", "gloss":"run-2SG"},
-            {text: "foobar", "gloss":"run-1SG"},
-            {text: "moo", "gloss":"jump.3SG"},
-            {text: "moobaz", "gloss":"jump-2SG"},
-            {text: "moobar", "gloss":"jump-1SG"}
+            {text: "foo", gloss: "run.3SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moo", gloss: "jump.3SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+            {text: "moobar", gloss: "jump-1SG"}
+        ],
+        errors: [
+            Error(12,4),
+            Warning(12,1)
         ]
-    }));
+    });
 
-    describe('18a. Replace with no sibling', test({
-        id: "18a",
-        errors: [ Error(0,1), Warning(0,0) ],
-        results: [{}]
-    }));
+    testSrc({
+		desc: '18a. Replace with no sibling',
+        results: [
+            {}
+        ],
+        errors: [
+            Error(0,1),
+            Warning(0,0)
+        ],
+    });
     
-    describe('18b. Replace with no sibling bare', test({
-        id: "18b",
+    testSrc({
+		desc: '18b. Replace with no sibling bare',
         symbol: "",
-        errors: [ Error(0,0), Warning(0,0) ],
-        results: [{}]
-    }));
+        results: [
+            {}
+        ],
+        errors: [
+            Error(0,0),
+            Warning(0,0)
+        ],
+    });
 
-    describe('18c. Replace with no child', test({
-        id: "18c",
-        errors: [ Error(3,1) ],
+    testSrc({
+		desc: '18c. Replace with no child',
         results: [
             {text: "aba"}
+        ],
+        errors: [
+            Error(3,1)
         ]
-    }));
+    });
 
-    describe('19a. Replace with missing "from" param', test({
-        id: "19a",
-        errors: [ Error(12,1) ],
+    testSrc({
+		desc: '19a. Replace with missing "from" param',
         results: [
-            {text: "foo", "gloss":"run.3SG"},
-            {text: "foobaz", "gloss":"run-2SG"},
-            {text: "foobar", "gloss":"run-1SG"},
-            {text: "moo", "gloss":"jump.3SG"},
-            {text: "moobaz", "gloss":"jump-2SG"},
-            {text: "moobar", "gloss":"jump-1SG"}
+            {text: "foo", gloss: "run.3SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moo", gloss: "jump.3SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+            {text: "moobar", gloss: "jump-1SG"}
+        ],
+        errors: [
+            Error(12,1)
         ]
-    }));
+    });
 
-    describe('19b. Replace with missing "to" param', test({
-        id: "19b",
-        errors: [ Error(12,1) ],
+    testSrc({
+		desc: '19b. Replace with missing "to" param',
         results: [
-            {text: "foo", "gloss":"run.3SG"},
-            {text: "foobaz", "gloss":"run-2SG"},
-            {text: "foobar", "gloss":"run-1SG"},
-            {text: "moo", "gloss":"jump.3SG"},
-            {text: "moobaz", "gloss":"jump-2SG"},
-            {text: "moobar", "gloss":"jump-1SG"}
+            {text: "foo", gloss: "run.3SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moo", gloss: "jump.3SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+            {text: "moobar", gloss: "jump-1SG"}
+        ],
+        errors: [
+            Error(12,1)
         ]
-    }));
+    });
 
-    describe('20a. Replace with an empty to', test({
-        id: "20a",
+    testSrc({
+		desc: '20a. Replace with an empty to',
         results: [
             {text: "aa"}
         ]
-    }));
+    });
 
-    describe('20b. Shortening replace', test({
-        id: "20b",
+    testSrc({
+		desc: '20b. Shortening replace',
         results: [
             {text: "aba"}
         ]
-    }));
+    });
 
-    describe('20c. Shortening replace long', test({
-        id: "20c",
+    testSrc({
+		desc: '20c. Shortening replace long',
         results: [
             {text: "aba"}
         ]
-    }));
+    });
 
-    describe('20d. Shortening replace empty to', test({
-        id: "20d",
+    testSrc({
+		desc: '20d. Shortening replace empty to',
         results: [
             {text: "aa"}
         ]
-    }));
+    });
 
-    describe('21a. Replace with an empty from', test({
-        id: "21a",
+    testSrc({
+		desc: '21a. Replace with an empty from',
         results: [
             {text: "cacbcac"}
         ]
-    }));
+    });
 
-    describe('21b. Replace with an empty from, with pre and post', test({
-        id: "21b",
+    testSrc({
+		desc: '21b. Replace with an empty from, with pre and post',
         results: [
             {text: "abca"},
         ]
-    }));
+    });
 
-    describe('21c. Replace with an empty from, with pre', test({
-        id: "21c",
+    testSrc({
+		desc: '21c. Replace with an empty from, with pre',
         results: [
             {text: "abca"},
         ]
-    }));
+    });
 
-    describe('21d. Replace with an empty from, with post', test({
-        id: "21d",
+    testSrc({
+		desc: '21d. Replace with an empty from, with post',
         results: [
             {text: "cabca"}
         ]
-    }));
+    });
     
-    describe('21e. Replace with an empty from, begins', test({
-        id: "21e",
+    testSrc({
+		desc: '21e. Replace with an empty from, begins',
         results: [
             {text: "caba"}
         ]
-    }));
+    });
 
-    describe('21f. Replace with an empty from, ends', test({
-        id: "21f",
+    testSrc({
+		desc: '21f. Replace with an empty from, ends',
         results: [
             {text: "abac"}
         ],
-    }));
+    });
 
-    describe('22. Replace cascade with an empty to', test({
-        id: "22",
+    testSrc({
+		desc: '22. Replace cascade with an empty to',
         results: [
             {text: "BC"}
         ]
-    }));
+    });
 
-    describe('23a. Replace with a symbol in regex in from', test({
-        id: "23a",
+    testSrc({
+		desc: '23a. Replace with a symbol in regex in from',
         results: [
             {text: "ava"},
             {text: "ava"}
         ]
-    }));
+    });
 
-    describe('23b. Replace with a symbol in regex in from, but the symbol is defined after', test({
-        id: "23b",
+    testSrc({
+		desc: '23b. Replace with a symbol in regex in from, but the symbol is defined after',
         results: [
             {text: "ava"},
             {text: "ava"}
         ]
-    }));
+    });
     
-    describe('23c. Replace with a symbol in regex in pre', test({
-        id: "23c",
+    testSrc({
+		desc: '23c. Replace with a symbol in regex in pre',
         results: [
             {text: "ava"},
             {text: "arba"},
             {text: "iva"}
         ]
-    }));
+    });
 
-    describe('23d. Replace with a symbol in regex in pre, but the symbol is defined after', test({
-        id: "23d",
+    testSrc({
+		desc: '23d. Replace with a symbol in regex in pre, but the symbol is defined after',
         results: [
             {text: "ava"},
             {text: "arba"},
             {text: "iva"}
         ]
-    }));
+    });
     
-    describe('23e. Replace with a symbol in regex in post', test({
-        id: "23e",
+    testSrc({
+		desc: '23e. Replace with a symbol in regex in post',
         results: [
             {text: "ava"},
             {text: "abra"},
             {text: "avi"}
         ]
-    }));
+    });
 
-    describe('23f. Replace with a symbol in regex in post, but the symbol is defined after', test({
-        id: "23f",
+    testSrc({
+		desc: '23f. Replace with a symbol in regex in post, but the symbol is defined after',
         results: [
             {text: "ava"},
             {text: "abra"},
             {text: "avi"}
         ]
-    }));
+    });
     
-    describe('24a. Replace with a multi-tape symbol in regex in from', test({
-        id: "24a",
-        errors: [ Error(10,2), Error(9,1), Warning(9,1) ],
+    testSrc({
+		desc: '24a. Replace with a multi-tape symbol in regex in from',
         results: [
             {text: "abi"},
             {text: "abra"},
             {text: "aba"}
+        ],
+        errors: [
+            Error(10,2),
+            Error(9,1),
+            Warning(9,1)
         ]
-    }));
+    });
 
-    describe('24b. Replace with a multi-tape symbol in regex in post', test({
-        id: "24b",
-        errors: [ Error(10,4) ],
+    testSrc({
+		desc: '24b. Replace with a multi-tape symbol in regex in post',
         results: [
             {text: "ava"},
             {text: "avra"},
             {text: "avi"}
+        ],
+        errors: [
+            Error(10,4)
         ]
-    }));
+    });
 
-    describe('25a. Replace with a table: op nested underneath', test({
-        id: "25a",
-        errors: [ Error(12,1) ],
+    testSrc({
+		desc: '25a. Replace with a table: op nested underneath',
         results: [
-            {text: "foo", "gloss":"run.3SG"},
-            {text: "foobaz", "gloss":"run-2SG"},
-            {text: "foobar", "gloss":"run-1SG"},
-            {text: "moo", "gloss":"jump.3SG"},
-            {text: "moobaz", "gloss":"jump-2SG"},
-            {text: "moobar", "gloss":"jump-1SG"}
+            {text: "foo", gloss: "run.3SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moo", gloss: "jump.3SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+            {text: "moobar", gloss: "jump-1SG"}
+        ],
+        errors: [
+            Error(12,1)
         ]
-    }));
+    });
     
-    describe('25b. Replace with a test: op nested underneath', test({
-        id: "25b",
-        errors: [ Error(12,1) ],
+    testSrc({
+		desc: '25b. Replace with a test: op nested underneath',
         results: [
-            {text: "foo", "gloss":"run.3SG"},
-            {text: "foobaz", "gloss":"run-2SG"},
-            {text: "foobar", "gloss":"run-1SG"},
-            {text: "moo", "gloss":"jump.3SG"},
-            {text: "moobaz", "gloss":"jump-2SG"},
-            {text: "moobar", "gloss":"jump-1SG"}
+            {text: "foo", gloss: "run.3SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moo", gloss: "jump.3SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+            {text: "moobar", gloss: "jump-1SG"}
+        ],
+        errors: [
+            Error(12,1)
         ]
-    }));
+    });
 
-    describe('26a. Filtering a deletion at beginning of word', test({
-        id: "26a",
+    testSrc({
+		desc: '26a. Filtering a deletion at beginning of word',
         results: [
             {text: "bc"}
         ]
-    }));
+    });
 
-    describe('26b. Filtering a deletion at middle of word', test({
-        id: "26b",
+    testSrc({
+		desc: '26b. Filtering a deletion at middle of word',
         results: [
             {text: "ac"}
         ]
-    }));
+    });
 
-    describe('26c. Filtering a deletion at end of word', test({
-        id: "26c",
+    testSrc({
+		desc: '26c. Filtering a deletion at end of word',
         results: [
             {text: "ab"}
         ]
-    }));
+    });
     
-    describe('27a. Joining a deletion at beginning of word', test({
-        id: "27a",
+    testSrc({
+		desc: '27a. Joining a deletion at beginning of word',
         results: [
             {text: "bc"}
         ]
-    }));
+    });
 
-    describe('27b. Joining a deletion at middle of word', test({
-        id: "27b",
+    testSrc({
+		desc: '27b. Joining a deletion at middle of word',
         results: [
             {text: "ac"}
         ]
-    }));
+    });
 
-    describe('27c. Joining a deletion at end of word', test({
-        id: "27c",
+    testSrc({
+		desc: '27c. Joining a deletion at end of word',
         results: [
             {text: "ab"}
         ]
-    }));
+    });
 
-    describe('28a. Joining a deletion at beginning of word, other direction', test({
-        id: "28a",
+    testSrc({
+		desc: '28a. Joining a deletion at beginning of word, other direction',
         results: [
             {text: "bc"}
         ],
-    }));
+    });
     
-    describe('28b. Joining a deletion at middle of word, other direction', test({
-        id: "28b",
+    testSrc({
+		desc: '28b. Joining a deletion at middle of word, other direction',
         results: [
             {text: "ac"}
         ],
-    }));
+    });
     
-    describe('28c. Joining a deletion at end of word, other direction', test({
-        id: "28c",
+    testSrc({
+		desc: '28c. Joining a deletion at end of word, other direction',
         results: [
             {text: "ab"}
         ],
-    }));
+    });
+
+    testSrc({
+		desc: '29. Single-char negation in post-context',
+        results: [
+            {text: "abXcad"}
+        ],
+    });
+    
+    testSrc({
+		desc: '30. Single-char negation in pre-context',
+        results: [
+            {text: "bacXda"}
+        ],
+    });
+
+    testSrc({
+		desc: '31. Negation in post-context',
+        results: [
+            {text: "XbXcXd"},
+            {text: "XbXcad"},
+            {text: "XbacXd"},
+            {text: "Xbacad"},
+        ],
+    });
+
+    testSrc({
+		desc: '32. Negation in post-context',
+        results: [
+            {text: "bacXdX"},
+            {text: "bacadX"},
+        ],
+    });
 });

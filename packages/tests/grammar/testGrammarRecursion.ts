@@ -1,7 +1,6 @@
 import { 
     Seq, Uni, 
     Join, Embed, 
-    Collection 
 } from "../../interpreter/src/grammarConvenience";
 
 import {
@@ -29,10 +28,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '1. Join t1:hiworld ⨝ right-recursive (t1:hi)+ + t1:world',
-        grammar: Collection({
-                     hiWorld: rr_hiWorld,
-                     default: Join(t1("hiworld"), rr_hiWorld)
-        	     }),
+        grammar: {
+            hiWorld: rr_hiWorld,
+            default: Join(t1("hiworld"), rr_hiWorld)
+        },
         results: [
             {t1: "hiworld"},
         ],
@@ -40,10 +39,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '2. Join right-recursive (t1:hi)+ + t1:world ⨝ t1:hiworld',
-        grammar: Collection({
-                     hiWorld: rr_hiWorld,
-                     default: Join(rr_hiWorld, t1("hiworld"))
-        	     }),
+        grammar: {
+            hiWorld: rr_hiWorld,
+            default: Join(rr_hiWorld, t1("hiworld"))
+        },
         results: [
             {t1: "hiworld"},
         ],
@@ -51,10 +50,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '3. Join t1:hihiworld ⨝ right-recursive (t1:hi)+ + t1:world',
-        grammar: Collection({
-                     hiWorld: rr_hiWorld,
-                     default: Join(t1("hihiworld"), rr_hiWorld)
-        	     }),
+        grammar: {
+            hiWorld: rr_hiWorld,
+            default: Join(t1("hihiworld"), rr_hiWorld)
+        },
         results: [
             {t1: "hihiworld"},
         ],
@@ -62,10 +61,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '4. Join right-recursive (t1:hi)+ + t1:world ⨝ t1:hihiworld',
-        grammar: Collection({
-                     hiWorld: rr_hiWorld,
-                     default: Join(rr_hiWorld, t1("hihiworld"))
-        	     }),
+        grammar: {
+            hiWorld: rr_hiWorld,
+            default: Join(rr_hiWorld, t1("hihiworld"))
+        },
         results: [
             {t1: "hihiworld"},
         ],
@@ -73,10 +72,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '5. Join t1:hiworld ⨝ left-recursive (t1:hi)+ + t1:world',
-        grammar: Collection({
-                     hihi: lr_hihi,
-                     default: Join(t1("hiworld"), lr_hiWorld)
-        	     }),
+        grammar: {
+            hihi: lr_hihi,
+            default: Join(t1("hiworld"), lr_hiWorld)
+        },
         results: [
             {t1: "hiworld"},
         ],
@@ -84,10 +83,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '6. Join t1:hihiworld ⨝ left-recursive (t1:hi)+ + t1:world',
-        grammar: Collection({
-                     hihi: lr_hihi,
-                     default: Join(t1("hihiworld"), lr_hiWorld)
-        	     }),
+        grammar: {
+            hihi: lr_hihi,
+            default: Join(t1("hihiworld"), lr_hiWorld)
+        },
         results: [
             {t1: "hihiworld"},
         ],
@@ -95,10 +94,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '7. Join left-recursive (t1:hi)+ + t1:world ⨝ t1:hiworld',
-        grammar: Collection({
-                     hihi: lr_hihi,
-                     default: Join(lr_hiWorld, t1("hiworld"))
-        	     }),
+        grammar: {
+            hihi: lr_hihi,
+            default: Join(lr_hiWorld, t1("hiworld"))
+        },
         results: [
             {t1: "hiworld"},
         ],
@@ -106,10 +105,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     testGrammar({
         desc: '8. Join left-recursive (t1:hi)+ + t1:world ⨝ t1:hihiworld',
-        grammar: Collection({
-                     hihi: lr_hihi,
-                     default: Join(lr_hiWorld, t1("hihiworld"))
-        	     }),
+        grammar: {
+            hihi: lr_hihi,
+            default: Join(lr_hiWorld, t1("hihiworld"))
+        },
         results: [
             {t1: "hihiworld"},
         ],
@@ -118,10 +117,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '9. Emit from right-recursive (t1:hi)+ + t1:world ' +
               'with default max recursion (4)',
-        grammar: Collection({
-                     hiWorld: rr_hiWorld,
-                     default: rr_hiWorld
-        	     }),
+        grammar: {
+            hiWorld: rr_hiWorld,
+            default: rr_hiWorld
+        },
         results: [
             {t1: "hiworld"},
             {t1: "hihiworld"},
@@ -134,10 +133,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '10. Emit from right-recursive (t1:hi)+ + t1:world ' +
               'with max recursion 2',
-        grammar: Collection({
-                     hiWorld: rr_hiWorld,
-                     default: rr_hiWorld
-        	     }),
+        grammar: {
+            hiWorld: rr_hiWorld,
+            default: rr_hiWorld
+        },
         maxRecursion: 2,
         results: [
             {t1: "hiworld"},
@@ -149,10 +148,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '11. Emit from center-recursive (t1:hi)+ + t1:world ' +
               'with max recursion 2',
-        grammar: Collection({
-                     hiWorld: cr_hiWorld,
-                     default: cr_hiWorld
-        	     }),
+        grammar: {
+            hiWorld: cr_hiWorld,
+            default: cr_hiWorld
+        },
         maxRecursion: 2,
         results: [
             {t1: "hiworldhi"},
@@ -164,10 +163,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '12. Emit from right-recursive (t1:hi)+ + t1:world ' +
               'with max recursion 0',
-        grammar: Collection({
-                     hiWorld: rr_hiWorld,
-                     default: rr_hiWorld
-        	     }),
+        grammar: {
+            hiWorld: rr_hiWorld,
+            default: rr_hiWorld
+        },
         maxRecursion: 0,
         results: [
             {t1: "hiworld"},
@@ -177,10 +176,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '13. Emit from left-recursive (t1:hi)+ + t1:world ' +
               'with default max recursion (4)',
-        grammar: Collection({
-                     hihi: lr_hihi,
-                     default: lr_hiWorld
-        	     }),
+        grammar: {
+            hihi: lr_hihi,
+            default: lr_hiWorld
+        },
         results: [
             {t1: "hiworld"},
             {t1: "hihiworld"},
@@ -193,10 +192,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '14. Emit from left-recursive (t1:hi)+ + t1:world ' +
               'with max recursion 2',
-        grammar: Collection({
-                     hihi: lr_hihi,
-                     default: lr_hiWorld
-        	     }),
+        grammar: {
+            hihi: lr_hihi,
+            default: lr_hiWorld
+        },
         maxRecursion: 2,
         results: [
             {t1: "hiworld"},
@@ -208,10 +207,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     testGrammar({
         desc: '15. Emit from left-recursive (t1:hi)+ + t1:world ' +
               'with max recursion 0',
-        grammar: Collection({
-                     hihi: lr_hihi,
-                     default: lr_hiWorld
-        	     }),
+        grammar: {
+            hihi: lr_hihi,
+            default: lr_hiWorld
+        },
         maxRecursion: 0,
         results: [
             {t1: "hiworld"},

@@ -54,6 +54,7 @@
     "testGrammarReplace": "mocha -r ts-node/register grammar/testGrammarReplace.ts",
     "testGrammarReplaceEmbed": "mocha -r ts-node/register grammar/testGrammarReplaceEmbed.ts",
     "testGrammarReplaceEpsilon": "mocha -r ts-node/register grammar/testGrammarReplaceEpsilon.ts",
+    "testGrammarReplaceNegContext": "mocha -r ts-node/register grammar/testGrammarReplaceNegContext.ts",
     "testGrammarReplaceSimple": "mocha -r ts-node/register grammar/testGrammarReplaceSimple.ts",
     "testGrammarShort": "mocha -r ts-node/register grammar/testGrammarShort.ts",
     "testGrammarSingleTape": "mocha -r ts-node/register grammar/testGrammarSingleTape.ts",

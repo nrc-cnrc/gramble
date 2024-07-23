@@ -27,9 +27,5 @@
   },
   "bugs": {
     "url": "https://github.com/nrc-cnrc/gramble/issues"
-  },
-  "devDependencies": {
-  },
-  "dependencies": {
   }
 }

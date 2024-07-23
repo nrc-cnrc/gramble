@@ -1,59 +1,69 @@
-import { testProject, ProjectTest, Error, Warning } from "../testSourceUtil";
+import {
+    testSource, SourceTest,
+    Error, Warning
+} from "../testSourceUtil";
 
 const DIR = "bare";
 
-function test(params: Partial<ProjectTest>): () => void {
-    return function() {
-        return testProject({ dir: DIR, ...params });
-    };
+function testSrc(params: Partial<SourceTest>): void {
+    testSource({dir: DIR, ...params});
 }
 
 describe(`Source ${DIR}`, function() {
 
-    describe('1. Empty grammar', test({
-        id: "1",
+    testSrc({
+		desc: '1. Empty grammar',
         results: undefined
-    }));
+    });
 
-    describe('2a. Bare grammar', test({
-        id: "2a",
+    testSrc({
+		desc: '2a. Bare grammar',
         symbol: "",
         results: [
-            { text: "foo", gloss: "run" },
-            { text: "moo", gloss: "jump" }
+            {text: "foo", gloss: "run"},
+            {text: "moo", gloss: "jump"}
         ]
-    }));
+    });
 
-    describe('2b. Bare grammar with table op', test({
-        id: "2b",
+    testSrc({
+		desc: '2b. Bare grammar with table op',
         symbol: "",
         results: [
-            { text: "foo", gloss: "run" },
-            { text: "moo", gloss: "jump" }
+            {text: "foo", gloss: "run"},
+            {text: "moo", gloss: "jump"}
         ]
-    }));
+    });
 
-    describe('3a. Bare grammar with embeds', test({
-        id: "3a",
-        errors: [ Warning(8,0) ]
-    }))
+    testSrc({
+		desc: '3a. Bare grammar with embeds',
+        errors: [
+            Warning(8,0)
+        ]
+    });
     
-    describe('3b. Bare grammar with embeds and table op', test({
-        id: "3b",
-        errors: [ Warning(8,0) ]
-    }))
+    testSrc({
+		desc: '3b. Bare grammar with embeds and table op',
+        errors: [
+            Warning(8,0)
+        ]
+    });
     
-    describe('4a. Generating from symbol before bare grammar', test({
-        id: "4",
-        errors: [ Warning(4,0) ],
+    testSrc({
+		desc: '4. Generating from symbol before bare grammar',
         results: [
-            { text: "foo", gloss: "run" },
-            { text: "moo", gloss: "jump" },
+            {text: "foo", gloss: "run"},
+            {text: "moo", gloss: "jump"},
+        ],
+        errors: [
+            Warning(4,0)
         ]
-    }));
+    });
 
-    describe('5a. Content obliteration by bare table', test({
-        id: "5",
-        errors: [ Warning(0,0), Warning(4,0) ]
-    }));
+    testSrc({
+		desc: '5. Content obliteration by bare table',
+        errors: [
+            Warning(0,0),
+            Warning(4,0)
+        ]
+    });
 });

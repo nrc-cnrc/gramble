@@ -1,78 +1,88 @@
-import { 
-    testProject, ProjectTest, 
+import {
+    testSource, SourceTest, 
     Error, Warning 
 } from "../testSourceUtil";
 
 const DIR = "hide";
 
-function test(params: Partial<ProjectTest>): () => void {
-    return function() {
-        return testProject({ dir: DIR, ...params });
-    };
+function testSrc(params: Partial<SourceTest>): void {
+    testSource({dir: DIR, ...params});
 }
 
 describe(`Source ${DIR}`, function() {
 
-    describe('1. Hide header', test({
-        id: "1",
+    testSrc({
+		desc: '1. Hide header',
         results: [
-            { text: "foo" }
+            {text: "foo"}
         ]
-    }));
+    });
     
-    describe('2. Hiding an irrelevant tape', test({
-        id: "2",
-        errors: [ Error(1,4) ],
+    testSrc({
+		desc: '2. Hiding an irrelevant tape',
         results: [
-            { text: "foo", gloss: "run" }
+            {text: "foo", gloss: "run"}
+        ],
+        errors: [
+            Error(1,4)
         ]
-    }));
+    });
     
-    describe('3. Hide header with embeds', test({
-        id: "3",
+    testSrc({
+		desc: '3. Hide header with embeds',
         results: [
-            { text: "foobar", gloss: "run[1SG]", subj: "[1SG]" },
-            { text: "moobar", gloss: "jump[1SG]", subj: "[1SG]" },
-            { text: "foobaz", gloss: "run[2SG]", subj: "[2SG]" },
-            { text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]" },
-            { text: "foo", gloss: "run[3SG]", subj: "[3SG]" },
-            { text: "moo", gloss: "jump[3SG]", subj: "[3SG]" }
+            {text: "foobar", gloss: "run[1SG]", subj: "[1SG]"},
+            {text: "moobar", gloss: "jump[1SG]", subj: "[1SG]"},
+            {text: "foobaz", gloss: "run[2SG]", subj: "[2SG]"},
+            {text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]"},
+            {text: "foo", gloss: "run[3SG]", subj: "[3SG]"},
+            {text: "moo", gloss: "jump[3SG]", subj: "[3SG]"}
         ]
-    }));
+    });
 
-    describe('4. Two hide headers', test({
-        id: "4",
+    testSrc({
+		desc: '4. Two hide headers',
         results: [
-            { text: "foobar", gloss: "run[1SG]" },
-            { text: "moobar", gloss: "jump[1SG]" },
-            { text: "foobaz", gloss: "run[2SG]" },
-            { text: "moobaz", gloss: "jump[2SG]" },
-            { text: "foo", gloss: "run[3SG]" },
-            { text: "moo", gloss: "jump[3SG]" }
+            {text: "foobar", gloss: "run[1SG]"},
+            {text: "moobar", gloss: "jump[1SG]"},
+            {text: "foobaz", gloss: "run[2SG]"},
+            {text: "moobaz", gloss: "jump[2SG]"},
+            {text: "foo", gloss: "run[3SG]"},
+            {text: "moo", gloss: "jump[3SG]"}
         ]
-    }));
+    });
     
-    describe('5. Nested hide headers', test({
-        id: "5",
+    testSrc({
+		desc: '5. Nested hide headers',
         results: [
-            { text: "foobar", gloss: "run[1SG]" },
-            { text: "moobar", gloss: "jump[1SG]" },
-            { text: "foobaz", gloss: "run[2SG]" },
-            { text: "moobaz", gloss: "jump[2SG]" },
-            { text: "foo", gloss: "run[3SG]" },
-            { text: "moo", gloss: "jump[3SG]" }
+            {text: "foobar", gloss: "run[1SG]"},
+            {text: "moobar", gloss: "jump[1SG]"},
+            {text: "foobaz", gloss: "run[2SG]"},
+            {text: "moobaz", gloss: "jump[2SG]"},
+            {text: "foo", gloss: "run[3SG]"},
+            {text: "moo", gloss: "jump[3SG]"}
         ]
-    }));
+    });
 
-    describe('6. Hide header with a slash value', test({
-        id: "6",
+    testSrc({
+		desc: '6. Hide header with a slash value',
         results: [
-            { text: "foobar", gloss: "run[1SG]" },
-            { text: "moobar", gloss: "jump[1SG]" },
-            { text: "foobaz", gloss: "run[2SG]" },
-            { text: "moobaz", gloss: "jump[2SG]" },
-            { text: "foo", gloss: "run[3SG]" },
-            { text: "moo", gloss: "jump[3SG]" }
+            {text: "foobar", gloss: "run[1SG]"},
+            {text: "moobar", gloss: "jump[1SG]"},
+            {text: "foobaz", gloss: "run[2SG]"},
+            {text: "moobaz", gloss: "jump[2SG]"},
+            {text: "foo", gloss: "run[3SG]"},
+            {text: "moo", gloss: "jump[3SG]"}
         ]
-    }));
+    });
+    
+    testSrc({
+		desc: '7. Hide header with empty value',
+        results: [
+            {text: "foo", gloss: "run"},
+            {text: "moo", gloss: "stand"},
+            {text: "goo", gloss: "monkey"},
+            {text: "zoo", gloss: "aquarium"},
+        ]
+    });
 });

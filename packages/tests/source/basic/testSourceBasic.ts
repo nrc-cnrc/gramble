@@ -1,167 +1,178 @@
-import { testProject, ProjectTest, Error, Warning } from "../testSourceUtil";
+import {
+    testSource, SourceTest,
+    Error, Warning
+} from "../testSourceUtil";
 
 const DIR = "basic";
 
-function test(params: Partial<ProjectTest>): () => void {
-    return function() {
-        return testProject({ dir: DIR, ...params });
-    };
+function testSrc(params: Partial<SourceTest>): void {
+    testSource({dir: DIR, ...params});
 }
 
 describe(`Source ${DIR}`, function() {
 
-    describe('1a. Minimal grammar', test({
-        id: "1a",
+    testSrc({
+		desc: '1a. Minimal grammar',
         results: [
-            { text: "foo", gloss: "run" },
-            { text: "moo", gloss: "jump" }
+            {text: "foo", gloss: "run"},
+            {text: "moo", gloss: "jump"}
         ],
-    }));
+    });
     
-    describe('1b. Minimal grammar with no table: op', test({
-        id: "1b",
+    testSrc({
+		desc: '1b. Minimal grammar with no table: op',
         results: [
-            { text: "foo", gloss: "run" },
-            { text: "moo", gloss: "jump" }
+            {text: "foo", gloss: "run"},
+            {text: "moo", gloss: "jump"}
         ]
-    }));
+    });
     
-    describe('1c. Minimal grammar with empty row', test({
-        id: "1c",
+    testSrc({
+		desc: '1c. Minimal grammar with empty row',
         results: [
-            { text: "foo", gloss: "run" },
-            { text: "moo", gloss: "jump" }
+            {text: "foo", gloss: "run"},
+            {text: "moo", gloss: "jump"}
         ]
-    }));
+    });
 
-    describe('1d. Minimal grammar with empty column', test({
-        id: "1d",
+    testSrc({
+		desc: '1d. Minimal grammar with empty column',
         results: [
-            { text: "foo", gloss: "run" },
-            { text: "moo", gloss: "jump" }
+            {text: "foo", gloss: "run"},
+            {text: "moo", gloss: "jump"}
         ]
-    }));
+    });
 
-    describe('2a. Embeds', test({
-        id: "2",
+    testSrc({
+		desc: '2. Embeds',
         results: [
-            { text: "foobar", gloss: "run-1SG" },
-            { text: "moobar", gloss: "jump-1SG" },
-            { text: "foobaz", gloss: "run-2SG" },
-            { text: "moobaz", gloss: "jump-2SG" }
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG"}
         ]
-    }));
+    });
 
-    describe('3a. Embeds with _ identifiers', test({
-        id: "3a",
+    testSrc({
+		desc: '3a. Embeds with _ identifiers',
         symbol: "_Word",
         results: [
-            { text: "foobar", gloss: "run-1SG" },
-            { text: "moobar", gloss: "jump-1SG" },
-            { text: "foobaz", gloss: "run-2SG" },
-            { text: "moobaz", gloss: "jump-2SG" }
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG"}
         ]
-    }));
+    });
 
 
-    describe('3b. Headers with underscores', test({
-        id: "3b",
+    testSrc({
+		desc: '3b. Headers with underscores',
         results: [
-            { _text: "foobar", gloss_: "run-1SG" },
-            { _text: "moobar", gloss_: "jump-1SG" },
-            { _text: "foobaz", gloss_: "run-2SG" },
-            { _text: "moobaz", gloss_: "jump-2SG" }
+            {_text: "foobar", gloss_: "run-1SG"},
+            {_text: "moobar", gloss_: "jump-1SG"},
+            {_text: "foobaz", gloss_: "run-2SG"},
+            {_text: "moobaz", gloss_: "jump-2SG"}
         ]
-    }));
+    });
 
-    describe('4a. Table with empty cell', test({
-        id: "4",
+    testSrc({
+		desc: '4. Table with empty cell',
         results: [
-            { text: "foobar", gloss: "run-1SG", pos:"v" },
-            { text: "moobar", gloss: "jump-1SG", pos:"v" },
-            { text: "foobaz", gloss: "run-2SG", pos:"v" },
-            { text: "moobaz", gloss: "jump-2SG", pos:"v"},
-            { text: "foo", gloss: "run.3SG", pos:"v" },
-            { text: "moo", gloss: "jump.3SG", pos:"v" }
+            {text: "foobar", gloss: "run-1SG", pos:"v"},
+            {text: "moobar", gloss: "jump-1SG", pos:"v"},
+            {text: "foobaz", gloss: "run-2SG", pos:"v"},
+            {text: "moobaz", gloss: "jump-2SG", pos:"v"},
+            {text: "foo", gloss: "run.3SG", pos:"v"},
+            {text: "moo", gloss: "jump.3SG", pos:"v"}
         ]
-    }));
+    });
 
-    describe('5. Empty "table:" op', test({
-        id: "5",
+    testSrc({
+		desc: '5. Empty "table:" op',
         results: [
             {text:"baz", gloss:"-2SG"},
             {text:"bar", gloss:"-1SG"}
         ],
-        errors: [ Warning(1, 0), Error(1, 1) ]
-    }));
+        errors: [
+            Warning(1, 0),
+            Error(1, 1)
+        ]
+    });
     
-    describe('6a. "optional text" header', test({
-        id: "6a",
+    testSrc({
+		desc: '6a. "optional text" header',
         results: [
-            { text: "foo" },
-            { text: "moo" },
-            { text: "foobar" },
-            { text: "moobar" },
+            {text: "foo"},
+            {text: "moo"},
+            {text: "foobar"},
+            {text: "moobar"},
         ]
-    }));
+    });
 
-    describe('6b. "optional embed" header', test({
-        id: "6b",
+    testSrc({
+		desc: '6b. "optional embed" header',
         results: [
-            { text: "foobar", gloss: "run-1SG" },
-            { text: "moobar", gloss: "jump-1SG" },
-            { text: "foobaz", gloss: "run-2SG" },
-            { text: "moobaz", gloss: "jump-2SG" },
-            { text: "foo", gloss: "run" },
-            { text: "moo", gloss: "jump" }
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+            {text: "foo", gloss: "run"},
+            {text: "moo", gloss: "jump"}
         ]
-    }));
+    });
 
-    describe('7a. Slash header', test({
-        id: "7a",
+    testSrc({
+		desc: '7a. Slash header',
         results: [
-            { text: "foobar", gloss: "foo-1SG" },
-            { text: "moobar", gloss: "moo-1SG" },
-            { text: "foobaz", gloss: "foo-2SG" },
-            { text: "moobaz", gloss: "moo-2SG" }
+            {text: "foobar", gloss: "foo-1SG"},
+            {text: "moobar", gloss: "moo-1SG"},
+            {text: "foobaz", gloss: "foo-2SG"},
+            {text: "moobaz", gloss: "moo-2SG"}
         ]
-    }));
+    });
     
-    describe('7b. Double slash header', test({
-        id: "7b",
+    testSrc({
+		desc: '7b. Double slash header',
         results: [
-            { text: "foobar", gloss: "foo-1SG", root: "foo" },
-            { text: "moobar", gloss: "moo-1SG", root: "moo" },
-            { text: "foobaz", gloss: "foo-2SG", root: "foo" },
-            { text: "moobaz", gloss: "moo-2SG", root: "moo" }
+            {text: "foobar", gloss: "foo-1SG", root: "foo"},
+            {text: "moobar", gloss: "moo-1SG", root: "moo"},
+            {text: "foobaz", gloss: "foo-2SG", root: "foo"},
+            {text: "moobaz", gloss: "moo-2SG", root: "moo"}
         ]
-    }));
+    });
 
-    describe('8. Header commented out', test({
-        id: "8",
+    testSrc({
+		desc: '8. Header commented out',
         results: [
-            { text: "foo", gloss: "run" },
-            { text: "moo", gloss: "jump" }
+            {text: "foo", gloss: "run"},
+            {text: "moo", gloss: "jump"}
         ]
-    }));
+    });
 
-    describe('9. Headers with lots of parens', test({
-        id: "9",
+    testSrc({
+		desc: '9. Headers with lots of parens',
         results: [
-            { text: "foo", gloss: "foo" },
-            { text: "moo", gloss: "moo" }
+            {text: "foo", gloss: "foo"},
+            {text: "moo", gloss: "moo"}
         ]
-    }));
+    });
 
-    describe('10. Empty assignment', test({
-        id: "10",
+    testSrc({
+		desc: '10. Empty assignment',
+        results: [
+            {}
+        ],
+        errors: [
+            Warning(0, 0)
+        ]
+    });
+    
+    testSrc({
+		desc: '11. Nested tables',
         results: [{}],
-        errors: [ Warning(0, 0) ]
-    }));
-    
-    describe('11. Nested tables', test({
-        id: "11",
-        results: [{}],
-        errors: [ Warning(0, 0), Error(0, 1) ]
-    }));
+        errors: [
+            Warning(0, 0),
+            Error(0, 1)
+        ]
+    });
 });

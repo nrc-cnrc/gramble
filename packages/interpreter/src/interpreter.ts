@@ -28,7 +28,7 @@ import { qualifySymbol } from "./passes/qualifySymbols";
 import { FlattenCollections } from "./passes/flattenCollections";
 import { CreateQuery } from "./passes/createQuery";
 import { InfinityProtection } from "./passes/infinityProtection";
-import { PassEnv } from "./components";
+import { Component, PassEnv } from "./components";
 
 import * as Tapes from "./tapes";
 import { ResolveVocab } from "./passes/resolveVocab";
@@ -116,14 +116,19 @@ export class Interpreter {
     }
 
     public static fromGrammar(
-        grammar: Grammar, 
+        grammar: Grammar | Dict<Grammar>, 
         opt: Partial<Options> = {}
     ): Interpreter {
         const devEnv = new SimpleDevEnvironment();
 
-        if (!(grammar instanceof CollectionGrammar)) {
+        if ((grammar instanceof CollectionGrammar)) {
+            grammar = grammar;
+        } else if ((grammar instanceof Component)) {
             const coll = new CollectionGrammar();
             coll.symbols[DEFAULT_SYMBOL] = grammar;
+            grammar = coll;
+        } else {
+            const coll = new CollectionGrammar(grammar);
             grammar = coll;
         }
 
@@ -149,7 +154,7 @@ export class Interpreter {
     ): string[] {
         const referent = this.getSymbol(symbol);
         if (referent == undefined) {
-            throw new Error(`Cannot find symbol ${symbol}`);
+            throw new Error(`Cannot find symbol ${symbol}.  Choose from the following symbols: ${this.allSymbols()}`);
         }
         if (stripHidden) {
             return referent.tapeNames.filter(t => !t.startsWith(HIDDEN_PREFIX));

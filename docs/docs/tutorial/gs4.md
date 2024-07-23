@@ -1,29 +1,59 @@
 ---
 id: gs4
-title: Your second Gramble program
-sidebar_label: Your second program
+title: Adding more fields
+sidebar_label: Adding more fields
 ---
 
-We'll use Swahili verbs for illustration.  Swahili is the first or second language for more than 100 million people in East Africa, and serves as a regional *lingua franca*.  Swahili verbs are fairly complex overall, but there *are* parts of the verb system that are relatively straightforward, and we'll start with those.  
+The program in on the previous page only had one field, `text`.  It's not very useful with just one field!  
 
-The first thing to do before you start writing a program is **understand exactly what phenonemon you want to model**, so that you can make a plan.  Let's say our goal is modeling Swahili verbs in the present, perfect, and past tenses, with 1st, 2nd, and 3rd person (I, you, he/she/it) singular subjects.  They look like this:
+But it's still *someone* useful!  If you had a lot more forms, you could make a spellchecker from it.  The client program could go through every word in a document, ask "Is this word in my database?", and if yes, it leaves it alone, and if no it underlines it with a red squiggle.
 
-| verb form | person | tense | English |
-|-----------|--------|-------|---------|
-| ninapenda | 1 | present | I love |
-| unapenda | 2 | present | you love |
-| anapenda | 3 | present | he/she/it loves |
-| nilipenda | 1 | past | I loved |
-| ulipenda | 2 | past | you loved |
-| alipenda | 3 | past | he/she/it loved |
-| nimependa | 1 | perfect | I have loved |
-| umependa | 2 | perfect | you have loved |
-| amependa | 3 | perfect | he/she/it has loved |
+In "finite-state automata" terms we'd call a program like this an "acceptor".  It doesn't turn something into something else (that would be a ``transducer''), it can only say "yes that's one of the words I cover" or "nope not one of mine".
 
-Study that table for a few minutes to get a good sense of what we need to model.  Do you notice any patterns?  Here are three patterns we can notice:
+(Side note: You'll probably often hear us call fields 'tapes'.  This is using the metaphors of a Turing Machine, picturing computer programs as reading and writing to long strips of tape.  In the finite-state machine world, we often use this metaphor, speaking of our programs as "reading a symbol from the input tape" or "writing a symbol to the output tape".  An acceptor is a "one-tape automaton", it can only read from one tape; a transducer is a "two-tape automaton" reading from one and writing to another.)
 
-* All the 1st person subject forms start with ``ni``, all the 2nd person forms start with ``u``, and all the 3rd person forms start with ``a``.  
-* After these subject markers, you find ``na`` in all the present forms, ``li`` in all the past forms, and ``me`` in all the perfect forms.
-* All of these forms contain ``penda``, so presumably that means ``love``.  (Actually it's ``pend``, and it happens that all of these verb forms have a suffix ``a`` at the end.  Most verb forms end in ``a``, although a few conjugations end in ``i`` or ``e``.  We'll ignore that for now, though, and pretend the root is ``penda``.)
+So let's add another field and turn this into a transducer.
 
-These word parts are called *morphemes*.  Speaking Swahili is a process of combining the appropriate morphemes, in the appropriate order, to get the correct verb form.  
+## From acceptor to transducer
+
+Let's take the previous program and add another field, `gloss`.  (By the way, if you don't know this word, "gloss" is what linguists call a labeled breakdown of the parts of a word, like `1-past-pend`.)
+
+We have to decide what our gloss is going to look like, so let's say `jumps` comes out as `jump-3SG.PRES`, `jumped` comes out as `jump-PAST`, etc.  (But there's nothing special about these labels.  I chose linguist-y labels, but you could use any labels you want.  Gramble doesn't understand what what `text` or `gloss` or `jump` or `3SG.PRES` mean.) 
+
+We add the gloss field to each table, associating each piece of `text` with the appropriate piece of `gloss`.  (If you're following along in the interface, this is Example 2 in the Gramble menu.)
+
+| **Root =** | **text** | **gloss** ||
+|----|----|----|
+|    | call  | call |
+|    | jump  | jump |
+| &nbsp; |
+| **Suffix =** | **text** | **gloss** ||
+|----|----|-----|
+|    | s  | -3SG.PRES |
+|    | ed  | -PAST |
+|    | ing | -PRES.PROG |
+| &nbsp; |
+| **Verb =** | **embed** | **embed** |
+|----|----|-----|
+|           | Root | Suffix |
+
+(There's nothing special about that hyphen either, by the way.  It's a character like any other, and I'm just putting it there to split up the gloss because we decided that was how glosses are going to be split up.)
+
+Also, there's a shorthand we can use when a table like `Root` has two fields that are exactly the same, we can join them with a forward slash like so:
+
+| **Root =** | **text/gloss** ||
+|----|----|
+|    | call  |
+|    | jump  |
+
+That means we don't have to write the same thing twice.  (Writing things twice can be bad because the two version sometimes go out-of-sync with each other.  This makes sure they're always the same.)  After all, not-writing-things-a-bunch-of-times is the whole reason we're writing a program!
+
+## Trying out a transduction
+
+Let's put that into your sheet.  Then hit "Sync & Validate" in the sidebar, which makes the sidebar interface update to use your latest changes.  
+
+`<YourSheetName>.Verb` should still be selected in the dropdown menu, but if not, select it again.  Now if you sample you'll see there are *two* fields in the results.  Make sure you're generating all six forms, and that the correct gloss is matching up with the correct text!
+
+Now let's look at another part of that interface that we haven't used yet.  Below `<YourSheetName>.Verb` but before the buttons, you can see text input areas labeled with `Verb`'s possible field names.  Anything you type into these restricts the generation/sampling -- or put another way, it lets you make a database query.
+
+So type `called` into the `text` field.  Now it you sample or generate, the only possible result is `{text:called, gloss:call-PAST}`.  We've done a transduction!

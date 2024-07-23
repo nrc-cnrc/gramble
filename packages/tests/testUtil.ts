@@ -1,12 +1,17 @@
 import { basename } from "path";
 import { assert, expect } from "chai";
 
-import { Epsilon, Lit } from "../interpreter/src/grammarConvenience";
-import { Grammar } from "../interpreter/src/grammars";
+import {
+    Dot, Epsilon,
+    Lit, Rep, Seq,
+ } from "../interpreter/src/grammarConvenience";
+import { Grammar, CollectionGrammar } from "../interpreter/src/grammars";
+import { Component } from "../interpreter/src/components";
 import { Interpreter } from "../interpreter/src/interpreter";
-import { StringDict, stringDictToStr } from "../interpreter/src/utils/func";
 import { HIDDEN_PREFIX } from "../interpreter/src/utils/constants";
+import { Dict, StringDict, stringDictToStr } from "../interpreter/src/utils/func";
 import { Options } from "../interpreter/src/utils/options";
+import { Message } from "../interpreter/src/utils/msgs";
 import * as Messages from "../interpreter/src/utils/msgs";
 
 import {
@@ -14,12 +19,12 @@ import {
     timeIt,
     SILENT,
     VERBOSE_DEBUG,
+    VERBOSE_GRAMMAR,
 } from "../interpreter/src/utils/logging";
 
 import * as Tapes from "../interpreter/src/tapes";
 import * as Vocab from "../interpreter/src/vocab";
 
-import { Message } from "../interpreter/src/utils/msgs";
 
 // Permit global control over verbose output in tests.
 // To limit verbose output to a specific test file, set VERBOSE_TEST_L2
@@ -158,18 +163,17 @@ export function testMatchOutputs(
 }
 
 export function prepareInterpreter(
-    grammar: Grammar | Interpreter,
+    grammar: Grammar | Dict<Grammar> | Interpreter,
     opt: Partial<Options> = {},
 ): Interpreter {
     try {
-        opt = Options(opt);
         const interpreter = (grammar instanceof Interpreter) ?
                             grammar :
                             Interpreter.fromGrammar(grammar, opt);
 
         return interpreter;
     } catch (e) {
-        it("Unexpected Exception", function() {
+        it("Unexpected Exception from prepareInterpreter", function() {
             console.log("");
             console.log(`[${this.test?.fullTitle()}]`);
             console.log(e);
@@ -193,7 +197,7 @@ export function generateOutputs(
         ];
     } catch (e) {
         if (rethrow) throw e;
-        it("Unexpected Exception", function() {
+        it("Unexpected Exception from generateOutputs", function() {
             console.log("");
             console.log(`[${this.test?.fullTitle()}]`);
             console.log(e);
@@ -215,10 +219,8 @@ export function testGenerate(
 ): void {
     timeIt(() => {
         const outputs: StringDict[] =
-            generateOutputs(interpreter, symbol,
-                                query, stripHidden, false);
-        testNumOutputs(outputs, expectedResults.length,
-                       allowDuplicateOutputs, symbol);
+            generateOutputs(interpreter, symbol, query, stripHidden, false);
+        testNumOutputs(outputs, expectedResults.length, allowDuplicateOutputs, symbol);
         if (!skipMatchOutputs && expectedResults !== undefined) {
             testMatchOutputs(outputs, expectedResults, symbol);
         } else {
@@ -231,7 +233,7 @@ export function testGenerate(
 }
 
 export function testHasTapes(
-    grammar: Grammar | Interpreter,
+    grammar: Grammar | Dict<Grammar> | Interpreter,
     expectedTapes: string[],
     symbol: string = "",
     stripHidden: boolean = true
@@ -268,47 +270,57 @@ export function testHasTapes(
     });
 }
 
+function CharVocabOf(
+    tapeName: string,
+    grammar: Grammar
+) {
+    return Seq(Dot(tapeName), Rep(grammar, 0, 0));
+}
+
 export function testHasVocab(
-    grammar: Grammar | Interpreter,
-    expectedVocab: {[tape: string]: number|string[]}
+    grammar: Grammar | Dict<Grammar>,
+    expectedVocab: {[tape: string]: number | string[]},
+    symbol: string = "",
+    stripHidden: boolean = true
 ): void {
-    const interpreter = prepareInterpreter(grammar, {optimizeAtomicity: false});
-
     for (const tapeName in expectedVocab) {
-
-        if (interpreter.grammar.tapes.tag !== Tapes.Tag.Lit) {
-            it(`tapes should be resolved`, function() {
-                assert.fail();
-            });
-            continue;
+        let vocabGrammar: Grammar | Dict<Grammar>;
+        if ((grammar instanceof CollectionGrammar)) {
+            vocabGrammar = {...grammar.symbols};
+            if (!(symbol in vocabGrammar)) {
+                it(`symbol '${symbol}' not found in CollectionGrammar (${tapeName} vocab)`, function() {
+                    assert.fail();
+                }); 
+                continue;   
+            }
+            vocabGrammar[symbol] = CharVocabOf(tapeName, vocabGrammar[symbol]);
+        } else if ((grammar instanceof Component)) {
+            vocabGrammar = CharVocabOf(tapeName, grammar);
+        } else {
+            vocabGrammar = {...(grammar as Dict<Grammar>)};
+            if (!(symbol in vocabGrammar)) {
+                it(`symbol '${symbol}' not found in grammar dictionary (${tapeName} vocab)`, function() {
+                    assert.fail();
+                });
+                continue;
+            }
+            vocabGrammar[symbol] = CharVocabOf(tapeName, grammar[symbol]);
         }
-
-        const v = interpreter.grammar.tapes.vocabMap[tapeName];
-        if (v === undefined) {
-            it(`vocab for ${tapeName} should exist`, function() {
-                assert.fail();
-            });
-            continue;
-        }
-
-        if (v.tag !== Vocab.Tag.Lit) {
-            it(`vocab for ${tapeName} should be resolved`, function() {
-                assert.fail();
-            });
-            continue;
-        }
+        const interpreter = prepareInterpreter(vocabGrammar, {optimizeAtomicity: false});
 
         const expected = expectedVocab[tapeName];
-        if (Array.isArray(expected)) {
-            // it's a string[]
-            const expectedSet = new Set(expected);
-            it(`vocab of ${tapeName} should be ${expected}`, function() {
-                expect(v.tokens).to.deep.equal(expectedSet);
+        const outputs: StringDict[] = generateOutputs(interpreter, symbol, "", stripHidden);
+        if (typeof expected == 'number') {
+            // it's a number
+            it(`${symbol} ${tapeName} vocab should have ${expected} tokens`, function() {
+                expect(outputs.length).to.equal(expected);
             });
         } else {
-            // it's a number
-            it(`should have ${expected} tokens in the ${tapeName} vocab`, function() {
-                expect(v.tokens.size).to.equal(expected);
+            // it's a string[]
+            const expectedSet = new Set(expected);
+            const vocabSet = new Set(outputs.map(k => k[tapeName]));
+            it(`${symbol} ${tapeName} vocab should be ${expected}`, function() {
+                expect(vocabSet).to.deep.equal(expectedSet);
             });
         }
     }

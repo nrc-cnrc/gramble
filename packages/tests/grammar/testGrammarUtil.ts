@@ -12,19 +12,19 @@ import {
     DEFAULT_MAX_CHARS,
     DEFAULT_MAX_RECURSION
 } from "../../interpreter/src/utils/constants";
-
-import { StringDict } from "../../interpreter/src/utils/func";
-import { SILENT, timeIt, } from "../../interpreter/src/utils/logging";
+import { Dict, StringDict } from "../../interpreter/src/utils/func";
+import {
+    timeIt, SILENT,
+    VERBOSE_DEBUG, VERBOSE_GRAMMAR
+} from "../../interpreter/src/utils/logging";
 import { Options } from "../../interpreter/src/utils/options";
 
 import {
     testSuiteName, verbose,
-    testHasTapes, testHasVocab, 
-    testGenerate, 
-    generateOutputs, testNumOutputs, 
-    testMatchOutputs,
+    testHasTapes, testHasVocab,
+    testGenerate, generateOutputs,
+    testNumErrors, testNumOutputs, testMatchOutputs,
     prepareInterpreter,
-    testNumErrors,
     VERBOSE_TEST_L2    
 } from '../testUtil';
 
@@ -39,7 +39,7 @@ export const t4 = (s: string) => Lit("t4", s);
 export const t5 = (s: string) => Lit("t5", s);
 
 export interface GrammarTestAux extends Options {
-    grammar: Grammar,
+    grammar: Grammar | Dict<Grammar>,
     tapes: string[],
     vocab: {[tape: string]: number|string[]},
     results: StringDict[],
@@ -98,7 +98,7 @@ export function testGrammarAux({
         testHasTapes(grammar, tapes, symbol, stripHidden);
     }
     if (vocab !== undefined) {
-        testHasVocab(grammar, vocab);
+        testHasVocab(grammar, vocab, symbol, stripHidden);
     }
 
     const interpreter = prepareInterpreter(grammar, opt);
@@ -144,7 +144,7 @@ function testDefault(params: Partial<GrammarTest>): () => void {
 }
 
 export function testGrammar(params: Partial<GrammarTest>): void {
-    if (params['desc'] === undefined){
+    if (params['desc'] === undefined) {
         it(`desc must be defined`, function() {
             expect(params['desc']).to.not.be.undefined;
         });
@@ -156,6 +156,20 @@ export function testGrammar(params: Partial<GrammarTest>): void {
     params['test'] = undefined;
 
     describe(params['desc'], test(params));
+}
+
+type GrammarIOTest = Partial<GrammarTest> & { io?: [string, string][] };
+
+export function testGrammarIO(params: Partial<GrammarIOTest>): void {
+    if (params.io !== undefined) {
+        params.results = params.io.map(([i,o]) => {
+            const result: StringDict = {};
+            if (i.length > 0) result["$i"] = i;
+            if (o.length > 0) result["$o"] = o;
+            return result;
+        });
+    }
+    testGrammar(params);
 }
 
 interface GrammarEqualTest {

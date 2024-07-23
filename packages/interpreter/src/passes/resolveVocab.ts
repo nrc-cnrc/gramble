@@ -1,28 +1,14 @@
-import { AutoPass, Pass, SymbolEnv } from "../passes";
-import { AlternationGrammar, 
-    CollectionGrammar, 
-    CountGrammar, 
+import { AutoPass, Pass } from "../passes";
+import { 
     CursorGrammar, 
-    EmbedGrammar, 
-    Grammar, HideGrammar,
-    JoinGrammar, 
-    LengthRange, 
-    MatchGrammar,
-    NegationGrammar,
-    RenameGrammar,
-    RepeatGrammar,
-    SequenceGrammar
+    Grammar, 
 } from "../grammars";
-import { renameTape } from "../tapes";
-import { Count } from "../grammarConvenience";
-import { exhaustive, update } from "../utils/func";
+import { update } from "../utils/func";
 import { Msg } from "../utils/msgs";
-import { CounterStack } from "../utils/counter";
 import { Env, Options } from "../utils/options";
 import { VocabDict } from "../vocab";
 import * as Tapes from "../tapes";
 import * as Vocabs from "../vocab";
-import { TapesEnv } from "./calculateTapes";
 
 
 export class ResolveVocabEnv extends Env<Grammar> {

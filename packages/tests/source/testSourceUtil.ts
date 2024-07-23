@@ -31,28 +31,28 @@ export function Warning(row: number, col: number, sheet?: string):  Partial<Mess
     return { row, col, tag: Msgs.Tag.Warning };
 }
 
-export interface ProjectTest extends Options {
+export interface SourceTestAux extends Options {
     id: string,
     filename: string,
     dir: string,
+    symbol: string
     results: StringDict[],
     errors: Partial<Message>[],
-    symbol: string
 }
 
-export function testProject({
+export function testSourceAux({
     id,
     filename = undefined,
     dir,
+    symbol = "word",
     results = undefined,
     errors = [],
-    symbol = "word",
     verbose = SILENT,
     directionLTR = true,
     optimizeAtomicity = true,
     maxRecursion = DEFAULT_MAX_RECURSION,
     maxChars = DEFAULT_MAX_CHARS,
-}: Partial<ProjectTest>): void {
+}: Partial<SourceTestAux>): void {
 
     const opt = Options({
         verbose: verbose,
@@ -80,6 +80,28 @@ export function testProject({
     if (results !== undefined) {
         testGenerate(interpreter, results, qualifiedSymbol);
     }
+}
+
+export interface SourceTest extends SourceTestAux{
+    desc: string,
+}
+
+export function testSource(params: Partial<SourceTest>): void {
+    if (params['desc'] === undefined) {
+        it(`desc must be defined`, function() {
+            expect(params['desc']).to.not.be.undefined;
+        });
+        return;
+    }
+
+    if (params['id'] === undefined) {
+        const id = params["desc"].split(" ")[0];
+        params['id'] = id.endsWith(".") ? id.slice(0,-1) : id;
+    }
+
+    describe(params['desc'], function() {
+        testSourceAux(params);
+    });
 }
 
 export function sheetFromFile(
