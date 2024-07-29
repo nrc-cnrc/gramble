@@ -4,6 +4,7 @@ import {
     OptionalReplace,
     Join,
     Lit,
+    Seq,
 } from "../../interpreter/src/grammarConvenience";
 
 import { DEFAULT_TAPE, INPUT_TAPE, OUTPUT_TAPE } from "../../interpreter/src/utils/constants";
@@ -13,6 +14,7 @@ import {
     grammarTestSuiteName,
     testGrammar,
     t1,
+    t2,
 } from "./testGrammarUtil";
 
 import { 
@@ -41,10 +43,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hallo'},
         ],
-        verbose: VERBOSE_DEBUG
     });
 
-    /*
     testGrammar({
         desc: '2. hello ⨝ e -> a, a -> uT',
         grammar: ReplaceBlock("t1", "hello",
@@ -809,5 +809,54 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'aBc'},
         ],
     });
-    */
+
+    testGrammar({
+        desc: '23. hello ⨝ e -> a, joining output',
+        grammar: Join(t1("hallo"), 
+                        ReplaceBlock("t1", "hello", 
+                            Replace("e", "a"))),
+        tapes: ["t1"],
+        results: [
+            {t1: 'hallo'},
+        ],
+    });
+
+    const test24 = Uni(Seq(t1("hello"), t2("en-us")),
+                            Seq(t1("hullo"), t2("en-gb")));
+
+    const testJoin24 = Join(t2("en-us"), test24);
+
+    testGrammar({
+        desc: '24a. more complex grammar ⨝ e -> a, joining t1',
+        grammar: Join(t1("hallo"), 
+                        ReplaceBlock("t1", test24, 
+                            Replace("e", "a"))),
+        tapes: ["t1", "t2"],
+        results: [
+            {t1: 'hallo', t2: 'en-us'},
+        ],
+    });
+
+    testGrammar({
+        desc: '24b. more complex grammar with join ⨝ e -> a, joining t1',
+        grammar: Join(t1("hallo"), 
+                        ReplaceBlock("t1", testJoin24, 
+                            Replace("e", "a"))),
+        tapes: ["t1", "t2"],
+        results: [
+            {t1: 'hallo', t2: 'en-us'},
+        ],
+    });
+
+    testGrammar({
+        desc: '24c. more complex grammar ⨝ e -> a, joining t2',
+        grammar: Join(t2("en-us"), 
+                        ReplaceBlock("t1", test24, 
+                            Replace("e", "a"))),
+        tapes: ["t1", "t2"],
+        results: [
+            {t1: 'hallo', t2: 'en-us'},
+        ],
+    });
+
 });

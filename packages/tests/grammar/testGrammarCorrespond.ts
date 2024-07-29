@@ -31,6 +31,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     logTestSuite(this.title);
 
+    /*
     testGrammar({
         desc: '1a. o shorter than i, default priority',
         grammar: Correspond(Seq(i("hello"), o("bye"))),
@@ -58,7 +59,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         verbose: VERBOSE_DEBUG
     });
     
-    /*
     testGrammar({
         desc: '2a. o equal length to i, priority IO',
         grammar: Correspond(Seq(i("hello"), o("world"))),

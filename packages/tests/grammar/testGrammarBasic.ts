@@ -237,8 +237,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hi', t2: 'yo', t3: 'hey'},
         ],
-        verbose: VERBOSE_DEBUG,
-        optimizeAtomicity: false,
     });
 
     testGrammar({

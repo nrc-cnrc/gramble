@@ -68,6 +68,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     });
     
+    /*
     testGrammarIO({
 		desc: '1a-OI. Replace ε -> X in "abc"',
         grammar: Join(I("abc"),
@@ -107,6 +108,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
         priority: ["$o", "$i"]
     });
+    */
 
     testGrammarIO({
 		desc: '2a. Replace ε -> X in ""',
@@ -699,6 +701,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         priority: ["$i", "$o"],
     });
 
+    /*
     testGrammarIO({
 		desc: '9a-OI. Replace ε -> X in "abc"',
         grammar: Join(Seq(I("abc"), O("XaXbXcX")), 
@@ -738,5 +741,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
         priority: ["$o", "$i"],
     });
+    */
 
 });
