@@ -48,6 +48,7 @@ export type Grammar = EpsilonGrammar
              | NegationGrammar
              | PreTapeGrammar
              | CursorGrammar
+             | GreedyCursorGrammar
              | HideGrammar
              | MatchGrammar
              | CollectionGrammar
@@ -349,6 +350,18 @@ export class NegationGrammar extends UnaryGrammar {
 
 export class CursorGrammar extends UnaryGrammar {
     public readonly tag = "cursor";
+
+    constructor(
+        public tapeName: string,
+        child: Grammar,
+        public vocab: Vocab = Vocabs.Ref(tapeName)
+    ) {
+        super(child);
+    }
+}
+
+export class GreedyCursorGrammar extends UnaryGrammar {
+    public readonly tag = "greedyCursor";
 
     constructor(
         public tapeName: string,

@@ -21,8 +21,9 @@ import {
     ShortGrammar,
     NegationGrammar,
     CorrespondGrammar,
-    CursorGrammar,
+    GreedyCursorGrammar,
     ReplaceGrammar,
+    CursorGrammar,
 } from "../grammars";
 import { AutoPass } from "../passes";
 import { 
@@ -116,6 +117,7 @@ export class CalculateTapes extends AutoPass<Grammar> {
             case "pretape": return getTapesDefault(g);
             
             case "cursor":  return getTapesCursor(g, env);
+            case "greedyCursor":  return getTapesCursor(g, env);
             
             // union of children's tapes but always String vocab
             case "short":      return getTapesShort(g);
@@ -511,7 +513,7 @@ function getTapesCondition(
 }
 
 function getTapesCursor(
-    g: CursorGrammar,
+    g: CursorGrammar | GreedyCursorGrammar,
     env: TapesEnv
 ): Grammar {
 

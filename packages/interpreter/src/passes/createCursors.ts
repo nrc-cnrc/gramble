@@ -1,14 +1,15 @@
 import { Pass, SymbolEnv } from "../passes";
 import { 
     CollectionGrammar,
-    CursorGrammar, DotGrammar, 
+    GreedyCursorGrammar, DotGrammar, 
     EmbedGrammar, Grammar, 
     HideGrammar, JoinGrammar, 
     LiteralGrammar, 
     PreTapeGrammar, 
     RenameGrammar, 
     ReplaceGrammar, 
-    StringPairSet 
+    StringPairSet, 
+    CursorGrammar
 } from "../grammars";
 import { 
     renameTape

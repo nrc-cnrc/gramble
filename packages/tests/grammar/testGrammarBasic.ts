@@ -11,6 +11,7 @@ import {
 import {
     logTestSuite, VERBOSE_TEST_L2,
 } from "../testUtil";
+import { VERBOSE_DEBUG } from "../../interpreter/src/utils/logging";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -236,6 +237,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hi', t2: 'yo', t3: 'hey'},
         ],
+        verbose: VERBOSE_DEBUG,
+        optimizeAtomicity: false,
     });
 
     testGrammar({

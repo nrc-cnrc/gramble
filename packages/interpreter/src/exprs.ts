@@ -1729,6 +1729,102 @@ export function constructCursor(
                 vocab, atomic, output).simplify(env);
 }
 
+
+export class GreedyCursorExpr extends UnaryExpr {
+
+    constructor(
+        public tapeName: string,
+        child: Expr,
+        public vocab: Set<string>,
+        public atomic: boolean,
+        public output: OutputExpr = new OutputExpr(EPSILON),
+    ) {
+        super(child);
+    }
+
+    public get id(): string {
+        return `GCur_${this.tapeName}(${this.child.id})`;
+    }
+
+    public delta(tapeName: string, env: DerivEnv): Expr {
+        if (tapeName == this.tapeName) return this; 
+                // a tape name "X" is considered to refer to different 
+                // tapes inside and outside Cursor("X", child)
+
+        const cNext = this.child.delta(tapeName, env);
+        return constructGreedyCursor(env, this.tapeName, cNext, this.vocab, 
+                    this.atomic, this.output);
+    }
+
+    public *deriv(query: Query, env: DerivEnv): Derivs {
+        if (query.tapeName == this.tapeName) return; 
+                // a tape name "X" is considered to refer to different 
+                // tapes inside and outside Cursor("X", child)
+
+        for (const d of this.child.deriv(query, env)) {
+            yield d.wrap(c => constructGreedyCursor(env, this.tapeName, c, 
+                    this.vocab, this.atomic, this.output));
+        }
+    }
+
+    public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
+        const newEnv = env.setVocab(this.vocab, this.atomic);
+        const deltaToken = new TokenExpr(this.tapeName, '');
+        const deltaNext = this.child.delta(this.tapeName, newEnv);
+        const deltaGenerator = iterUnit(new Deriv(deltaToken, deltaNext));
+        const derivQuery = constructDot(this.tapeName);
+        const derivResults = disjoin(this.child.deriv(derivQuery, newEnv), newEnv);
+        const allResults = randomCutIter([deltaGenerator, derivResults], env.random);
+
+        for (const d of allResults) {
+            env.incrStates();
+            const newOutput = this.output.addOutput(env, d.result);
+            env.logDeriv(d.result, d.next);
+
+            const finished = (d.result instanceof TokenExpr && d.result.text == "");
+
+            if (finished) {
+                const wrapped = constructFinished(env, this.tapeName, d.next, newOutput);
+                yield [true, wrapped];
+                continue;
+            }
+
+            const wrapped = constructGreedyCursor(env, this.tapeName, d.next, 
+                            this.vocab, this.atomic, newOutput);
+            yield [true, wrapped];
+            
+        }
+    }
+
+    public simplify(env: Env): Expr {
+        if (this.child instanceof OutputExpr) {
+            return this.child.addOutput(env, this.output);
+        }
+        if (this.child instanceof EpsilonExpr) return this.output;
+        if (this.child instanceof NullExpr) return this.child;
+        return this;
+    }
+
+    public getOutputs(env: DerivEnv): StringDict[] {
+        const myOutput = this.output.getOutputs(env);
+        const childOutput = this.child.getOutputs(env);
+        return outputProduct(myOutput, childOutput);
+    }
+
+}
+
+export function constructGreedyCursor(
+    env: Env,
+    tape: string, 
+    child: Expr, 
+    vocab: Set<string>,
+    atomic: boolean,
+    output?: OutputExpr
+): Expr {
+    return new GreedyCursorExpr(tape, child,
+                vocab, atomic, output).simplify(env);
+}
+
 export class PreTapeExpr extends UnaryExpr {
 
     constructor(

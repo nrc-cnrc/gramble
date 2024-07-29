@@ -2,7 +2,7 @@ import { Pass, SymbolEnv } from "../passes";
 import { AlternationGrammar, 
     CollectionGrammar, 
     CountGrammar, 
-    CursorGrammar, 
+    GreedyCursorGrammar, 
     EmbedGrammar, 
     Grammar, HideGrammar,
     JoinGrammar, 
@@ -12,7 +12,8 @@ import { AlternationGrammar,
     PriorityUnionGrammar,
     RenameGrammar,
     RepeatGrammar,
-    SequenceGrammar
+    SequenceGrammar,
+    CursorGrammar
 } from "../grammars";
 import { renameTape } from "../tapes";
 import { Count } from "../grammarConvenience";
@@ -36,19 +37,29 @@ export class InfinityProtection extends Pass<Grammar,Grammar> {
         const mapped = g.mapChildren(this, newEnv);
         return mapped.bind(g => {
             switch (g.tag) {
-                case "cursor": return this.transformCursor(g, env);
-                default: return g;
+                case "cursor":
+                case "greedyCursor":   return this.transformCursor(g, env);
+
+                default:               return g;
             }
         });
     }
 
-    public transformCursor(g: CursorGrammar, env: SymbolEnv): Grammar {
+    public transformCursor(
+        g: CursorGrammar | GreedyCursorGrammar, 
+        env: SymbolEnv
+    ): Grammar {
         const stack = new CounterStack(2);
         const len = lengthRange(g.child, g.tapeName, stack, env);
 
-        // if it's not potentially infinite, we don't do anything
+        // it's null, it doesn't matter
         if (len.null == true) return g;
-        if (len.max !== Infinity) return g;
+        
+        // if it's not potentially infinite, replace with a greedy cursor
+        if (len.max !== Infinity) {
+            return new GreedyCursorGrammar(g.tapeName, g.child, g.vocab)
+                                        .tapify(env);
+        }
 
         // it's potentially infinite, add a Count for protection
         let maxChars: number;
@@ -130,6 +141,7 @@ export function lengthRange(
         case "replace": 
             return { null: false, min: 0, max: Infinity };
         case "replaceblock":
+            // we shouldn't get these here anyway
             if (tapeName !== g.inputTape) 
                 return lengthRange(g.child, tapeName, stack, env);
             return { null: false, min: 0, max: Infinity };
@@ -140,6 +152,7 @@ export function lengthRange(
         case "testnot":
         case "pretape":
         case "cursor":
+        case "greedyCursor":
         case "singletape":
         case "correspond":
             return lengthRange(g.child, tapeName, stack, env);

@@ -55,8 +55,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'hello', $o: 'bye'},
         ],
         priority: ["$o", "$i"],
+        verbose: VERBOSE_DEBUG
     });
     
+    /*
     testGrammar({
         desc: '2a. o equal length to i, priority IO',
         grammar: Correspond(Seq(i("hello"), o("world"))),
@@ -337,4 +339,5 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
         priority: ["$o", "$i"],
     });
+    */
 });

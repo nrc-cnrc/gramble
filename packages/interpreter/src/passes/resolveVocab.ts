@@ -1,7 +1,8 @@
 import { AutoPass, Pass } from "../passes";
 import { 
+    GreedyCursorGrammar, 
+    Grammar,
     CursorGrammar, 
-    Grammar, 
 } from "../grammars";
 import { update } from "../utils/func";
 import { Msg } from "../utils/msgs";
@@ -46,12 +47,16 @@ export class ResolveVocabAux extends AutoPass<Grammar> {
 
     public postTransform(g: Grammar, env: ResolveVocabEnv): Grammar {
         switch (g.tag) {
-            case "cursor": return this.transformCursor(g, env);
+            case "cursor": 
+            case "greedyCursor": return this.transformCursor(g, env);
+            
             default: return g;
         }
     }
 
-    public transformCursor(g: CursorGrammar, env: ResolveVocabEnv): Grammar {
+    public transformCursor(
+        g: CursorGrammar | GreedyCursorGrammar, 
+        env: ResolveVocabEnv): Grammar {
 
         if (g.vocab.tag === Vocabs.Tag.Lit) {
             // we're done already

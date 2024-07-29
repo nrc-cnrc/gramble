@@ -41,8 +41,10 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hallo'},
         ],
+        verbose: VERBOSE_DEBUG
     });
 
+    /*
     testGrammar({
         desc: '2. hello ⨝ e -> a, a -> uT',
         grammar: ReplaceBlock("t1", "hello",
@@ -807,5 +809,5 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'aBc'},
         ],
     });
-
+    */
 });

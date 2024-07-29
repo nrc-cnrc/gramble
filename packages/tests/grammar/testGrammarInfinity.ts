@@ -4,7 +4,8 @@ import {
 } from "../../interpreter/src/grammarConvenience";
 
 import {
-    SILENT
+    SILENT,
+    VERBOSE_DEBUG
 } from "../../interpreter/src/utils/logging";
 
 import {
@@ -35,7 +36,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'hello'},
         ],
-        maxChars: 3
+        maxChars: 3,
     });
 
     testGrammar({
@@ -48,7 +49,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'oo'},
             {t1: 'ooo'},
         ],
-        maxChars: 3
+        maxChars: 3,
     });
 
     testGrammar({
