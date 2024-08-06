@@ -2,31 +2,60 @@ import { Pass } from "../passes";
 import { 
     DotGrammar,
     EmbedGrammar,
-    EpsilonGrammar,
     Grammar,
     LiteralGrammar, 
-    RenameGrammar, 
     SingleTapeGrammar
 } from "../grammars";
-import * as Tapes from "../tapes";
 import { Msg } from "../utils/msgs";
 import { PassEnv } from "../components";
 
 /**
- * Some environments require the grammar inside to only reveal 
- * a single tape.  (E.g. grammars expressed in cells, like regexes.)
+ * Does some preliminary handling of single-tape environments to prepare them
+ * for tape calculation.
+ *  
+ * Background: Some environments require single-tape grammars (e.g. regexes).
+ * For regexes like `a|ab*`, this will be composed from literal content on the 
+ * default tape ($T), but we also allow the programmer to define and invoke 
+ * symbols like `{VOWEL}`, so long as VOWEL only has a single tape.
  * 
- * Originally we had intended to do something special with multi-tape
- * grammars inside (e.g. hide the other tapes), but this leads to some
- * tricky situations that will require a lot of work to handle, so 
- * for now we're simply forbidding multi-tape embeddings here
- * and issuing an error.
+ * That raises the question, "What should the name of the tape be?"  Our decision
+ * is that the programmer can choose, they can name it "text" or whatever; the only
+ * constraint we put on them is that there can only be one tape.  (We could stipulate 
+ * something, but it doesn't actually eliminate the tricky bits below, so we might 
+ * as well let them have that freedom.)
+ * 
+ * This means, though, that it's entirely possible that a regex can invoke multiple
+ * tapes *as written*, even though the programmer intends it to invoke a single tape.
+ * Consider, for example, a regex like `{VOWEL}n`, where VOWEL has one tape, "text".
+ * However, that `n` also only has one tape, the default tape $T.  If we sent this to
+ * tape-calc as-is, we'd reject this for having two tapes, {text, $T}, which rejects
+ * an entirely reasonable regex.
+ * 
+ * So we're not really expressing "The grammar over which this SingleTape scopes has
+ * one tape", what we're actually expressing is "The grammar over which this SingleTape 
+ * scopes is only made of single-tape terminals, even if those tapes happen to be named
+ * different things."  This pass performs this scope adjustment.
+ * 
+ * We traverse the tree, and when we find a Literal or Dot inside the scope of a SingleTape
+ * we just directly rename it (not make a RenameGrammar, just directly adjust the tapeName).
+ * 
+ * But Embeds are trickier; they pose a chicken-and-egg problem.  We need to (a) make sure
+ * they only have one tape, and (b) wrap them in a Rename from whatever-their-tape-is to 
+ * whatever-the-SingleTape-decrees (e.g. $i or $o).
+ * 
+ * We can't do (a) or (b) BEFORE CalculateTapes, because we won't know the
+ * Embed's tapes yet.  But we also can't do this pass AFTER CalculateTapes,
+ * because it would change the tape structure of the whole grammar too dramatically. 
+ * Instead, we do what we can here, and "push" the SingleTapeGrammar (originally
+ * having a wider scope) down the tree so that it only scopes over each Embed in
+ * its scope.  That sets things up correctly so that tape calc can reject multi-tape
+ * Embeds without rejecting reasonable regexes like `{VOWEL}n`
  */
 
 export class HandleSingleTapes extends Pass<Grammar,Grammar> {
 
     constructor(
-        public tapeName: string | undefined = undefined
+        public singleTape: SingleTapeGrammar | undefined = undefined 
     ) {
         super();
     }
@@ -43,64 +72,32 @@ export class HandleSingleTapes extends Pass<Grammar,Grammar> {
 
     handleDefault(g: Grammar, env: PassEnv): Msg<Grammar> {
         const newG = g.mapChildren(this, env);
-
-        if (this.tapeName === undefined) return newG; // nothing to do
-
-        // otherwise, the tape structure has changed, recalculate it
-        return newG.bind(g => {
-            g.tapes = Tapes.Unknown();
-            return g.tapify(env);
-        });
+        return newG; 
     }
 
     handleEmbed(g: EmbedGrammar, env: PassEnv): Grammar {
-        
-        if (this.tapeName === undefined) {
-            // we're not in singleTape env
-            return g;
-        }
-
-        if (g.tapeNames.length == 0) {
-            throw new EpsilonGrammar().tapify(env)
-                .err("Embedding zero-field symbol",
-                `This embedded symbol has no fields (e.g. "text"), it should have exactly one.`)
-        }
-
-        if (g.tapeNames.length > 1) {
-            throw new EpsilonGrammar().tapify(env)
-                .err("Embedding multi-field symbol",
-                `Only grammars with one field (e.g. just "text" but not any other fields) ` +
-                `can be embedded into a regex or rule context.`)
-        }
-
-        const embedTapeName = g.tapeNames[0];
-        if (this.tapeName != embedTapeName) {
-            return new RenameGrammar(g, embedTapeName, this.tapeName)
-                        .tapify(env);
-        }
-
-        return g;
+        if (this.singleTape === undefined) return g;
+        const wrapped = new SingleTapeGrammar(this.singleTape.tapeName, g);
+        wrapped.pos = this.singleTape.pos;
+        return wrapped;
     }
 
     private handleDot(g: DotGrammar, env: PassEnv): Grammar {
-        if (this.tapeName != undefined) {
-            return new DotGrammar(this.tapeName)
-                        .tapify(env);
+        if (this.singleTape != undefined) {
+            return new DotGrammar(this.singleTape.tapeName);
         }
         return g;
     }
 
     private handleLiteral(g: LiteralGrammar, env: PassEnv): Grammar {
-        if (this.tapeName != undefined) {
-            return new LiteralGrammar(this.tapeName, g.text)
-                        .tapify(env);
+        if (this.singleTape != undefined) {
+            return new LiteralGrammar(this.singleTape.tapeName, g.text);
         }
         return g;
     }
 
     private handleSingleTape(g: SingleTapeGrammar, env: PassEnv): Msg<Grammar> {
-        const newThis = new HandleSingleTapes(g.tapeName);
+        const newThis = new HandleSingleTapes(g);
         return newThis.transform(g.child, env);
-        // note that we're not returning a new SingleTapeGrammar, this pass eliminates them
     }
 }

@@ -38,7 +38,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-		desc: '1. Single_t1(ε)',
+		desc: '1b. Single_t1(ε)',
         grammar: SingleTape("t1", Epsilon()),
         tapes: [],
         results: [
@@ -145,7 +145,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'hellohellohello'},
         ],
     });
-    
+
     testGrammar({
 		desc: '7a. Alternating an embed and a literal in a singletape',
         grammar: {

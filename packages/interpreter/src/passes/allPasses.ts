@@ -162,17 +162,17 @@ export const GRAMMAR_PASSES =
         new FlattenCollections()
     ).compose(
 
+    // handles some local tape renaming for plaintext/regex
+    new TimerPass<Grammar,Grammar>(
+        "Handling single-tape environments", 
+        new HandleSingleTapes()
+    ).compose(
+
     // Replace the .tapeSet member (which by default is TapeUnknown)
     // with a TapeLit (a concrete set of tape names)
     new TimerPass<Grammar,Grammar>(
         "Calculating tapes", 
         new CalculateTapes()
-    ).compose(
-
-    // handles some local tape renaming for plaintext/regex
-    new TimerPass<Grammar,Grammar>(
-        "Handling single-tape environments", 
-        new HandleSingleTapes()
     ).compose(
 
     // some conditions (like `starts re text: ~k`) have counterintuitive

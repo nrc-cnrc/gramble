@@ -349,12 +349,24 @@ function getTapesSingleTape(g: SingleTapeGrammar): Grammar {
         return g.child;
     }
 
-    // this isn't quite correct (it misses some possible vocab coming from
-    // children beyond the first, but I don't think it matters given the restricted 
-    // contexts in which single tapes occur.
+    if (dictLen(g.child.tapes.vocabMap) > 1) {
+        throw new EpsilonGrammar()
+                .err("Embedding multi-field symbol",
+                        `Only grammars with one field (e.g. just "text" but not any other fields) ` +
+                        `can be embedded into a regex or rule context.`)
+                .localize(g.child.pos);
+    }
+
+    // There's one tape; if it's the same as our singleTape name, just return the
+    // child; otherwise create a RenameGrammar around it.  Either way this SingleTapeGrammar
+    // ceases to exist.
     const tapeToRename = Object.keys(g.child.tapes.vocabMap)[0];
-    const tapes = Tapes.Rename(g.child.tapes, tapeToRename, g.tapeName);
-    return updateTapes(g, tapes);
+    if (g.tapeName === tapeToRename) {
+        return g.child;
+    }
+    
+    const newChild = new RenameGrammar(g.child, tapeToRename, g.tapeName);
+    return getTapesRename(newChild); // this handles the details of the renaming for us
 }
 
 function getTapesDot(g: DotGrammar, env: TapesEnv): Grammar {
@@ -368,7 +380,7 @@ function getTapesEmbed(
     env: TapesEnv,
 ): Grammar {
     if (env.tapeMap === undefined || !(g.symbol in env.tapeMap)) 
-        throw new Error(`Unknown symbol during tapecalc: ${g.symbol}`);
+        throw new Error(`Unknown symbol during tapecalc: ${g.symbol}, env contains ${env.tapeMap?.keys}`);
         // should already be in there
     return updateTapes(g, env.tapeMap[g.symbol]);
 }
