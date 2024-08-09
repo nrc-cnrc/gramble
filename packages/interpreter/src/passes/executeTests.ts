@@ -1,5 +1,5 @@
 import { Dict, StringDict, mapDict } from "../utils/func";
-import { constructCollection, Expr } from "../exprs";
+import { constructSelection, Expr } from "../exprs";
 import { Message, Err, Succeed, THROWER, Msg } from "../utils/msgs";
 import { 
     Grammar, TestNotGrammar, 
@@ -113,7 +113,6 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
         test: AbstractTestGrammar, 
         env: SymbolEnv
     ): StringDict[] {
-        
         // create a filter for each test
         let targetGrammar: Grammar = new JoinGrammar(test.child, test.test)
                                         .tapify(env);    
@@ -131,7 +130,7 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
                                 .msgTo(THROWER);
 
         let expr = constructExpr(env, targetGrammar);
-        expr = constructCollection(env, expr, this.symbolTable);
+        expr = constructSelection(env, expr, this.symbolTable);
         return [...generate(expr, false, env.opt)];
 
     }

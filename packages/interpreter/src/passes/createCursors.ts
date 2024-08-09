@@ -9,7 +9,8 @@ import {
     RenameGrammar, 
     ReplaceGrammar, 
     StringPairSet, 
-    CursorGrammar
+    CursorGrammar,
+    SelectionGrammar
 } from "../grammars";
 import { 
     renameTape
@@ -99,7 +100,7 @@ function getTapePriority(
 
         // embed/rename etc. have their usual complications
         case "embed":       return getTapePriorityEmbed(g, tape, symbolsVisited, env);
-        case "collection":  return getTapePriorityCollection(g, tape, symbolsVisited, env);
+        case "selection":  return getTapePrioritySelection(g, tape, symbolsVisited, env);
         case "hide":        return getTapePriorityHide(g, tape, symbolsVisited, env);
         case "rename":      return getTapePriorityRename(g, tape, symbolsVisited, env);
 
@@ -133,8 +134,8 @@ function getTapePriorityLeaf(
     return (tape == g.tapeName) ? 1 : 0;
 }
 
-function getTapePriorityCollection(
-    g: CollectionGrammar,
+function getTapePrioritySelection(
+    g: SelectionGrammar,
     tape: string,
     symbolsVisited: StringPairSet,
     env: SymbolEnv  

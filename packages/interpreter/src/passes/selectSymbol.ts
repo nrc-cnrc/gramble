@@ -2,6 +2,7 @@ import { Msg } from "../utils/msgs";
 import { 
     Grammar,
     CollectionGrammar,
+    SelectionGrammar,
 } from "../grammars";
 import { Pass } from "../passes";
 import { qualifySymbol } from "./qualifySymbols";
@@ -47,7 +48,7 @@ export class SelectSymbol extends Pass<Grammar,Grammar> {
                 `Cannot find symbol ${this.symbol} in grammar, candidates: ${Object.keys(g.symbols)}.`);
         }
 
-        const result = new CollectionGrammar(g.symbols, resolution[0], g.qualifier);
+        const result = new SelectionGrammar(g.symbols, resolution[0]);
         result.tapes = referent.tapes;
         return result;
     }

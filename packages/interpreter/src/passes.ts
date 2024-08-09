@@ -23,10 +23,14 @@ export class SymbolEnv extends Env<Grammar> {
         return update(this, {symbolNS: d});
     } */
 
-    public update(t: Grammar): SymbolEnv {
-        if (t.tag !== "collection") return this;
-        return update(this, {symbolNS: t.symbols});
-        
+    public update(g: Grammar): SymbolEnv {
+        switch (g.tag) {
+            case "selection":
+            case "collection":
+                return update(this, {symbolNS: g.symbols});
+            default:
+                return this;
+        }
     }
 }
 

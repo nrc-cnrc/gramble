@@ -13,7 +13,8 @@ import { AlternationGrammar,
     RenameGrammar,
     RepeatGrammar,
     SequenceGrammar,
-    CursorGrammar
+    CursorGrammar,
+    SelectionGrammar
 } from "../grammars";
 import { renameTape } from "../tapes";
 import { Count } from "../grammarConvenience";
@@ -169,8 +170,8 @@ export function lengthRange(
         case "hide": return lengthHide(g, tapeName, stack, env);
         case "repeat": return lengthRepeat(g, tapeName, stack, env);
         case "not": return lengthNot(g, tapeName, stack, env);
-        case "collection":
-            return lengthCollection(g, tapeName, stack, env);
+        case "collection": return lengthCollection(g, tapeName, stack, env);
+        case "selection":    return lengthSelection(g, tapeName, stack, env);
 
         // ones where it's not implemented
         case "context": 
@@ -313,8 +314,8 @@ function lengthNot(g: NegationGrammar, tapeName: string, stack: CounterStack, en
     return lengthRange(g.child, tapeName, stack, env);
 }
 
-function lengthCollection(
-    g: CollectionGrammar, 
+function lengthSelection(
+    g: SelectionGrammar, 
     tapeName: string, 
     stack: CounterStack, 
     env: SymbolEnv
@@ -327,4 +328,13 @@ function lengthCollection(
         return { null: false, min: 0, max: 0 };
     }
     return lengthRange(referent, tapeName, stack, newEnv);
+}
+
+function lengthCollection(
+    g: CollectionGrammar, 
+    tapeName: string, 
+    stack: CounterStack, 
+    env: SymbolEnv
+): LengthRange {
+    return { null: false, min: 0, max: 0 };
 }

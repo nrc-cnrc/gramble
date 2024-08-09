@@ -44,7 +44,6 @@ export class ResolveVocab extends Pass<Grammar, Grammar> {
 
 export class ResolveVocabAux extends AutoPass<Grammar> {
 
-
     public postTransform(g: Grammar, env: ResolveVocabEnv): Grammar {
         switch (g.tag) {
             case "cursor": 

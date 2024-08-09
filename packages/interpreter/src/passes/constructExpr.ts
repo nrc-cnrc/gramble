@@ -1,6 +1,6 @@
 import {
     AlternationGrammar,
-    CollectionGrammar, CorrespondGrammar, 
+    SelectionGrammar, CorrespondGrammar, 
     CountGrammar, GreedyCursorGrammar, 
     Grammar, HideGrammar,
     JoinGrammar, MatchGrammar,
@@ -13,9 +13,9 @@ import {
 } from "../grammars";
 import { Dict } from "../utils/func";
 import { 
-    CollectionExpr, EPSILON,
+    SelectionExpr, EPSILON,
     Expr, 
-    NULL, constructAlternation, constructCollection, 
+    NULL, constructAlternation, constructSelection, 
     constructCorrespond, constructCount, constructCursor, 
     constructDot, constructDotStar, constructEmbed, 
     constructJoin, constructLiteral, 
@@ -64,7 +64,7 @@ export function constructExpr(
         case "pretape":         return constructExprPreTape(env, g);
         case "hide":            return constructExprHide(env, g);
         case "match":           return constructExprMatch(env, g);
-        case "collection":      return constructExprCollection(env, g);
+        case "selection":       return constructExprSelection(env, g);
         case "correspond":      return constructExprCorrespond(env, g);
         
         default: throw new Error(`unhandled grammar in constructExpr: ${g.tag}`)
@@ -209,9 +209,9 @@ function constructExprMatch(
     return constructMatch(env, childExpr, g.inputTape, g.outputTape);
 }
 
-function constructExprCollection(
+function constructExprSelection(
     env: PassEnv,
-    g: CollectionGrammar
+    g: SelectionGrammar
 ): Expr {
     let newSymbols: Dict<Expr> = {};
     let selectedExpr: Expr = EPSILON;
@@ -226,9 +226,9 @@ function constructExprCollection(
         }
     }
     if (selectedFound) {
-        return constructCollection(env, selectedExpr, newSymbols);
+        return constructSelection(env, selectedExpr, newSymbols);
     }
-    return new CollectionExpr(selectedExpr, newSymbols);
+    return new SelectionExpr(selectedExpr, newSymbols);
 }
 
 

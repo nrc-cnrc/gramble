@@ -24,6 +24,7 @@ import {
     GreedyCursorGrammar,
     ReplaceGrammar,
     CursorGrammar,
+    SelectionGrammar,
 } from "../grammars";
 import { AutoPass } from "../passes";
 import { 
@@ -58,12 +59,15 @@ export class TapesEnv extends Env<Grammar> {
 
     public update(g: Grammar): TapesEnv {
         switch (g.tag) {
-            case "collection": return this.updateCollection(g);
-            default: return this;
+            case "selection":
+            case "collection": 
+                return this.updateCollection(g);
+            default: 
+                return this;
         }
     }
 
-    updateCollection(g: CollectionGrammar): TapesEnv {
+    updateCollection(g: CollectionGrammar | SelectionGrammar): TapesEnv {
         const tapeMap = mapDict(g.symbols, (k,_) => Tapes.Ref(k));
         return update(this, {tapeMap});
     }
@@ -135,7 +139,9 @@ export class CalculateTapes extends AutoPass<Grammar> {
             case "repeat":      return getTapesRepeat(g);
 
             // something special
+
             case "embed":        return getTapesEmbed(g, env);
+            case "selection":     return this.getTapesSelection(g, env);
             case "collection":   return this.getTapesCollection(g, env);
             case "rename":       return getTapesRename(g);
             case "hide":         return getTapesHide(g);
@@ -149,6 +155,14 @@ export class CalculateTapes extends AutoPass<Grammar> {
             //default: throw new Error(`unhandled grammar in getTapes: ${g.tag}`);
         }
 
+    }
+
+    getTapesSelection(g: SelectionGrammar, env: TapesEnv): Grammar {
+        const referent = g.getSymbol(g.selectedSymbol);
+        if (referent === undefined) {
+            throw new Error(`Cannot resolve symbol ${g.selectedSymbol}`);
+        }
+        return updateTapes(g, referent.tapes);
     }
     
     getTapesCollection(g: CollectionGrammar, env: TapesEnv): Msg<Grammar> {
@@ -191,25 +205,13 @@ export class CalculateTapes extends AutoPass<Grammar> {
                 this.transform(v, tapeRefreshEnv).msgTo(newMsgs));
         }
 
+        //return updateTapes(g, Tapes.Lit()).msg(msgs);
+
         // TODO: The following interpretation of tapes is incorrect,
         // but matches what we've been doing previously.  I'm going to
         // get it "working" exactly like the old way, before fixing it to be
         // semantically sound.
         return getTapesDefault(g).msg(msgs);
-
-        /*
-        // TODO: This is the correct interpretation, restore it eventually
-
-        // if a symbol is selected, we share its tape set
-        const selectedSymbol = g.getSymbol(g.selectedSymbol);
-        if (selectedSymbol === undefined) {
-            // if there's no selected symbol, the collection as a whole
-            // has the semantics of epsilon, and thus its tapes are
-            // an empty TapeSet rather than TapeUnknown.   
-            return updateTapes(g, TapeSet()).msg(msgs);
-        }
-        return updateTapes(g, selectedSymbol.tapeSet).msg(msgs);
-        */
 
     }
 }

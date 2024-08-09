@@ -70,7 +70,7 @@ export class FlattenCollections extends Pass<Grammar,Grammar> {
             env.symbolNS[newName] = newV;
         }
 
-        return new CollectionGrammar(env.symbolNS, g.selectedSymbol, qualifier)
+        return new CollectionGrammar(env.symbolNS, qualifier)
                     .msg(msgs);
     }
 

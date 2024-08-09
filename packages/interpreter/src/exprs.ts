@@ -1392,7 +1392,7 @@ export abstract class UnaryExpr extends Expr {
     }
 }
 
-export class CollectionExpr extends UnaryExpr {
+export class SelectionExpr extends UnaryExpr {
 
     constructor(
         child: Expr,
@@ -1402,7 +1402,7 @@ export class CollectionExpr extends UnaryExpr {
     }
     
     public get id(): string {
-        return `Col(${this.child.id})`;
+        return `Sel(${this.child.id})`;
     }
 
     public delta(
@@ -1411,7 +1411,7 @@ export class CollectionExpr extends UnaryExpr {
     ): Expr {
         const newEnv = env.setSymbols(this.symbols);
         const newChild = this.child.delta(tapeName, newEnv);
-        return constructCollection(env, newChild, this.symbols);
+        return constructSelection(env, newChild, this.symbols);
     }
 
     public *deriv(
@@ -1421,14 +1421,14 @@ export class CollectionExpr extends UnaryExpr {
         const newEnv = env.setSymbols(this.symbols);
         for (const d of 
                 this.child.deriv(query, newEnv)) {
-            yield d.wrap(c => constructCollection(env, c, this.symbols));
+            yield d.wrap(c => constructSelection(env, c, this.symbols));
         }
     }
 
     public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
         const newEnv = env.setSymbols(this.symbols);
         for (const [cHandled, cNext] of this.child.forward(newEnv)) {
-            const wrapped = constructCollection(env, cNext, this.symbols);
+            const wrapped = constructSelection(env, cNext, this.symbols);
             yield [cHandled, wrapped];
         }
     }
@@ -1441,12 +1441,12 @@ export class CollectionExpr extends UnaryExpr {
     }
 }
 
-export function constructCollection(
+export function constructSelection(
     env: Env,
     child: Expr, 
     symbols: Dict<Expr>
 ): Expr {
-    return new CollectionExpr(child, symbols).simplify(env);
+    return new SelectionExpr(child, symbols).simplify(env);
 }
 
 export class CountExpr extends UnaryExpr {

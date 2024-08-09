@@ -10,7 +10,7 @@ import {
 } from "./utils/func";
 import { Worksheet, Workbook } from "./sources";
 import { backgroundColor, parseHeaderCell } from "./headers";
-import { Expr, CollectionExpr } from "./exprs";
+import { Expr, SelectionExpr } from "./exprs";
 import { DevEnvironment, SimpleDevEnvironment } from "./devEnv";
 import { generate } from "./generator";
 import { MissingSymbolError, Message, THROWER, msg } from "./utils/msgs";
@@ -282,8 +282,13 @@ export class Interpreter {
                                 .msgTo(THROWER);
         
         const env = new PassEnv(this.opt);
-        const expr = constructExpr(env, targetGrammar);
-        const symbols = expr instanceof CollectionExpr
+
+        const selection = new SelectSymbol("ALL")
+                                .getEnvAndTransform(targetGrammar, this.opt)
+                                .msgTo(THROWER);
+
+        const expr = constructExpr(env, selection);
+        const symbols = expr instanceof SelectionExpr
                       ? expr.symbols
                       : {};
         const pass = new ExecuteTests(symbols);

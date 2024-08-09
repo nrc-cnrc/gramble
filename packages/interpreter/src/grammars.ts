@@ -52,6 +52,7 @@ export type Grammar = EpsilonGrammar
              | HideGrammar
              | MatchGrammar
              | CollectionGrammar
+             | SelectionGrammar
              | EmbedGrammar
              | TestGrammar
              | TestNotGrammar
@@ -418,8 +419,30 @@ export class CollectionGrammar extends AbstractGrammar {
 
     constructor(
         public symbols: Dict<Grammar> = {},
-        public selectedSymbol: string = DEFAULT_SYMBOL,
         public qualifier: SymbolQualifier = "leaf"
+    ) {
+        super();
+    }
+    
+    /**
+     * Looks up a symbol name and returns the referent (if any) 
+     */
+    public getSymbol(symbol: string): Grammar | undefined {
+        for (const key of Object.keys(this.symbols)) {
+            if (symbol.toLowerCase() == key.toLowerCase()) {
+                return this.symbols[key];
+            }
+        }
+        return undefined;
+    }
+}
+
+export class SelectionGrammar extends AbstractGrammar {
+    public readonly tag = "selection";
+
+    constructor(
+        public symbols: Dict<Grammar> = {},
+        public selectedSymbol: string = DEFAULT_SYMBOL,
     ) {
         super();
     }
