@@ -30,7 +30,8 @@ import { AutoPass } from "../passes";
 import { 
     mapValues, 
     exhaustive, update, 
-    foldRight, dictLen, mapDict 
+    foldRight, dictLen, mapDict, 
+    getCaseInsensitive
 } from "../utils/func";
 import { 
     DEFAULT_TAPE, 
@@ -158,7 +159,7 @@ export class CalculateTapes extends AutoPass<Grammar> {
     }
 
     getTapesSelection(g: SelectionGrammar, env: TapesEnv): Grammar {
-        const referent = g.getSymbol(g.selectedSymbol);
+        const referent = getCaseInsensitive(g.symbols, g.selectedSymbol);
         if (referent === undefined) {
             throw new Error(`Cannot resolve symbol ${g.selectedSymbol}`);
         }

@@ -1,8 +1,13 @@
-import { Grammar } from "../grammars";
+import { Grammar, SymbolQualifier } from "../grammars";
 import { DEFAULT_SYMBOL } from "../utils/constants";
 import { Dict, mapValues } from "../utils/func";
 
-export type SymbolQualifier = { symbols: Dict<SymbolQualifier> } | "leaf";
+/**
+ * This isn't a Pass itself, just a collection of behavior and types
+ * used to fully-qualify a symbol name.  We use these in two passes:
+ * FlattenCollections to determine what the qualified names of symbols
+ * should be, and SelectSymbol when we choose a particular symbol for generation.
+ */
 
 export function qualifySymbol(
     g: Grammar, 
@@ -33,7 +38,6 @@ export function qualifySymbolAux(
         return qualifySymbolAux(g, [ DEFAULT_SYMBOL ], nsStack);
     }
 
-    
     // if the name isn't empty but we're at a leaf, we didn't find it
     if (g === "leaf") return undefined;
 
@@ -61,18 +65,4 @@ function qualifySymbolLocal(
         }
     }
     return undefined;
-}
-
-/**
- * Creates a minimal representation of the original name structure
- * of the grammar, sufficient to qualify names.
- */
-export function grammarToQualifier(g: Grammar): SymbolQualifier {
-    switch (g.tag) {
-        case "collection": 
-            const symbols = mapValues(g.symbols, grammarToQualifier)
-            return { symbols };
-        default:
-            return "leaf";
-    }
 }

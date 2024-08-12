@@ -239,24 +239,12 @@ export function testHasTapes(
     stripHidden: boolean = true
 ): void {
     const interpreter = prepareInterpreter(grammar, {});
-
-    let referent = interpreter.getSymbol(symbol);
-    
     const bSet = new Set(expectedTapes);
     const testName: string = `${symbol} should have tapes [${[...bSet]}]`;
+    let tapes: string[] = [];
     it(`${testName}`, function() {
-        expect(referent).to.not.be.undefined;
-        if (referent == undefined) {
-            return;
-        }
-        let tapes: string[] = [];
         try {
-            tapes = referent.tapeNames;
-            if (stripHidden) {
-                // for the purpose of this comparison, leave out any internal-only
-                // tapes, like those created by a Hide().
-                tapes = referent.tapeNames.filter(t => !t.startsWith(HIDDEN_PREFIX));
-            }
+            tapes = interpreter.getTapeNames(symbol, stripHidden);
             expect(tapes.length).to.equal(bSet.size);
             for (const a of tapes) {
                 expect(bSet).to.contain(a);

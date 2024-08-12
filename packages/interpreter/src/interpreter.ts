@@ -19,12 +19,11 @@ import { ExecuteTests } from "./passes/executeTests";
 import { CreateCursors } from "./passes/createCursors";
 import { constructExpr } from "./passes/constructExpr";
 import { toStr } from "./passes/toStr";
-import { DEFAULT_PROJECT_NAME, DEFAULT_SYMBOL, HIDDEN_PREFIX } from "./utils/constants";
+import { ALL_SYMBOL, DEFAULT_PROJECT_NAME, DEFAULT_SYMBOL, HIDDEN_PREFIX } from "./utils/constants";
 import { VERBOSE_GRAMMAR, VERBOSE_TIME, logTime, msToTime } from "./utils/logging";
 import { INDICES, Options } from "./utils/options";
 import { SelectSymbol } from "./passes/selectSymbol";
 import { getAllSymbols } from "./passes/getAllSymbols";
-import { qualifySymbol } from "./passes/qualifySymbols";
 import { FlattenCollections } from "./passes/flattenCollections";
 import { CreateQuery } from "./passes/createQuery";
 import { InfinityProtection } from "./passes/infinityProtection";
@@ -139,27 +138,18 @@ export class Interpreter {
         return getAllSymbols(this.grammar);
     }
 
-    /*
-     * Qualifies `symbol` and gets the grammar it refers to (if it exists)
-     */ 
-    public getSymbol(symbol: string): Grammar | undefined {
-        const result = qualifySymbol(this.grammar, symbol);
-        if (result === undefined) return undefined;
-        return result[1];
-    }
-
     public getTapeNames(
         symbol: string,
         stripHidden: boolean = true
     ): string[] {
-        const referent = this.getSymbol(symbol);
-        if (referent == undefined) {
-            throw new Error(`Cannot find symbol ${symbol}.  Choose from the following symbols: ${this.allSymbols()}`);
-        }
+        let selected: Grammar = new SelectSymbol(symbol)
+                                       .getEnvAndTransform(this.grammar, this.opt)
+                                       .msgTo(THROWER);
+        const tapeNames = selected.tapeNames;
         if (stripHidden) {
-            return referent.tapeNames.filter(t => !t.startsWith(HIDDEN_PREFIX));
+            return tapeNames.filter(t => !t.startsWith(HIDDEN_PREFIX));
         }
-        return referent.tapeNames;
+        return tapeNames;
     }
 
     public getTapeColor(
@@ -283,7 +273,7 @@ export class Interpreter {
         
         const env = new PassEnv(this.opt);
 
-        const selection = new SelectSymbol("ALL")
+        const selection = new SelectSymbol(ALL_SYMBOL)
                                 .getEnvAndTransform(targetGrammar, this.opt)
                                 .msgTo(THROWER);
 

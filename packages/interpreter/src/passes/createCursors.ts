@@ -18,6 +18,7 @@ import {
 import { Cursor } from "../grammarConvenience";
 import { children } from "../components";
 import { Options } from "../utils/options";
+import { getCaseInsensitive } from "../utils/func";
 
 export class CreateCursors extends Pass<Grammar,Grammar> {
 
@@ -141,7 +142,7 @@ function getTapePrioritySelection(
     env: SymbolEnv  
 ): number {
     const newEnv = env.update(g);
-    const referent = g.getSymbol(g.selectedSymbol);
+    const referent = getCaseInsensitive(g.symbols, g.selectedSymbol);
     if (referent === undefined) { 
         // without a valid symbol, collections are epsilon,
         // but now is not the time to complain

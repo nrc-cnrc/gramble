@@ -17,7 +17,7 @@ import { AssignDefaults } from "./assignDefaults";
 import { HandleSingleTapes } from "./handleSingleTapes";
 import { CombineLiterals } from "./combineLiterals";
 import { CalculateTapes } from "./calculateTapes";
-import { Pass, TimerPass } from "../passes";
+import { TimerPass } from "../passes";
 import { Grammar } from "../grammars";
 import { TST } from "../tsts";
 
@@ -136,13 +136,6 @@ export const SOURCE_PASSES =
         "Combining literals",
         new CombineLiterals()
     )))))))))))));
-
-
-const x = new TimerPass("x", new AssignDefaults())
-const y = new TimerPass("y", new FlattenCollections())
-const xy = x.compose(y);
-const z = new TimerPass<Grammar,Grammar>("z", new CalculateTapes());
-const yz = y.compose(z);
 
 export const GRAMMAR_PASSES = 
 

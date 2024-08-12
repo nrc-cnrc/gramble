@@ -18,7 +18,7 @@ import { AlternationGrammar,
 } from "../grammars";
 import { renameTape } from "../tapes";
 import { Count } from "../grammarConvenience";
-import { exhaustive, update } from "../utils/func";
+import { exhaustive, getCaseInsensitive, update } from "../utils/func";
 import { Msg } from "../utils/msgs";
 import { CounterStack } from "../utils/counter";
 import { Options } from "../utils/options";
@@ -321,7 +321,7 @@ function lengthSelection(
     env: SymbolEnv
 ): LengthRange {
     const newEnv = env.update(g);
-    const referent = g.getSymbol(g.selectedSymbol);
+    const referent = getCaseInsensitive(g.symbols, g.selectedSymbol);
     if (referent === undefined) { 
         // without a valid symbol, collections are epsilon,
         // but now is not the time to complain

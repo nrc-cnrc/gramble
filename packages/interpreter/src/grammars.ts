@@ -15,7 +15,6 @@ import { DEFAULT_SYMBOL,  HIDDEN_PREFIX, INPUT_TAPE, OUTPUT_TAPE } from "./utils
 import { tokenizeUnicode } from "./utils/strings";
 import { Pos } from "./utils/cell";
 import { CalculateTapes } from "./passes/calculateTapes";
-import { SymbolQualifier } from "./passes/qualifySymbols";
 import { toStr } from "./passes/toStr";
 import { INDICES } from "./utils/options";
 
@@ -414,6 +413,8 @@ export class MatchGrammar extends UnaryGrammar {
     }
 }
 
+export type SymbolQualifier = { symbols: Dict<SymbolQualifier> } | "leaf";
+
 export class CollectionGrammar extends AbstractGrammar {
     public readonly tag = "collection";
 
@@ -422,18 +423,6 @@ export class CollectionGrammar extends AbstractGrammar {
         public qualifier: SymbolQualifier = "leaf"
     ) {
         super();
-    }
-    
-    /**
-     * Looks up a symbol name and returns the referent (if any) 
-     */
-    public getSymbol(symbol: string): Grammar | undefined {
-        for (const key of Object.keys(this.symbols)) {
-            if (symbol.toLowerCase() == key.toLowerCase()) {
-                return this.symbols[key];
-            }
-        }
-        return undefined;
     }
 }
 
@@ -445,18 +434,6 @@ export class SelectionGrammar extends AbstractGrammar {
         public selectedSymbol: string = DEFAULT_SYMBOL,
     ) {
         super();
-    }
-    
-    /**
-     * Looks up a symbol name and returns the referent (if any) 
-     */
-    public getSymbol(symbol: string): Grammar | undefined {
-        for (const key of Object.keys(this.symbols)) {
-            if (symbol.toLowerCase() == key.toLowerCase()) {
-                return this.symbols[key];
-            }
-        }
-        return undefined;
     }
 }
 

@@ -110,7 +110,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '7b. Explicit all, generating from all',
+		desc: '7b. Explicit all, generating from x.all',
         symbol: "x.all",
         results: [
             {"text":"boo","gloss":"fire"},

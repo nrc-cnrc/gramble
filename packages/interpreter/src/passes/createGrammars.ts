@@ -32,6 +32,7 @@ import { parseContent } from "../content";
 import { DEFAULT_PARAM } from "../utils/constants";
 import { uniqueLiterals } from "./uniqueLiterals";
 import { PassEnv } from "../components";
+import { getCaseInsensitive } from "../utils/func";
 
 /**
  * This is the workhorse of grammar creation, turning the 
@@ -228,7 +229,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
                 throw new Error(`non-assignment child of collection: ${child.constructor.name}`);
             }
 
-            const existingReferent = newColl.getSymbol(child.name);
+            const existingReferent = getCaseInsensitive(newColl.symbols, child.name);
             if (existingReferent != undefined) {
                 // we're reassigning an existing symbol!
                 Err('Reassigning existing symbol', 
