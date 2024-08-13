@@ -146,10 +146,12 @@ export class Interpreter {
         let selected: Grammar = new SelectSymbol(symbol)
                                        .getEnvAndTransform(this.grammar, this.opt)
                                        .msgTo(THROWER);
-        const tapeNames = selected.tapeNames;
+        let tapeNames = selected.tapeNames;
         if (stripHidden) {
-            return tapeNames.filter(t => !t.startsWith(HIDDEN_PREFIX));
+            tapeNames = tapeNames.filter(t => !t.startsWith(HIDDEN_PREFIX));
         }
+        const sorter = (a: string, b: string) => a.toLowerCase() > b.toLowerCase() ? 1 : -1;
+        tapeNames.sort(sorter)
         return tapeNames;
     }
 
