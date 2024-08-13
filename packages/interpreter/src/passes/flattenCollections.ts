@@ -1,9 +1,10 @@
 import { Msg, MissingSymbolError, Message } from "../utils/msgs";
 import { 
+    CollectionGrammar,
     EmbedGrammar,
     EpsilonGrammar,
     Grammar,
-    CollectionGrammar,
+    QualifiedGrammar,
     SymbolQualifier
 } from "../grammars";
 import { Pass, SymbolEnv } from "../passes";
@@ -72,7 +73,7 @@ export class FlattenCollections extends Pass<Grammar,Grammar> {
             env.symbolNS[newName] = newV;
         }
 
-        return new CollectionGrammar(env.symbolNS, qualifier).msg(msgs);
+        return new QualifiedGrammar(env.symbolNS, qualifier).msg(msgs);
     }
 
     public transformEmbed(g: EmbedGrammar, env: PassEnv): Grammar|Msg<Grammar> {

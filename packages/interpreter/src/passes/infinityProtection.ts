@@ -1,6 +1,6 @@
 import { Pass, SymbolEnv } from "../passes";
 import { AlternationGrammar, 
-    CollectionGrammar, 
+    QualifiedGrammar, 
     CountGrammar, 
     GreedyCursorGrammar, 
     EmbedGrammar, 
@@ -170,7 +170,7 @@ export function lengthRange(
         case "hide": return lengthHide(g, tapeName, stack, env);
         case "repeat": return lengthRepeat(g, tapeName, stack, env);
         case "not": return lengthNot(g, tapeName, stack, env);
-        case "collection": return lengthCollection(g, tapeName, stack, env);
+        case "qualified": return lengthQualified(g, tapeName, stack, env);
         case "selection":    return lengthSelection(g, tapeName, stack, env);
 
         // ones where it's not implemented
@@ -179,6 +179,7 @@ export function lengthRange(
         case "starts":
         case "ends":
         case "contains":
+        case "collection":
             throw new Error("not implemented");
 
         default: exhaustive(g);
@@ -321,7 +322,7 @@ function lengthSelection(
     env: SymbolEnv
 ): LengthRange {
     const newEnv = env.update(g);
-    const referent = getCaseInsensitive(g.symbols, g.selectedSymbol);
+    const referent = getCaseInsensitive(g.symbols, g.selection);
     if (referent === undefined) { 
         // without a valid symbol, collections are epsilon,
         // but now is not the time to complain
@@ -330,8 +331,8 @@ function lengthSelection(
     return lengthRange(referent, tapeName, stack, newEnv);
 }
 
-function lengthCollection(
-    g: CollectionGrammar, 
+function lengthQualified(
+    g: QualifiedGrammar, 
     tapeName: string, 
     stack: CounterStack, 
     env: SymbolEnv

@@ -26,7 +26,7 @@ export class SymbolEnv extends Env<Grammar> {
     public update(g: Grammar): SymbolEnv {
         switch (g.tag) {
             case "selection":
-            case "collection":
+            case "qualified":
                 return update(this, {symbolNS: g.symbols});
             default:
                 return this;

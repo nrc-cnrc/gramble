@@ -1,6 +1,6 @@
 import { Pass, SymbolEnv } from "../passes";
 import { 
-    CollectionGrammar,
+    QualifiedGrammar,
     GreedyCursorGrammar, DotGrammar, 
     EmbedGrammar, Grammar, 
     HideGrammar, JoinGrammar, 
@@ -142,7 +142,7 @@ function getTapePrioritySelection(
     env: SymbolEnv  
 ): number {
     const newEnv = env.update(g);
-    const referent = getCaseInsensitive(g.symbols, g.selectedSymbol);
+    const referent = getCaseInsensitive(g.symbols, g.selection);
     if (referent === undefined) { 
         // without a valid symbol, collections are epsilon,
         // but now is not the time to complain

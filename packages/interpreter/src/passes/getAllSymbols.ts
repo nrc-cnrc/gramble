@@ -4,7 +4,7 @@ export function getAllSymbols(
     g: Grammar
 ): string[] {
     switch (g.tag) {
-        case "collection": 
+        case "qualified": 
         case "selection":
             return Object.keys(g.symbols);
         default: 

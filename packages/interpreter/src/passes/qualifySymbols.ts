@@ -14,7 +14,7 @@ export function qualifySymbol(
     symbol: string
 ): [string, Grammar] | undefined {
     switch (g.tag) {
-        case "collection":
+        case "qualified":
             const symbolPieces = symbol.split(".").filter(s => s.length > 0);
             const result = qualifySymbolAux(g.qualifier, symbolPieces);
             if (result === undefined) return undefined;

@@ -1,7 +1,7 @@
 import { Err, Message, Msg } from "../utils/msgs";
 import { 
     Grammar,
-    CollectionGrammar,
+    QualifiedGrammar,
     EmbedGrammar,
     HideGrammar,
     RenameGrammar,
@@ -61,16 +61,12 @@ export class TapesEnv extends Env<Grammar> {
     public update(g: Grammar): TapesEnv {
         switch (g.tag) {
             case "selection":
-            case "collection": 
-                return this.updateCollection(g);
+            case "qualified": 
+                const tapeMap = mapDict(g.symbols, (k,_) => Tapes.Ref(k));
+                return update(this, {tapeMap});
             default: 
                 return this;
         }
-    }
-
-    updateCollection(g: CollectionGrammar | SelectionGrammar): TapesEnv {
-        const tapeMap = mapDict(g.symbols, (k,_) => Tapes.Ref(k));
-        return update(this, {tapeMap});
     }
     
 }
@@ -143,7 +139,7 @@ export class CalculateTapes extends AutoPass<Grammar> {
 
             case "embed":        return getTapesEmbed(g, env);
             case "selection":     return this.getTapesSelection(g, env);
-            case "collection":   return this.getTapesCollection(g, env);
+            case "qualified":   return this.getTapesQualified(g, env);
             case "rename":       return getTapesRename(g);
             case "hide":         return getTapesHide(g);
             case "match":        return getTapesMatch(g);
@@ -152,21 +148,20 @@ export class CalculateTapes extends AutoPass<Grammar> {
             case "replace":     return getTapesReplace(g, env);
             case "correspond":  return getTapesCorrespond(g, env);
 
-            default: exhaustive(g);
-            //default: throw new Error(`unhandled grammar in getTapes: ${g.tag}`);
+            default: throw new Error(`unhandled grammar in getTapes: ${g.tag}`);
         }
 
     }
 
     getTapesSelection(g: SelectionGrammar, env: TapesEnv): Grammar {
-        const referent = getCaseInsensitive(g.symbols, g.selectedSymbol);
+        const referent = getCaseInsensitive(g.symbols, g.selection);
         if (referent === undefined) {
-            throw new Error(`Cannot resolve symbol ${g.selectedSymbol}`);
+            throw new Error(`Cannot resolve symbol ${g.selection}`);
         }
         return updateTapes(g, referent.tapes);
     }
     
-    getTapesCollection(g: CollectionGrammar, env: TapesEnv): Msg<Grammar> {
+    getTapesQualified(g: QualifiedGrammar, env: TapesEnv): Msg<Grammar> {
         const msgs: Message[] = [];
         
         while (true) {

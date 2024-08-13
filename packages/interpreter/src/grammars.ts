@@ -51,6 +51,7 @@ export type Grammar = EpsilonGrammar
              | HideGrammar
              | MatchGrammar
              | CollectionGrammar
+             | QualifiedGrammar
              | SelectionGrammar
              | EmbedGrammar
              | TestGrammar
@@ -420,7 +421,17 @@ export class CollectionGrammar extends AbstractGrammar {
 
     constructor(
         public symbols: Dict<Grammar> = {},
-        public qualifier: SymbolQualifier = "leaf"
+    ) {
+        super();
+    }
+}
+
+export class QualifiedGrammar extends AbstractGrammar {
+    public readonly tag = "qualified";
+
+    constructor(
+        public symbols: Dict<Grammar>,
+        public qualifier: SymbolQualifier,
     ) {
         super();
     }
@@ -430,8 +441,8 @@ export class SelectionGrammar extends AbstractGrammar {
     public readonly tag = "selection";
 
     constructor(
-        public symbols: Dict<Grammar> = {},
-        public selectedSymbol: string = DEFAULT_SYMBOL,
+        public symbols: Dict<Grammar>,
+        public selection: string,
     ) {
         super();
     }

@@ -2,8 +2,9 @@ import { PassEnv } from "../components";
 import { 
     EmbedGrammar,
     Grammar,
-    CollectionGrammar,
-    AlternationGrammar
+    QualifiedGrammar,
+    AlternationGrammar,
+    CollectionGrammar
 } from "../grammars";
 import { AutoPass } from "../passes";
 import { ALL_SYMBOL } from "../utils/constants";
@@ -17,7 +18,7 @@ export class AssignDefaults extends AutoPass<Grammar> {
 
     public postTransform(g: Grammar, env: PassEnv): Grammar {
         switch(g.tag) {
-            case "collection": return this.handleCollection(g as CollectionGrammar, env);
+            case "collection": return this.handleCollection(g, env);
             default:           return g;
         }
     }

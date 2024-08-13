@@ -1,6 +1,7 @@
 import { 
-    Grammar, 
     CollectionGrammar,
+    Grammar, 
+    QualifiedGrammar,
 } from "./grammars";
 
 import { 

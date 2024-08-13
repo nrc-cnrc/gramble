@@ -220,7 +220,7 @@ function constructExprSelection(
     for (const [name, referent] of Object.entries(g.symbols)) {
         let expr = constructExpr(env, referent);
         newSymbols[name] = expr;
-        if (name.toLowerCase() == g.selectedSymbol.toLowerCase()) {
+        if (name.toLowerCase() == g.selection.toLowerCase()) {
             selectedExpr = expr;
             selectedFound = true;
         }

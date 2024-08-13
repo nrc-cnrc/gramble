@@ -29,7 +29,7 @@ export function ReduceOptions(
 
 export function reduceGrammar(g: Grammar, opt: ReduceOptions): Grammar {
     switch (g.tag) {
-        case "collection": return reduceCollection(g, opt);
+        case "qualified": return reduceCollection(g, opt);
         case "seq":        return reduceSeq(g, opt);
         case "rename":     return reduceRename(g, opt);
     }

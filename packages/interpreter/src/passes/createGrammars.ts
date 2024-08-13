@@ -16,14 +16,15 @@ import {
     HideGrammar,  
     ReplaceBlockGrammar, 
     TestNotGrammar, 
-    CollectionGrammar, 
+    QualifiedGrammar, 
     RenameGrammar, 
     SequenceGrammar, 
     TestGrammar, 
     JoinGrammar,
     RuleContextGrammar,
     FilterGrammar,
-    ReplaceGrammar
+    ReplaceGrammar,
+    CollectionGrammar
 } from "../grammars";
 import { parseClass, TapeHeader } from "../headers";
 import { Err, Msg, Message, msgList } from "../utils/msgs";
