@@ -8,7 +8,7 @@ import {
 import { Grammar, CollectionGrammar, QualifiedGrammar } from "../interpreter/src/grammars";
 import { Component, PassEnv } from "../interpreter/src/components";
 import { Interpreter } from "../interpreter/src/interpreter";
-import { HIDDEN_PREFIX } from "../interpreter/src/utils/constants";
+import { DEFAULT_SYMBOL, HIDDEN_PREFIX } from "../interpreter/src/utils/constants";
 import { Dict, getCaseInsensitive, StringDict, stringDictToStr } from "../interpreter/src/utils/func";
 import { Options } from "../interpreter/src/utils/options";
 import { Message } from "../interpreter/src/utils/msgs";
@@ -273,16 +273,18 @@ export function testHasVocab(
     symbol: string = "",
     stripHidden: boolean = true
 ): void {
+    symbol = (symbol.length === 0) ? DEFAULT_SYMBOL : symbol;
     const opt: Partial<Options> = {optimizeAtomicity: false}
     const interpreter = prepareInterpreter(grammar, opt);
-
     for (const tapeName in expectedVocab) {
 
         if ((interpreter.grammar instanceof QualifiedGrammar)) {
             let referent = getCaseInsensitive(interpreter.grammar.symbols, symbol);
             if (referent === undefined) {
-                it(`symbol '${symbol}' not found in QualifiedGrammar (${tapeName} vocab)`, function() {
-                    assert.fail();
+                it(`symbol '${symbol}' not found in QualifiedGrammar (${tapeName} vocab), ` +
+                    `candidates are ${Object.keys(interpreter.grammar.symbols)}`, 
+                    function() {
+                        assert.fail();
                 }); 
                 continue;   
             }
