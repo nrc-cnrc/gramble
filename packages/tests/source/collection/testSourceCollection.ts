@@ -256,4 +256,28 @@ describe(`Source ${DIR}`, function() {
             Error(8,1)
         ]
     });
+    
+    testSrc({
+		desc: '13a. Importing .all from external file',
+        results: [
+            {text: "foo", gloss: "run"},
+            {text: "moo", gloss: "jump"},
+            {text: "bar", gloss: "-1SG"},
+            {text: "baz", gloss: "-2SG"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG"}
+        ],
+    });
+
+    testSrc({
+		desc: '13b. Importing .all from external file with explicit all',
+        results: [
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG"}
+        ],
+    });
 });

@@ -1,5 +1,5 @@
 import {
-    testSource, SourceTest
+    testSource, SourceTest, Error
 } from "../testSourceUtil";
 
 const DIR = "case";
@@ -90,6 +90,9 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"},
             {text: "foobaz", gloss: "run-2SG"},
             {text: "moobaz", gloss: "jump-2SG"}
+        ], 
+        errors: [
+            Error(5,0)
         ]
     });
     
@@ -101,6 +104,9 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"},
             {text: "foobaz", gloss: "run-2SG"},
             {text: "moobaz", gloss: "jump-2SG"}
+        ],
+        errors: [
+            Error(5,0)
         ]
     });
 });
