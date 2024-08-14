@@ -151,10 +151,12 @@ class GoogleSheetsDevEnvironment {
     }
 
     loadSource(sheetName) {
+        console.log(`loading ${sheetName}`);
         let sheet = SpreadsheetApp.getActive().getSheetByName(sheetName);
         if (sheet == undefined) {
             throw new Error(`There is no sheet named ${sheetName}`);
         }
+        console.log(`loaded ${sheetName}`);
         const range = sheet.getDataRange();
         const values = range.getDisplayValues();
         return values;
@@ -311,7 +313,8 @@ function makeInterpreter() {
     const sheetName = sheet.getName();
 
     const devEnv = new GoogleSheetsDevEnvironment(sheetName);
-    const interpreter = gramble.Interpreter.fromSheet(devEnv, sheetName);
+    const opts = { verbose: gramble.VERBOSE_TIME };
+    const interpreter = gramble.Interpreter.fromSheet(devEnv, sheetName, opts);
     return [interpreter, devEnv];
 }
 

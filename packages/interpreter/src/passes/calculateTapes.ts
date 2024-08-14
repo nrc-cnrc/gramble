@@ -164,14 +164,19 @@ export class CalculateTapes extends AutoPass<Grammar> {
     getTapesQualified(g: QualifiedGrammar, env: TapesEnv): Msg<Grammar> {
         const msgs: Message[] = [];
         
+        console.log(`calculating tapes of Qualified`);
+
         while (true) {
             const newMsgs: Message[] = [];
 
             // first get the initial tapes for each symbol
             let tapeIDs: TapeDict = mapValues(g.symbols, v => v.tapes);
 
+            console.log(tapeIDs);
+
             tapeIDs = Tapes.resolveAll(tapeIDs);
 
+            console.log('resolved');
             // check for unresolved content, and throw an exception immediately.
             // otherwise we have to puzzle it out from exceptions elsewhere.
             for (const [k,v] of Object.entries(tapeIDs)) {
@@ -185,13 +190,22 @@ export class CalculateTapes extends AutoPass<Grammar> {
             //const tapePusher = new CalculateTapes(true, tapeIDs);
 
             const tapePushEnv = new TapesEnv(env.opt, true, tapeIDs);
-            g.symbols = mapValues(g.symbols, v => 
-                    this.transform(v, tapePushEnv).msgTo(newMsgs));
+
+            for (const [k, v] of Object.entries(g.symbols)) {
+                console.log(`pushing tape results into ${k}`);
+                const transformed = this.transform(v, tapePushEnv).msgTo(newMsgs);
+                g.symbols[k] = transformed;
+            }
+
+            //g.symbols = mapValues(g.symbols, v => 
+            //        this.transform(v, tapePushEnv).msgTo(newMsgs));
 
             msgs.push(...newMsgs);
 
             if (newMsgs.length === 0) break;
             
+            console.log(`found errors, recalculating: ${newMsgs}`);
+
             // if there are any errors, the graph may have changed.  we
             // need to restart the process from scratch.
             //const TapeRefresher = new CalculateTapes(true);
@@ -201,13 +215,17 @@ export class CalculateTapes extends AutoPass<Grammar> {
                 this.transform(v, tapeRefreshEnv).msgTo(newMsgs));
         }
 
+        console.log(`done with qual`);
+
         //return updateTapes(g, Tapes.Lit()).msg(msgs);
 
         // TODO: The following interpretation of tapes is incorrect,
         // but matches what we've been doing previously.  I'm going to
         // get it "working" exactly like the old way, before fixing it to be
         // semantically sound.
-        return getTapesDefault(g).msg(msgs);
+        const result = getTapesDefault(g, true).msg(msgs);
+        console.log(`done with default`);
+        return result;
 
     }
 }
@@ -216,16 +234,28 @@ function updateTapes(g: Grammar, tapes: TapeSet): Grammar {
     return update(g, { tapes });
 }
 
-function getChildTapes(g: Grammar): TapeSet {
-    const childTapes = children(g).map(c => c.tapes);
+function getChildTapes(g: Grammar, verbose: boolean = false): TapeSet {
+    const childTapes: TapeSet[] = [];
+    const cs = children(g);
+    if (verbose) console.log(`grammar has ${cs.length} children`);
+    for (const child of cs) {
+        const tapes = child.tapes;
+        if (verbose) {
+            console.log(`tapes of child ${child.tag}`);
+        }
+        childTapes.push(tapes);
+    }
+
+    //    const childTapes = children(g).map(c => c.tapes);
     if (childTapes.length === 0) return Tapes.Lit();
     return foldRight(childTapes.slice(1), Tapes.Sum, childTapes[0]);
 }
 
 function getTapesDefault(
-    g: Grammar
+    g: Grammar,
+    verbose: boolean = false
 ): Grammar {
-    return updateTapes(g, getChildTapes(g));
+    return updateTapes(g, getChildTapes(g, verbose));
 }
 
 function getTapesShort(g: ShortGrammar): Grammar {
