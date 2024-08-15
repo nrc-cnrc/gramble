@@ -33,6 +33,8 @@ import { Component, PassEnv } from "./components";
 import * as Tapes from "./tapes";
 import { ResolveVocab } from "./passes/resolveVocab";
 
+import * as Vocabs from "./vocab";
+
 /**
  * An interpreter object is responsible for applying the passes in between sheets
  * and expressions, and forwarding queries on to the resulting object.
@@ -234,11 +236,20 @@ export class Interpreter {
         query: Grammar | StringDict[] | StringDict | string = {}
     ): Expr {
 
+        console.log("preparing expression");
+        if (this.grammar.tapes.tag == Tapes.Tag.Lit) {
+            console.log(`grammar vocab map is ${Vocabs.vocabDictToStr(this.grammar.tapes.vocabMap)}`);
+        }
+
         // qualify the name and select the symbol
         let targetGrammar: Grammar = new SelectSymbol(symbol)
                                        .getEnvAndTransform(this.grammar, this.opt)
                                        .msgTo(THROWER);
         
+        if (targetGrammar.tapes.tag == Tapes.Tag.Lit) {
+            console.log(`selection vocab map is ${Vocabs.vocabDictToStr(targetGrammar.tapes.vocabMap)}`);
+        }
+
         // join the client query to the grammar
         targetGrammar = new CreateQuery(query)
                          .getEnvAndTransform(targetGrammar, this.opt)
@@ -270,17 +281,26 @@ export class Interpreter {
 
     public runTests(): void {
 
-        const targetGrammar = new ResolveVocab()
+        console.log(`running tests`);
+        if (this.grammar.tapes.tag == Tapes.Tag.Lit) {
+            console.log(`grammar vocab map is ${Vocabs.vocabDictToStr(this.grammar.tapes.vocabMap)}`);
+        }
+
+        let targetGrammar = new SelectSymbol(ALL_SYMBOL)
                                 .getEnvAndTransform(this.grammar, this.opt)
+                                .msgTo(THROWER);
+
+        if (targetGrammar.tapes.tag == Tapes.Tag.Lit) {
+            console.log(`selection vocab map is ${Vocabs.vocabDictToStr(targetGrammar.tapes.vocabMap)}`);
+        }
+
+        targetGrammar = new ResolveVocab()
+                                .getEnvAndTransform(targetGrammar, this.opt)
                                 .msgTo(THROWER);
         
         const env = new PassEnv(this.opt);
 
-        const selection = new SelectSymbol(ALL_SYMBOL)
-                                .getEnvAndTransform(targetGrammar, this.opt)
-                                .msgTo(THROWER);
-
-        const expr = constructExpr(env, selection);
+        const expr = constructExpr(env, targetGrammar);
         const symbols = expr instanceof SelectionExpr
                       ? expr.symbols
                       : {};

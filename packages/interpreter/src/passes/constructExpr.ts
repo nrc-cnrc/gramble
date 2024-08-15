@@ -164,6 +164,7 @@ function constructExprCursor(
     g: CursorGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
+    console.log(`vocab for cursor ${g.tapeName} is ${g.vocab}`)
     if (g.vocab.tag !== Vocab.Tag.Lit) {
         throw new Error(`Constructing cursor ${g.tapeName} with unresolved vocab: ${Vocab.toStr(g.vocab)}`);
     }

@@ -228,7 +228,7 @@ export function mergeKeys(
     // both are literals.  make a new entry and point 
     // both keys to it
     const result = {...dict};
-    const newKey = "$" + randomString();
+    const newKey = "$" + key1 + "___" + key2;
     result[key1] = Ref(newKey);
     result[key2] = Ref(newKey);
     result[newKey] = sum(value1, value2);

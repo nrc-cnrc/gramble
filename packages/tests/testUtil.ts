@@ -273,6 +273,7 @@ export function testHasVocab(
     symbol: string = "",
     stripHidden: boolean = true
 ): void {
+    
     symbol = (symbol.length === 0) ? DEFAULT_SYMBOL : symbol;
     const opt: Partial<Options> = {optimizeAtomicity: false}
     const interpreter = prepareInterpreter(grammar, opt);

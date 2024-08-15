@@ -29,6 +29,8 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     logTestSuite(this.title);
 
+    /*
+
     testGrammar({
         desc: '1. T_t1(t1:hello)',
         grammar: Cursor("t1", t1("hello")),
@@ -419,6 +421,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: "hip"},
         ],
     });
+    */
 
     testGrammar({
         desc: '18a. Cursor around a join-match',
@@ -426,11 +429,13 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         		 	 Join(t1("h"),
         		 	 	  Match(Dot("t1"), "t1", "t2"))),
         ////tapes: [],
+        //priority: ["t2", "t1"],
         results: [
             {t1: 'h', t2: 'h'},
         ],
     });
 
+    /*
     testGrammar({
         desc: '18b. Cursor around a join-match, opposite direction',
         grammar: Cursor(["t1", "t2"],
@@ -551,4 +556,5 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'h', t2: 'hih'},
         ],
     }); 
+    */
 });

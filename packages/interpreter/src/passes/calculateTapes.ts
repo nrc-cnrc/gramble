@@ -164,19 +164,15 @@ export class CalculateTapes extends AutoPass<Grammar> {
     getTapesQualified(g: QualifiedGrammar, env: TapesEnv): Msg<Grammar> {
         const msgs: Message[] = [];
         
-        console.log(`calculating tapes of Qualified`);
-
         while (true) {
             const newMsgs: Message[] = [];
 
             // first get the initial tapes for each symbol
             let tapeIDs: TapeDict = mapValues(g.symbols, v => v.tapes);
 
-            console.log(tapeIDs);
-
+            console.log("initial resolution");
             tapeIDs = Tapes.resolveAll(tapeIDs);
 
-            console.log('resolved');
             // check for unresolved content, and throw an exception immediately.
             // otherwise we have to puzzle it out from exceptions elsewhere.
             for (const [k,v] of Object.entries(tapeIDs)) {
@@ -190,21 +186,24 @@ export class CalculateTapes extends AutoPass<Grammar> {
             //const tapePusher = new CalculateTapes(true, tapeIDs);
 
             const tapePushEnv = new TapesEnv(env.opt, true, tapeIDs);
-
+            console.log(Tapes.tapeDictToStr(tapeIDs));
+            console.log("second resolution");
             for (const [k, v] of Object.entries(g.symbols)) {
-                console.log(`pushing tape results into ${k}`);
+                console.log(`pushing to ${k}`);
                 const transformed = this.transform(v, tapePushEnv).msgTo(newMsgs);
                 g.symbols[k] = transformed;
+                if (transformed.tapes.tag == Tapes.Tag.Lit) {
+                    console.log(`smbol ${k} vocab is ${Vocabs.vocabDictToStr(transformed.tapes.vocabMap)}`);
+                }
             }
 
+            console.log("done resolving");
             //g.symbols = mapValues(g.symbols, v => 
             //        this.transform(v, tapePushEnv).msgTo(newMsgs));
 
             msgs.push(...newMsgs);
 
             if (newMsgs.length === 0) break;
-            
-            console.log(`found errors, recalculating: ${newMsgs}`);
 
             // if there are any errors, the graph may have changed.  we
             // need to restart the process from scratch.
@@ -215,9 +214,7 @@ export class CalculateTapes extends AutoPass<Grammar> {
                 this.transform(v, tapeRefreshEnv).msgTo(newMsgs));
         }
 
-        console.log(`done with qual`);
-
-        //return updateTapes(g, Tapes.Lit()).msg(msgs);
+        return updateTapes(g, Tapes.Lit()).msg(msgs);
 
         // TODO: The following interpretation of tapes is incorrect,
         // but matches what we've been doing previously.  I'm going to
@@ -410,6 +407,9 @@ function getTapesEmbed(
     if (env.tapeMap === undefined || !(g.symbol in env.tapeMap)) 
         throw new Error(`Unknown symbol during tapecalc: ${g.symbol}, env contains ${env.tapeMap?.keys}`);
         // should already be in there
+    const ref = env.tapeMap[g.symbol];
+    console.log(`embed tape is ${Tapes.toStr(ref)}`);
+
     return updateTapes(g, env.tapeMap[g.symbol]);
 }
 
@@ -556,6 +556,7 @@ function getTapesCursor(
     g: CursorGrammar | GreedyCursorGrammar,
     env: TapesEnv
 ): Grammar {
+    console.log(`tapes for cursor ${g.tapeName} are a ${g.child.tapes.tag}`);
 
     if (g.child.tapes.tag !== Tapes.Tag.Lit) {
         // can't do anything right now
@@ -571,6 +572,7 @@ function getTapesCursor(
     let vocab = g.vocab;
     if (vocab.tag !== Vocabs.Tag.Lit) {
         vocab = g.child.tapes.vocabMap[g.tapeName];
+        console.log(`vocab map is ${Vocabs.vocabDictToStr(g.child.tapes.vocabMap)}`);
     }
     const tapes = Tapes.Cursor(g.child.tapes, g.tapeName) // this handles deleting for us
     return update(g, {tapes, vocab});

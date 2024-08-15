@@ -161,10 +161,14 @@ export function Match(
     inputTape: string, 
     outputTape: string
 ): TapeSet {
+    console.log(`handling match`);
     if (child.tag === Tag.Lit) {
+        console.log(`tapes are a lit`);
         const newTapes = new Set(child.tapeNames);
         newTapes.add(outputTape);
+        console.log(`child vocab was ${Vocabs.vocabDictToStr(child.vocabMap)}`);
         const newVocabs = Vocabs.mergeKeys(child.vocabMap, inputTape, outputTape);
+        console.log(`new vocabs are ${Vocabs.vocabDictToStr(newVocabs)}`);
         return Lit(newTapes, newVocabs);
     }
 
@@ -212,6 +216,12 @@ function litToStr(t: Lit): string {
     const entries = Object.entries(t.vocabMap).map(([k,v]) => 
         `${k}:${Vocabs.toStr(v)}`);
     return "{" + entries.join(",") + "}"
+}
+
+export function tapeDictToStr(t: TapeDict): string {
+    const strs = Object.entries(t).map(([k,v]) => `${k}:${toStr(v)}`);
+    return "{" + strs.join(",") + "}"
+
 }
 
 /* RESOLVING 
