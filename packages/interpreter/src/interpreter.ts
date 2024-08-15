@@ -236,20 +236,11 @@ export class Interpreter {
         query: Grammar | StringDict[] | StringDict | string = {}
     ): Expr {
 
-        console.log("preparing expression");
-        if (this.grammar.tapes.tag == Tapes.Tag.Lit) {
-            console.log(`grammar vocab map is ${Vocabs.vocabDictToStr(this.grammar.tapes.vocabMap)}`);
-        }
-
         // qualify the name and select the symbol
         let targetGrammar: Grammar = new SelectSymbol(symbol)
                                        .getEnvAndTransform(this.grammar, this.opt)
                                        .msgTo(THROWER);
         
-        if (targetGrammar.tapes.tag == Tapes.Tag.Lit) {
-            console.log(`selection vocab map is ${Vocabs.vocabDictToStr(targetGrammar.tapes.vocabMap)}`);
-        }
-
         // join the client query to the grammar
         targetGrammar = new CreateQuery(query)
                          .getEnvAndTransform(targetGrammar, this.opt)
@@ -281,18 +272,9 @@ export class Interpreter {
 
     public runTests(): void {
 
-        console.log(`running tests`);
-        if (this.grammar.tapes.tag == Tapes.Tag.Lit) {
-            console.log(`grammar vocab map is ${Vocabs.vocabDictToStr(this.grammar.tapes.vocabMap)}`);
-        }
-
         let targetGrammar = new SelectSymbol(ALL_SYMBOL)
                                 .getEnvAndTransform(this.grammar, this.opt)
                                 .msgTo(THROWER);
-
-        if (targetGrammar.tapes.tag == Tapes.Tag.Lit) {
-            console.log(`selection vocab map is ${Vocabs.vocabDictToStr(targetGrammar.tapes.vocabMap)}`);
-        }
 
         targetGrammar = new ResolveVocab()
                                 .getEnvAndTransform(targetGrammar, this.opt)

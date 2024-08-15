@@ -101,7 +101,6 @@ export function testGrammarAux({
         testHasVocab(grammar, vocab, symbol, stripHidden);
     }
 
-    console.log("preparing interpreter");
     const interpreter = prepareInterpreter(grammar, opt);
     interpreter.runTests();
     testNumErrors(interpreter, numErrors);

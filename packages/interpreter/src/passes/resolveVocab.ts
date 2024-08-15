@@ -35,8 +35,6 @@ export class ResolveVocab extends Pass<Grammar, Grammar> {
             throw new Error("Unresolved tapes at vocab resolution");
         }
 
-        console.log(`resolving tapes for ${g.tag}`);
-        console.log(`vocab map is ${Vocabs.vocabDictToStr(g.tapes.vocabMap)}`);
         const newEnv = new ResolveVocabEnv(env.opt, g.tapes.vocabMap);
         const child = new ResolveVocabAux();
         return child.transform(g, newEnv);
@@ -60,8 +58,6 @@ export class ResolveVocabAux extends AutoPass<Grammar> {
         g: CursorGrammar | GreedyCursorGrammar, 
         env: ResolveVocabEnv): Grammar {
 
-        console.log(`resolving vocab for cursor ${g.tapeName}`);
-
         if (g.vocab.tag === Vocabs.Tag.Lit) {
             // we're done already
             return g;
@@ -70,8 +66,6 @@ export class ResolveVocabAux extends AutoPass<Grammar> {
         const vocab = Vocabs.getFromVocabDict(env.vocabs, g.vocab.key);
         if (vocab == undefined) {
             throw new Error(`resolved vocab for ${g.tapeName}, key = ${g.vocab.key}, is undefined! map is ${Vocabs.vocabDictToStr(env.vocabs)}`);
-        } else {
-            console.log(`resolved vocab for ${g.tapeName},  key = ${g.vocab.key}, is ${Vocabs.toStr(vocab)}. map is ${Vocabs.vocabDictToStr(env.vocabs)}`);
         }
         return update(g, {vocab});
     }
