@@ -6,12 +6,7 @@ sidebar_label: What is Gramble?
 
 Gramble is a programming language for *linguistic programming*: building tools that create or respond to human language words and sentences.  It's meant to be easier to read and write, so that people can make linguistic programs in their languages without necessarily having to have a degree in computer science.
 
-Some of the tools you can easily make using Gramble include:
-
-* Verb conjugators
-* Writing system conversion tools (for example, turning "ᓄᓇᕗᑦ" into "nunavut", or the other way around)
-* Pronunciation guides for computer systems that generate or respond to speech
-* "Mad-lib"-style text generators ("I'm so proud of my ______ for ________!")
+For example, many of the Gramble programs written so far are interactive verb conjugators that generate the correct form of verbs.
 
 Gramble isn't for making the *user interfaces* for these; those we still make in other languages like HTML and JavaScript.  Gramble is just for the linguistic part of those -- it's a way of making a sort of "database" that another program can query when it needs to know an answer like "What's this conjugation of this verb?" or "How is this pronounced?"
 

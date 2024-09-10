@@ -22,26 +22,24 @@ We have to decide what our gloss is going to look like, so let's say `jumps` com
 
 We add the gloss field to each table, associating each piece of `text` with the appropriate piece of `gloss`.  (If you're following along in the interface, this is Example 2 in the Gramble menu.)
 
-| **Root =** | **text** | **gloss** ||
+| **Root =** | **text** | **gloss** |
 |----|----|----|
 |    | call  | call |
 |    | jump  | jump |
 | &nbsp; |
-| **Suffix =** | **text** | **gloss** ||
-|----|----|-----|
+| **Suffix =** | **text** | **gloss** |
 |    | s  | -3SG.PRES |
 |    | ed  | -PAST |
 |    | ing | -PRES.PROG |
 | &nbsp; |
 | **Verb =** | **embed** | **embed** |
-|----|----|-----|
 |           | Root | Suffix |
 
 (There's nothing special about that hyphen either, by the way.  It's a character like any other, and I'm just putting it there to split up the gloss because we decided that was how glosses are going to be split up.)
 
 Also, there's a shorthand we can use when a table like `Root` has two fields that are exactly the same, we can join them with a forward slash like so:
 
-| **Root =** | **text/gloss** ||
+| **Root =** | **text/gloss** |
 |----|----|
 |    | call  |
 |    | jump  |

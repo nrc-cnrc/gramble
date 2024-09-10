@@ -12,11 +12,11 @@ I was a little hand-wavey earlier with what "-a" meant at the end of Swahili ver
 
 I call this "tense" below but it's not exactly tense in the linguistic sense, it's tied up with mood and negation and various other meanings.  But plenty of sources just call this "tense" for convenience, and so will I.
 
-| ** Root = ** | text | root |
-| -------------| ---- | ----- |
+| **Root =** | **text** | **root** | |  |
+| -------------| ---- | ----- |------|---|
 |              | pend | love |
 | &nbsp; |
-| ** Stem = ** | text | embed | text | tense |
+| **Stem =** | **text** | **embed** | **text** | **tense** |
 |              | na   | Root  | a    | present.continuous |
 |              | li   | Root  | a    | past |
 |              | me   | Root  | a    | past.perfect |
@@ -29,21 +29,21 @@ I call this "tense" below but it's not exactly tense in the linguistic sense, it
 
 When you look at the whole chart (and this isn't the whole chart, there are about two dozen of these), it becomes hard to pin down exactly "where" the idea of negation or subjunctivity rests -- there's not *one* morpheme that's present if and only if something is negative, or subjunctive.  It's only by the combination of the two that pins down the tense.  
 
-Note that there's nothing special here about any particular morpheme here.  In the "expeditious" row, for example, you're just adding "ka" to text, then embedding the Root (meaning adding "pend" to text and "love" to root), then addding "e" to text.  There's nothing saying that this is a special case of "ka" or "e" compared to the usual uses, or that this "ka" and "e" are related in some way; these are just instructions about what gets added where.  They're "related" only in the sense that there's a derivational path through this grammar that puts "ka" and "e" on some verbs and these also have "expeditious" in the tense field.
+Note that there's nothing special here about any particular morpheme here.  In the "expeditious" row, for example, you're just adding "ka" to the text field, then embedding the Root (meaning adding "pend" to the text field and "love" to the root field), then addding "e" to the text field.  There's nothing saying that this is a special case of "ka" or "e" compared to the usual uses, or that this "ka" and "e" are related in some way; these are just instructions about what gets added where.  They're "related" only in the sense that there's a derivational path through this grammar that puts "ka" and "e" on some verbs and these also have "expeditious" in the tense field.
 
 Also, side note, you'll see in the subjunctive row that there's a blank cell.  That's fine, that just means "don't add anything here".
 
 ## An Anishinaabemowin example
 
-For another example, "kizāgihin", meaning "I love you" in Anishinaabemowin, consists of the stem "sagih" (here it's pronounced "zagih") and two additional morphemes, "ki-" and "-in".  However, it's not like one of them means "1SG.SUBJ" and the other one means "2SG.OBJ", it's only the two of them together that add these meanings.  (The "ki-" definitely has a 2nd person singular meaning... but not necessarily the *object*.  Like "kizāgihi" means "You love me".  The "-in" vs. "-i" helps tell you whether to interpret "ki-" as representing the subject or object.  Anyway, it's complicated and you don't have to understand what's really going on here, all we need here is a real-world example of when you need to add two morphemes at once to get the meaning correct.)
+For another example, "kizāgihin", meaning "I love you" in Anishinaabemowin, consists of the stem "sāgih" (here it's pronounced "zāgih") and two additional morphemes, "ki-" and "-in".  However, it's not like one of them means "1SG.SUBJ" and the other one means "2SG.OBJ", it's only the two of them together that add these meanings.  (The "ki-" definitely has a 2nd person singular meaning... but not necessarily the *object*.  Like "kizāgihi" means "You love me".  The "-in" vs. "-i" helps tell you whether to interpret "ki-" as representing the subject or object.  Anyway, it's complicated and you don't have to understand what's really going on here, all we need here is a real-world example of when you need to add two morphemes at once to get the meaning correct.)
 
 Handling these is straightforward in Gramble; you just put both morphemes onto the same line.
 
-| ** Root = ** | text | root |
-| -------------| ---- | ----- |
+| **Root =** | **text** | **root** | | | |
+| -------------| ---- | ----- |--|--|--|
 |              | zāgih | love |
 | &nbsp; |
-| ** Stem = ** | text | embed | text | subj | obj |
+| **Stem =** | **text** | **embed** | **text** | **subj** | **obj** |
 |              | ki   | Root  | in   | 1SG | 2SG |
 |              | ki   | Root  | i    | 2SG | 1SG |
 
@@ -53,4 +53,4 @@ Again, there's nothing special about this "ki", all we're doing in the fifth lin
 
 You may have noticed that "text" appeared twice, and thought, "Wait, thinking of this as a database table, that makes no sense.  Does the text field contain 'ki' or 'in'?"
 
-Good catch, and the truth is these aren't database tables.  Think of them more like instructions on how to build a database, step-by-step.  We designed them so that the two looked very similar, so that many data-description spreadsheets your team might come up with are -- TADA -- magically also working Gramble source code.  But the same isn't true in the other direction; tables in Gramble source code aren't necessarily valid when interpreted as database tables.
+Good catch, and the truth is these aren't database tables.  Think of them more like instructions on how to build a database, step-by-step.  We designed them so that the two looked very similar, so that many data-description spreadsheets your team might come up with are -- TA-DA! -- magically also working Gramble source code.  But the same isn't true in the other direction; tables in Gramble source code aren't necessarily valid when interpreted as database tables.

@@ -22,19 +22,17 @@ Now, you might say, "This isn't a huge deal in my situation", and that's totally
 
 In the previous chapter, we added a new field to each tape, and it was the same field each time.  But if we wanted, we could make them different, we could have separate `root` and `tense` fields instead.
 
-| **Root =** | **text** | **root** ||
+| **Root =** | **text** | **root** |
 |----|----|----|
 |    | call  | call |
 |    | jump  | jump |
 | &nbsp; |
-| **Suffix =** | **text** | **tense** ||
-|----|----|-----|
+| **Suffix =** | **text** | **tense** |
 |    | s  | 3SG.PRES |
 |    | ed  | PAST |
 |    | ing | PRES.PROG |
 | &nbsp; |
 | **Verb =** | **embed** | **embed** |
-|----|----|-----|
 |           | Root | Suffix |
 
 (I've gone back to putting `text` and `root` in separate columns just for illustrative clarity, but you're still welcome to do one column with a `text/root` header.)
@@ -43,7 +41,7 @@ This is now a three-field database, and you can look things up in any direction.
 
 If this is confusing you, just remember that this program is equivalent to the following database:
 
-| **text** | **root** | **tense** ||
+| **text** | **root** | **tense** |
 |----------|----------|-----------|
 | calls    | call     | 3SG.PRES  |
 | called   | call     | PAST      |
@@ -73,7 +71,7 @@ The only little snag is that we have to decide what to do about hyphenization.  
 
 One thing you could do is just have these be separate fields; another thing you could do is just put the hyphen in a `gloss` field of its own like so:
 
-| **Suffix =** | **text** | **gloss** | **tense/gloss** ||
+| **Suffix =** | **text** | **gloss** | **tense/gloss** |
 |----|----|-----|-------|
 |    | s  | - | 3SG.PRES |
 |    | ed  | - | PAST |
@@ -81,7 +79,7 @@ One thing you could do is just have these be separate fields; another thing you 
 
 Neither of those is my preference, though; I think it gets a little hard to maintain.  My preference is to do all such morphemes as `[PAST]`.  There's nothing special about the brackets, they're just normal characters just like the hyphens, but they serve to separate the morpheme from the surrounding ones, while also not feeling weird to type into queries the way `-PAST` does.
 
-| **Suffix =** | **text** | **tense** ||
+| **Suffix =** | **text** | **tense** |
 |----|----|-----|
 |    | s  | [3SG.PRES] |
 |    | ed  | [PAST] |

@@ -69,7 +69,7 @@ So let's do (2).
 
 First, let's make a table containing the verb roots, ``call`` and ``jump``.  
 
-| **Root =** | **text** ||
+| **Root =** | **text** |
 |----|----|
 |    | call  |
 |    | jump  |
@@ -78,7 +78,7 @@ By the way, there's nothing special about the field `text` here.  I could call i
 
 Then, let's add a table containing the suffixes, ``s``, ``ing``, and ``ed``
 
-| **Suffix =** | **text** ||
+| **Suffix =** | **text** |
 |----|----|
 |    | call  |
 |    | jump  |
