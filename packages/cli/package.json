@@ -38,7 +38,7 @@
   "scripts": {
     "build": "tsc --build --verbose",
     "prepare": "npm run build",
-    "test": "gramble help"
+    "test": ":"
   },
   "bugs": {
     "url": "https://github.com/nrc-cnrc/gramble/issues"

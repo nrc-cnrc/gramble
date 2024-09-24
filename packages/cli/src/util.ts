@@ -1,5 +1,9 @@
+import {
+    Interpreter,
+    SILENT,
+    TextDevEnvironment
+} from "@gramble/interpreter";
 
-import { Interpreter, SILENT, TextDevEnvironment } from "@gramble/interpreter";
 import { createWriteStream, existsSync } from "fs";
 import { basename, dirname } from "path";
 import { Writable } from "stream";
@@ -12,7 +16,7 @@ export const programName = "gramble";
 
 export type StringDict = {[key: string]: string};
 
-export function sheetFromFile(
+export function sourceFromFile(
     path: string, 
     verbose: number = SILENT
 ): Interpreter {
@@ -33,9 +37,10 @@ export function parseQuery(str: string): StringDict {
     for (const part of parts) {
         const [key, value] = splitOnSep(part, ":", 1);
         if (key === undefined || value === undefined) {
-            console.log("ERROR: Query must consist of key:value pairs (e.g. \"text:ninapenda\")." + 
-                "If there are multiple pairs, separate them by commas (e.g. \"root:pend, subj:1SG\")");
-            process.exit(EXIT_USAGE);
+            usageError(
+                "Query must consist of key:value pairs (e.g. \"text:ninapenda\").",
+                "Separate multiple pairs by commas (e.g. \"root:pend,subj:1SG\")."
+            );
         }
         results[key] = value;
     }
@@ -102,16 +107,28 @@ export function getOutputStream(output: string | undefined): Writable {
 
 export function fileExistsOrFail(filename: string) {
     if (filename == undefined) {
-        usageError(`Must provide a filename`);
+        usageError(`Must specify a filename`);
     }
     if (!existsSync(filename)) {
         usageError(`Cannot find file ${filename}`);
     }
 }
 
-export function usageError(message: string): never {
-    console.error(`${programName}: Error: ${message}`);
+export function usageError(...messages: any[]): never {
+    let intro: string = `${programName}: Error: `;
+    for (let message of messages) {
+        console.error(`${intro}${message}`);
+        intro = "";
+    }
     process.exit(EXIT_USAGE);
+}
+
+export function usageWarn(...messages: string[]) {
+    let intro: string = `${programName}: Warning: `;
+    for (let message of messages) {
+        console.warn(`${intro}${message}`);
+        intro = "";
+    }
 }
 
 type Gen<T> = Generator<T, void, undefined>;
@@ -119,29 +136,38 @@ type Gen<T> = Generator<T, void, undefined>;
 export function generateToCSV(
     outputStream: Writable,    
     generator: Gen<StringDict>, 
-    labels: string[]
+    labels: string[],
+    max: number = Infinity
 ): void {
     const replacer = (key: string, value:string | null) => value === null ? '' : value;
     outputStream.write(labels.join(",") + "\n");
+    let count: number = 0;
+    if (max == 0) return;
     for (const entry of generator) {
         const line = labels.map(label =>  JSON.stringify(entry[label], replacer));
         outputStream.write(line.join(",") + "\n");
+        if (++count >= max) break;
     }
 }
 
 export function generateToJSON(
     outputStream: Writable,
-    generator: Gen<StringDict>
+    generator: Gen<StringDict>,
+    max: number = Infinity
 ): void {
     outputStream.write("[\n");
     let firstLine = true;
-    for (const entry of generator) {
-        if (!firstLine) {
-            outputStream.write(",\n");
+    let count: number = 0;
+    if (max > 0) {
+        for (const entry of generator) {
+            if (!firstLine) {
+                outputStream.write(",\n");
+            }
+            firstLine = false;
+            const line = JSON.stringify(entry);
+            outputStream.write("  " + line);
+            if (++count >= max) break;
         }
-        firstLine = false;
-        const line = JSON.stringify(entry);
-        outputStream.write("  " + line);
     }
     outputStream.write("\n]");
 }

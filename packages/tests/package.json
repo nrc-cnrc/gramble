@@ -31,8 +31,10 @@
     "build": "tsc --build --verbose",
     "prepare": "npm run build",
 
-    "test": "mocha -r ts-node/register grammar/*.ts parse/*.ts source/*/*.ts pass/*.ts",
-    
+    "test": "mocha -r ts-node/register grammar/*.ts parse/*.ts source/*/*.ts pass/*.ts cli/*.ts",
+            
+    "testCLI": "mocha -r ts-node/register cli/*.ts",
+
     "testGrammar": "mocha -r ts-node/register grammar/*.ts",
     "testGrammarBasic": "mocha -r ts-node/register grammar/testGrammarBasic.ts",
     "testGrammarCorrespond": "mocha -r ts-node/register grammar/testGrammarCorrespond.ts",
@@ -58,7 +60,7 @@
     "testGrammarReplaceSimple": "mocha -r ts-node/register grammar/testGrammarReplaceSimple.ts",
     "testGrammarShort": "mocha -r ts-node/register grammar/testGrammarShort.ts",
     "testGrammarSingleTape": "mocha -r ts-node/register grammar/testGrammarSingleTape.ts",
-    
+
     "testParse": "mocha -r ts-node/register parse/*.ts",
     "testParseHeader": "mocha -r ts-node/register parse/testParseHeader.ts",
     "testParseOp": "mocha -r ts-node/register parse/testParseOp.ts",
