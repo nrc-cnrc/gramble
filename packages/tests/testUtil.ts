@@ -1,15 +1,17 @@
-import { basename } from "path";
 import { assert, expect } from "chai";
+
+import { readFileSync } from "fs";
+import { basename } from "path";
 
 import {
     Dot, Epsilon,
     Lit, Rep, Seq,
  } from "../interpreter/src/grammarConvenience";
-import { Grammar, CollectionGrammar } from "../interpreter/src/grammars";
-import { Component } from "../interpreter/src/components";
+import { Grammar, CollectionGrammar, QualifiedGrammar } from "../interpreter/src/grammars";
+import { Component, PassEnv } from "../interpreter/src/components";
 import { Interpreter } from "../interpreter/src/interpreter";
-import { HIDDEN_PREFIX } from "../interpreter/src/utils/constants";
-import { Dict, StringDict, stringDictToStr } from "../interpreter/src/utils/func";
+import { DEFAULT_SYMBOL, HIDDEN_PREFIX } from "../interpreter/src/utils/constants";
+import { Dict, getCaseInsensitive, StringDict, stringDictToStr } from "../interpreter/src/utils/func";
 import { Options } from "../interpreter/src/utils/options";
 import { Message } from "../interpreter/src/utils/msgs";
 import * as Messages from "../interpreter/src/utils/msgs";
@@ -24,6 +26,8 @@ import {
 
 import * as Tapes from "../interpreter/src/tapes";
 import * as Vocab from "../interpreter/src/vocab";
+import { SelectSymbol } from "../interpreter/src/passes/selectSymbol";
+import { Op } from "../interpreter/src/ops";
 
 
 // Permit global control over verbose output in tests.
@@ -239,24 +243,12 @@ export function testHasTapes(
     stripHidden: boolean = true
 ): void {
     const interpreter = prepareInterpreter(grammar, {});
-
-    let referent = interpreter.getSymbol(symbol);
-    
     const bSet = new Set(expectedTapes);
     const testName: string = `${symbol} should have tapes [${[...bSet]}]`;
+    let tapes: string[] = [];
     it(`${testName}`, function() {
-        expect(referent).to.not.be.undefined;
-        if (referent == undefined) {
-            return;
-        }
-        let tapes: string[] = [];
         try {
-            tapes = referent.tapeNames;
-            if (stripHidden) {
-                // for the purpose of this comparison, leave out any internal-only
-                // tapes, like those created by a Hide().
-                tapes = referent.tapeNames.filter(t => !t.startsWith(HIDDEN_PREFIX));
-            }
+            tapes = interpreter.getTapeNames(symbol, stripHidden);
             expect(tapes.length).to.equal(bSet.size);
             for (const a of tapes) {
                 expect(bSet).to.contain(a);
@@ -283,30 +275,25 @@ export function testHasVocab(
     symbol: string = "",
     stripHidden: boolean = true
 ): void {
+    
+    symbol = (symbol.length === 0) ? DEFAULT_SYMBOL : symbol;
+    const opt: Partial<Options> = {optimizeAtomicity: false}
+    const interpreter = prepareInterpreter(grammar, opt);
     for (const tapeName in expectedVocab) {
-        let vocabGrammar: Grammar | Dict<Grammar>;
-        if ((grammar instanceof CollectionGrammar)) {
-            vocabGrammar = {...grammar.symbols};
-            if (!(symbol in vocabGrammar)) {
-                it(`symbol '${symbol}' not found in CollectionGrammar (${tapeName} vocab)`, function() {
-                    assert.fail();
+
+        if ((interpreter.grammar instanceof QualifiedGrammar)) {
+            let referent = getCaseInsensitive(interpreter.grammar.symbols, symbol);
+            if (referent === undefined) {
+                it(`symbol '${symbol}' not found in QualifiedGrammar (${tapeName} vocab), ` +
+                    `candidates are ${Object.keys(interpreter.grammar.symbols)}`, 
+                    function() {
+                        assert.fail();
                 }); 
                 continue;   
             }
-            vocabGrammar[symbol] = CharVocabOf(tapeName, vocabGrammar[symbol]);
-        } else if ((grammar instanceof Component)) {
-            vocabGrammar = CharVocabOf(tapeName, grammar);
-        } else {
-            vocabGrammar = {...(grammar as Dict<Grammar>)};
-            if (!(symbol in vocabGrammar)) {
-                it(`symbol '${symbol}' not found in grammar dictionary (${tapeName} vocab)`, function() {
-                    assert.fail();
-                });
-                continue;
-            }
-            vocabGrammar[symbol] = CharVocabOf(tapeName, grammar[symbol]);
-        }
-        const interpreter = prepareInterpreter(vocabGrammar, {optimizeAtomicity: false});
+            const vocabGrammar = CharVocabOf(tapeName, referent);
+            interpreter.grammar.symbols[symbol] = vocabGrammar.tapify(new PassEnv(opt))
+        } 
 
         const expected = expectedVocab[tapeName];
         const outputs: StringDict[] = generateOutputs(interpreter, symbol, "", stripHidden);
@@ -361,4 +348,11 @@ export function testNumErrors(
             throw e;
         }
     });
+}
+
+export function textFromFile(
+    path: string, 
+): string[] {
+    const text = readFileSync(path, 'utf8');
+    return text.trim().split(/\r?\n/);
 }

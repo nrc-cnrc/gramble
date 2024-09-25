@@ -1,14 +1,17 @@
 import { Msg, MissingSymbolError, Message } from "../utils/msgs";
 import { 
+    CollectionGrammar,
     EmbedGrammar,
     EpsilonGrammar,
     Grammar,
-    CollectionGrammar
+    QualifiedGrammar,
+    SymbolQualifier
 } from "../grammars";
 import { Pass, SymbolEnv } from "../passes";
-import { SymbolQualifier, grammarToQualifier, qualifySymbolAux } from "./qualifySymbols";
+import { qualifySymbolAux } from "./qualifySymbols";
 import { PassEnv } from "../components";
 import { Options } from "../utils/options";
+import { mapValues } from "../utils/func";
 
 /**
  * Goes through the tree and 
@@ -52,7 +55,7 @@ export class FlattenCollections extends Pass<Grammar,Grammar> {
 
     public transformCollection(g: CollectionGrammar, env: SymbolEnv): Msg<Grammar> {
         const msgs: Message[] = [];
-        const qualifier = grammarToQualifier(g);
+        const qualifier = toQualifier(g);
         const newCollectionStack: SymbolQualifier[] = [ ...this.qualifierStack, qualifier];
         for (const [k, v] of Object.entries(g.symbols)) {
             const newNameStack = [ ...this.nameStack, k ];
@@ -70,8 +73,7 @@ export class FlattenCollections extends Pass<Grammar,Grammar> {
             env.symbolNS[newName] = newV;
         }
 
-        return new CollectionGrammar(env.symbolNS, g.selectedSymbol, qualifier)
-                    .msg(msgs);
+        return new QualifiedGrammar(env.symbolNS, qualifier).msg(msgs);
     }
 
     public transformEmbed(g: EmbedGrammar, env: PassEnv): Grammar|Msg<Grammar> {
@@ -91,4 +93,13 @@ export class FlattenCollections extends Pass<Grammar,Grammar> {
         return new EpsilonGrammar().msg(msg);
     }
 
+}
+
+/**
+ * Creates a minimal representation of the original name structure
+ * of the grammar, sufficient to qualify names.
+ */
+export function toQualifier(g: Grammar): SymbolQualifier {
+    if (g.tag !== "collection") return "leaf";
+    return { symbols: mapValues(g.symbols, toQualifier) };
 }

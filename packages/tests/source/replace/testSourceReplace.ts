@@ -1,4 +1,4 @@
-import {VERBOSE_DEBUG } from "@gramble/interpreter/src/utils/logging";
+import {VERBOSE_DEBUG } from "../../../interpreter/src/utils/logging";
 import {
     testSource, SourceTest, 
     Error, Warning 
@@ -640,6 +640,38 @@ describe(`Source ${DIR}`, function() {
 		desc: '28c. Joining a deletion at end of word, other direction',
         results: [
             {text: "ab"}
+        ],
+    });
+
+    testSrc({
+		desc: '29. Single-char negation in post-context',
+        results: [
+            {text: "abXcad"}
+        ],
+    });
+    
+    testSrc({
+		desc: '30. Single-char negation in pre-context',
+        results: [
+            {text: "bacXda"}
+        ],
+    });
+
+    testSrc({
+		desc: '31. Negation in post-context',
+        results: [
+            {text: "XbXcXd"},
+            {text: "XbXcad"},
+            {text: "XbacXd"},
+            {text: "Xbacad"},
+        ],
+    });
+
+    testSrc({
+		desc: '32. Negation in post-context',
+        results: [
+            {text: "bacXdX"},
+            {text: "bacadX"},
         ],
     });
 });

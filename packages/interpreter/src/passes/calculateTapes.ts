@@ -1,7 +1,7 @@
 import { Err, Message, Msg } from "../utils/msgs";
 import { 
     Grammar,
-    CollectionGrammar,
+    QualifiedGrammar,
     EmbedGrammar,
     HideGrammar,
     RenameGrammar,
@@ -21,14 +21,17 @@ import {
     ShortGrammar,
     NegationGrammar,
     CorrespondGrammar,
-    CursorGrammar,
+    GreedyCursorGrammar,
     ReplaceGrammar,
+    CursorGrammar,
+    SelectionGrammar,
 } from "../grammars";
 import { AutoPass } from "../passes";
 import { 
     mapValues, 
     exhaustive, update, 
-    foldRight, dictLen, mapDict 
+    foldRight, dictLen, mapDict, 
+    getCaseInsensitive
 } from "../utils/func";
 import { 
     DEFAULT_TAPE, 
@@ -57,14 +60,13 @@ export class TapesEnv extends Env<Grammar> {
 
     public update(g: Grammar): TapesEnv {
         switch (g.tag) {
-            case "collection": return this.updateCollection(g);
-            default: return this;
+            case "selection":
+            case "qualified": 
+                const tapeMap = mapDict(g.symbols, (k,_) => Tapes.Ref(k));
+                return update(this, {tapeMap});
+            default: 
+                return this;
         }
-    }
-
-    updateCollection(g: CollectionGrammar): TapesEnv {
-        const tapeMap = mapDict(g.symbols, (k,_) => Tapes.Ref(k));
-        return update(this, {tapeMap});
     }
     
 }
@@ -116,6 +118,7 @@ export class CalculateTapes extends AutoPass<Grammar> {
             case "pretape": return getTapesDefault(g);
             
             case "cursor":  return getTapesCursor(g, env);
+            case "greedyCursor":  return getTapesCursor(g, env);
             
             // union of children's tapes but always String vocab
             case "short":      return getTapesShort(g);
@@ -133,8 +136,10 @@ export class CalculateTapes extends AutoPass<Grammar> {
             case "repeat":      return getTapesRepeat(g);
 
             // something special
+
             case "embed":        return getTapesEmbed(g, env);
-            case "collection":   return this.getTapesCollection(g, env);
+            case "selection":     return this.getTapesSelection(g, env);
+            case "qualified":   return this.getTapesQualified(g, env);
             case "rename":       return getTapesRename(g);
             case "hide":         return getTapesHide(g);
             case "match":        return getTapesMatch(g);
@@ -143,13 +148,20 @@ export class CalculateTapes extends AutoPass<Grammar> {
             case "replace":     return getTapesReplace(g, env);
             case "correspond":  return getTapesCorrespond(g, env);
 
-            default: exhaustive(g);
-            //default: throw new Error(`unhandled grammar in getTapes: ${g.tag}`);
+            default: throw new Error(`unhandled grammar in getTapes: ${g.tag}`);
         }
 
     }
+
+    getTapesSelection(g: SelectionGrammar, env: TapesEnv): Grammar {
+        const referent = getCaseInsensitive(g.symbols, g.selection);
+        if (referent === undefined) {
+            throw new Error(`Cannot resolve symbol ${g.selection}`);
+        }
+        return updateTapes(g, referent.tapes);
+    }
     
-    getTapesCollection(g: CollectionGrammar, env: TapesEnv): Msg<Grammar> {
+    getTapesQualified(g: QualifiedGrammar, env: TapesEnv): Msg<Grammar> {
         const msgs: Message[] = [];
         
         while (true) {
@@ -173,42 +185,27 @@ export class CalculateTapes extends AutoPass<Grammar> {
             //const tapePusher = new CalculateTapes(true, tapeIDs);
 
             const tapePushEnv = new TapesEnv(env.opt, true, tapeIDs);
+            //for (const [k, v] of Object.entries(g.symbols)) {
+            //    const transformed = this.transform(v, tapePushEnv).msgTo(newMsgs);
+            //    g.symbols[k] = transformed;
+            //}
+
             g.symbols = mapValues(g.symbols, v => 
                     this.transform(v, tapePushEnv).msgTo(newMsgs));
 
             msgs.push(...newMsgs);
 
             if (newMsgs.length === 0) break;
-            
+
             // if there are any errors, the graph may have changed.  we
             // need to restart the process from scratch.
-            //const TapeRefresher = new CalculateTapes(true);
             const tapeRefreshEnv = new TapesEnv(env.opt, true).update(g);
                             // update resets the references
             g.symbols = mapValues(g.symbols, v => 
                 this.transform(v, tapeRefreshEnv).msgTo(newMsgs));
         }
 
-        // TODO: The following interpretation of tapes is incorrect,
-        // but matches what we've been doing previously.  I'm going to
-        // get it "working" exactly like the old way, before fixing it to be
-        // semantically sound.
-        return getTapesDefault(g).msg(msgs);
-
-        /*
-        // TODO: This is the correct interpretation, restore it eventually
-
-        // if a symbol is selected, we share its tape set
-        const selectedSymbol = g.getSymbol(g.selectedSymbol);
-        if (selectedSymbol === undefined) {
-            // if there's no selected symbol, the collection as a whole
-            // has the semantics of epsilon, and thus its tapes are
-            // an empty TapeSet rather than TapeUnknown.   
-            return updateTapes(g, TapeSet()).msg(msgs);
-        }
-        return updateTapes(g, selectedSymbol.tapeSet).msg(msgs);
-        */
-
+        return updateTapes(g, Tapes.Lit()).msg(msgs);
     }
 }
 
@@ -217,14 +214,19 @@ function updateTapes(g: Grammar, tapes: TapeSet): Grammar {
 }
 
 function getChildTapes(g: Grammar): TapeSet {
-    const childTapes = children(g).map(c => c.tapes);
+    const childTapes: TapeSet[] = [];
+    const cs = children(g);
+    for (const child of cs) {
+        const tapes = child.tapes;
+        childTapes.push(tapes);
+    }
+
+    //    const childTapes = children(g).map(c => c.tapes);
     if (childTapes.length === 0) return Tapes.Lit();
     return foldRight(childTapes.slice(1), Tapes.Sum, childTapes[0]);
 }
 
-function getTapesDefault(
-    g: Grammar
-): Grammar {
+function getTapesDefault(g: Grammar): Grammar {
     return updateTapes(g, getChildTapes(g));
 }
 
@@ -343,25 +345,28 @@ function getTapesSingleTape(g: SingleTapeGrammar): Grammar {
         return updateTapes(g, tapes);
     }
 
-    if (dictLen(g.child.tapes.vocabMap) > 1) {
-        // shouldn't be possible in real source grammars
-        const result = new EpsilonGrammar();
-        throw updateTapes(result, Tapes.Lit())
-            .err("Multiple fields not allowed in this context",
-                `Only grammars with one field (e.g. just "text" but not Tapes.Any other fields) ` +
-                `can be embedded into a regex or rule context.`)
-            .localize(g.pos);
-    }
-
     if (dictLen(g.child.tapes.vocabMap) === 0) {
         return g.child;
     }
 
-    // there's just one tape, rename it
-    const tapeToRename = Object.keys(g.child.tapes.vocabMap)[0];
-    const tapes = Tapes.Rename(g.child.tapes, tapeToRename, g.tapeName);
-    return updateTapes(g, tapes);
+    if (dictLen(g.child.tapes.vocabMap) > 1) {
+        throw new EpsilonGrammar()
+                .err("Embedding multi-field symbol",
+                        `Only grammars with one field (e.g. just "text" but not any other fields) ` +
+                        `can be embedded into a regex or rule context.`)
+                .localize(g.child.pos);
+    }
 
+    // There's one tape; if it's the same as our singleTape name, just return the
+    // child; otherwise create a RenameGrammar around it.  Either way this SingleTapeGrammar
+    // ceases to exist.
+    const tapeToRename = Object.keys(g.child.tapes.vocabMap)[0];
+    if (g.tapeName === tapeToRename) {
+        return g.child;
+    }
+    
+    const newChild = new RenameGrammar(g.child, tapeToRename, g.tapeName);
+    return getTapesRename(newChild); // this handles the details of the renaming for us
 }
 
 function getTapesDot(g: DotGrammar, env: TapesEnv): Grammar {
@@ -375,7 +380,7 @@ function getTapesEmbed(
     env: TapesEnv,
 ): Grammar {
     if (env.tapeMap === undefined || !(g.symbol in env.tapeMap)) 
-        throw new Error(`Unknown symbol during tapecalc: ${g.symbol}`);
+        throw new Error(`Unknown symbol during tapecalc: ${g.symbol}, env contains ${env.tapeMap?.keys}`);
         // should already be in there
     return updateTapes(g, env.tapeMap[g.symbol]);
 }
@@ -520,10 +525,9 @@ function getTapesCondition(
 }
 
 function getTapesCursor(
-    g: CursorGrammar,
+    g: CursorGrammar | GreedyCursorGrammar,
     env: TapesEnv
 ): Grammar {
-
     if (g.child.tapes.tag !== Tapes.Tag.Lit) {
         // can't do anything right now
         const tapes = Tapes.Cursor(g.child.tapes, g.tapeName);

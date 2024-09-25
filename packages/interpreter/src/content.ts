@@ -2,6 +2,7 @@ import {
     AlternationGrammar, DotGrammar, 
     EmbedGrammar, EpsilonGrammar, 
     Grammar, 
+    JoinGrammar, 
     LiteralGrammar, NegationGrammar, 
     RepeatGrammar, RuleContextGrammar, 
     SequenceGrammar 
@@ -109,6 +110,11 @@ const REGEX_EXPR: RegexParser = MPDelay(() => MPAlt(
 ));
 
 const REGEX_SUBEXPR: RegexParser = MPDelay(() => MPAlt(
+    REGEX_JOIN,
+    REGEX_SUBSUBEXPR
+));
+
+const REGEX_SUBSUBEXPR: RegexParser = MPDelay(() => MPAlt(
     REGEX_NEGATION, 
     REGEX_SUBSEQ
 ));
@@ -182,6 +188,11 @@ const REGEX_NEGATION = MPSequence(
 const REGEX_ALTERNATION = MPSequence(
     [REGEX_SUBEXPR, "|", REGEX_EXPR],
     (cs) => new AlternationGrammar(cs)
+);
+
+const REGEX_JOIN = MPSequence(
+    [REGEX_SUBSUBEXPR, "&", REGEX_EXPR],
+    ([c1, c2]) => new JoinGrammar(c1, c2)
 );
 
 /*********************/

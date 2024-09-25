@@ -1,6 +1,7 @@
 import { 
-    Grammar, 
     CollectionGrammar,
+    Grammar, 
+    QualifiedGrammar,
 } from "./grammars";
 
 import { 
@@ -10,7 +11,7 @@ import {
 } from "./utils/func";
 import { Worksheet, Workbook } from "./sources";
 import { backgroundColor, parseHeaderCell } from "./headers";
-import { Expr, CollectionExpr } from "./exprs";
+import { Expr, SelectionExpr } from "./exprs";
 import { DevEnvironment, SimpleDevEnvironment } from "./devEnv";
 import { generate } from "./generator";
 import { MissingSymbolError, Message, THROWER, msg } from "./utils/msgs";
@@ -19,12 +20,11 @@ import { ExecuteTests } from "./passes/executeTests";
 import { CreateCursors } from "./passes/createCursors";
 import { constructExpr } from "./passes/constructExpr";
 import { toStr } from "./passes/toStr";
-import { DEFAULT_PROJECT_NAME, DEFAULT_SYMBOL, HIDDEN_PREFIX } from "./utils/constants";
+import { ALL_SYMBOL, DEFAULT_PROJECT_NAME, DEFAULT_SYMBOL, HIDDEN_PREFIX } from "./utils/constants";
 import { VERBOSE_GRAMMAR, VERBOSE_TIME, logTime, msToTime } from "./utils/logging";
 import { INDICES, Options } from "./utils/options";
 import { SelectSymbol } from "./passes/selectSymbol";
 import { getAllSymbols } from "./passes/getAllSymbols";
-import { qualifySymbol } from "./passes/qualifySymbols";
 import { FlattenCollections } from "./passes/flattenCollections";
 import { CreateQuery } from "./passes/createQuery";
 import { InfinityProtection } from "./passes/infinityProtection";
@@ -32,6 +32,8 @@ import { Component, PassEnv } from "./components";
 
 import * as Tapes from "./tapes";
 import { ResolveVocab } from "./passes/resolveVocab";
+
+import * as Vocabs from "./vocab";
 
 /**
  * An interpreter object is responsible for applying the passes in between sheets
@@ -139,27 +141,20 @@ export class Interpreter {
         return getAllSymbols(this.grammar);
     }
 
-    /*
-     * Qualifies `symbol` and gets the grammar it refers to (if it exists)
-     */ 
-    public getSymbol(symbol: string): Grammar | undefined {
-        const result = qualifySymbol(this.grammar, symbol);
-        if (result === undefined) return undefined;
-        return result[1];
-    }
-
     public getTapeNames(
         symbol: string,
         stripHidden: boolean = true
     ): string[] {
-        const referent = this.getSymbol(symbol);
-        if (referent == undefined) {
-            throw new Error(`Cannot find symbol ${symbol}`);
-        }
+        let selected: Grammar = new SelectSymbol(symbol)
+                                       .getEnvAndTransform(this.grammar, this.opt)
+                                       .msgTo(THROWER);
+        let tapeNames = selected.tapeNames;
         if (stripHidden) {
-            return referent.tapeNames.filter(t => !t.startsWith(HIDDEN_PREFIX));
+            tapeNames = tapeNames.filter(t => !t.startsWith(HIDDEN_PREFIX));
         }
-        return referent.tapeNames;
+        const sorter = (a: string, b: string) => a.toLowerCase() > b.toLowerCase() ? 1 : -1;
+        tapeNames.sort(sorter)
+        return tapeNames;
     }
 
     public getTapeColor(
@@ -277,13 +272,18 @@ export class Interpreter {
 
     public runTests(): void {
 
-        const targetGrammar = new ResolveVocab()
+        let targetGrammar = new SelectSymbol(ALL_SYMBOL)
                                 .getEnvAndTransform(this.grammar, this.opt)
+                                .msgTo(THROWER);
+
+        targetGrammar = new ResolveVocab()
+                                .getEnvAndTransform(targetGrammar, this.opt)
                                 .msgTo(THROWER);
         
         const env = new PassEnv(this.opt);
+
         const expr = constructExpr(env, targetGrammar);
-        const symbols = expr instanceof CollectionExpr
+        const symbols = expr instanceof SelectionExpr
                       ? expr.symbols
                       : {};
         const pass = new ExecuteTests(symbols);

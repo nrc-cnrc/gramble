@@ -16,14 +16,15 @@ import {
     HideGrammar,  
     ReplaceBlockGrammar, 
     TestNotGrammar, 
-    CollectionGrammar, 
+    QualifiedGrammar, 
     RenameGrammar, 
     SequenceGrammar, 
     TestGrammar, 
     JoinGrammar,
     RuleContextGrammar,
     FilterGrammar,
-    ReplaceGrammar
+    ReplaceGrammar,
+    CollectionGrammar
 } from "../grammars";
 import { parseClass, TapeHeader } from "../headers";
 import { Err, Msg, Message, msgList } from "../utils/msgs";
@@ -32,6 +33,7 @@ import { parseContent } from "../content";
 import { DEFAULT_PARAM } from "../utils/constants";
 import { uniqueLiterals } from "./uniqueLiterals";
 import { PassEnv } from "../components";
+import { getCaseInsensitive } from "../utils/func";
 
 /**
  * This is the workhorse of grammar creation, turning the 
@@ -89,6 +91,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
     public handleHide(t: TstHide, env: PassEnv): Msg<Grammar> {
         let result = this.transform(t.prev, env);
         for (const tape of t.cell.text.split("/")) {
+            if (tape.trim().length == 0) continue;  // empty strings are meaningless here, don't try to hide them as tapes
             result = result.bind(c => new HideGrammar(c, tape.trim()));
         }
         return result.bind(g => g.locate(t.pos));
@@ -227,7 +230,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
                 throw new Error(`non-assignment child of collection: ${child.constructor.name}`);
             }
 
-            const existingReferent = newColl.getSymbol(child.name);
+            const existingReferent = getCaseInsensitive(newColl.symbols, child.name);
             if (existingReferent != undefined) {
                 // we're reassigning an existing symbol!
                 Err('Reassigning existing symbol', 

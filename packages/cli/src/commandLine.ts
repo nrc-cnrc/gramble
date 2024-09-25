@@ -1,75 +1,110 @@
 #!/usr/bin/env ts-node-script
 
 import { 
-    Interpreter, 
-    SILENT, 
-    TextDevEnvironment,
     timeIt,
+    SILENT, 
+    VERBOSE_STATES,
     VERBOSE_TIME,
-    VERBOSE_STATES
+    Message,
 } from "@gramble/interpreter";
-import { createWriteStream, existsSync } from "fs";
-import { basename, dirname, parse } from "path";
-import { Writable } from "stream";
+
 import * as commandLineArgs from "command-line-args";
 import * as commandLineUsage from "command-line-usage";
 
-// Status code of an invalid usage invocation:
-// See: man 3 sysexits
-const EXIT_USAGE = 64;
+import {
+    fileExistsOrFail, generateToCSV, generateToJSON,
+    getOutputStream, parseQuery, programName, sourceFromFile,
+    StringDict, usageError, usageWarn,
+} from "./util";
 
-type StringDict = {[key: string]: string};
-
-export function sheetFromFile(
-    path: string, 
-    verbose: number = SILENT
-): Interpreter {
-
-    const dir = dirname(path);
-    const sheetName = basename(path, ".csv");
-    const devEnv = new TextDevEnvironment(dir);
-    const project = Interpreter.fromSheet(devEnv, sheetName, {verbose:verbose});
-    return project;
-}
-
-function fileExistsOrFail(filename: string) {
-    if (filename == undefined) {
-        usageError(`Must provide a filename`);
-    }
-    if (!existsSync(filename)) {
-        usageError(`Cannot find file ${filename}`);
-    }
-}
-
-function getOutputStream(output: string | undefined): Writable {
-  if (output == undefined) {
-      return process.stdout;
-  }
-  return createWriteStream(output, "utf8");
-}
 
 /* first - parse the main command */
-const commandDefinition = [{ name: "command", defaultOption: true }];
+const commandDefinition = [
+    {
+        name: "command",
+        defaultOption: true
+    }
+];
 const command = commandLineArgs(commandDefinition, {
     stopAtFirstUnknown: true,
 });
 const argv = command._unknown || [];
-// TODO: determine from argv?
-const programName = "gramble";
 
+type OptionDefinition = commandLineArgs.OptionDefinition & commandLineUsage.OptionDefinition;
 interface Command {
-  run(options: commandLineArgs.CommandLineOptions): void;
   synopsis: string | string[];
-  options: (commandLineArgs.OptionDefinition & commandLineUsage.OptionDefinition)[];
+  options: OptionDefinition[];
+  run(options: commandLineArgs.CommandLineOptions): void;
 }
+
+const commonGenerateSampleOptions: OptionDefinition[] = [
+    {
+        name: "source",
+        type: String,
+        defaultOption: true,
+        description: "test hiding source in options list",
+    },
+    {
+        name: "symbol",
+        alias: "s",
+        type: String,
+        defaultValue: "all",
+        typeLabel: "{underline name}",
+        description: "symbol to start generation " +
+                     "[default: 'all', the default symbol]",
+    },
+    {
+        name: "format",
+        alias: "f",
+        type: String,
+        typeLabel: "csv|json",
+        defaultValue: "csv",
+        description: "write output in CSV or JSON formats " +
+                     "[default: csv]",
+    },
+    {
+        name: "output",
+        alias: "o",
+        type: String,
+        typeLabel: "{underline file}",
+        description: "write output to {underline file}",
+    },
+    {
+        name: "query",
+        alias: "q",
+        type: String,
+        defaultValue: "",
+        typeLabel: "{underline string}",
+        description: "Query as key:value pairs, joined by commas, " +
+                     "e.g. {underline \"root:kan,subj:1SG\"}",
+    },
+    {
+        name: "verbose",
+        alias: "v",
+        type: Boolean,
+        defaultValue: false,
+        description: "log error and info messages",
+    },            
+];
+
+const commonGenerateSampleOptions_str = "[--symbol|-s {underline name}] " +
+    "[--format|-f {underline csv|json}] [--output|-o {underline file}] " +
+    "[--query|-q {underline string}] [--verbose|-v] {underline source}";
+
 
 const commands: { [name: string]: Command } = {
     help: {
         synopsis: `help [{underline command}]`,
-        options: [{ name: "command", defaultOption: true }],
+        options: [
+            {
+                name: "command",
+                defaultOption: true
+            }
+        ],
 
         run(options) {
-            if (options.command) {
+            const command = commands[options.command];
+            if (command) {
                 let command = commands[options.command];
                 let optionList = command.options;
                 let synopses;
@@ -89,123 +124,40 @@ const commands: { [name: string]: Command } = {
                 ];
                 console.log(commandLineUsage(sections));
             } else {
+                if (options.command) {
+                    usageError(
+                        `Unknown command: ${options.command}`,
+                        usage()
+                    );             
+                }
                 printUsage();
             }
         },
     },
 
     generate: {
-        synopsis: "generate [--symbol|-s {underline name}] [--format|-f {underline csv|json}] " + 
-                  "[--max|-m {underline n}] [--output|-o {underline file}] {underline source}",
+        synopsis: `generate [--max|-m {underline n}] ${commonGenerateSampleOptions_str}`,
         options: [
-            {
-                name: "source",
-                type: String,
-                defaultOption: true,
-            },
-            {
-                name: "symbol",
-                alias: "s",
-                type: String,
-                defaultValue: "all",
-                typeLabel: "{underline name}",
-                description: "symbol to start generation. Defaults to 'all', the default symbol",
-            },
-            {
-                name: "output",
-                alias: "o",
-                type: String,
-                typeLabel: "{underline file}",
-                description: "write output to {underline file}",
-            },
-            {
-                name: "format",
-                alias: "f",
-                type: String,
-                typeLabel: "csv|json",
-                defaultValue: "csv",
-                description: "write output in CSV or JSON formats",
-            },
             {
                 name: "max",
                 alias: "m",
                 type: Number,
                 defaultValue: Infinity,
                 typeLabel: "{underline n}",
-                description:
-                "generate at most {underline n} terms [default: unlimited]",
+                description: "generate at most {underline n} terms " +
+                             "[default: unlimited]",
             },
-            {
-                name: "verbose",
-                alias: "v",
-                type: Boolean,
-                defaultValue: false,
-                description:
-                "log error and info messages",
-            },
+            ...commonGenerateSampleOptions
         ],
 
         run(options: commandLineArgs.CommandLineOptions) {
-            fileExistsOrFail(options.source);
-
-            if (options.symbol.trim().length == 0) {
-                const filename = parse(options.source).name  
-                options.symbol = filename + ".All";
-            }
-
-            const outputStream = getOutputStream(options.output);
-            const timeVerbose = (options.verbose) ? VERBOSE_TIME|VERBOSE_STATES : SILENT;
-            const interpreter = sheetFromFile(options.source, timeVerbose);
-
-            if (options.verbose) {
-                //interpreter.runChecks();
-                interpreter.devEnv.logErrors();
-            }
-
-            const labels = interpreter.getTapeNames(options.symbol);
-            const generator = interpreter.generateStream(options.symbol, {});
-            timeIt(() => {
-                if (options.format.toLowerCase() == 'csv') {
-                    generateToCSV(outputStream, generator, labels);
-                } else {
-                    generateToJSON(outputStream, generator);
-                }
-            }, options.verbose, "Generation complete", "Starting generation");
+            runGenerateOrSampleCmd(options);
         },
     },
 
     sample: {
-        synopsis: "sample [--symbol|-s {underline name}] [--format|-f {underline csv|json}] " +
-                  "[--num|-n {underline n}] [--output|-o {underline file}] {underline source}`",
+        synopsis: `sample [--num|-n {underline n}] ${commonGenerateSampleOptions_str}`,
         options: [
-            {
-                name: "source",
-                type: String,
-                defaultOption: true,
-            },
-            {
-                name: "symbol",
-                alias: "s",
-                type: String,
-                defaultValue: "all",
-                typeLabel: "{underline name}",
-                description: "symbol to start generation. Defaults to 'all', the default symbol",
-            },
-            {
-                name: "output",
-                alias: "o",
-                type: String,
-                typeLabel: "{underline file}",
-                description: "write output to {underline file}",
-            },        
-            {
-                name: "format",
-                alias: "f",
-                type: String,
-                typeLabel: "csv|json",
-                defaultValue: "csv",
-                description: "write output in CSV or JSON formats",
-            },
             {
                 name: "num",
                 alias: "n",
@@ -214,44 +166,71 @@ const commands: { [name: string]: Command } = {
                 typeLabel: "{underline n}",
                 description: "sample {underline n} terms [default: 5]",
             },        
-            {
-                name: "verbose",
-                alias: "v",
-                type: Boolean,
-                defaultValue: false,
-                description:
-                "log error and info messages",
-            },  
+            ...commonGenerateSampleOptions
         ],
 
         run(options: commandLineArgs.CommandLineOptions) {
-            fileExistsOrFail(options.source);
-
-            if (options.symbol.trim().length == 0) {
-                const filename = parse(options.source).name  
-                options.symbol = filename + ".All";
-            }
-
-            const outputStream = getOutputStream(options.output);
-            const timeVerbose = (options.verbose) ? VERBOSE_TIME|VERBOSE_STATES : SILENT;
-            const interpreter = sheetFromFile(options.source, timeVerbose);
-
-            if (options.verbose) {
-                //interpreter.runChecks();
-                interpreter.devEnv.logErrors();
-            }
-
-            const labels = interpreter.getTapeNames(options.symbol);
-            const generator = interpreter.sampleStream(options.symbol, options.num, {});
-            timeIt(() => {
-                if (options.format.toLowerCase() == 'csv') {
-                    generateToCSV(outputStream, generator, labels);
-                } else {
-                    generateToJSON(outputStream, generator);
-                }
-            }, options.verbose, "Sampling commplete", "Started sampling");
+            runGenerateOrSampleCmd(options, true);
         },
     },
+};
+
+function validateGenerateOrSampleOptions(
+    options: commandLineArgs.CommandLineOptions
+): [commandLineArgs.CommandLineOptions, StringDict] {
+
+    fileExistsOrFail(options.source);
+
+    if (options.symbol == null || options.symbol.trim().length == 0) {
+        options.symbol = 'all';
+    }
+
+    if (options.max === null || Number.isNaN(options.max)) {
+        usageWarn('Missing or invalid count for --max|-m option; using default: Infinity');
+        options.max = Infinity;
+    }
+
+    if (options.num === null || Number.isNaN(options.num)) {
+        usageWarn('Missing or invalid count for --num|-n option; using default: 5');
+        options.num = 5;
+    }
+
+    if (options.query === null) {
+        usageWarn('Missing query string for --query|-q option');
+        options.query = "";
+    }
+    let query: StringDict = parseQuery(options.query);
+
+    return [options, query];
+}
+
+function runGenerateOrSampleCmd(
+    options: commandLineArgs.CommandLineOptions,
+    sample: boolean = false
+) {
+    let query: StringDict;
+    [options, query] = validateGenerateOrSampleOptions(options);
+
+    const outputStream = getOutputStream(options.output);
+    const timeVerbose = (options.verbose) ? VERBOSE_TIME|VERBOSE_STATES : SILENT;
+    const interpreter = sourceFromFile(options.source, timeVerbose);
+
+    if (options.verbose) {
+        interpreter.devEnv.logErrors();
+    }
+
+    const labels = interpreter.getTapeNames(options.symbol);
+    const generator = sample ? interpreter.sampleStream(options.symbol, options.num, query)
+                             : interpreter.generateStream(options.symbol, query);
+    const command = sample ? "Generation" : "Sampling";
+
+    timeIt(() => {
+        if (options.format.toLowerCase() == 'csv') {
+            generateToCSV(outputStream, generator, labels, options?.max);
+        } else {
+            generateToJSON(outputStream, generator, options?.max);
+        }
+    }, options.verbose, `${command} commplete`, `Started ${command.toLowerCase()}`);
 };
 
 const sections = [
@@ -274,61 +253,35 @@ const sections = [
     },
 ];
 
-/* second - parse the generate command options */
+function usage(): string {
+    return commandLineUsage(sections);
+}
+
+export function printUsage(error: boolean = false) {
+    if (error) {
+        console.error(usage());
+    } else {
+        console.log(usage());
+    }
+}
+
+/* second - parse the command options */
 if (command.command in commands) {
     try {    
         const cmd = commands[command.command];
         const options = commandLineArgs(cmd.options, { argv });
-        commands[command.command].run(options);
+        cmd.run(options);
     } catch (e) {
-        const msg = (e instanceof Error) ? e.message : String(e);
-        console.error(`${programName}: unknown ${command.command} option: ${msg}`);
-        console.error(`For usage info, try: ${programName} help ${command.command}`);
+        const msg = e instanceof Error ? e.message : e instanceof Message ? e.longMsg : "";
+        usageError(
+            `Error in ${command.command} command:`,
+            msg ? msg : e,
+            `For usage info, try: ${programName} help ${command.command}`
+        );
     }
 } else {
-    console.error(`${programName}: unknown command: ${command.command}`);
-    printUsage();
-    process.exit(EXIT_USAGE);
-}
-
-function usageError(message: string): never {
-    console.error(`${programName}: Error: ${message}`);
-    process.exit(EXIT_USAGE);
-}
-
-function printUsage() {
-    let usage = commandLineUsage(sections);
-    console.log(usage);
-}
-
-type Gen<T> = Generator<T, void, undefined>;
-
-function generateToCSV(
-    outputStream: Writable,    
-    generator: Gen<StringDict>, 
-    labels: string[]
-): void {
-    const replacer = (key: string, value:string | null) => value === null ? '' : value;
-    outputStream.write(labels.join(",") + "\n");
-    for (const entry of generator) {
-        const line = labels.map(label =>  JSON.stringify(entry[label], replacer));
-        outputStream.write(line.join(",") + "\n");
-    }
-}
-
-function generateToJSON(
-    outputStream: Writable,
-    generator: Gen<StringDict>
-): void {
-    outputStream.write("[\n");
-    let firstLine = true;
-    for (const entry of generator) {
-        if (!firstLine) {
-            outputStream.write(",\n");
-        }
-        firstLine = false;
-        const line = JSON.stringify(entry);
-        outputStream.write("  " + line);
-    }
-    outputStream.write("\n]");
+    if (command.command)
+        usageError(`Unknown command: ${command.command}`, usage());
+    else
+        usageError("Must specify a command", usage());
 }

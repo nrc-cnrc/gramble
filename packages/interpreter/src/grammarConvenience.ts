@@ -1,7 +1,7 @@
 import { 
-    AlternationGrammar, CollectionGrammar, 
+    AlternationGrammar, QualifiedGrammar, 
     ContainsGrammar, CorrespondGrammar, 
-    CountGrammar, CursorGrammar, 
+    CountGrammar, GreedyCursorGrammar, 
     DotGrammar, EmbedGrammar, 
     EndsGrammar, EpsilonGrammar, 
     FilterGrammar, Grammar, 
@@ -15,7 +15,9 @@ import {
     ReplaceGrammar, 
     SequenceGrammar, ShortGrammar, 
     SingleTapeGrammar, 
-    StartsGrammar 
+    StartsGrammar, 
+    CursorGrammar,
+    CollectionGrammar
 } from "./grammars";
 import { Dict, StringDict, foldRight } from "./utils/func";
 import { INPUT_TAPE, OUTPUT_TAPE, DEFAULT_TAPE } from "./utils/constants";

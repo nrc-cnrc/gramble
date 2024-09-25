@@ -1,7 +1,8 @@
 import { Msg } from "../utils/msgs";
 import { 
     Grammar,
-    CollectionGrammar,
+    QualifiedGrammar,
+    SelectionGrammar,
 } from "../grammars";
 import { Pass } from "../passes";
 import { qualifySymbol } from "./qualifySymbols";
@@ -26,13 +27,13 @@ export class SelectSymbol extends Pass<Grammar,Grammar> {
     
     public transformAux(g: Grammar, env: PassEnv): Grammar {
         switch (g.tag) {
-            case "collection": return this.selectSymbol(g, env);
+            case "qualified": return this.selectSymbol(g, env);
             default:           throw g.err("Symbol not found", 
                                     `Cannot find symbol ${this.symbol} in ${g.tag} grammar`);
         }
     }
 
-    public selectSymbol(g: CollectionGrammar, env: PassEnv): Grammar {
+    public selectSymbol(g: QualifiedGrammar, env: PassEnv): Grammar {
 
         const resolution = qualifySymbol(g, this.symbol);
         if (resolution == undefined) {
@@ -47,7 +48,7 @@ export class SelectSymbol extends Pass<Grammar,Grammar> {
                 `Cannot find symbol ${this.symbol} in grammar, candidates: ${Object.keys(g.symbols)}.`);
         }
 
-        const result = new CollectionGrammar(g.symbols, resolution[0], g.qualifier);
+        const result = new SelectionGrammar(g.symbols, resolution[0]);
         result.tapes = referent.tapes;
         return result;
     }

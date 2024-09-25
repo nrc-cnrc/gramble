@@ -1,28 +1,16 @@
-import { AutoPass, Pass, SymbolEnv } from "../passes";
-import { AlternationGrammar, 
-    CollectionGrammar, 
-    CountGrammar, 
-    CursorGrammar, 
-    EmbedGrammar, 
-    Grammar, HideGrammar,
-    JoinGrammar, 
-    LengthRange, 
-    MatchGrammar,
-    NegationGrammar,
-    RenameGrammar,
-    RepeatGrammar,
-    SequenceGrammar
+import { AutoPass, Pass } from "../passes";
+import { 
+    GreedyCursorGrammar, 
+    Grammar,
+    CursorGrammar,
+    QualifiedGrammar, 
 } from "../grammars";
-import { renameTape } from "../tapes";
-import { Count } from "../grammarConvenience";
-import { exhaustive, update } from "../utils/func";
+import { update } from "../utils/func";
 import { Msg } from "../utils/msgs";
-import { CounterStack } from "../utils/counter";
 import { Env, Options } from "../utils/options";
 import { VocabDict } from "../vocab";
 import * as Tapes from "../tapes";
 import * as Vocabs from "../vocab";
-import { TapesEnv } from "./calculateTapes";
 
 
 export class ResolveVocabEnv extends Env<Grammar> {
@@ -57,15 +45,18 @@ export class ResolveVocab extends Pass<Grammar, Grammar> {
 
 export class ResolveVocabAux extends AutoPass<Grammar> {
 
-
     public postTransform(g: Grammar, env: ResolveVocabEnv): Grammar {
         switch (g.tag) {
-            case "cursor": return this.transformCursor(g, env);
+            case "cursor": 
+            case "greedyCursor": return this.transformCursor(g, env);
+            
             default: return g;
         }
     }
 
-    public transformCursor(g: CursorGrammar, env: ResolveVocabEnv): Grammar {
+    public transformCursor(
+        g: CursorGrammar | GreedyCursorGrammar, 
+        env: ResolveVocabEnv): Grammar {
 
         if (g.vocab.tag === Vocabs.Tag.Lit) {
             // we're done already
@@ -73,6 +64,9 @@ export class ResolveVocabAux extends AutoPass<Grammar> {
         }
 
         const vocab = Vocabs.getFromVocabDict(env.vocabs, g.vocab.key);
+        if (vocab == undefined) {
+            throw new Error(`resolved vocab for ${g.tapeName}, key = ${g.vocab.key}, is undefined! map is ${Vocabs.vocabDictToStr(env.vocabs)}`);
+        }
         return update(g, {vocab});
     }
 

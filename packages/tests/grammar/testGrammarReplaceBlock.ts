@@ -3,15 +3,18 @@ import {
     Replace, ReplaceBlock, Uni, WithVocab,
     OptionalReplace,
     Join,
+    Lit,
+    Seq,
 } from "../../interpreter/src/grammarConvenience";
 
-import { DEFAULT_TAPE } from "../../interpreter/src/utils/constants";
+import { DEFAULT_TAPE, INPUT_TAPE, OUTPUT_TAPE } from "../../interpreter/src/utils/constants";
 import { SILENT, VERBOSE_DEBUG, VERBOSE_STATES } from "../../interpreter/src/utils/logging";
 
 import {
     grammarTestSuiteName,
     testGrammar,
     t1,
+    t2,
 } from "./testGrammarUtil";
 
 import { 
@@ -24,6 +27,9 @@ const VERBOSE = VERBOSE_TEST_L2;
 function vb(verbosity: number): number {
     return VERBOSE ? verbosity : SILENT;
 }
+
+const I = (s: string) => Lit(INPUT_TAPE, s);
+const O = (s: string) => Lit(OUTPUT_TAPE, s);
 
 describe(`${grammarTestSuiteName(module)}`, function() {
 
@@ -739,7 +745,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'aB'},
         ],
-        verbose: vb(VERBOSE_STATES),
     });
 
     testGrammar({
@@ -767,7 +772,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'abX'},
         ],
-        verbose: vb(VERBOSE_STATES),
     });
     
     testGrammar({
@@ -777,7 +781,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'abX'},
         ],
-        verbose: vb(VERBOSE_STATES),
     });
 
     testGrammar({
@@ -787,7 +790,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'ab'},
         ],
-        verbose: vb(VERBOSE_STATES),
     });
     
     testGrammar({
@@ -797,7 +799,64 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [
             {t1: 'ab'},
         ],
-        verbose: vb(VERBOSE_STATES),
+    });
+
+    testGrammar({
+        desc: '22. Replacing before an epsilon',
+        grammar: ReplaceBlock("t1", "abc",
+                        Replace("b", "B", "", Uni(I("c"), I("")), false, true)),
+        results: [
+            {t1: 'aBc'},
+        ],
+    });
+
+    testGrammar({
+        desc: '23. hello ⨝ e -> a, joining output',
+        grammar: Join(t1("hallo"), 
+                        ReplaceBlock("t1", "hello", 
+                            Replace("e", "a"))),
+        tapes: ["t1"],
+        results: [
+            {t1: 'hallo'},
+        ],
+    });
+
+    const test24 = Uni(Seq(t1("hello"), t2("en-us")),
+                            Seq(t1("hullo"), t2("en-gb")));
+
+    const testJoin24 = Join(t2("en-us"), test24);
+
+    testGrammar({
+        desc: '24a. more complex grammar ⨝ e -> a, joining t1',
+        grammar: Join(t1("hallo"), 
+                        ReplaceBlock("t1", test24, 
+                            Replace("e", "a"))),
+        tapes: ["t1", "t2"],
+        results: [
+            {t1: 'hallo', t2: 'en-us'},
+        ],
+    });
+
+    testGrammar({
+        desc: '24b. more complex grammar with join ⨝ e -> a, joining t1',
+        grammar: Join(t1("hallo"), 
+                        ReplaceBlock("t1", testJoin24, 
+                            Replace("e", "a"))),
+        tapes: ["t1", "t2"],
+        results: [
+            {t1: 'hallo', t2: 'en-us'},
+        ],
+    });
+
+    testGrammar({
+        desc: '24c. more complex grammar ⨝ e -> a, joining t2',
+        grammar: Join(t2("en-us"), 
+                        ReplaceBlock("t1", test24, 
+                            Replace("e", "a"))),
+        tapes: ["t1", "t2"],
+        results: [
+            {t1: 'hallo', t2: 'en-us'},
+        ],
     });
 
 });

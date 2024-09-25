@@ -896,18 +896,6 @@ describe(`Pass ${testSuiteName(module)}`, function() {
     });
 
     testGrammarTapes({
-        desc: "16. Collection without symbol selected",
-        grammar: Collection({
-            a: t1("hello"),
-            b: t2("world")
-        }),
-        tapes: {
-            "t1": ["h","e","l","o"],
-            "t2": ["w","o","r","l","d"],
-        },
-    });
-
-    testGrammarTapes({
         desc: "17a",
         grammar: Collection({
             "S0": Seq(Embed("S2"), Embed("S0"), Embed("S1"), Embed("S3")),

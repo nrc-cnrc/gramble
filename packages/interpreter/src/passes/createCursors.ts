@@ -1,14 +1,16 @@
 import { Pass, SymbolEnv } from "../passes";
 import { 
-    CollectionGrammar,
-    CursorGrammar, DotGrammar, 
+    QualifiedGrammar,
+    GreedyCursorGrammar, DotGrammar, 
     EmbedGrammar, Grammar, 
     HideGrammar, JoinGrammar, 
     LiteralGrammar, 
     PreTapeGrammar, 
     RenameGrammar, 
     ReplaceGrammar, 
-    StringPairSet 
+    StringPairSet, 
+    CursorGrammar,
+    SelectionGrammar
 } from "../grammars";
 import { 
     renameTape
@@ -16,6 +18,7 @@ import {
 import { Cursor } from "../grammarConvenience";
 import { children } from "../components";
 import { Options } from "../utils/options";
+import { getCaseInsensitive } from "../utils/func";
 
 export class CreateCursors extends Pass<Grammar,Grammar> {
 
@@ -98,7 +101,7 @@ function getTapePriority(
 
         // embed/rename etc. have their usual complications
         case "embed":       return getTapePriorityEmbed(g, tape, symbolsVisited, env);
-        case "collection":  return getTapePriorityCollection(g, tape, symbolsVisited, env);
+        case "selection":  return getTapePrioritySelection(g, tape, symbolsVisited, env);
         case "hide":        return getTapePriorityHide(g, tape, symbolsVisited, env);
         case "rename":      return getTapePriorityRename(g, tape, symbolsVisited, env);
 
@@ -132,14 +135,14 @@ function getTapePriorityLeaf(
     return (tape == g.tapeName) ? 1 : 0;
 }
 
-function getTapePriorityCollection(
-    g: CollectionGrammar,
+function getTapePrioritySelection(
+    g: SelectionGrammar,
     tape: string,
     symbolsVisited: StringPairSet,
     env: SymbolEnv  
 ): number {
     const newEnv = env.update(g);
-    const referent = g.getSymbol(g.selectedSymbol);
+    const referent = getCaseInsensitive(g.symbols, g.selection);
     if (referent === undefined) { 
         // without a valid symbol, collections are epsilon,
         // but now is not the time to complain

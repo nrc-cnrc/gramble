@@ -40,7 +40,7 @@ export function colorFromText(
     saturation: number = DEFAULT_SATURATION, 
     value: number = DEFAULT_VALUE
 ): string { 
-    const str = text + "abcde" // otherwise short strings are boring colors
+    const str = (text + "abcde").toLowerCase() // otherwise short strings are boring colors
     let hash = 0; 
 
     for (let i = 0; i < str.length; i++) { 

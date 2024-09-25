@@ -1,7 +1,7 @@
 import {
     AlternationGrammar,
-    CollectionGrammar, CorrespondGrammar, 
-    CountGrammar, CursorGrammar, 
+    SelectionGrammar, CorrespondGrammar, 
+    CountGrammar, GreedyCursorGrammar, 
     Grammar, HideGrammar,
     JoinGrammar, MatchGrammar,
     NegationGrammar, PreTapeGrammar, 
@@ -9,18 +9,20 @@ import {
     RenameGrammar, RepeatGrammar,
     ReplaceGrammar, SequenceGrammar, 
     ShortGrammar,
+    CursorGrammar,
 } from "../grammars";
 import { Dict } from "../utils/func";
 import { 
-    CollectionExpr, EPSILON,
+    SelectionExpr, EPSILON,
     Expr, 
-    NULL, constructAlternation, constructCollection, 
+    NULL, constructAlternation, constructSelection, 
     constructCorrespond, constructCount, constructCursor, 
     constructDot, constructDotStar, constructEmbed, 
     constructJoin, constructLiteral, 
     constructMatch, constructNegation, constructPreTape, 
     constructPrecede, constructRename, constructRepeat, 
-    constructSeq, constructShort, constructPriorityUnion, constructReplace
+    constructSeq, constructShort, constructPriorityUnion, constructReplace,
+    constructGreedyCursor
 } from "../exprs";
 import { INPUT_TAPE } from "../utils/constants";
 import { Env } from "../utils/options";
@@ -36,33 +38,34 @@ export function constructExpr(
 
         // test and testnot play no role in the Expr tree
         case "test":
-        case "testnot":    return constructExpr(env, g.child);
+        case "testnot":         return constructExpr(env, g.child);
 
         // grammars with no children are pretty trivial, do them
         // in one line
-        case "epsilon":    return EPSILON;
-        case "null":       return NULL;
-        case "lit":        return constructLiteral(env, g.tapeName, g.text, g.tokens);
-        case "dot":        return constructDot(g.tapeName);
-        case "embed":      return constructEmbed(env, g.symbol, undefined);
+        case "epsilon":         return EPSILON;
+        case "null":            return NULL;
+        case "lit":             return constructLiteral(env, g.tapeName, g.text, g.tokens);
+        case "dot":             return constructDot(g.tapeName);
+        case "embed":           return constructEmbed(env, g.symbol, undefined);
     
         // everything else has children
-        case "seq":        return constructExprSeq(env, g);
-        case "alt":        return constructExprAlt(env, g);
-        case "short":      return constructExprShort(env, g);
-        case "join":       return constructExprJoin(env, g);
-        case "priority":   return constructExprPriUni(env, g);
-        case "replace":    return constructExprReplace(env, g);
-        case "count":      return constructExprCount(env, g);
-        case "rename":     return constructExprRename(env, g);
-        case "repeat":     return constructExprRepeat(env, g);
-        case "not":        return constructExprNot(env, g);
-        case "cursor":     return constructExprCursor(env, g);
-        case "pretape":    return constructExprPreTape(env, g);
-        case "hide":       return constructExprHide(env, g);
-        case "match":      return constructExprMatch(env, g);
-        case "collection": return constructExprCollection(env, g);
-        case "correspond": return constructExprCorrespond(env, g);
+        case "seq":             return constructExprSeq(env, g);
+        case "alt":             return constructExprAlt(env, g);
+        case "short":           return constructExprShort(env, g);
+        case "join":            return constructExprJoin(env, g);
+        case "priority":        return constructExprPriUni(env, g);
+        case "replace":         return constructExprReplace(env, g);
+        case "count":           return constructExprCount(env, g);
+        case "rename":          return constructExprRename(env, g);
+        case "repeat":          return constructExprRepeat(env, g);
+        case "not":             return constructExprNot(env, g);
+        case "cursor":          return constructExprCursor(env, g);
+        case "greedyCursor":    return constructExprGreedyCursor(env, g);
+        case "pretape":         return constructExprPreTape(env, g);
+        case "hide":            return constructExprHide(env, g);
+        case "match":           return constructExprMatch(env, g);
+        case "selection":       return constructExprSelection(env, g);
+        case "correspond":      return constructExprCorrespond(env, g);
         
         default: throw new Error(`unhandled grammar in constructExpr: ${g.tag}`)
     }
@@ -169,6 +172,19 @@ function constructExprCursor(
     return constructCursor(env, g.tapeName, childExpr, g.vocab.tokens, atomic);
 }
 
+function constructExprGreedyCursor(
+    env: PassEnv,
+    g: GreedyCursorGrammar
+): Expr {
+    const childExpr = constructExpr(env, g.child);
+    if (g.vocab.tag !== Vocab.Tag.Lit) {
+        throw new Error(`Constructing greedy cursor ${g.tapeName} with unresolved vocab: ${Vocab.toStr(g.vocab)}`);
+    }
+    const atomic = g.vocab.atomicity === Vocab.Atomicity.Atomic || 
+                    g.vocab.atomicity === Vocab.Atomicity.Concatenated;
+    return constructGreedyCursor(env, g.tapeName, childExpr, g.vocab.tokens, atomic);
+}
+
 function constructExprPreTape(
     env: PassEnv,
     g: PreTapeGrammar
@@ -193,9 +209,9 @@ function constructExprMatch(
     return constructMatch(env, childExpr, g.inputTape, g.outputTape);
 }
 
-function constructExprCollection(
+function constructExprSelection(
     env: PassEnv,
-    g: CollectionGrammar
+    g: SelectionGrammar
 ): Expr {
     let newSymbols: Dict<Expr> = {};
     let selectedExpr: Expr = EPSILON;
@@ -204,15 +220,15 @@ function constructExprCollection(
     for (const [name, referent] of Object.entries(g.symbols)) {
         let expr = constructExpr(env, referent);
         newSymbols[name] = expr;
-        if (name.toLowerCase() == g.selectedSymbol.toLowerCase()) {
+        if (name.toLowerCase() == g.selection.toLowerCase()) {
             selectedExpr = expr;
             selectedFound = true;
         }
     }
     if (selectedFound) {
-        return constructCollection(env, selectedExpr, newSymbols);
+        return constructSelection(env, selectedExpr, newSymbols);
     }
-    return new CollectionExpr(selectedExpr, newSymbols);
+    return new SelectionExpr(selectedExpr, newSymbols);
 }
 
 

@@ -311,7 +311,8 @@ function makeInterpreter() {
     const sheetName = sheet.getName();
 
     const devEnv = new GoogleSheetsDevEnvironment(sheetName);
-    const interpreter = gramble.Interpreter.fromSheet(devEnv, sheetName);
+    const opts = { verbose: gramble.VERBOSE_TIME };
+    const interpreter = gramble.Interpreter.fromSheet(devEnv, sheetName, opts);
     return [interpreter, devEnv];
 }
 
@@ -375,9 +376,85 @@ const SAMPLE_PAGE = [
     ["",        "ikarta", "climb[1subj]"]	
 ];
 
-function makeSampleSheet() {
+const TUTORIAL_1 = [
+    ["Root = ", "text"],
+    ["", "call"],
+    ["", "jump"],
+    [],
+    ["Suffix = ", "text"],
+    ["", "s"],
+    ["", "ed"],
+    ["", "ing"],
+    [],
+    ["Verb = ", "embed", "embed"],
+    ["", "Root", "Suffix"]
+]
 
-    const sheetName = "Sample";
+const TUTORIAL_2 = [
+    ["Root = ", "text/gloss"],
+    ["", "call"],
+    ["", "jump"],
+    [],
+    ["Suffix = ", "text", "gloss"],
+    ["", "s", "-3SG.PRES"],
+    ["", "ed", "-PAST"],
+    ["", "ing", "-PRES"],
+    [],
+    ["Verb = ", "embed", "embed"],
+    ["", "Root", "Suffix"]
+]
+
+const TUTORIAL_3 = [
+    ["Root = ", "text/root"],
+    ["", "call"],
+    ["", "jump"],
+    [],
+    ["Suffix = ", "text", "tense"],
+    ["", "s", "3SG.PRES"],
+    ["", "ed", "PAST"],
+    ["", "ing", "PRES"],
+    [],
+    ["Verb = ", "embed", "embed"],
+    ["", "Root", "Suffix"]
+]
+
+const TUTORIAL_4 = [
+    ["Root = ", "text/root/gloss"],
+    ["", "call"],
+    ["", "jump"],
+    [],
+    ["Suffix = ", "text", "tense/gloss"],
+    ["", "s", "[3SG.PRES]"],
+    ["", "ed", "[PAST]"],
+    ["", "ing", "[PRES]"],
+    [],
+    ["Verb = ", "embed", "embed"],
+    ["", "Root", "Suffix"]
+]
+
+function makeSampleSheet() {
+    makeSampleSheetAux("Sample", SAMPLE_PAGE);
+}
+
+function makeTutorial1() {
+    makeSampleSheetAux("Tutorial_1", TUTORIAL_1);
+}
+
+function makeTutorial2() {
+    makeSampleSheetAux("Tutorial_2", TUTORIAL_2);
+}
+
+function makeTutorial3() {
+    makeSampleSheetAux("Tutorial_3", TUTORIAL_3);
+}
+
+function makeTutorial4() {
+    makeSampleSheetAux("Tutorial_4", TUTORIAL_4);
+}
+
+
+function makeSampleSheetAux(sheetName, cells) {
+
     let activeSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
     let newSheet = activeSpreadsheet.getSheetByName(sheetName);
 
@@ -386,7 +463,7 @@ function makeSampleSheet() {
         newSheet.setName(sheetName);
     }
 
-    setDataInSheet(newSheet, 1, 1, SAMPLE_PAGE);
+    setDataInSheet(newSheet, 1, 1, cells);
 
     highlight();
 
@@ -509,6 +586,12 @@ function autoEnabled_(optSet) {
 function onOpen() {
     const ui = SpreadsheetApp.getUi();
 
+    const tutorialMenu = ui.createMenu('Tutorial sheets')
+                           .addItem('1: Simple English', "makeTutorial1")
+                           .addItem('2: Text <-> Gloss', "makeTutorial2")
+                           .addItem('3: Adding another field', "makeTutorial3")
+                           .addItem('4: Multi-field with glosses', "makeTutorial4")
+
     ui.createMenu('Gramble')
     
         .addItem('Show sidebar', 'showSidebar')
@@ -520,6 +603,7 @@ function onOpen() {
         .addItem('Uncomment', 'GrambleUncomment')
         .addSeparator()
         .addItem('Create sample project', 'makeSampleSheet')
+        .addSubMenu(tutorialMenu)
         .addSeparator()
         .addItem('About Gramble', 'showAbout')
         .addToUi();

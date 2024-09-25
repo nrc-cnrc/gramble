@@ -1027,8 +1027,7 @@ class ReplaceExpr extends Expr {
 
         // the second branch also requires a constraint that the resulting output does not begin with the
         // pattern
-        const shortFrom = constructShort(env, inputMaterial);
-        const beginsWith = constructPrecede(env, shortFrom, negationContinuation);
+        const beginsWith = constructPrecede(env, inputMaterial, negationContinuation);
         const notBeginsWith = constructNegation(env, beginsWith, new Set([INPUT_TAPE]));
 
         // apply the not-begins-with constraint to the second branch
@@ -1393,7 +1392,7 @@ export abstract class UnaryExpr extends Expr {
     }
 }
 
-export class CollectionExpr extends UnaryExpr {
+export class SelectionExpr extends UnaryExpr {
 
     constructor(
         child: Expr,
@@ -1403,7 +1402,7 @@ export class CollectionExpr extends UnaryExpr {
     }
     
     public get id(): string {
-        return `Col(${this.child.id})`;
+        return `Sel(${this.child.id})`;
     }
 
     public delta(
@@ -1412,7 +1411,7 @@ export class CollectionExpr extends UnaryExpr {
     ): Expr {
         const newEnv = env.setSymbols(this.symbols);
         const newChild = this.child.delta(tapeName, newEnv);
-        return constructCollection(env, newChild, this.symbols);
+        return constructSelection(env, newChild, this.symbols);
     }
 
     public *deriv(
@@ -1422,14 +1421,14 @@ export class CollectionExpr extends UnaryExpr {
         const newEnv = env.setSymbols(this.symbols);
         for (const d of 
                 this.child.deriv(query, newEnv)) {
-            yield d.wrap(c => constructCollection(env, c, this.symbols));
+            yield d.wrap(c => constructSelection(env, c, this.symbols));
         }
     }
 
     public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
         const newEnv = env.setSymbols(this.symbols);
         for (const [cHandled, cNext] of this.child.forward(newEnv)) {
-            const wrapped = constructCollection(env, cNext, this.symbols);
+            const wrapped = constructSelection(env, cNext, this.symbols);
             yield [cHandled, wrapped];
         }
     }
@@ -1442,12 +1441,12 @@ export class CollectionExpr extends UnaryExpr {
     }
 }
 
-export function constructCollection(
+export function constructSelection(
     env: Env,
     child: Expr, 
     symbols: Dict<Expr>
 ): Expr {
-    return new CollectionExpr(child, symbols).simplify(env);
+    return new SelectionExpr(child, symbols).simplify(env);
 }
 
 export class CountExpr extends UnaryExpr {
@@ -1567,6 +1566,71 @@ export class OutputExpr extends UnaryExpr {
     }
 }
 
+export class FinishedExpr extends UnaryExpr {
+
+    constructor(
+        public tapeName: string,
+        child: Expr,
+        public output: OutputExpr = new OutputExpr(EPSILON),
+    ) {
+        super(child);
+    }
+
+    public get id(): string {
+        return `Fin_${this.tapeName}(${this.child.id})`;
+    }
+
+    public delta(tapeName: string, env: DerivEnv): Expr {
+        if (tapeName == this.tapeName) return this; 
+                // a tape name "X" is considered to refer to different 
+                // tapes inside and outside Cursor("X", child)
+
+        const cNext = this.child.delta(tapeName, env);
+        return constructFinished(env, this.tapeName, cNext, this.output);
+    }
+
+    public *deriv(query: Query, env: DerivEnv): Derivs {
+        if (query.tapeName == this.tapeName) return; 
+                // a tape name "X" is considered to refer to different 
+                // tapes inside and outside Cursor("X", child)
+
+        for (const d of this.child.deriv(query, env)) {
+            yield d.wrap(c => constructFinished(env, this.tapeName, c, this.output));
+        }
+    }
+
+    public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
+        for (const [cHandled, cNext] of this.child.forward(env)) {
+            const wrapped = constructFinished(env, this.tapeName, cNext, this.output);
+            yield [cHandled, wrapped];
+        }
+    }
+    
+    public simplify(env: Env): Expr {
+        if (this.child instanceof OutputExpr) {
+            return this.child.addOutput(env, this.output);
+        }
+        if (this.child instanceof EpsilonExpr) return this.output;
+        if (this.child instanceof NullExpr) return this.child;
+        return this;
+    }
+
+    public getOutputs(env: DerivEnv): StringDict[] {
+        const myOutput = this.output.getOutputs(env);
+        const childOutput = this.child.getOutputs(env);
+        return outputProduct(myOutput, childOutput);
+    }
+}
+
+export function constructFinished(
+    env: Env,
+    tape: string, 
+    child: Expr, 
+    output?: OutputExpr,
+): Expr {
+    return new FinishedExpr(tape, child, output).simplify(env);
+}
+
 export class CursorExpr extends UnaryExpr {
 
     constructor(
@@ -1575,16 +1639,12 @@ export class CursorExpr extends UnaryExpr {
         public vocab: Set<string>,
         public atomic: boolean,
         public output: OutputExpr = new OutputExpr(EPSILON),
-        public finished: boolean = false
     ) {
         super(child);
     }
 
     public get id(): string {
-        if (this.finished) {
-            return `O_${this.tapeName}(${this.child.id})`;
-        }
-        return `T_${this.tapeName}(${this.child.id})`;
+        return `Cur_${this.tapeName}(${this.child.id})`;
     }
 
     public delta(tapeName: string, env: DerivEnv): Expr {
@@ -1594,7 +1654,7 @@ export class CursorExpr extends UnaryExpr {
 
         const cNext = this.child.delta(tapeName, env);
         return constructCursor(env, this.tapeName, cNext, this.vocab, 
-                    this.atomic, this.output, this.finished);
+                    this.atomic, this.output);
     }
 
     public *deriv(query: Query, env: DerivEnv): Derivs {
@@ -1604,20 +1664,11 @@ export class CursorExpr extends UnaryExpr {
 
         for (const d of this.child.deriv(query, env)) {
             yield d.wrap(c => constructCursor(env, this.tapeName, c, 
-                    this.vocab, this.atomic, this.output, this.finished));
+                    this.vocab, this.atomic, this.output));
         }
     }
 
     public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
-
-        if (this.finished) {
-            for (const [cHandled, cNext] of this.child.forward(env)) {
-                const wrapped = constructCursor(env, this.tapeName, cNext, 
-                                this.vocab, this.atomic, this.output, true);
-                yield [cHandled, wrapped];
-            }
-            return;
-        }
 
         const newEnv = env.setVocab(this.vocab, this.atomic);
         const deltaToken = new TokenExpr(this.tapeName, '');
@@ -1634,8 +1685,15 @@ export class CursorExpr extends UnaryExpr {
             env.indentLog(1);
             for (const [_, nNext] of d.next.forward(env)) {
                 const finished = (d.result instanceof TokenExpr && d.result.text == "");
+
+                if (finished) {
+                    const wrapped = constructFinished(env, this.tapeName, nNext, newOutput);
+                    yield [true, wrapped];
+                    continue;
+                }
+
                 const wrapped = constructCursor(env, this.tapeName, nNext, 
-                                this.vocab, this.atomic, newOutput, finished);
+                                this.vocab, this.atomic, newOutput);
                 yield [true, wrapped];
             }
             env.indentLog(-1);
@@ -1665,11 +1723,106 @@ export function constructCursor(
     child: Expr, 
     vocab: Set<string>,
     atomic: boolean,
-    output?: OutputExpr,
-    finished: boolean = false
+    output?: OutputExpr
 ): Expr {
-    return new CursorExpr(tape, child, vocab, 
-                atomic, output, finished).simplify(env);
+    return new CursorExpr(tape, child,
+                vocab, atomic, output).simplify(env);
+}
+
+
+export class GreedyCursorExpr extends UnaryExpr {
+
+    constructor(
+        public tapeName: string,
+        child: Expr,
+        public vocab: Set<string>,
+        public atomic: boolean,
+        public output: OutputExpr = new OutputExpr(EPSILON),
+    ) {
+        super(child);
+    }
+
+    public get id(): string {
+        return `GCur_${this.tapeName}(${this.child.id})`;
+    }
+
+    public delta(tapeName: string, env: DerivEnv): Expr {
+        if (tapeName == this.tapeName) return this; 
+                // a tape name "X" is considered to refer to different 
+                // tapes inside and outside Cursor("X", child)
+
+        const cNext = this.child.delta(tapeName, env);
+        return constructGreedyCursor(env, this.tapeName, cNext, this.vocab, 
+                    this.atomic, this.output);
+    }
+
+    public *deriv(query: Query, env: DerivEnv): Derivs {
+        if (query.tapeName == this.tapeName) return; 
+                // a tape name "X" is considered to refer to different 
+                // tapes inside and outside Cursor("X", child)
+
+        for (const d of this.child.deriv(query, env)) {
+            yield d.wrap(c => constructGreedyCursor(env, this.tapeName, c, 
+                    this.vocab, this.atomic, this.output));
+        }
+    }
+
+    public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
+        const newEnv = env.setVocab(this.vocab, this.atomic);
+        const deltaToken = new TokenExpr(this.tapeName, '');
+        const deltaNext = this.child.delta(this.tapeName, newEnv);
+        const deltaGenerator = iterUnit(new Deriv(deltaToken, deltaNext));
+        const derivQuery = constructDot(this.tapeName);
+        const derivResults = disjoin(this.child.deriv(derivQuery, newEnv), newEnv);
+        const allResults = randomCutIter([deltaGenerator, derivResults], env.random);
+
+        for (const d of allResults) {
+            env.incrStates();
+            const newOutput = this.output.addOutput(env, d.result);
+            env.logDeriv(d.result, d.next);
+
+            const finished = (d.result instanceof TokenExpr && d.result.text == "");
+
+            if (finished) {
+                const wrapped = constructFinished(env, this.tapeName, d.next, newOutput);
+                yield [true, wrapped];
+                continue;
+            }
+
+            const wrapped = constructGreedyCursor(env, this.tapeName, d.next, 
+                            this.vocab, this.atomic, newOutput);
+            yield [true, wrapped];
+            
+        }
+    }
+
+    public simplify(env: Env): Expr {
+        if (this.child instanceof OutputExpr) {
+            return this.child.addOutput(env, this.output);
+        }
+        if (this.child instanceof EpsilonExpr) return this.output;
+        if (this.child instanceof NullExpr) return this.child;
+        return this;
+    }
+
+    public getOutputs(env: DerivEnv): StringDict[] {
+        const myOutput = this.output.getOutputs(env);
+        const childOutput = this.child.getOutputs(env);
+        return outputProduct(myOutput, childOutput);
+    }
+
+}
+
+export function constructGreedyCursor(
+    env: Env,
+    tape: string, 
+    child: Expr, 
+    vocab: Set<string>,
+    atomic: boolean,
+    output?: OutputExpr
+): Expr {
+    return new GreedyCursorExpr(tape, child,
+                vocab, atomic, output).simplify(env);
 }
 
 export class PreTapeExpr extends UnaryExpr {

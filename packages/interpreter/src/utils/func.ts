@@ -124,6 +124,16 @@ export function flatmapSet<T1,T2>(ss: Iterable<T1>, f: Func<T1,T2[]>): Set<T2> {
     return result;
 }
 
+export function getCaseInsensitive<T1>(d: Dict<T1>, key: string): T1 | undefined {
+    const lowercaseKey = key.toLowerCase();
+    for (const k of Object.keys(d)) {
+        if (k.toLowerCase() == lowercaseKey) {
+            return d[k];
+        }
+    }
+    return undefined;
+}
+
 export function mapValues<T1,T2>(d: Dict<T1>, f: Func<T1,T2>): Dict<T2> {
     const result: Dict<T2> = {};
     for (const [k,v] of Object.entries(d)) {

@@ -15,7 +15,6 @@ import { DEFAULT_SYMBOL,  HIDDEN_PREFIX, INPUT_TAPE, OUTPUT_TAPE } from "./utils
 import { tokenizeUnicode } from "./utils/strings";
 import { Pos } from "./utils/cell";
 import { CalculateTapes } from "./passes/calculateTapes";
-import { SymbolQualifier } from "./passes/qualifySymbols";
 import { toStr } from "./passes/toStr";
 import { INDICES } from "./utils/options";
 
@@ -48,9 +47,12 @@ export type Grammar = EpsilonGrammar
              | NegationGrammar
              | PreTapeGrammar
              | CursorGrammar
+             | GreedyCursorGrammar
              | HideGrammar
              | MatchGrammar
              | CollectionGrammar
+             | QualifiedGrammar
+             | SelectionGrammar
              | EmbedGrammar
              | TestGrammar
              | TestNotGrammar
@@ -359,6 +361,18 @@ export class CursorGrammar extends UnaryGrammar {
     }
 }
 
+export class GreedyCursorGrammar extends UnaryGrammar {
+    public readonly tag = "greedyCursor";
+
+    constructor(
+        public tapeName: string,
+        child: Grammar,
+        public vocab: Vocab = Vocabs.Ref(tapeName)
+    ) {
+        super(child);
+    }
+}
+
 export class PreTapeGrammar extends UnaryGrammar {
     public readonly tag = "pretape";
 
@@ -400,27 +414,37 @@ export class MatchGrammar extends UnaryGrammar {
     }
 }
 
+export type SymbolQualifier = { symbols: Dict<SymbolQualifier> } | "leaf";
+
 export class CollectionGrammar extends AbstractGrammar {
     public readonly tag = "collection";
 
     constructor(
         public symbols: Dict<Grammar> = {},
-        public selectedSymbol: string = DEFAULT_SYMBOL,
-        public qualifier: SymbolQualifier = "leaf"
     ) {
         super();
     }
-    
-    /**
-     * Looks up a symbol name and returns the referent (if any) 
-     */
-    public getSymbol(symbol: string): Grammar | undefined {
-        for (const key of Object.keys(this.symbols)) {
-            if (symbol.toLowerCase() == key.toLowerCase()) {
-                return this.symbols[key];
-            }
-        }
-        return undefined;
+}
+
+export class QualifiedGrammar extends AbstractGrammar {
+    public readonly tag = "qualified";
+
+    constructor(
+        public symbols: Dict<Grammar>,
+        public qualifier: SymbolQualifier,
+    ) {
+        super();
+    }
+}
+
+export class SelectionGrammar extends AbstractGrammar {
+    public readonly tag = "selection";
+
+    constructor(
+        public symbols: Dict<Grammar>,
+        public selection: string,
+    ) {
+        super();
     }
 }
 

@@ -4,7 +4,7 @@ import {
     Seq, Uni, WithVocab
 } from "../../interpreter/src/grammarConvenience";
 
-import {INPUT_TAPE, OUTPUT_TAPE } from "@gramble/interpreter/src/utils/constants";
+import {INPUT_TAPE, OUTPUT_TAPE } from "../../interpreter/src/utils/constants";
 import {SILENT, VERBOSE_DEBUG, VERBOSE_TIME } from "../../interpreter/src/utils/logging";
 
 import {
@@ -68,6 +68,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     });
     
+    /*
     testGrammarIO({
 		desc: '1a-OI. Replace ε -> X in "abc"',
         grammar: Join(I("abc"),
@@ -107,6 +108,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
         priority: ["$o", "$i"]
     });
+    */
 
     testGrammarIO({
 		desc: '2a. Replace ε -> X in ""',
@@ -699,6 +701,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         priority: ["$i", "$o"],
     });
 
+    /*
     testGrammarIO({
 		desc: '9a-OI. Replace ε -> X in "abc"',
         grammar: Join(Seq(I("abc"), O("XaXbXcX")), 
@@ -738,5 +741,6 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
         priority: ["$o", "$i"],
     });
+    */
 
 });

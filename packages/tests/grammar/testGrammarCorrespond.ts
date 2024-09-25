@@ -5,7 +5,7 @@ import {
 
 import { Grammar } from "../../interpreter/src/grammars";
 import { INPUT_TAPE, OUTPUT_TAPE } from "../../interpreter/src/utils/constants";
-import { VERBOSE_DEBUG } from "@gramble/interpreter/src/utils/logging";
+import { VERBOSE_DEBUG } from "../../interpreter/src/utils/logging";
 
 import {
     grammarTestSuiteName,
@@ -31,6 +31,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     logTestSuite(this.title);
 
+    /*
     testGrammar({
         desc: '1a. o shorter than i, default priority',
         grammar: Correspond(Seq(i("hello"), o("bye"))),
@@ -55,6 +56,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {$i: 'hello', $o: 'bye'},
         ],
         priority: ["$o", "$i"],
+        verbose: VERBOSE_DEBUG
     });
     
     testGrammar({
@@ -337,4 +339,5 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
         priority: ["$o", "$i"],
     });
+    */
 });

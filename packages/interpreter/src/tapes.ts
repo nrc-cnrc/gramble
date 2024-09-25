@@ -214,6 +214,12 @@ function litToStr(t: Lit): string {
     return "{" + entries.join(",") + "}"
 }
 
+export function tapeDictToStr(t: TapeDict): string {
+    const strs = Object.entries(t).map(([k,v]) => `${k}:${toStr(v)}`);
+    return "{" + strs.join(",") + "}"
+
+}
+
 /* RESOLVING 
 *
 * Resolving tapes is the process of replacing Refs

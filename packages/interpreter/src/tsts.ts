@@ -243,7 +243,7 @@ export class TstHeaderPair extends TstCellComponent {
 }
 
 export class TstRename extends TstCellComponent {
-    public readonly tag ="rename";
+    public readonly tag = "rename";
 
     constructor(
         public prev: TST,
@@ -256,7 +256,7 @@ export class TstRename extends TstCellComponent {
 }
 
 export class TstHide extends TstCellComponent {
-    public readonly tag ="hide";
+    public readonly tag = "hide";
 
     constructor(
         public prev: TST,

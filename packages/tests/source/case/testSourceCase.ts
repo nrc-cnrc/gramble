@@ -1,5 +1,5 @@
 import {
-    testSource, SourceTest
+    testSource, SourceTest, Error
 } from "../testSourceUtil";
 
 const DIR = "case";
@@ -79,6 +79,34 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"},
             {text: "foobaz", gloss: "run-2SG"},
             {text: "moobaz", gloss: "jump-2SG"}
+        ]
+    });
+
+    testSrc({
+		desc: '5a. Overwriting a lowercase symbol with uppercase',
+        symbol: "word",
+        results: [
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG"}
+        ], 
+        errors: [
+            Error(5,0)
+        ]
+    });
+    
+    testSrc({
+		desc: '5b. Overwriting a lowercase symbol with uppercase',
+        symbol: "WORD",
+        results: [
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG"}
+        ],
+        errors: [
+            Error(5,0)
         ]
     });
 });

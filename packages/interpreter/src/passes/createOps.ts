@@ -69,13 +69,6 @@ import { PassEnv } from "../components";
                     "You can't assign to a name that contains a period.");
         }
 
-        /*
-        if (assignment.child instanceof TstEmpty) {
-            console.log(`throwing a content warning`);
-            throw TstError("Warning -- This symbol won't contain any content.",
-                                assignment);
-        } */
-
         return assignment;
     }
     
