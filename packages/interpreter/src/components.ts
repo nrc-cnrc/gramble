@@ -110,7 +110,13 @@ export function children<T extends Component>(c: T): T[] {
 }
 
 function childrenFromArray<T extends Component>(c: any[]): T[] {
-    return c.filter(v => v instanceof Component);
+    const children: T[] = [];
+    for (const v of c) {
+        if (v instanceof Component) {
+            children.push(v as T);
+        }
+    }
+    return children;
 }
 
 function childrenFromObj<T extends Component>(c: Object): T[] {

@@ -46,12 +46,12 @@
   "devDependencies": {
     "@types/command-line-args": "^5.2.3",
     "@types/command-line-usage": "^5.0.4",
-    "@types/node": "^20.11.30",
-    "typescript": "^5.4.3"
+    "@types/node": "^20.16.7",
+    "typescript": "^5.5.4"
   },
   "dependencies": {
     "@gramble/interpreter": "^1.0.0",
-    "command-line-args": "^5.2.1",
-    "command-line-usage": "^7.0.1"
+    "command-line-args": "^6.0.0",
+    "command-line-usage": "^7.0.3"
   }
 }
