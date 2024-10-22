@@ -1,5 +1,7 @@
-import { basename } from "path";
 import { assert, expect } from "chai";
+
+import { readFileSync } from "fs";
+import { basename } from "path";
 
 import {
     Dot, Epsilon,
@@ -346,4 +348,11 @@ export function testNumErrors(
             throw e;
         }
     });
+}
+
+export function textFromFile(
+    path: string, 
+): string[] {
+    const text = readFileSync(path, 'utf8');
+    return text.trim().split(/\r?\n/);
 }

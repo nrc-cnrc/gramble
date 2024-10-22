@@ -31,8 +31,10 @@
     "build": "tsc --build --verbose",
     "prepare": "npm run build",
 
-    "test": "mocha -r ts-node/register grammar/*.ts parse/*.ts source/*/*.ts pass/*.ts",
-    
+    "test": "mocha -r ts-node/register grammar/*.ts parse/*.ts source/*/*.ts pass/*.ts cli/*.ts",
+            
+    "testCLI": "mocha -r ts-node/register cli/*.ts",
+
     "testGrammar": "mocha -r ts-node/register grammar/*.ts",
     "testGrammarBasic": "mocha -r ts-node/register grammar/testGrammarBasic.ts",
     "testGrammarCorrespond": "mocha -r ts-node/register grammar/testGrammarCorrespond.ts",
@@ -58,7 +60,7 @@
     "testGrammarReplaceSimple": "mocha -r ts-node/register grammar/testGrammarReplaceSimple.ts",
     "testGrammarShort": "mocha -r ts-node/register grammar/testGrammarShort.ts",
     "testGrammarSingleTape": "mocha -r ts-node/register grammar/testGrammarSingleTape.ts",
-    
+
     "testParse": "mocha -r ts-node/register parse/*.ts",
     "testParseHeader": "mocha -r ts-node/register parse/testParseHeader.ts",
     "testParseOp": "mocha -r ts-node/register parse/testParseOp.ts",
@@ -100,12 +102,12 @@
     "url": "https://github.com/nrc-cnrc/gramble/issues"
   },
   "devDependencies": {
-    "@types/chai": "^4.3.14",
-    "@types/mocha": "^10.0.6",
-    "chai": "^4.4.1",
-    "mocha": "^10.4.0",
+    "@types/chai": "^4.3.20",
+    "@types/mocha": "^10.0.8",
+    "chai": "^4.5.0",
+    "mocha": "^10.7.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5.4.3"
+    "typescript": "^5.5.4"
   },
   "dependencies": {
     "@gramble/interpreter": "^1.0.0"
