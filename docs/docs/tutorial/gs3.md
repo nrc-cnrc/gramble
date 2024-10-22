@@ -80,8 +80,9 @@ Then, let's add a table containing the suffixes, ``s``, ``ing``, and ``ed``
 
 | **Suffix =** | **text** |
 |----|----|
-|    | call  |
-|    | jump  |
+|    | s  |
+|    | ing  |
+|    | ed |
 
 Now, we make a table that takes every form in the Root table and concatenates it to every form in the Suffix table.  There's a special command that lets you say "every form in the Root table" and that's `embed`.
 
