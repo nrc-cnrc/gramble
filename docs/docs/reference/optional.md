@@ -6,7 +6,7 @@ sidebar_label: optional
 
 # optional
 
-The optional operator is a way of expressing "add \<something\> to field \<F\>", or add nothing" -- `optional F:x` is equivalent to adding the alternation of `F:x` with the empty grammar.
+`optional` is a header operator allowing the expression of "add \<something\> to field \<F\>", or add nothing".  E.g., `optional F:x` is equivalent to adding the alternation of `F:x` with the empty grammar.
 
 ## Usage examples
 
