@@ -1,6 +1,6 @@
-import { Grammar, SymbolQualifier } from "../grammars";
-import { DEFAULT_SYMBOL } from "../utils/constants";
-import { Dict, mapValues } from "../utils/func";
+import { Grammar, SymbolQualifier } from "../grammars.js";
+import { DEFAULT_SYMBOL } from "../utils/constants.js";
+import { Dict, mapValues } from "../utils/func.js";
 
 /**
  * This isn't a Pass itself, just a collection of behavior and types

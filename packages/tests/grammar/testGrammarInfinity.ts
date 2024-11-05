@@ -1,22 +1,22 @@
 import { 
     Count,
     Rep, Seq
-} from "../../interpreter/src/grammarConvenience";
+} from "../../interpreter/src/grammarConvenience.js";
 
 import {
     SILENT,
     VERBOSE_DEBUG
-} from "../../interpreter/src/utils/logging";
+} from "../../interpreter/src/utils/logging.js";
 
 import {
     grammarTestSuiteName,
     testGrammar,
     t1, t2,
-} from "./testGrammarUtil";
+} from "./testGrammarUtil.js";
 
 import {
     logTestSuite, VERBOSE_TEST_L2,
-} from '../testUtil';
+} from '../testUtil.js';
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -24,6 +24,8 @@ const VERBOSE = VERBOSE_TEST_L2;
 function vb(verbosity: number): number {
     return VERBOSE ? verbosity : SILENT;
 }
+
+const module = import.meta;
 
 describe(`${grammarTestSuiteName(module)}`, function() {
 

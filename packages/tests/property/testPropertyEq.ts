@@ -1,14 +1,14 @@
 import {
     Embed, Epsilon, Join,
     Null, Seq, Uni
-} from "../../interpreter/src/grammarConvenience";
+} from "../../interpreter/src/grammarConvenience.js";
 
-import { CollectionGrammar, Grammar } from "../../interpreter/src/grammars";
-import { toStr } from "../../interpreter/src/passes/toStr";
-import { Dict, StringDict, stringDictToStr, update } from "../../interpreter/src/utils/func";
-import { Options } from "../../interpreter/src/utils/options";
+import { CollectionGrammar, Grammar } from "../../interpreter/src/grammars.js";
+import { toStr } from "../../interpreter/src/passes/toStr.js";
+import { Dict, StringDict, stringDictToStr, update } from "../../interpreter/src/utils/func.js";
+import { Options } from "../../interpreter/src/utils/options.js";
 
-import { RandOptions, randomCollection } from "./randomGrammar";
+import { RandOptions, randomCollection } from "./randomGrammar.js";
 
 import {
     PropertyTest,
@@ -16,10 +16,10 @@ import {
     PropertyTestResult,
     PropertyTestSuccess,
     testToBreaking
-} from "./testPropertyUtil";
-import { ReduceOptions, reduceCollection } from "./reduceGrammar";
+} from "./testPropertyUtil.js";
+import { ReduceOptions, reduceCollection } from "./reduceGrammar.js";
 
-import { generateOutputs, prepareInterpreter } from "../testUtil";
+import { generateOutputs, prepareInterpreter } from "../testUtil.js";
 
 const NUM_TESTS = 100;
 const REDUCE_OPT = ReduceOptions({ symbolDrop: false });

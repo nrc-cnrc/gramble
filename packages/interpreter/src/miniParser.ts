@@ -1,5 +1,5 @@
-import { Message, Msg, msg, msgList } from "./utils/msgs";
-import { Gen } from "./utils/func";
+import { Message, Msg, msg, msgList } from "./utils/msgs.js";
+import { Gen } from "./utils/func.js";
 
 /**
  * This is a simple parser-combinator engine that underlies various small parsing tasks, 

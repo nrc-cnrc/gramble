@@ -5,16 +5,16 @@ import {
     DerivStats,
     OutputExpr,
     ForwardGen
-} from "./exprs";
-import { CounterStack } from "./utils/counter";
+} from "./exprs.js";
+import { CounterStack } from "./utils/counter.js";
 import { 
     Gen,
     iterTake,
     StringDict
-} from "./utils/func";
-import { msToTime } from "./utils/logging";
-import { Options } from "./utils/options";
-import { randomCut } from "./utils/random";
+} from "./utils/func.js";
+import { msToTime } from "./utils/logging.js";
+import { Options } from "./utils/options.js";
+import { randomCut } from "./utils/random.js";
 
 /**
  * Performs a breadth-first traversal of the graph.  This will be the function that most 

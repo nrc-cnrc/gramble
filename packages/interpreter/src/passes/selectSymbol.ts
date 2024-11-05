@@ -1,12 +1,12 @@
-import { Msg } from "../utils/msgs";
+import { Msg } from "../utils/msgs.js";
 import { 
     Grammar,
     QualifiedGrammar,
     SelectionGrammar,
-} from "../grammars";
-import { Pass } from "../passes";
-import { qualifySymbol } from "./qualifySymbols";
-import { PassEnv } from "../components";
+} from "../grammars.js";
+import { Pass } from "../passes.js";
+import { qualifySymbol } from "./qualifySymbols.js";
+import { PassEnv } from "../components.js";
 
 /**
  * CollectionGrammars have a "selectedSymbol" member that determines

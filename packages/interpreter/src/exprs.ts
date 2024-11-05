@@ -9,15 +9,15 @@ import {
     update,
     Func,
     mapDict,
-} from "./utils/func";
-import { renameTape } from "./tapes";
-import { INPUT_TAPE, OUTPUT_TAPE } from "./utils/constants";
-import { VERBOSE_DEBUG, logDebug, logStates, logTime } from "./utils/logging";
-import { Namespace } from "./utils/namespace";
-import { Env, Options } from "./utils/options";
-import { CounterStack } from "./utils/counter";
-import { randomCut, randomCutIter } from "./utils/random";
-import { InfinityProtection } from "./passes/infinityProtection";
+} from "./utils/func.js";
+import { renameTape } from "./tapes.js";
+import { INPUT_TAPE, OUTPUT_TAPE } from "./utils/constants.js";
+import { VERBOSE_DEBUG, logDebug, logStates, logTime } from "./utils/logging.js";
+import { Namespace } from "./utils/namespace.js";
+import { Env, Options } from "./utils/options.js";
+import { CounterStack } from "./utils/counter.js";
+import { randomCut, randomCutIter } from "./utils/random.js";
+import { InfinityProtection } from "./passes/infinityProtection.js";
 
 export type Query = TokenExpr | DotExpr | EpsilonTokenExpr;
 

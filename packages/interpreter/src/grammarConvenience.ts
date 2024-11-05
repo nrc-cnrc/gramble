@@ -18,11 +18,11 @@ import {
     StartsGrammar, 
     CursorGrammar,
     CollectionGrammar
-} from "./grammars";
-import { Dict, StringDict, foldRight } from "./utils/func";
-import { INPUT_TAPE, OUTPUT_TAPE, DEFAULT_TAPE } from "./utils/constants";
-import { toStr } from "./passes/toStr";
-import { EPSILON } from "./exprs";
+} from "./grammars.js";
+import { Dict, StringDict, foldRight } from "./utils/func.js";
+import { INPUT_TAPE, OUTPUT_TAPE, DEFAULT_TAPE } from "./utils/constants.js";
+import { toStr } from "./passes/toStr.js";
+import { EPSILON } from "./exprs.js";
 
 export function SingleTape(
     tapeName: string,

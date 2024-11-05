@@ -5,19 +5,19 @@ import { spawnSync } from "child_process";
 import {
     DEFAULT_MAX_CHARS,
     DEFAULT_MAX_RECURSION
-} from "../../interpreter/src/utils/constants";
+} from "../../interpreter/src/utils/constants.js";
 import {
     timeIt, SILENT,
     VERBOSE_DEBUG,
-} from "../../interpreter/src/utils/logging";
-import { Options } from "../../interpreter/src/utils/options";
+} from "../../interpreter/src/utils/logging.js";
+import { Options } from "../../interpreter/src/utils/options.js";
 
 import {
     testSuiteName, verbose,
     VERBOSE_TEST_L2    
-} from '../testUtil';
+} from '../testUtil.js';
 
-export function cliTestSuiteName(mod: NodeModule): string {
+export function cliTestSuiteName(mod: NodeModule | ImportMeta): string {
     return `CLI ${testSuiteName(mod)}`
 }
 

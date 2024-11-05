@@ -1,4 +1,4 @@
-import { Gen } from "./func";
+import { Gen } from "./func.js";
 
 export function *randomCut<T>(
     gs: T[], 

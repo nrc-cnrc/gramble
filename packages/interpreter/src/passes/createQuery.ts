@@ -1,12 +1,12 @@
-import { Msg } from "../utils/msgs";
+import { Msg } from "../utils/msgs.js";
 import { 
     Grammar, JoinGrammar
-} from "../grammars";
-import { Pass } from "../passes";
-import { StringDict, dictLen } from "../utils/func";
-import { Query } from "../grammarConvenience";
-import { PassEnv } from "../components";
-import * as Tapes from "../tapes";
+} from "../grammars.js";
+import { Pass } from "../passes.js";
+import { StringDict, dictLen } from "../utils/func.js";
+import { Query } from "../grammarConvenience.js";
+import { PassEnv } from "../components.js";
+import * as Tapes from "../tapes.js";
 
 /**
  * The user can specify a query like `{ class: "v2", subj: "1SG" }`,

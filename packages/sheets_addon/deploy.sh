@@ -27,16 +27,22 @@ PATH="$PWD"/../../node_modules/.bin:$PATH
 PROJ_NAME=$1
 TARGET_DIR=../../deployments/$PROJ_NAME
 
-# transpile Gramble to javascript and wrap it as HTML
-echo "Transpiling Gramble to JavaScript..." >&2
-browserify ../interpreter/src/indexGSuite.ts -p tsify -s gramble -o gramble.js
+# Create a single Gramble javascript file and wrap it as HTML
+echo "Rolling up Gramble into a single file..." >&2
+rollup ../interpreter/dist/indexGSuite.js -c --file gramble1.js --format cjs
+echo "Browserifying gramble.js..." >&2
+browserify --extension=.js -s gramble -o gramble.js gramble1.js
+if [[ ! -f gramble.js ]]; then
+    echo "Error: gramble.js file does not exist" >&2
+    exit 1
+fi
 cat <(echo '<script>') gramble.js <(echo '</script>') >> grambleWrapped.html
 
 # make sure the target directory exists, and copy the project files to it
 echo "Copying project files to '$PWD'/$TARGET_DIR" >&2
 mkdir -p $TARGET_DIR
 cp Code.js gramble.js grambleWrapped.html sidebar.html style.html appsscript.json $TARGET_DIR
-rm gramble.js grambleWrapped.html 
+rm gramble1.js gramble.js grambleWrapped.html 
 
 cd $TARGET_DIR
 

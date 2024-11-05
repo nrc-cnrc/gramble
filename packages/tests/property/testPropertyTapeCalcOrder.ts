@@ -1,16 +1,16 @@
 import { assert } from "chai";
 
-import { CollectionGrammar, Grammar } from "../../interpreter/src/grammars";
-import { CalculateTapes } from "../../interpreter/src/passes/calculateTapes";
-import { FlattenCollections } from "../../interpreter/src/passes/flattenCollections";
-import { getAllSymbols } from "../../interpreter/src/passes/getAllSymbols";
-import { SelectSymbol } from "../../interpreter/src/passes/selectSymbol";
-import { toStr } from "../../interpreter/src/passes/toStr";
-import { Dict, arrayEquals } from "../../interpreter/src/utils/func";
-import { THROWER } from "../../interpreter/src/utils/msgs";
+import { CollectionGrammar, Grammar } from "../../interpreter/src/grammars.js";
+import { CalculateTapes } from "../../interpreter/src/passes/calculateTapes.js";
+import { FlattenCollections } from "../../interpreter/src/passes/flattenCollections.js";
+import { getAllSymbols } from "../../interpreter/src/passes/getAllSymbols.js";
+import { SelectSymbol } from "../../interpreter/src/passes/selectSymbol.js";
+import { toStr } from "../../interpreter/src/passes/toStr.js";
+import { Dict, arrayEquals } from "../../interpreter/src/utils/func.js";
+import { THROWER } from "../../interpreter/src/utils/msgs.js";
 
-import { RandOptions, randomCollection } from "./randomGrammar";
-import { ReduceOptions, reduceCollection } from "./reduceGrammar";
+import { RandOptions, randomCollection } from "./randomGrammar.js";
+import { ReduceOptions, reduceCollection } from "./reduceGrammar.js";
 
 import {
     PropertyTest,
@@ -18,8 +18,8 @@ import {
     PropertyTestResult,
     PropertyTestSuccess,
     testToBreaking
-} from "./testPropertyUtil";
-import { fisherYates } from "../../interpreter/src/utils/random";
+} from "./testPropertyUtil.js";
+import { fisherYates } from "../../interpreter/src/utils/random.js";
 
 const NUM_TESTS = 10000;
 const OPT = RandOptions();

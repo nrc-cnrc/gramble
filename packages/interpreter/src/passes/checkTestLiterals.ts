@@ -1,12 +1,12 @@
 import { 
     TstHeader, 
     TstOp, TstHeadedGrid, TST 
-} from "../tsts";
-import { AutoPass } from "../passes";
-import { Err, Message, Msg } from "../utils/msgs";
-import { Header, UniqueHeader, TapeHeader } from "../headers";
-import { paramsMustBeLiteral } from "../ops";
-import { PassEnv } from "../components";
+} from "../tsts.js";
+import { AutoPass } from "../passes.js";
+import { Err, Message, Msg } from "../utils/msgs.js";
+import { Header, UniqueHeader, TapeHeader } from "../headers.js";
+import { paramsMustBeLiteral } from "../ops.js";
+import { PassEnv } from "../components.js";
 
 /**
  * This pass checks whether named parameters in headers

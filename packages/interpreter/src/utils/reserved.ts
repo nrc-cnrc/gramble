@@ -1,4 +1,4 @@
-import { DEFAULT_PARAM } from "./constants";
+import { DEFAULT_PARAM } from "./constants.js";
 
 export const RESERVED_SYMBOLS = new Set([ 
     "(", ")", "%", "/", "<", ">", 

@@ -1,7 +1,7 @@
 import {
     testSource, SourceTest, 
     Error, Warning 
-} from "../testSourceUtil";
+} from "../testSourceUtil.js";
 
 const DIR = "cell";
 

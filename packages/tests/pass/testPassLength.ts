@@ -5,18 +5,18 @@ import {
     Match, Not, Null, Rename,
     Rep, Replace, ReplaceBlock,
     Seq, Uni,
-} from '../../interpreter/src/grammarConvenience';
+} from '../../interpreter/src/grammarConvenience.js';
 
-import { Grammar } from '../../interpreter/src/grammars';
-import { SymbolEnv } from '../../interpreter/src/passes';
-import { lengthRange } from '../../interpreter/src/passes/infinityProtection';
-import { CounterStack } from '../../interpreter/src/utils/counter';
+import { Grammar } from '../../interpreter/src/grammars.js';
+import { SymbolEnv } from '../../interpreter/src/passes.js';
+import { lengthRange } from '../../interpreter/src/passes/infinityProtection.js';
+import { CounterStack } from '../../interpreter/src/utils/counter.js';
 
 import {
     testSuiteName, logTestSuite,
     VERBOSE_TEST_L2,
     t1, t2
-} from "../testUtil";
+} from "../testUtil.js";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -44,6 +44,8 @@ function testLength(
     });
 
 }
+
+const module = import.meta;
 
 describe(`Pass ${testSuiteName(module)}`, function() {
 

@@ -1,4 +1,4 @@
-import { testPlaintextID } from "./testParseUtils";
+import { testPlaintextID } from "./testParseUtils.js";
 
 describe(`Parse plaintext`, function() {
 

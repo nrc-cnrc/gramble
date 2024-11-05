@@ -49,7 +49,7 @@ export function testToBreaking(
 
         // we got a failure.
         it(`${originalTest.id} failed`, function() {
-            if (originalResult.tag === "success") return; // TS isn't able to infer this 
+            // if (originalResult.tag === "success") return; // TS isn't able to infer this 
             assert.fail(originalResult.msg);
         });
 

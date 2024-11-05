@@ -2,22 +2,24 @@ import { expect } from "chai";
 
 import {
     Count, Epsilon, Hide, Rep, Seq, Uni,
-} from "../../interpreter/src/grammarConvenience";
+} from "../../interpreter/src/grammarConvenience.js";
 
 import {
     grammarTestSuiteName,
     testGrammar,
     t1, t2,
-} from "./testGrammarUtil";
+} from "./testGrammarUtil.js";
 
 import { 
     logTestSuite, VERBOSE_TEST_L2,
     generateOutputs,
     prepareInterpreter,
-} from '../testUtil';
+} from '../testUtil.js';
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
+
+const module = import.meta;
 
 describe(`${grammarTestSuiteName(module)}`, function() {
 

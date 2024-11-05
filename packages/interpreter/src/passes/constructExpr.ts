@@ -10,8 +10,8 @@ import {
     ReplaceGrammar, SequenceGrammar, 
     ShortGrammar,
     CursorGrammar,
-} from "../grammars";
-import { Dict } from "../utils/func";
+} from "../grammars.js";
+import { Dict } from "../utils/func.js";
 import { 
     SelectionExpr, EPSILON,
     Expr, 
@@ -23,12 +23,12 @@ import {
     constructPrecede, constructRename, constructRepeat, 
     constructSeq, constructShort, constructPriorityUnion, constructReplace,
     constructGreedyCursor
-} from "../exprs";
-import { INPUT_TAPE } from "../utils/constants";
-import { Env } from "../utils/options";
-import * as Tapes from "../tapes";
-import * as Vocab from "../vocab";
-import { PassEnv } from "../components";
+} from "../exprs.js";
+import { INPUT_TAPE } from "../utils/constants.js";
+import { Env } from "../utils/options.js";
+import * as Tapes from "../tapes.js";
+import * as Vocab from "../vocab.js";
+import { PassEnv } from "../components.js";
 
 export function constructExpr(
     env: PassEnv,

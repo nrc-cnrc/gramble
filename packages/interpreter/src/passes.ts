@@ -1,13 +1,13 @@
-import { Grammar } from "./grammars";
-import { Message, Msg, msg } from "./utils/msgs";
+import { Grammar } from "./grammars.js";
+import { Message, Msg, msg } from "./utils/msgs.js";
 import { 
     Dict, update
-} from "./utils/func";
-import { VERBOSE_TIME, timeIt } from "./utils/logging";
-import { Env, Options } from "./utils/options";
-import { hasPos } from "./utils/cell";
-import { Component } from "./components";
-import { Op } from "./ops";
+} from "./utils/func.js";
+import { VERBOSE_TIME, timeIt } from "./utils/logging.js";
+import { Env, Options } from "./utils/options.js";
+import { hasPos } from "./utils/cell.js";
+import { Component } from "./components.js";
+import { Op } from "./ops.js";
 
 export class SymbolEnv extends Env<Grammar> {
 

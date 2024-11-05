@@ -1,4 +1,4 @@
-import { testOpID } from "./testParseUtils";
+import { testOpID } from "./testParseUtils.js";
 
 describe(`Parse op`, function() {
 

@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "esModuleInterop": true,
-    "rootDir": "./src",
+    "rootDir": ".",
     "outDir": "./dist",
     "baseUrl": "./",
     "paths": {
@@ -10,6 +10,7 @@
     },
     "sourceMap": true,
     "composite": true,
+    "declarationMap": true,
     "tsBuildInfoFile": "../../.build-cache/tests.tsbuildinfo",
     "types": [
       "chai",
@@ -18,10 +19,10 @@
     ]
   },
   "include": [
-    "src"
+    "**/*.ts"
   ],
   "lib": [
-    "es2017",
+    "es2020",
     "dom",
     "es6"
   ],

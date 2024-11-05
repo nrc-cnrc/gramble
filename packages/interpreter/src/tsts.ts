@@ -5,19 +5,19 @@
  * more abstract grammar that they're representing thereby.)
  */
 
-import { Cell, Pos } from "./utils/cell";
+import { Cell, Pos } from "./utils/cell.js";
 import {
     Header,
     paramName,
-} from "./headers";
+} from "./headers.js";
 import { 
     Warn, MsgVoid, 
     unit, Msg, Message
-} from "./utils/msgs";
-import { Op } from "./ops";
-import { Component } from "./components";
-import { Pass } from "./passes";
-import { Env } from "./utils/options";
+} from "./utils/msgs.js";
+import { Op } from "./ops.js";
+import { Component } from "./components.js";
+import { Pass } from "./passes.js";
+import { Env } from "./utils/options.js";
 
 export type TST = TstHeader
          | TstContent

@@ -1,17 +1,17 @@
 import { 
     TstEmpty, TstHeader, 
     TstOp, TstHeadedGrid, TST 
-} from "../tsts";
-import { Pass } from "../passes";
-import { Err, Message, MsgFunc, Msg, Warn } from "../utils/msgs";
-import { UniqueHeader, paramName } from "../headers";
+} from "../tsts.js";
+import { Pass } from "../passes.js";
+import { Err, Message, MsgFunc, Msg, Warn } from "../utils/msgs.js";
+import { UniqueHeader, paramName } from "../headers.js";
 import {
     allowedParams, 
     paramsMustBePerfect, 
     requiredParams 
-} from "../ops";
-import { DEFAULT_PARAM } from "../utils/constants";
-import { PassEnv } from "../components";
+} from "../ops.js";
+import { DEFAULT_PARAM } from "../utils/constants.js";
+import { PassEnv } from "../components.js";
 
 /**
  * This pass checks whether named parameters in headers

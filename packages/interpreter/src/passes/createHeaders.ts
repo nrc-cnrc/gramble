@@ -2,14 +2,14 @@ import {
     TstEmpty, 
     TstHeadedGrid, 
     TstHeader, TstGrid, TST
-} from "../tsts";
-import { Pass } from "../passes";
-import { HeaderMsg, Message, Msg } from "../utils/msgs";
+} from "../tsts.js";
+import { Pass } from "../passes.js";
+import { HeaderMsg, Message, Msg } from "../utils/msgs.js";
 import { 
     DEFAULT_VALUE, ErrorHeader, 
     backgroundColor, parseHeaderCell 
-} from "../headers";
-import { PassEnv } from "../components";
+} from "../headers.js";
+import { PassEnv } from "../components.js";
 
 /**
  * 

@@ -1,13 +1,13 @@
-import { Pass } from "../passes";
-import { Message, Msg, Warn } from "../utils/msgs";
+import { Pass } from "../passes.js";
+import { Message, Msg, Warn } from "../utils/msgs.js";
 import { 
     TstCollection, 
     TstOp, TstEmpty,
     TST
-} from "../tsts";
-import { CollectionOp, SymbolOp, siblingRequired } from "../ops";
-import { AUTO_SYMBOL, DEFAULT_SYMBOL } from "../utils/constants";
-import { PassEnv } from "../components";
+} from "../tsts.js";
+import { CollectionOp, SymbolOp, siblingRequired } from "../ops.js";
+import { AUTO_SYMBOL, DEFAULT_SYMBOL } from "../utils/constants.js";
+import { PassEnv } from "../components.js";
 
 /**
  * Collections work somewhat differently from other operators,

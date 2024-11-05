@@ -2,38 +2,38 @@ import {
     CollectionGrammar,
     Grammar, 
     QualifiedGrammar,
-} from "./grammars";
+} from "./grammars.js";
 
 import { 
     Gen, iterTake, 
     StringDict,
     Dict,
-} from "./utils/func";
-import { Worksheet, Workbook } from "./sources";
-import { backgroundColor, parseHeaderCell } from "./headers";
-import { Expr, SelectionExpr } from "./exprs";
-import { DevEnvironment, SimpleDevEnvironment } from "./devEnv";
-import { generate } from "./generator";
-import { MissingSymbolError, Message, THROWER, msg } from "./utils/msgs";
-import { SOURCE_PASSES, GRAMMAR_PASSES } from "./passes/allPasses";
-import { ExecuteTests } from "./passes/executeTests";
-import { CreateCursors } from "./passes/createCursors";
-import { constructExpr } from "./passes/constructExpr";
-import { toStr } from "./passes/toStr";
-import { ALL_SYMBOL, DEFAULT_PROJECT_NAME, DEFAULT_SYMBOL, HIDDEN_PREFIX } from "./utils/constants";
-import { VERBOSE_GRAMMAR, VERBOSE_TIME, logTime, msToTime } from "./utils/logging";
-import { INDICES, Options } from "./utils/options";
-import { SelectSymbol } from "./passes/selectSymbol";
-import { getAllSymbols } from "./passes/getAllSymbols";
-import { FlattenCollections } from "./passes/flattenCollections";
-import { CreateQuery } from "./passes/createQuery";
-import { InfinityProtection } from "./passes/infinityProtection";
-import { Component, PassEnv } from "./components";
+} from "./utils/func.js";
+import { Worksheet, Workbook } from "./sources.js";
+import { backgroundColor, parseHeaderCell } from "./headers.js";
+import { Expr, SelectionExpr } from "./exprs.js";
+import { DevEnvironment, SimpleDevEnvironment } from "./devEnv.js";
+import { generate } from "./generator.js";
+import { MissingSymbolError, Message, THROWER, msg } from "./utils/msgs.js";
+import { SOURCE_PASSES, GRAMMAR_PASSES } from "./passes/allPasses.js";
+import { ExecuteTests } from "./passes/executeTests.js";
+import { CreateCursors } from "./passes/createCursors.js";
+import { constructExpr } from "./passes/constructExpr.js";
+import { toStr } from "./passes/toStr.js";
+import { ALL_SYMBOL, DEFAULT_PROJECT_NAME, DEFAULT_SYMBOL, HIDDEN_PREFIX } from "./utils/constants.js";
+import { VERBOSE_GRAMMAR, VERBOSE_TIME, logTime, msToTime } from "./utils/logging.js";
+import { INDICES, Options } from "./utils/options.js";
+import { SelectSymbol } from "./passes/selectSymbol.js";
+import { getAllSymbols } from "./passes/getAllSymbols.js";
+import { FlattenCollections } from "./passes/flattenCollections.js";
+import { CreateQuery } from "./passes/createQuery.js";
+import { InfinityProtection } from "./passes/infinityProtection.js";
+import { Component, PassEnv } from "./components.js";
 
-import * as Tapes from "./tapes";
-import { ResolveVocab } from "./passes/resolveVocab";
+import * as Tapes from "./tapes.js";
+import { ResolveVocab } from "./passes/resolveVocab.js";
 
-import * as Vocabs from "./vocab";
+import * as Vocabs from "./vocab.js";
 
 /**
  * An interpreter object is responsible for applying the passes in between sheets

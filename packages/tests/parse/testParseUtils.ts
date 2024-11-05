@@ -1,14 +1,14 @@
 import { expect } from "chai";
 
-import { parseContent } from "../../interpreter/src/content";
-import { Grammar } from "../../interpreter/src/grammars";
-import { ParseClass, parseHeaderCell } from "../../interpreter/src/headers";
-import { parseOp, autoID as opID } from "../../interpreter/src/ops";
-import { CombineLiterals } from "../../interpreter/src/passes/combineLiterals";
-import { toStr } from "../../interpreter/src/passes/toStr";
-import { tokenizeUnicode } from "../../interpreter/src/utils/strings";
-import { Message } from "../../interpreter/src/utils/msgs";
-//import { autoID } from "../../interpreter/src/components";
+import { parseContent } from "../../interpreter/src/content.js";
+import { Grammar } from "../../interpreter/src/grammars.js";
+import { ParseClass, parseHeaderCell } from "../../interpreter/src/headers.js";
+import { parseOp, autoID as opID } from "../../interpreter/src/ops.js";
+import { CombineLiterals } from "../../interpreter/src/passes/combineLiterals.js";
+import { toStr } from "../../interpreter/src/passes/toStr.js";
+import { tokenizeUnicode } from "../../interpreter/src/utils/strings.js";
+import { Message } from "../../interpreter/src/utils/msgs.js";
+//import { autoID } from "../../interpreter/src/components.js";
 
 export function testHeaderID(
     testPrefix: string,

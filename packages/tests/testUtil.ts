@@ -3,18 +3,18 @@ import { assert, expect } from "chai";
 import { readFileSync } from "fs";
 import { basename } from "path";
 
-import {
+ import {
     Dot, Epsilon,
     Lit, Rep, Seq,
- } from "../interpreter/src/grammarConvenience";
-import { Grammar, CollectionGrammar, QualifiedGrammar } from "../interpreter/src/grammars";
-import { Component, PassEnv } from "../interpreter/src/components";
-import { Interpreter } from "../interpreter/src/interpreter";
-import { DEFAULT_SYMBOL, HIDDEN_PREFIX } from "../interpreter/src/utils/constants";
-import { Dict, getCaseInsensitive, StringDict, stringDictToStr } from "../interpreter/src/utils/func";
-import { Options } from "../interpreter/src/utils/options";
-import { Message } from "../interpreter/src/utils/msgs";
-import * as Messages from "../interpreter/src/utils/msgs";
+ } from "../interpreter/src/grammarConvenience.js";
+import { Grammar, CollectionGrammar, QualifiedGrammar } from "../interpreter/src/grammars.js";
+import { Component, PassEnv } from "../interpreter/src/components.js";
+import { Interpreter } from "../interpreter/src/interpreter.js";
+import { DEFAULT_SYMBOL, HIDDEN_PREFIX } from "../interpreter/src/utils/constants.js";
+import { Dict, getCaseInsensitive, StringDict, stringDictToStr } from "../interpreter/src/utils/func.js";
+import { Options } from "../interpreter/src/utils/options.js";
+import { Message } from "../interpreter/src/utils/msgs.js";
+import * as Messages from "../interpreter/src/utils/msgs.js";
 
 import {
     logDebug,
@@ -22,12 +22,12 @@ import {
     SILENT,
     VERBOSE_DEBUG,
     VERBOSE_GRAMMAR,
-} from "../interpreter/src/utils/logging";
+} from "../interpreter/src/utils/logging.js";
 
-import * as Tapes from "../interpreter/src/tapes";
-import * as Vocab from "../interpreter/src/vocab";
-import { SelectSymbol } from "../interpreter/src/passes/selectSymbol";
-import { Op } from "../interpreter/src/ops";
+import * as Tapes from "../interpreter/src/tapes.js";
+import * as Vocab from "../interpreter/src/vocab.js";
+import { SelectSymbol } from "../interpreter/src/passes/selectSymbol.js";
+import { Op } from "../interpreter/src/ops.js";
 
 
 // Permit global control over verbose output in tests.
@@ -44,7 +44,7 @@ export function verbose(vb: boolean | number, ...msgs: string[]) {
     logDebug(vb ? VERBOSE_DEBUG : SILENT, ...msgs);
 }
 
-export function testSuiteName(mod: NodeModule): string {
+export function testSuiteName(mod: NodeModule | ImportMeta ): string {
     return `${basename(mod.filename)}`
 }
 

@@ -1,4 +1,4 @@
-import { Pass, SymbolEnv } from "../passes";
+import { Pass, SymbolEnv } from "../passes.js";
 import { 
     QualifiedGrammar,
     GreedyCursorGrammar, DotGrammar, 
@@ -11,14 +11,14 @@ import {
     StringPairSet, 
     CursorGrammar,
     SelectionGrammar
-} from "../grammars";
+} from "../grammars.js";
 import { 
     renameTape
-} from "../tapes";
-import { Cursor } from "../grammarConvenience";
-import { children } from "../components";
-import { Options } from "../utils/options";
-import { getCaseInsensitive } from "../utils/func";
+} from "../tapes.js";
+import { Cursor } from "../grammarConvenience.js";
+import { children } from "../components.js";
+import { Options } from "../utils/options.js";
+import { getCaseInsensitive } from "../utils/func.js";
 
 export class CreateCursors extends Pass<Grammar,Grammar> {
 

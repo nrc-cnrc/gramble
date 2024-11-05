@@ -1,22 +1,22 @@
 import {
     SILENT
-} from "../../interpreter/src/utils/logging";
+} from "../../interpreter/src/utils/logging.js";
 
 import {
     cliTestSuiteName,
     testCLI,
-} from "./testCLIUtil";
+} from "./testCLIUtil.js";
 
 import {
     logTestSuite, textFromFile, VERBOSE_TEST_L2, 
-
-} from '../testUtil';
+} from '../testUtil.js';
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
 
-const GRAMBLE_HOME = "../.."
+const GRAMBLE_HOME = "../..";
 
+const module = import.meta;
 
 describe(`${cliTestSuiteName(module)}`, function() {
 

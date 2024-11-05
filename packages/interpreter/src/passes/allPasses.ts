@@ -1,25 +1,25 @@
-import { CreateCollections } from "./createCollections";
-import { FlattenCollections } from "./flattenCollections";
-import { CreateFilters } from "./createFilters";
-import { CheckNamedParams } from "./checkNamedParams";
-import { RescopeLeftBinders } from "./rescopeLeftBinders";
-import { CreateOps } from "./createOps";
-import { ParseSource } from "./parseSource";
-import { CheckStructuralParams } from "./checkStructuralParams";
-import { CheckTestLiterals } from "./checkTestLiterals";
-import { CreateHeaders } from "./createHeaders";
-import { AssociateHeaders } from "./associateHeaders";
-import { InsertTables } from "./insertTables";
-import { CreateGrammars } from "./createGrammars";
-import { CheckCollections } from "./checkCollections";
-import { ConstructReplaceBlocks } from "./constructReplaceBlocks";
-import { AssignDefaults } from "./assignDefaults";
-import { HandleSingleTapes } from "./handleSingleTapes";
-import { CombineLiterals } from "./combineLiterals";
-import { CalculateTapes } from "./calculateTapes";
-import { TimerPass } from "../passes";
-import { Grammar } from "../grammars";
-import { TST } from "../tsts";
+import { CreateCollections } from "./createCollections.js";
+import { FlattenCollections } from "./flattenCollections.js";
+import { CreateFilters } from "./createFilters.js";
+import { CheckNamedParams } from "./checkNamedParams.js";
+import { RescopeLeftBinders } from "./rescopeLeftBinders.js";
+import { CreateOps } from "./createOps.js";
+import { ParseSource } from "./parseSource.js";
+import { CheckStructuralParams } from "./checkStructuralParams.js";
+import { CheckTestLiterals } from "./checkTestLiterals.js";
+import { CreateHeaders } from "./createHeaders.js";
+import { AssociateHeaders } from "./associateHeaders.js";
+import { InsertTables } from "./insertTables.js";
+import { CreateGrammars } from "./createGrammars.js";
+import { CheckCollections } from "./checkCollections.js";
+import { ConstructReplaceBlocks } from "./constructReplaceBlocks.js";
+import { AssignDefaults } from "./assignDefaults.js";
+import { HandleSingleTapes } from "./handleSingleTapes.js";
+import { CombineLiterals } from "./combineLiterals.js";
+import { CalculateTapes } from "./calculateTapes.js";
+import { TimerPass } from "../passes.js";
+import { Grammar } from "../grammars.js";
+import { TST } from "../tsts.js";
 
 /**
  * There are three main sequences of Passes.  

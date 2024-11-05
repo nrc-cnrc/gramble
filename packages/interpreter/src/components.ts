@@ -3,11 +3,11 @@ import {
     Message, 
     msg, Msg, 
     MsgVoid,
-} from "./utils/msgs";
-import { Pass } from "./passes";
-import { Dict, update } from "./utils/func";
-import { Pos } from "./utils/cell";
-import { Env } from "./utils/options";
+} from "./utils/msgs.js";
+import { Pass } from "./passes.js";
+import { Dict, update } from "./utils/func.js";
+import { Pos } from "./utils/cell.js";
+import { Env } from "./utils/options.js";
 
 export class PassEnv extends Env<Component> { }
 

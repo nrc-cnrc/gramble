@@ -1,16 +1,16 @@
-import { Component } from "./components";
+import { Component } from "./components.js";
 import { 
     miniParse, MiniParseEnv, 
     MPAlt, MPParser, 
     MPSequence, MPUnreserved 
-} from "./miniParser";
-import { exhaustive } from "./utils/func";
-import { Msg } from "./utils/msgs";
+} from "./miniParser.js";
+import { exhaustive } from "./utils/func.js";
+import { Msg } from "./utils/msgs.js";
 import { 
     REPLACE_PARAMS, REQUIRED_REPLACE_PARAMS, 
     ALL_RESERVED, RESERVED_SYMBOLS, 
     isValidSymbol, BLANK_PARAM_SET, TEST_PARAM_SET 
-} from "./utils/reserved";
+} from "./utils/reserved.js";
 
 export type Requirement = "required" | "forbidden";
 

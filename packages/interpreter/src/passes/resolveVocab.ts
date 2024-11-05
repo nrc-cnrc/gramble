@@ -1,16 +1,16 @@
-import { AutoPass, Pass } from "../passes";
+import { AutoPass, Pass } from "../passes.js";
 import { 
     GreedyCursorGrammar, 
     Grammar,
     CursorGrammar,
     QualifiedGrammar, 
-} from "../grammars";
-import { update } from "../utils/func";
-import { Msg } from "../utils/msgs";
-import { Env, Options } from "../utils/options";
-import { VocabDict } from "../vocab";
-import * as Tapes from "../tapes";
-import * as Vocabs from "../vocab";
+} from "../grammars.js";
+import { update } from "../utils/func.js";
+import { Msg } from "../utils/msgs.js";
+import { Env, Options } from "../utils/options.js";
+import { VocabDict } from "../vocab.js";
+import * as Tapes from "../tapes.js";
+import * as Vocabs from "../vocab.js";
 
 
 export class ResolveVocabEnv extends Env<Grammar> {

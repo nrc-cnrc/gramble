@@ -1,4 +1,4 @@
-import { testRuleContextID } from "./testParseUtils";
+import { testRuleContextID } from "./testParseUtils.js";
 
 describe(`Parse rule context`, function() {
 

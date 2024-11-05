@@ -18,6 +18,7 @@
   ],
   "homepage": "https://github.com/nrc-cnrc/gramble#readme",
   "license": "MIT",
+  "type": "module",
   "bin": {
     "gramble": "bin/index.js"
   },

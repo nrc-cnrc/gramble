@@ -2,22 +2,25 @@ import { assert, expect } from 'chai';
 import { dirname, basename } from "path";
 import { existsSync } from "fs";
 
-import { Interpreter } from "../../interpreter/src/interpreter";
-import { TextDevEnvironment } from "../../interpreter/src/textInterface";
+import { Interpreter } from "../../interpreter/src/interpreter.js";
+import { TextDevEnvironment } from "../../interpreter/src/textInterface.js";
 
 import {
     DEFAULT_MAX_RECURSION,
     DEFAULT_MAX_CHARS
-} from "../../interpreter/src/utils/constants";
+} from "../../interpreter/src/utils/constants.js";
 
-import { StringDict } from '../../interpreter/src/utils/func';
-import { SILENT } from "../../interpreter/src/utils/logging";
-import { Options } from "../../interpreter/src/utils/options";
+import { StringDict } from '../../interpreter/src/utils/func.js';
+import { SILENT } from "../../interpreter/src/utils/logging.js";
+import { Options } from "../../interpreter/src/utils/options.js";
 
-import { testErrors, testGenerate } from '../testUtil';
-import { Epsilon } from '../../interpreter/src/grammarConvenience';
-import { Message } from '../../interpreter/src/utils/msgs';
-import * as Msgs from '../../interpreter/src/utils/msgs';
+import { testErrors, testGenerate } from '../testUtil.js';
+import { Epsilon } from '../../interpreter/src/grammarConvenience.js';
+import { Message } from '../../interpreter/src/utils/msgs.js';
+import * as Msgs from '../../interpreter/src/utils/msgs.js';
+
+// const mod = typeof __filename === undefined ? module : import.meta
+const module = import.meta
 
 const TEST_DIR = dirname(module.filename);
 

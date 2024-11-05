@@ -1,14 +1,14 @@
-import { PassEnv } from "../components";
+import { PassEnv } from "../components.js";
 import { 
     EmbedGrammar,
     Grammar,
     QualifiedGrammar,
     AlternationGrammar,
     CollectionGrammar
-} from "../grammars";
-import { AutoPass } from "../passes";
-import { ALL_SYMBOL } from "../utils/constants";
-import { getCaseInsensitive } from "../utils/func";
+} from "../grammars.js";
+import { AutoPass } from "../passes.js";
+import { ALL_SYMBOL } from "../utils/constants.js";
+import { getCaseInsensitive } from "../utils/func.js";
 
 /**
  * Goes through collections and, if a symbol Default isn't present,

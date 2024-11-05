@@ -7,23 +7,23 @@ import {
     Null, Rename, Rep,
     ReplaceBlock, Replace, Seq, 
     Short, SingleTape, Starts, Uni
-} from "../../interpreter/src/grammarConvenience";
+} from "../../interpreter/src/grammarConvenience.js";
 
-import { Grammar, ReplaceGrammar } from "../../interpreter/src/grammars";
-import { CalculateTapes } from "../../interpreter/src/passes/calculateTapes";
-import { FlattenCollections } from "../../interpreter/src/passes/flattenCollections";
-import { SelectSymbol } from "../../interpreter/src/passes/selectSymbol";
-import { Dict } from "../../interpreter/src/utils/func";
-import { THROWER } from "../../interpreter/src/utils/msgs";
-import { Options } from "../../interpreter/src/utils/options";
-import { getFromVocabDict } from "../../interpreter/src/vocab";
-import * as Tapes from "../../interpreter/src/tapes";
-import * as Vocabs from "../../interpreter/src/vocab";
+import { Grammar, ReplaceGrammar } from "../../interpreter/src/grammars.js";
+import { CalculateTapes } from "../../interpreter/src/passes/calculateTapes.js";
+import { FlattenCollections } from "../../interpreter/src/passes/flattenCollections.js";
+import { SelectSymbol } from "../../interpreter/src/passes/selectSymbol.js";
+import { Dict } from "../../interpreter/src/utils/func.js";
+import { THROWER } from "../../interpreter/src/utils/msgs.js";
+import { Options } from "../../interpreter/src/utils/options.js";
+import { getFromVocabDict } from "../../interpreter/src/vocab.js";
+import * as Tapes from "../../interpreter/src/tapes.js";
+import * as Vocabs from "../../interpreter/src/vocab.js";
 
 import {
     testSuiteName, logTestSuite,
     t1, t2, t3, 
-} from "../testUtil";
+} from "../testUtil.js";
 
 type GrammarIDTest = {
     desc: string,
@@ -108,6 +108,8 @@ function NamedReplace(
 ): ReplaceGrammar {
     return Replace(i, o, pre, post, false, false, name)
 }
+
+const module = import.meta;
 
 describe(`Pass ${testSuiteName(module)}`, function() {
 

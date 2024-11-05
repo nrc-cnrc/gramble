@@ -1,20 +1,20 @@
 import {
     BoundingSet, Count, Epsilon,
     Lit, Replace, Uni, WithVocab
-} from "../../interpreter/src/grammarConvenience";
+} from "../../interpreter/src/grammarConvenience.js";
 
-import {INPUT_TAPE, OUTPUT_TAPE } from "../../interpreter/src/utils/constants";
-import { StringDict } from "../../interpreter/src/utils/func";
-import { SILENT, VERBOSE_DEBUG } from "../../interpreter/src/utils/logging";
+import {INPUT_TAPE, OUTPUT_TAPE } from "../../interpreter/src/utils/constants.js";
+import { StringDict } from "../../interpreter/src/utils/func.js";
+import { SILENT, VERBOSE_DEBUG } from "../../interpreter/src/utils/logging.js";
 
 import {
     grammarTestSuiteName,
     testGrammar, testGrammarIO
-} from "./testGrammarUtil";
+} from "./testGrammarUtil.js";
 
 import { 
     logTestSuite, VERBOSE_TEST_L2,
-} from '../testUtil';
+} from '../testUtil.js';
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -60,6 +60,8 @@ const EMPTY_CONTEXT = Epsilon();
 
 const I = (s: string) => Lit(INPUT_TAPE, s);
 const O = (s: string) => Lit(OUTPUT_TAPE, s);
+
+const module = import.meta;
 
 describe(`${grammarTestSuiteName(module)}`, function() {
 

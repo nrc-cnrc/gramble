@@ -1,21 +1,21 @@
 import {
     BoundingSet, Dot, Epsilon, Join, Lit,
     Not, Replace, Seq, Uni,
-} from "../../interpreter/src/grammarConvenience";
+} from "../../interpreter/src/grammarConvenience.js";
 
-import { Grammar } from "../../interpreter/src/grammars";
+import { Grammar } from "../../interpreter/src/grammars.js";
 
-import { INPUT_TAPE, OUTPUT_TAPE } from "../../interpreter/src/utils/constants";
-import { VERBOSE_DEBUG } from "../../interpreter/src/utils/logging";
+import { INPUT_TAPE, OUTPUT_TAPE } from "../../interpreter/src/utils/constants.js";
+import { VERBOSE_DEBUG } from "../../interpreter/src/utils/logging.js";
 
 import {
     grammarTestSuiteName,
     testGrammarIO,
-} from "./testGrammarUtil";
+} from "./testGrammarUtil.js";
 
 import { 
     logTestSuite, VERBOSE_TEST_L2,
-} from '../testUtil';
+} from '../testUtil.js';
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -41,6 +41,7 @@ const NOTCHARI = (...text: string[]) => NotChar(INPUT_TAPE, ...text);
 // maxChars defined on INPUT_TAPE
 const MAXCH = (n: number) => ({[INPUT_TAPE]: n});
 
+const module = import.meta;
 
 describe(`${grammarTestSuiteName(module)}`, function() {
 

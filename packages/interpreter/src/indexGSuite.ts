@@ -1,10 +1,10 @@
-import { DevEnvironment } from "./devEnv";
-import { Interpreter } from "./interpreter";
-import { SILENT, VERBOSE_DEBUG, VERBOSE_STATES, VERBOSE_TIME, timeIt } from "./utils/logging";
+import { DevEnvironment } from "./devEnv.js";
+import { Interpreter } from "./interpreter.js";
+import { SILENT, VERBOSE_DEBUG, VERBOSE_STATES, VERBOSE_TIME, timeIt } from "./utils/logging.js";
 
 export { 
     Interpreter, 
-    DevEnvironment, 
+    type DevEnvironment, 
     timeIt,
     SILENT,
     VERBOSE_TIME,

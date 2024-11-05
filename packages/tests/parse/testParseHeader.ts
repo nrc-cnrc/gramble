@@ -1,4 +1,4 @@
-import { testHeaderID } from "./testParseUtils";
+import { testHeaderID } from "./testParseUtils.js";
 
 describe(`Parse header`, function() {
 

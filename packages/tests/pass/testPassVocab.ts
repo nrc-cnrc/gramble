@@ -5,9 +5,9 @@ import {
     VocabDict, getFromVocabDict, 
     intersectKeys, mergeKeys, multKeys, sumKeys,
     tokenize, 
-} from "../../interpreter/src/vocab";
+} from "../../interpreter/src/vocab.js";
 
-import { testSuiteName, logTestSuite } from "../testUtil";
+import { testSuiteName, logTestSuite } from "../testUtil.js";
 
 // *************************************************
 // CONVENIENCE FUNCTIONS FOR EASY TEST SPECIFICATION
@@ -123,6 +123,8 @@ function multTest(params: OpParams): void {
 function intersectTest(params: OpParams): void {
     opTest(params, intersectKeys);
 }
+
+const module = import.meta;
 
 describe(`Pass ${testSuiteName(module)}`, function() {
 

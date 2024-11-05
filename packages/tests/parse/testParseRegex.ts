@@ -1,4 +1,4 @@
-import { testRegexID } from "./testParseUtils";
+import { testRegexID } from "./testParseUtils.js";
 
 describe(`Parse regex`, function() {
 

@@ -1,13 +1,13 @@
-import { Pass } from "../passes";
+import { Pass } from "../passes.js";
 import { 
     DotGrammar,
     EmbedGrammar,
     Grammar,
     LiteralGrammar, 
     SingleTapeGrammar
-} from "../grammars";
-import { Msg } from "../utils/msgs";
-import { PassEnv } from "../components";
+} from "../grammars.js";
+import { Msg } from "../utils/msgs.js";
+import { PassEnv } from "../components.js";
 
 /**
  * Does some preliminary handling of single-tape environments to prepare them

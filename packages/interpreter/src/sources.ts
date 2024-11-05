@@ -1,5 +1,5 @@
-import { Component } from "./components";
-import { DEFAULT_SYMBOL } from "./utils/constants";
+import { Component } from "./components.js";
+import { DEFAULT_SYMBOL } from "./utils/constants.js";
 
 export type Source = Workbook
                    | Worksheet

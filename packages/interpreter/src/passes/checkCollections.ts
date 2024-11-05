@@ -1,12 +1,12 @@
-import { Pass } from "../passes";
+import { Pass } from "../passes.js";
 import { 
     TstCollection, 
     TstEmpty, 
     TstAssignment,
     TST
-} from "../tsts";
-import { Component, PassEnv } from "../components";
-import { Msg } from "../utils/msgs";
+} from "../tsts.js";
+import { Component, PassEnv } from "../components.js";
+import { Msg } from "../utils/msgs.js";
 
 /**
  * Make sure that collections are reasonably placed

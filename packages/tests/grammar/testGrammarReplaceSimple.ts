@@ -1,19 +1,19 @@
 import {
     CharSet, Count, Epsilon, Join, Lit,
     OptionalReplace, Rep, Replace, Seq,
-} from "../../interpreter/src/grammarConvenience";
+} from "../../interpreter/src/grammarConvenience.js";
 
 import {
     grammarTestSuiteName,
     testGrammarIO,
-} from "./testGrammarUtil";
+} from "./testGrammarUtil.js";
 
 import {
     logTestSuite, VERBOSE_TEST_L2,
-} from "../testUtil";
+} from "../testUtil.js";
 
-import { INPUT_TAPE, OUTPUT_TAPE } from "../../interpreter/src/utils/constants";
-import { VERBOSE_DEBUG } from "../../interpreter/src/utils/logging";
+import { INPUT_TAPE, OUTPUT_TAPE } from "../../interpreter/src/utils/constants.js";
+import { VERBOSE_DEBUG } from "../../interpreter/src/utils/logging.js";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -21,6 +21,8 @@ const VERBOSE = VERBOSE_TEST_L2;
 const I = (s: string) => Lit(INPUT_TAPE, s);
 const InputChars = (ss: string) => Rep(CharSet(INPUT_TAPE, [...ss]));
 const O = (s: string) => Lit(OUTPUT_TAPE, s);
+
+const module = import.meta;
 
 describe(`${grammarTestSuiteName(module)}`, function() {
 

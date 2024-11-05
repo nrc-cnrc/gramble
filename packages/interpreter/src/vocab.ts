@@ -1,7 +1,7 @@
-import { VOCAB_MAX_TOKENS } from "./utils/constants";
-import { Dict, flatmapSet, union } from "./utils/func";
-import { randomString } from "./utils/random";
-import { tokenizeUnicode } from "./utils/strings";
+import { VOCAB_MAX_TOKENS } from "./utils/constants.js";
+import { Dict, flatmapSet, union } from "./utils/func.js";
+import { randomString } from "./utils/random.js";
+import { tokenizeUnicode } from "./utils/strings.js";
 
 
 // *******************

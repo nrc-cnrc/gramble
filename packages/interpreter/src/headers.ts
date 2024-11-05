@@ -2,15 +2,15 @@ import {
     miniParse, MiniParseEnv, MPAlt, MPComment, 
     MPDelay, MPParser,
     MPSequence, MPUnreserved 
-} from "./miniParser";
+} from "./miniParser.js";
 
-import { Msg } from "./utils/msgs";
+import { Msg } from "./utils/msgs.js";
 
-import { ALL_RESERVED, isValidSymbol, RESERVED_SYMBOLS } from "./utils/reserved";
-import { Component } from "./components";
-import { DEFAULT_PARAM } from "./utils/constants";
-import { colorFromText } from "./utils/colors";
-import { exhaustive } from "./utils/func";
+import { ALL_RESERVED, isValidSymbol, RESERVED_SYMBOLS } from "./utils/reserved.js";
+import { Component } from "./components.js";
+import { DEFAULT_PARAM } from "./utils/constants.js";
+import { colorFromText } from "./utils/colors.js";
+import { exhaustive } from "./utils/func.js";
 
 export const DEFAULT_SATURATION = 0.05;
 export const DEFAULT_VALUE = 1.0;

@@ -1,4 +1,4 @@
-import { Msg, MissingSymbolError, Message } from "../utils/msgs";
+import { Msg, MissingSymbolError, Message } from "../utils/msgs.js";
 import { 
     CollectionGrammar,
     EmbedGrammar,
@@ -6,12 +6,12 @@ import {
     Grammar,
     QualifiedGrammar,
     SymbolQualifier
-} from "../grammars";
-import { Pass, SymbolEnv } from "../passes";
-import { qualifySymbolAux } from "./qualifySymbols";
-import { PassEnv } from "../components";
-import { Options } from "../utils/options";
-import { mapValues } from "../utils/func";
+} from "../grammars.js";
+import { Pass, SymbolEnv } from "../passes.js";
+import { qualifySymbolAux } from "./qualifySymbols.js";
+import { PassEnv } from "../components.js";
+import { Options } from "../utils/options.js";
+import { mapValues } from "../utils/func.js";
 
 /**
  * Goes through the tree and 

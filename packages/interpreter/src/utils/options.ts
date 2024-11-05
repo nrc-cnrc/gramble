@@ -1,6 +1,6 @@
-import { DEFAULT_MAX_CHARS, DEFAULT_MAX_RECURSION } from "./constants";
-import { SILENT } from "./logging";
-import { Dict } from "./func";
+import { DEFAULT_MAX_CHARS, DEFAULT_MAX_RECURSION } from "./constants.js";
+import { SILENT } from "./logging.js";
+import { Dict } from "./func.js";
 
 export const INDICES = {
     HIDE: 0,

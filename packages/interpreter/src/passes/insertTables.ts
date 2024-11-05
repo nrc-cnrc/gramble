@@ -1,15 +1,15 @@
-import { PassEnv } from "../components";
+import { PassEnv } from "../components.js";
 import { 
     TableOp, childMustBeGrid, 
-} from "../ops";
-import { AutoPass } from "../passes";
+} from "../ops.js";
+import { AutoPass } from "../passes.js";
 import { 
     TstOp, 
     TstEmpty,
     TstGrid,
     TstCollection,
     TST
-} from "../tsts";
+} from "../tsts.js";
 
 /**
  * This pass goes through and make sure that TstOps have 

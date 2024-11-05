@@ -5,21 +5,21 @@ import {
     Join,
     Lit,
     Seq,
-} from "../../interpreter/src/grammarConvenience";
+} from "../../interpreter/src/grammarConvenience.js";
 
-import { DEFAULT_TAPE, INPUT_TAPE, OUTPUT_TAPE } from "../../interpreter/src/utils/constants";
-import { SILENT, VERBOSE_DEBUG, VERBOSE_STATES } from "../../interpreter/src/utils/logging";
+import { DEFAULT_TAPE, INPUT_TAPE, OUTPUT_TAPE } from "../../interpreter/src/utils/constants.js";
+import { SILENT, VERBOSE_DEBUG, VERBOSE_STATES } from "../../interpreter/src/utils/logging.js";
 
 import {
     grammarTestSuiteName,
     testGrammar,
     t1,
     t2,
-} from "./testGrammarUtil";
+} from "./testGrammarUtil.js";
 
 import { 
     logTestSuite, VERBOSE_TEST_L2,
-} from '../testUtil';
+} from '../testUtil.js';
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -30,6 +30,8 @@ function vb(verbosity: number): number {
 
 const I = (s: string) => Lit(INPUT_TAPE, s);
 const O = (s: string) => Lit(OUTPUT_TAPE, s);
+
+const module = import.meta;
 
 describe(`${grammarTestSuiteName(module)}`, function() {
 

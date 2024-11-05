@@ -13,6 +13,7 @@
     "Darlene Stewart <Darlene.Stewart@nrc-crnc.gc.ca>"
   ],
   "homepage": "https://github.com/nrc-cnrc/gramble#readme",
+  "type": "module",
   "license": "MIT",
   "publishConfig": {
     "access": "public"
@@ -34,9 +35,11 @@
   "devDependencies": {
     "@google/clasp": "^2.4.2",
     "browserify": "^17.0.0",
-    "tsify": "^5.0.4",
-    "unicode-properties": "^1.4.1"
+    "rollup": "^4.24.0",
+    "@rollup/plugin-commonjs": "^28.0.1",
+    "@rollup/plugin-node-resolve": "^15.3.0"
   },
   "dependencies": {
+    "@gramble/interpreter": "^1.0.0"
   }
 }

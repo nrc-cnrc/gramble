@@ -1,4 +1,4 @@
-import { Pass, SymbolEnv } from "../passes";
+import { Pass, SymbolEnv } from "../passes.js";
 import { AlternationGrammar, 
     QualifiedGrammar, 
     CountGrammar, 
@@ -15,14 +15,14 @@ import { AlternationGrammar,
     SequenceGrammar,
     CursorGrammar,
     SelectionGrammar
-} from "../grammars";
-import { renameTape } from "../tapes";
-import { Count } from "../grammarConvenience";
-import { exhaustive, getCaseInsensitive, update } from "../utils/func";
-import { Msg } from "../utils/msgs";
-import { CounterStack } from "../utils/counter";
-import { Options } from "../utils/options";
-import { DEFAULT_MAX_CHARS } from "../utils/constants";
+} from "../grammars.js";
+import { renameTape } from "../tapes.js";
+import { Count } from "../grammarConvenience.js";
+import { exhaustive, getCaseInsensitive, update } from "../utils/func.js";
+import { Msg } from "../utils/msgs.js";
+import { CounterStack } from "../utils/counter.js";
+import { Options } from "../utils/options.js";
+import { DEFAULT_MAX_CHARS } from "../utils/constants.js";
 
 export class InfinityProtection extends Pass<Grammar,Grammar> {
 

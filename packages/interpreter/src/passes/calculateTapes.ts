@@ -1,4 +1,4 @@
-import { Err, Message, Msg } from "../utils/msgs";
+import { Err, Message, Msg } from "../utils/msgs.js";
 import { 
     Grammar,
     QualifiedGrammar,
@@ -25,27 +25,27 @@ import {
     ReplaceGrammar,
     CursorGrammar,
     SelectionGrammar,
-} from "../grammars";
-import { AutoPass } from "../passes";
+} from "../grammars.js";
+import { AutoPass } from "../passes.js";
 import { 
     mapValues, 
     exhaustive, update, 
     foldRight, dictLen, mapDict, 
     getCaseInsensitive
-} from "../utils/func";
+} from "../utils/func.js";
 import { 
     DEFAULT_TAPE, 
     INPUT_TAPE, 
     OUTPUT_TAPE 
-} from "../utils/constants";
-import { toStr } from "./toStr";
+} from "../utils/constants.js";
+import { toStr } from "./toStr.js";
 
-import { TapeSet, TapeDict } from "../tapes";
-import * as Tapes from "../tapes";
-import { VocabDict } from "../vocab";
-import * as Vocabs from "../vocab";
-import { PassEnv, children } from "../components";
-import { Env, Options } from "../utils/options";
+import { TapeSet, TapeDict } from "../tapes.js";
+import * as Tapes from "../tapes.js";
+import { VocabDict } from "../vocab.js";
+import * as Vocabs from "../vocab.js";
+import { PassEnv, children } from "../components.js";
+import { Env, Options } from "../utils/options.js";
 
 
 export class TapesEnv extends Env<Grammar> {

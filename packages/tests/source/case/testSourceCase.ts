@@ -1,6 +1,6 @@
 import {
     testSource, SourceTest, Error
-} from "../testSourceUtil";
+} from "../testSourceUtil.js";
 
 const DIR = "case";
 

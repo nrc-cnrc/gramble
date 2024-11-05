@@ -6,9 +6,9 @@ import {
     LiteralGrammar, NegationGrammar, 
     RepeatGrammar, RuleContextGrammar, 
     SequenceGrammar 
-} from "./grammars";
+} from "./grammars.js";
 
-import { ParseClass } from "./headers";
+import { ParseClass } from "./headers.js";
 import { 
     MPDelay, 
     MPAlt, 
@@ -20,7 +20,7 @@ import {
     MiniParseEnv,
     MPEmpty,
     MPUnreservedChar
-} from "./miniParser";
+} from "./miniParser.js";
 
 import { 
     isValidSymbol,
@@ -29,9 +29,9 @@ import {
     RESERVED_FOR_REGEX, 
     RESERVED_FOR_SYMBOL, 
     RESERVED_WORDS 
-} from "./utils/reserved";
-import { DEFAULT_TAPE } from "./utils/constants";
-import { Msg } from "./utils/msgs";
+} from "./utils/reserved.js";
+import { DEFAULT_TAPE } from "./utils/constants.js";
+import { Msg } from "./utils/msgs.js";
 
 export type RegexParser = MPParser<Grammar>;
 

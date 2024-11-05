@@ -1,4 +1,4 @@
-import { Pass } from "../passes";
+import { Pass } from "../passes.js";
 import { 
     AlternationGrammar, ContainsGrammar, 
     EndsGrammar, 
@@ -7,8 +7,8 @@ import {
     RuleContextGrammar, 
     SequenceGrammar, SingleTapeGrammar, 
     StartsGrammar 
-} from "../grammars";
-import { Msg, msg, msgList } from "../utils/msgs";
+} from "../grammars.js";
+import { Msg, msg, msgList } from "../utils/msgs.js";
 import { 
     CommentHeader, ContainsHeader, 
     EmbedHeader, EndsHeader, 
@@ -18,10 +18,10 @@ import {
     UniqueHeader, TapeHeader, 
     UnaryHeader, FromHeader, 
     ToHeader, RuleContextHeader 
-} from "../headers";
-import { INPUT_TAPE, OUTPUT_TAPE } from "../utils/constants";
-import { exhaustive } from "../utils/func";
-import { PassEnv } from "../components";
+} from "../headers.js";
+import { INPUT_TAPE, OUTPUT_TAPE } from "../utils/constants.js";
+import { exhaustive } from "../utils/func.js";
+import { PassEnv } from "../components.js";
 
 
 export class HeaderToGrammar extends Pass<Header, Grammar> {

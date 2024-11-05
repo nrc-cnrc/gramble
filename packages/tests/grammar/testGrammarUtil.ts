@@ -2,22 +2,22 @@ import { assert, expect } from "chai";
 
 import {
     Lit,
-} from "../../interpreter/src/grammarConvenience";
+} from "../../interpreter/src/grammarConvenience.js";
 
 import {
     Grammar
-} from "../../interpreter/src/grammars";
+} from "../../interpreter/src/grammars.js";
 
 import {
     DEFAULT_MAX_CHARS,
     DEFAULT_MAX_RECURSION
-} from "../../interpreter/src/utils/constants";
-import { Dict, StringDict } from "../../interpreter/src/utils/func";
+} from "../../interpreter/src/utils/constants.js";
+import { Dict, StringDict } from "../../interpreter/src/utils/func.js";
 import {
     timeIt, SILENT,
     VERBOSE_DEBUG, VERBOSE_GRAMMAR
-} from "../../interpreter/src/utils/logging";
-import { Options } from "../../interpreter/src/utils/options";
+} from "../../interpreter/src/utils/logging.js";
+import { Options } from "../../interpreter/src/utils/options.js";
 
 import {
     testSuiteName, verbose,
@@ -26,9 +26,9 @@ import {
     testNumErrors, testNumOutputs, testMatchOutputs,
     prepareInterpreter,
     VERBOSE_TEST_L2    
-} from '../testUtil';
+} from '../testUtil.js';
 
-export function grammarTestSuiteName(mod: NodeModule): string {
+export function grammarTestSuiteName(mod: NodeModule | ImportMeta): string {
     return `Grammar ${testSuiteName(mod)}`
 }
 

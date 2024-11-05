@@ -1,8 +1,8 @@
-import { Pass } from "../passes";
-import { Component } from "../components";
-import { Dict } from "./func";
-import { Message, Msg, msg } from "./msgs";
-import { Env } from "./options";
+import { Pass } from "../passes.js";
+import { Component } from "../components.js";
+import { Dict } from "./func.js";
+import { Message, Msg, msg } from "./msgs.js";
+import { Env } from "./options.js";
 
 export type Skeleton<G extends Component, T> = {
     [K in keyof G]: G[K] extends Component ? T : 

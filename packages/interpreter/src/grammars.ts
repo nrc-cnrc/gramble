@@ -1,22 +1,22 @@
 import { 
     Msg, THROWER,
-} from "./utils/msgs";
+} from "./utils/msgs.js";
 
-import { TapeSet } from "./tapes";
-import * as Tapes from "./tapes";
-import { Vocab } from "./vocab";
-import * as Vocabs from "./vocab";
+import { TapeSet } from "./tapes.js";
+import * as Tapes from "./tapes.js";
+import { Vocab } from "./vocab.js";
+import * as Vocabs from "./vocab.js";
 
-import { Pass } from "./passes";
-import { Dict, ValueSet } from "./utils/func";
+import { Pass } from "./passes.js";
+import { Dict, ValueSet } from "./utils/func.js";
 
-import { Component, PassEnv } from "./components";
-import { DEFAULT_SYMBOL,  HIDDEN_PREFIX, INPUT_TAPE, OUTPUT_TAPE } from "./utils/constants";
-import { tokenizeUnicode } from "./utils/strings";
-import { Pos } from "./utils/cell";
-import { CalculateTapes } from "./passes/calculateTapes";
-import { toStr } from "./passes/toStr";
-import { INDICES } from "./utils/options";
+import { Component, PassEnv } from "./components.js";
+import { DEFAULT_SYMBOL,  HIDDEN_PREFIX, INPUT_TAPE, OUTPUT_TAPE } from "./utils/constants.js";
+import { tokenizeUnicode } from "./utils/strings.js";
+import { Pos } from "./utils/cell.js";
+import { CalculateTapes } from "./passes/calculateTapes.js";
+import { toStr } from "./passes/toStr.js";
+import { INDICES } from "./utils/options.js";
 
 export type StringPair = [string, string];
 export class StringPairSet extends ValueSet<StringPair> { }

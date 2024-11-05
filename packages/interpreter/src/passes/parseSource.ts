@@ -1,5 +1,5 @@
-import { Pass } from "../passes";
-import { OpMsg, CommentMsg, Err, Message, Msg } from "../utils/msgs";
+import { Pass } from "../passes.js";
+import { OpMsg, CommentMsg, Err, Message, Msg } from "../utils/msgs.js";
 import { 
     TstAssignment,
     TstEnclosure, 
@@ -7,13 +7,13 @@ import {
     TstOp, 
     TstGrid,
     TST
-} from "../tsts";
-import { Worksheet, Workbook, Source } from "../sources";
-import { Cell, Pos } from "../utils/cell";
-import { CollectionOp, parseOp } from "../ops";
-import { RESERVED_WORDS } from "../utils/reserved";
-import { exhaustive } from "../utils/func";
-import { Env } from "../utils/options";
+} from "../tsts.js";
+import { Worksheet, Workbook, Source } from "../sources.js";
+import { Cell, Pos } from "../utils/cell.js";
+import { CollectionOp, parseOp } from "../ops.js";
+import { RESERVED_WORDS } from "../utils/reserved.js";
+import { exhaustive } from "../utils/func.js";
+import { Env } from "../utils/options.js";
 
 /**
  * This takes grids of cells (Worksheets) and collections of them

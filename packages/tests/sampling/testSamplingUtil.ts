@@ -1,22 +1,22 @@
 import { assert } from "chai";
 
-import { Grammar } from "../../interpreter/src/grammars";
-import { Interpreter } from "../../interpreter/src/interpreter";
+import { Grammar } from "../../interpreter/src/grammars.js";
+import { Interpreter } from "../../interpreter/src/interpreter.js";
 
 import {
     DEFAULT_MAX_CHARS,
     DEFAULT_MAX_RECURSION
-} from "../../interpreter/src/utils/constants";
+} from "../../interpreter/src/utils/constants.js";
 
-import { StringDict } from "../../interpreter/src/utils/func";
-import { SILENT } from "../../interpreter/src/utils/logging";
-import { Options } from "../../interpreter/src/utils/options";
+import { StringDict } from "../../interpreter/src/utils/func.js";
+import { SILENT } from "../../interpreter/src/utils/logging.js";
+import { Options } from "../../interpreter/src/utils/options.js";
 
 import {
     testMatchOutputs,
     prepareInterpreter,
     generateOutputs,
-} from "../testUtil";
+} from "../testUtil.js";
 
 export interface SampleTest extends Partial<Options> {
     // required parameters

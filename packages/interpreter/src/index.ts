@@ -1,15 +1,15 @@
-import { DevEnvironment } from "./devEnv";
-import { Interpreter } from "./interpreter";
-import { TextDevEnvironment } from "./textInterface";
+import { DevEnvironment } from "./devEnv.js";
+import { Interpreter } from "./interpreter.js";
+import { TextDevEnvironment } from "./textInterface.js";
 import {
     timeIt, SILENT, VERBOSE_DEBUG,
     VERBOSE_STATES, VERBOSE_TIME
-} from "./utils/logging";
-import { Message } from "./utils/msgs";
+} from "./utils/logging.js";
+import { Message } from "./utils/msgs.js";
 
 export { 
     Interpreter, 
-    DevEnvironment, 
+    type DevEnvironment, 
     TextDevEnvironment,
     timeIt,
     SILENT,

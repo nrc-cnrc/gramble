@@ -2,23 +2,23 @@ import {
     Count, Dot, Epsilon, 
     Join, Match, Rep, 
     Seq, Uni, WithVocab,
-} from "../../interpreter/src/grammarConvenience";
+} from "../../interpreter/src/grammarConvenience.js";
 
 import {
     SILENT, VERBOSE_STATES
-} from "../../interpreter/src/utils/logging";
+} from "../../interpreter/src/utils/logging.js";
 
-import { Grammar } from "../../interpreter/src/grammars";
+import { Grammar } from "../../interpreter/src/grammars.js";
 
 import {
     grammarTestSuiteName,
     testGrammar,
     t1, t2,
-} from "./testGrammarUtil";
+} from "./testGrammarUtil.js";
 
 import {
     logTestSuite, VERBOSE_TEST_L2,
-} from '../testUtil';
+} from '../testUtil.js';
 
 function withCountGuard1(maxChars: number, grammar: Grammar) {
     return Count({t1: maxChars}, grammar, true, true);
@@ -37,6 +37,8 @@ function vb(verbosity: number): number {
 // Some tests can be skipped.
 // Set SKIP_GENERATION to false to force running of those tests.
 const SKIP_GENERATION = true;
+
+const module = import.meta;
 
 // Note: tests involving * repeats ({0,Inf}) are denoted with * in the number.
 

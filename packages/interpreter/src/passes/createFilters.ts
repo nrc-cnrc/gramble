@@ -1,4 +1,4 @@
-import { AutoPass } from "../passes";
+import { AutoPass } from "../passes.js";
 import { 
     AlternationGrammar, ContainsGrammar, 
     DotGrammar, EndsGrammar, Grammar,
@@ -7,9 +7,9 @@ import {
     RenameGrammar,
     FilterGrammar,
     JoinGrammar
-} from "../grammars";
-import { HIDDEN_PREFIX } from "../utils/constants";
-import { PassEnv } from "../components";
+} from "../grammars.js";
+import { HIDDEN_PREFIX } from "../utils/constants.js";
+import { PassEnv } from "../components.js";
 
 /**
  * This pass creates Joins out of filters and handles a semantic 

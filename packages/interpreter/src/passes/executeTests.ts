@@ -1,24 +1,24 @@
-import { Dict, StringDict, mapDict } from "../utils/func";
-import { constructSelection, Expr } from "../exprs";
-import { Message, Err, Succeed, THROWER, Msg } from "../utils/msgs";
+import { Dict, StringDict, mapDict } from "../utils/func.js";
+import { constructSelection, Expr } from "../exprs.js";
+import { Message, Err, Succeed, THROWER, Msg } from "../utils/msgs.js";
 import { 
     Grammar, TestNotGrammar, 
     TestGrammar, 
     AbstractTestGrammar,
     JoinGrammar
-} from "../grammars";
+} from "../grammars.js";
 
-import { generate } from "../generator";
-import { Pass, SymbolEnv } from "../passes";
-import { constructExpr } from "./constructExpr";
-import { CreateCursors } from "./createCursors";
-import { InfinityProtection } from "./infinityProtection";
-import { Options, Env } from "../utils/options";
-import { CalculateTapes, TapesEnv } from "./calculateTapes";
-import { ResolveVocab } from "./resolveVocab";
+import { generate } from "../generator.js";
+import { Pass, SymbolEnv } from "../passes.js";
+import { constructExpr } from "./constructExpr.js";
+import { CreateCursors } from "./createCursors.js";
+import { InfinityProtection } from "./infinityProtection.js";
+import { Options, Env } from "../utils/options.js";
+import { CalculateTapes, TapesEnv } from "./calculateTapes.js";
+import { ResolveVocab } from "./resolveVocab.js";
 
-import * as Tapes from "../tapes";
-import * as Vocabs from "../vocab";
+import * as Tapes from "../tapes.js";
+import * as Vocabs from "../vocab.js";
 
 export class ExecuteTests extends Pass<Grammar,Grammar> {
 

@@ -1,8 +1,8 @@
-import {VERBOSE_DEBUG } from "../../../interpreter/src/utils/logging";
+import {VERBOSE_DEBUG } from "../../../interpreter/src/utils/logging.js";
 import {
     testSource, SourceTest, 
     Error, Warning 
-} from "../testSourceUtil";
+} from "../testSourceUtil.js";
 
 const DIR = "replace";
 

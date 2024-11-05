@@ -3,16 +3,16 @@ import {
     SymbolOp,
     childMustBeGrid,
     siblingRequired,
-} from "../ops";
-import { Err, Message, Msg, Warn } from "../utils/msgs";
-import { Pass } from "../passes";
+} from "../ops.js";
+import { Err, Message, Msg, Warn } from "../utils/msgs.js";
+import { Pass } from "../passes.js";
 import { 
     TstOp, 
     TstEmpty,
     TstGrid,
     TST
-} from "../tsts";
-import { PassEnv } from "../components";
+} from "../tsts.js";
+import { PassEnv } from "../components.js";
 
 /**
  * This pass goes through and make sure that TstOps have 

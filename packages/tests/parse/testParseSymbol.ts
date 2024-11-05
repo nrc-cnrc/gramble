@@ -1,4 +1,4 @@
-import { testSymbolID } from "./testParseUtils";
+import { testSymbolID } from "./testParseUtils.js";
 
 describe(`Parse symbol`, function() {
 

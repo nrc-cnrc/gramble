@@ -3,12 +3,12 @@ import {
     Dot, Epsilon, Not, Rep, 
     Replace, ReplaceBlock,  
     Seq, Uni, WithVocab,
-} from "../../interpreter/src/grammarConvenience";
+} from "../../interpreter/src/grammarConvenience.js";
 
-import { DEFAULT_TAPE } from "../../interpreter/src/utils/constants";
+import { DEFAULT_TAPE } from "../../interpreter/src/utils/constants.js";
 
-import { testSample } from "./testSamplingUtil";
-import { t1, t2 } from "../testUtil";
+import { testSample } from "./testSamplingUtil.js";
+import { t1, t2 } from "../testUtil.js";
 
 function splitUni(tapeName: string, text: string) {
     return CharSet(tapeName, text.split(""))

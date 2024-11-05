@@ -1,7 +1,7 @@
-import { parseCSV } from "./utils/strings";
-import { Message } from "./utils/msgs";
-import * as Messages from "./utils/msgs";
-import { Dict } from "./utils/func";
+import { parseCSV } from "./utils/strings.js";
+import { Message } from "./utils/msgs.js";
+import * as Messages from "./utils/msgs.js";
+import { Dict } from "./utils/func.js";
 
 /**
  * DevEnvironment

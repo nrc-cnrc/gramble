@@ -3,15 +3,15 @@ import { expect } from "chai";
 import { 
     Dot, Epsilon, Null, 
     Rename, Seq, Uni 
-} from "../../interpreter/src/grammarConvenience";
+} from "../../interpreter/src/grammarConvenience.js";
 
-import { Grammar } from "../../interpreter/src/grammars";
-import { toStr } from "../../interpreter/src/passes/toStr";
+import { Grammar } from "../../interpreter/src/grammars.js";
+import { toStr } from "../../interpreter/src/passes/toStr.js";
 
 import {
     testSuiteName, logTestSuite,
     t1, t2
-} from "../testUtil";
+} from "../testUtil.js";
 
 type GrammarIDTest = {
     testnum: string,
@@ -29,6 +29,8 @@ export function testGrammarID({
         expect(result).to.equal(id);
     });
 }
+
+const module = import.meta;
 
 describe(`Pass ${testSuiteName(module)}`, function() {
 

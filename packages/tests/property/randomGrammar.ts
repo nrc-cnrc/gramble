@@ -1,10 +1,10 @@
 import {
     Collection, Embed, Lit,
     Rename, Seq,
-} from "../../interpreter/src/grammarConvenience";
-import { CollectionGrammar, Grammar } from "../../interpreter/src/grammars";
-import { Dict } from "../../interpreter/src/utils/func";
-import { poisson, randomChoice } from "../../interpreter/src/utils/random";
+} from "../../interpreter/src/grammarConvenience.js";
+import { CollectionGrammar, Grammar } from "../../interpreter/src/grammars.js";
+import { Dict } from "../../interpreter/src/utils/func.js";
+import { poisson, randomChoice } from "../../interpreter/src/utils/random.js";
 
 export type RandOptions = {
     symbols: string[],

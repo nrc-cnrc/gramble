@@ -6,13 +6,13 @@ import {
     EpsilonGrammar,
     SequenceGrammar,
     ReplaceGrammar,
-} from "../grammars";
+} from "../grammars.js";
 
-import { INPUT_TAPE, OUTPUT_TAPE } from "../utils/constants";
-import { AutoPass, SymbolEnv } from "../passes";
-import { lengthRange } from "./infinityProtection";
-import { CounterStack } from "../utils/counter";
-import { Options } from "../utils/options";
+import { INPUT_TAPE, OUTPUT_TAPE } from "../utils/constants.js";
+import { AutoPass, SymbolEnv } from "../passes.js";
+import { lengthRange } from "./infinityProtection.js";
+import { CounterStack } from "../utils/counter.js";
+import { Options } from "../utils/options.js";
 
 /**
  * This pass handles the transformation of replacement rule blocks 

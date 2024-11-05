@@ -1,4 +1,4 @@
-import { Dict } from "./func";
+import { Dict } from "./func.js";
 
 /**
  * Namespace<T> is a convenience wrapper around Map<string, T> that

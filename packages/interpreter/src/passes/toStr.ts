@@ -2,9 +2,9 @@ import {
     AbstractGrammar,
     DotGrammar, Grammar, 
     LiteralGrammar, RepeatGrammar 
-} from "../grammars";
-import { Component } from "../components";
-import { DEFAULT_TAPE } from "../utils/constants";
+} from "../grammars.js";
+import { Component } from "../components.js";
+import { DEFAULT_TAPE } from "../utils/constants.js";
 
 export function toStr(
     x: any,

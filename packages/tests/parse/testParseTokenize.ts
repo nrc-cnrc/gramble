@@ -1,4 +1,4 @@
-import { testTokenize } from "./testParseUtils";
+import { testTokenize } from "./testParseUtils.js";
 
 describe(`Parse tokenize`, function() {
 

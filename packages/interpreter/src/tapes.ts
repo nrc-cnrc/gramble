@@ -1,6 +1,6 @@
-import { Dict, exhaustive, mapDict, union, update } from "./utils/func";
-import * as Vocabs from "./vocab";
-import { VocabDict } from "./vocab";
+import { Dict, exhaustive, mapDict, union, update } from "./utils/func.js";
+import * as Vocabs from "./vocab.js";
+import { VocabDict } from "./vocab.js";
 
 export type TapeDict = Dict<TapeSet>;
 

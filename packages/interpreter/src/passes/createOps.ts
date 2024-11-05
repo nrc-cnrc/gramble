@@ -1,16 +1,16 @@
-import { exhaustive } from "../utils/func";
+import { exhaustive } from "../utils/func.js";
 import { 
     ReplaceOp,
     SymbolOp, 
-} from "../ops";
-import { AutoPass } from "../passes";
+} from "../ops.js";
+import { AutoPass } from "../passes.js";
 import { 
     TstOp, 
     TstTest, 
     TstTable, TstTestNot, TstReplace, 
     TstOr, TstAssignment, TstParamList, TstJoin, TST
-} from "../tsts";
-import { PassEnv } from "../components";
+} from "../tsts.js";
+import { PassEnv } from "../components.js";
 
  export class CreateOps extends AutoPass<TST> {
 

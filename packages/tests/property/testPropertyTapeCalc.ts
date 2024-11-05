@@ -1,10 +1,10 @@
-import { CollectionGrammar } from "../../interpreter/src/grammars";
-import { CalculateTapes } from "../../interpreter/src/passes/calculateTapes";
-import { FlattenCollections } from "../../interpreter/src/passes/flattenCollections";
-import { toStr } from "../../interpreter/src/passes/toStr";
+import { CollectionGrammar } from "../../interpreter/src/grammars.js";
+import { CalculateTapes } from "../../interpreter/src/passes/calculateTapes.js";
+import { FlattenCollections } from "../../interpreter/src/passes/flattenCollections.js";
+import { toStr } from "../../interpreter/src/passes/toStr.js";
 
-import { RandOptions, randomCollection } from "./randomGrammar";
-import { ReduceOptions, reduceCollection } from "./reduceGrammar";
+import { RandOptions, randomCollection } from "./randomGrammar.js";
+import { ReduceOptions, reduceCollection } from "./reduceGrammar.js";
 
 import {
     PropertyTest,
@@ -12,7 +12,7 @@ import {
     PropertyTestResult,
     PropertyTestSuccess,
     testToBreaking
-} from "./testPropertyUtil";
+} from "./testPropertyUtil.js";
 
 const NUM_TESTS = 10000;
 const OPT = RandOptions();

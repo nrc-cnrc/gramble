@@ -1,7 +1,6 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "esModuleInterop": true,
     "rootDir": "./src",
     "outDir": "./dist",
     "baseUrl": "./",
@@ -9,7 +8,9 @@
         "*": [ "src/@types/*"]
     },
     "sourceMap": true,
+    "declaration": true,
     "composite": true,
+    "declarationMap": true,
     "tsBuildInfoFile": "../../.build-cache/interpreter.tsbuildinfo",
     "types": [
       "node"
@@ -19,7 +20,7 @@
     "src"
   ],
   "lib": [
-    "es2017",
+    "es2022",
     "dom",
     "es6"
   ]

@@ -1,20 +1,20 @@
 import {
     Correspond, Epsilon, Join, 
     Lit, Seq, Uni,
-} from "../../interpreter/src/grammarConvenience";
+} from "../../interpreter/src/grammarConvenience.js";
 
-import { Grammar } from "../../interpreter/src/grammars";
-import { INPUT_TAPE, OUTPUT_TAPE } from "../../interpreter/src/utils/constants";
-import { VERBOSE_DEBUG } from "../../interpreter/src/utils/logging";
+import { Grammar } from "../../interpreter/src/grammars.js";
+import { INPUT_TAPE, OUTPUT_TAPE } from "../../interpreter/src/utils/constants.js";
+import { VERBOSE_DEBUG } from "../../interpreter/src/utils/logging.js";
 
 import {
     grammarTestSuiteName,
     testGrammar,
-} from "./testGrammarUtil";
+} from "./testGrammarUtil.js";
 
 import {
     logTestSuite, VERBOSE_TEST_L2,
-} from "../testUtil";
+} from "../testUtil.js";
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
@@ -26,6 +26,8 @@ function i(s: string): Grammar {
 function o(s: string): Grammar {
     return Lit(OUTPUT_TAPE, s);
 }
+
+const module = import.meta;
 
 describe(`${grammarTestSuiteName(module)}`, function() {
 

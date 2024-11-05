@@ -1,5 +1,5 @@
-import { Dict, Func } from "./func";
-import { Pos } from "./cell";
+import { Dict, Func } from "./func.js";
+import { Pos } from "./cell.js";
 
 
 export const enum Tag {

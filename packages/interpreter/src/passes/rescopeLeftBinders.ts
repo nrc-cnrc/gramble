@@ -6,7 +6,7 @@ import {
     TstHide,
     TstRename,
     TST,
-} from "../tsts";
+} from "../tsts.js";
 import {
     ContainsHeader,
     EndsHeader,
@@ -14,11 +14,11 @@ import {
     HideHeader,
     RenameHeader,
     StartsHeader
-} from "../headers";
+} from "../headers.js";
 
-import { Err, Message } from "../utils/msgs";
-import { AutoPass } from "../passes";
-import { PassEnv } from "../components";
+import { Err, Message } from "../utils/msgs.js";
+import { AutoPass } from "../passes.js";
+import { PassEnv } from "../components.js";
 
 export class RescopeLeftBinders extends AutoPass<TST> {
 

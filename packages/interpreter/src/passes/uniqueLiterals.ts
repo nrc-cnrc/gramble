@@ -1,9 +1,9 @@
-import { flatten } from "../utils/func";
+import { flatten } from "../utils/func.js";
 import { 
     Grammar, LiteralGrammar, 
     RenameGrammar, SingleTapeGrammar 
-} from "../grammars";
-import { DEFAULT_TAPE } from "../utils/constants";
+} from "../grammars.js";
+import { DEFAULT_TAPE } from "../utils/constants.js";
 
 export function uniqueLiterals(
     g: Grammar

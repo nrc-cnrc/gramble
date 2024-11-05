@@ -8,14 +8,14 @@ import {
     Message,
 } from "@gramble/interpreter";
 
-import * as commandLineArgs from "command-line-args";
-import * as commandLineUsage from "command-line-usage";
+import commandLineArgs from "command-line-args";
+import commandLineUsage from "command-line-usage";
 
 import {
     fileExistsOrFail, generateToCSV, generateToJSON,
     getOutputStream, parseQuery, programName, sourceFromFile,
     StringDict, usageError, usageWarn,
-} from "./util";
+} from "./util.js";
 
 
 /* first - parse the main command */

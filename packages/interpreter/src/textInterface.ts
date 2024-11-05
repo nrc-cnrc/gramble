@@ -1,7 +1,8 @@
-import { SimpleDevEnvironment } from "./devEnv";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
-import { parseCSV } from "./utils/strings";
+
+import { SimpleDevEnvironment } from "./devEnv.js";
+import { parseCSV } from "./utils/strings.js";
 
 export class TextDevEnvironment extends SimpleDevEnvironment {
 

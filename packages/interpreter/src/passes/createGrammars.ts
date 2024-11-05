@@ -7,8 +7,8 @@ import {
     TstTestNot, TstRename,
     TstReplace, TstSequence, 
     TstTable, TstTest, TstJoin, TST 
-} from "../tsts";
-import { Pass } from "../passes";
+} from "../tsts.js";
+import { Pass } from "../passes.js";
 import { 
     AlternationGrammar,
     EpsilonGrammar, 
@@ -25,15 +25,15 @@ import {
     FilterGrammar,
     ReplaceGrammar,
     CollectionGrammar
-} from "../grammars";
-import { parseClass, TapeHeader } from "../headers";
-import { Err, Msg, Message, msgList } from "../utils/msgs";
-import { HeaderToGrammar } from "./headerToGrammar";
-import { parseContent } from "../content";
-import { DEFAULT_PARAM } from "../utils/constants";
-import { uniqueLiterals } from "./uniqueLiterals";
-import { PassEnv } from "../components";
-import { getCaseInsensitive } from "../utils/func";
+} from "../grammars.js";
+import { parseClass, TapeHeader } from "../headers.js";
+import { Err, Msg, Message, msgList } from "../utils/msgs.js";
+import { HeaderToGrammar } from "./headerToGrammar.js";
+import { parseContent } from "../content.js";
+import { DEFAULT_PARAM } from "../utils/constants.js";
+import { uniqueLiterals } from "./uniqueLiterals.js";
+import { PassEnv } from "../components.js";
+import { getCaseInsensitive } from "../utils/func.js";
 
 /**
  * This is the workhorse of grammar creation, turning the 

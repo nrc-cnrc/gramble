@@ -1,4 +1,4 @@
-import { Epsilon } from "../../interpreter/src/grammarConvenience";
+import { Epsilon } from "../../interpreter/src/grammarConvenience.js";
 
 import {
     CollectionGrammar,
@@ -6,12 +6,12 @@ import {
     Grammar,
     RenameGrammar,
     SequenceGrammar
-} from "../../interpreter/src/grammars";
+} from "../../interpreter/src/grammars.js";
 
-import { update } from "../../interpreter/src/utils/func";
-import { randomChoice } from "../../interpreter/src/utils/random";
+import { update } from "../../interpreter/src/utils/func.js";
+import { randomChoice } from "../../interpreter/src/utils/random.js";
 
-import { range } from "./randomGrammar";
+import { range } from "./randomGrammar.js";
 
 export type ReduceOptions = {
     "symbolDrop": boolean
@@ -29,7 +29,10 @@ export function ReduceOptions(
 
 export function reduceGrammar(g: Grammar, opt: ReduceOptions): Grammar {
     switch (g.tag) {
-        case "qualified": return reduceCollection(g, opt);
+        // TODO: refactor property testing, so we don't assume that we have
+        // a CollectionGrammar throughout the lifetime, and to handle
+        // QualifiedGrammar correctly.
+        // case "qualified": return reduceCollection(g, opt);
         case "seq":        return reduceSeq(g, opt);
         case "rename":     return reduceRename(g, opt);
     }

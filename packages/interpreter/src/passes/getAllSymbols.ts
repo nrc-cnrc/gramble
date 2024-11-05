@@ -1,4 +1,4 @@
-import { Grammar } from "../grammars";
+import { Grammar } from "../grammars.js";
 
 export function getAllSymbols(
     g: Grammar
