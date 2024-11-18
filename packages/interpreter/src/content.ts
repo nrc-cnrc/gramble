@@ -116,6 +116,7 @@ const REGEX_SUBEXPR: RegexParser = MPDelay(() => MPAlt(
 
 const REGEX_SUBSUBEXPR: RegexParser = MPDelay(() => MPAlt(
     REGEX_NEGATION, 
+    REGEX_SINGLE_NEGATION,
     REGEX_SUBSEQ
 ));
 
@@ -183,6 +184,11 @@ const REGEX_SYMBOL = MPSequence(
 const REGEX_NEGATION = MPSequence(
     ["~", REGEX_SUBSEQ],
     ([c]) => new NegationGrammar(c)
+);
+
+const REGEX_SINGLE_NEGATION = MPSequence(
+    ["^", REGEX_SUBSEQ],
+    ([c]) => new JoinGrammar(new DotGrammar(DEFAULT_TAPE), new NegationGrammar(c))
 );
 
 const REGEX_ALTERNATION = MPSequence(
