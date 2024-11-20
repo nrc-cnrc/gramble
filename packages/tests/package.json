@@ -107,7 +107,7 @@
   },
   "devDependencies": {
     "@types/chai": "^5.0.1",
-    "@types/mocha": "^10.0.9",
+    "@types/mocha": "^10.0.10",
     "@types/seedrandom": "^3.0.8",
     "chai": "^5.1.2",
     "mocha": "^10.8.2",
