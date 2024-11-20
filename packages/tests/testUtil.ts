@@ -111,7 +111,8 @@ export function removeHiddenFields(outputs: StringDict[]): StringDict[] {
 export function testMatchOutputs(
     outputs: StringDict[],
     expected_outputs: StringDict[],
-    symbol: string = ""
+    symbol: string = "",
+    verbose: number = SILENT
 ): void {
     // Check that the output dictionaries of Interpreter.generate() match
     // the expected outputs.
@@ -129,6 +130,11 @@ export function testMatchOutputs(
     const outputStrs = outputs.map(o => stringDictToStr(o)).sort();
     const expectedStrs = expected_outputs.map(o => stringDictToStr(o)).sort();
 
+    if ((verbose & VERBOSE_DEBUG) == VERBOSE_DEBUG) {
+        console.log("sorted outputStrs: ", outputStrs);
+        console.log("sorted expectedStrs: ", expectedStrs);
+    }
+
     let incr: number = Math.max(expectedStrs.length, outputStrs.length, 1);
     if (incr > 2500) {
         incr = 2500;
@@ -136,7 +142,8 @@ export function testMatchOutputs(
 
     // For running the "it" tests, we cannot use a simple loop incrementing start
     // because start would get incremented before the test started. 
-    let starts: number[] = new Array(Math.ceil(expectedStrs.length / incr));
+    let starts: number[] = new Array(Math.max(1, Math.ceil(expectedStrs.length / incr)));
+
     for (let i=0, start=0; i < starts.length; ++i, start+=incr)
         starts[i] = start;
 

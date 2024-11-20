@@ -1,4 +1,5 @@
 import { assert } from "chai";
+import seedrandom from "seedrandom";
 
 import { Grammar } from "../../interpreter/src/grammars.js";
 import { Interpreter } from "../../interpreter/src/interpreter.js";
@@ -9,28 +10,33 @@ import {
 } from "../../interpreter/src/utils/constants.js";
 
 import { StringDict } from "../../interpreter/src/utils/func.js";
-import { SILENT } from "../../interpreter/src/utils/logging.js";
+// import { stringDictToStr } from "../../interpreter/src/utils/func.js";
+import { SILENT, VERBOSE_DEBUG } from "../../interpreter/src/utils/logging.js";
 import { Options } from "../../interpreter/src/utils/options.js";
 
 import {
-    testMatchOutputs,
-    prepareInterpreter,
     generateOutputs,
+    prepareInterpreter,
+    testMatchOutputs,
 } from "../testUtil.js";
 
 export interface SampleTest extends Partial<Options> {
     // required parameters
     desc: string,
     grammar: Grammar,
+    results?: StringDict[],
     symbol?: string,
     numSamples?: number
+    seed?: string,
 };
 
 export function testSample({
     desc, 
     grammar,
+    results = undefined,
     symbol = "",
     numSamples = 100,
+    seed = 'Seed-2024',
     // General options
     verbose = SILENT,
     directionLTR = true,
@@ -50,11 +56,26 @@ export function testSample({
     describe(desc, function() {
 
         const interpreter = prepareInterpreter(grammar, opt);
+
+        // Monkey patch Math.random with a seeded PRNG, making Math.random calls
+        // deterministic.
+        seedrandom(seed, { global: true });
         
         try {
-            const outputs1 = generateOutputs(interpreter, symbol, {}, true, false);
-            const outputs2 = sampleOutputs(interpreter, numSamples, symbol, true, false);
-            testMatchOutputs(outputs1, outputs2, symbol);
+            if (results === undefined) {
+                results = generateOutputs(interpreter, symbol, {}, true, false);
+            }
+            const sOutputs = sampleOutputs(interpreter, numSamples, symbol, true, false);
+            if ((verbose & VERBOSE_DEBUG) == VERBOSE_DEBUG) {
+                console.log(`-- ${desc}`);
+                console.log("Expected/Generated Outputs: ", results);
+                console.log("Sampled Outputs: ", sOutputs);
+                // const gOutputStrs = gOutputs.map(o => stringDictToStr(o)).sort();
+                // const sOutputStrs = sOutputs.map(o => stringDictToStr(o)).sort();
+                // console.log("Generated Outputs (sorted): ", gOutputStrs);
+                // console.log("Sampled Outputs (sorted): ", sOutputStrs);
+            }
+            testMatchOutputs(sOutputs, results, symbol, verbose);
         } catch (e) {
             it("Unexpected Exception", function() {
                 console.log("");

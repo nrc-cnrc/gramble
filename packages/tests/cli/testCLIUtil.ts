@@ -206,9 +206,10 @@ function testMatchOutputLines(
                 expect(outputs).to.deep.equal(expectedOutputs);
             } else {
                 // subcmd == 'generate' || subcmd == 'sample')
-                expect(outputs[0]).to.deep.equal(expectedOutputs[0]);
-                const content = outputs.slice(1).sort();
-                const expectedContent = expectedOutputs.slice(1).sort();
+                if (outputs.length)
+                    expect(outputs[0]).to.deep.equal(expectedOutputs[0]);
+                const content = outputs.length ? outputs.slice(1).sort() : outputs;
+                const expectedContent = expectedOutputs.length ? expectedOutputs.slice(1).sort() : expectedOutputs;
                 expect(content).to.deep.include.members(expectedContent);
                 expect(expectedContent).to.deep.include.members(content);
             }
