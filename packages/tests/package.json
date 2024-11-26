@@ -29,7 +29,8 @@
     "url": "git+https://github.com/nrc-cnrc/gramble.git"
   },
   "mocha": {
-    "loader": "ts-node/esm"
+    "extensions": ["ts"],
+    "import": "./esmloader.js"
   },
   "scripts": {
     "build": "tsc --build --verbose",
