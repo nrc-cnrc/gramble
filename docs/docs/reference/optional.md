@@ -16,7 +16,7 @@ Just for illustration, consider the following grammar.
 |----|----|-----|
 |    | past | ba |
 
-This produces two entries, `{gloss:past, text:ba}` and `{gloss:past}`, because `optional text:ba` can either add `ba` to `text` or just add the empty string.  
+This produces two entries: `{gloss:past, text:ba}` and `{gloss:past}`, because `optional text:ba` can either add `ba` to `text` or just add the empty string.  
 
 ## Why would we want to use this?
 

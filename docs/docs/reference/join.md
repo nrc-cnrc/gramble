@@ -25,7 +25,7 @@ We might want, in the client program, rough English labels for every pronominal 
 
 Doing a join between a grammar and a "legend" table that associates each existing "1sg" with "I" can be a concise way of adding this information.
 
-Note that, like all table operators, it is also possible to make the join a direct sibling of an assignment, like so:
+Note that, like all table operators, it is also possible to make the `join` a direct sibling of an assignment, like so:
 
 | **A =** | **text** | **person** |
 |----|-----|----|
