@@ -28,11 +28,11 @@ The above is not the usual use case (it'd be more readable just to add another l
 |    | ik | jump |
 | &nbsp; |
 | **Evid =** | **text** | **gloss** |
-|    | direct | a |
-|    | hearsay | ba |
-|    | infer | tsu |
+|    | a | direct |
+|    | ba | hearsay |
+|    | tsu | infer |
 | &nbsp; |
-| **B =** | **embed** | **optional embed** |
+| **Stem =** | **embed** | **optional embed** |
 |         | Root | Evid |
 
 In this grammar, `optional embed: Evid` is a way of expressing that the evidentiality morpheme is optional.  (In this simple example, yes, we could have just added another line to the `Stem` symbol, but in a more complex grammar we might not want to double the number of lines in `Stem` just for this.  When the column is always optional, it's best to express this in a columnar way with `optional` rather than adding rows.)
