@@ -105,21 +105,21 @@ describe(`Parse header`, function() {
     testHeaderID("11c", "123", "(error)");
     testHeaderID("11d", "123text", "(error)");
 
-    // tape names are allowed to contain $ @ # & ' " , but not at the beginning
+    // tape names are allowed to contain $ @ # - ' ", but not at the beginning
     testHeaderID("12a", "text$", "(tape text$)");
     testHeaderID("12b", "$text", "(error)");
     testHeaderID("12c", "text@", "(tape text@)");
     testHeaderID("12d", "@text", "(error)");
     testHeaderID("12e", "text#", "(tape text#)");
     testHeaderID("12f", "#text", "(error)");
-    testHeaderID("12g", "text&", "(tape text&)");
-    testHeaderID("12h", "&text", "(error)");
+    testHeaderID("12g", "text-", "(tape text-)");
+    testHeaderID("12h", "-text", "(error)");
     testHeaderID("12i", "text'", "(tape text')");
     testHeaderID("12j", "'text", "(error)");  
     testHeaderID("12k", 'text"', '(tape text")');
     testHeaderID("12l", '"text', "(error)"); 
 
-    // tape names cannot contain ? = * +
+    // tape names cannot contain ? = * + & ^ \
     testHeaderID("13a", "text?", "(error)");
     testHeaderID("13b", "?text", "(error)");
     testHeaderID("13c", "text=", "(error)");
@@ -128,6 +128,12 @@ describe(`Parse header`, function() {
     testHeaderID("13f", "+text", "(error)");
     testHeaderID("13g", "text*", "(error)");
     testHeaderID("13h", "*text", "(error)"); 
+    testHeaderID("13i", "text&", "(error)");
+    testHeaderID("13j", "&text", "(error)");
+    testHeaderID("13k", "text^", "(error)");
+    testHeaderID("13l", "^text", "(error)");
+    testHeaderID("13k", "text\\\\", "(error)");
+    testHeaderID("13l", "\\\\text", "(error)");
 
     // tape names may contain Unicode letters anywhere
     testHeaderID("14a", "textε", "(tape textε)");

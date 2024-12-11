@@ -70,8 +70,7 @@ describe(`Parse op`, function() {
     testOpID("7c", "123:", "(error)");
     testOpID("7d", "123verb=", "(error)");
 
-    // symbol names are allowed to contain - $ @ # & ' ", but not at the beginning
-
+    // symbol names are allowed to contain - $ @ # ' ", but not at the beginning
     testOpID("8a", "verb-=", "(symbol verb-)");
     testOpID("8b", "ve-rb=", "(symbol ve-rb)");
     testOpID("8c", "-verb=", "(error)");
@@ -81,14 +80,12 @@ describe(`Parse op`, function() {
     testOpID("8g", "@verb=", "(error)");
     testOpID("8h", "verb#=", "(symbol verb#)");
     testOpID("8i", "#verb=", "(error)");
-    testOpID("8j", "verb&=", "(symbol verb&)");
-    testOpID("8k", "&verb=", "(error)");
-    testOpID("8l", "verb'=", "(symbol verb')");
-    testOpID("8m", "'verb=", "(error)");  
-    testOpID("8n", 'verb"=', '(symbol verb")');
-    testOpID("8o", '"verb=', "(error)"); 
+    testOpID("8j", "verb'=", "(symbol verb')");
+    testOpID("8k", "'verb=", "(error)");  
+    testOpID("8l", 'verb"=', '(symbol verb")');
+    testOpID("8m", '"verb=', "(error)"); 
 
-    // symbol names cannot contain = ? + * :
+    // symbol names cannot contain = ? + * : & ^ \
     testOpID("9a", "=verb=", "(error)"); 
     testOpID("9b", "verb?=", "(error)");
     testOpID("9c", "?verb=", "(error)");
@@ -97,6 +94,13 @@ describe(`Parse op`, function() {
     testOpID("9f", "verb*=", "(error)");
     testOpID("9g", "*verb=", "(error)");
     testOpID("9h", ":verb=", "(error)");
+    testOpID("9i", "verb:=", "(error)");
+    testOpID("9j", "&verb=", "(error)");
+    testOpID("9k", "verb&=", "(error)");
+    testOpID("9h", "^verb=", "(error)");
+    testOpID("9i", "verb^=", "(error)");
+    testOpID("9j", "\\\\verb=", "(error)");
+    testOpID("9k", "verb\\\\=", "(error)");
 
     // symbol names may contain Unicode letters anywhere
     testOpID("10a", "verbε=", "(symbol verbε)");
