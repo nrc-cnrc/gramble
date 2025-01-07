@@ -146,7 +146,7 @@ describe(`Parse regex`, function() {
     testRegexID("8k", '{verb"}', '(embed verb")');
     testRegexID("8l", '{"verb}', "ε", 1); 
 
-    // symbol names cannot contain ? = * + & ^ \
+    // symbol names cannot contain ? = * + & ! \
     testRegexID("9a", "{verb?}", "ε", 1);
     testRegexID("9b", "{?verb}", "ε", 1);
     testRegexID("9c", "{verb=}", "ε", 1);
@@ -157,8 +157,8 @@ describe(`Parse regex`, function() {
     testRegexID("9h", "{+verb}", "ε", 1);
     testRegexID("9i", "{verb&}", "ε", 1);
     testRegexID("9j", "{&verb}", "ε", 1);
-    testRegexID("9k", "{verb^}", "ε", 1);
-    testRegexID("9l", "{^verb}", "ε", 1);
+    testRegexID("9k", "{verb!}", "ε", 1);
+    testRegexID("9l", "{!verb}", "ε", 1);
     testRegexID("9m", "{verb\\\\}", "ε", 1);
     testRegexID("9n", "{\\\\verb}", "ε", 1);
 

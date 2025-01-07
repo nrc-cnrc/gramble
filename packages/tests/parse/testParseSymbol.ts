@@ -52,7 +52,7 @@ describe(`Parse symbol`, function() {
     // even if they're escaped
     testSymbolID("5q", "\\$verb", "ε", 1);
 
-    // symbol names cannot contain ? = * + & ^ \
+    // symbol names cannot contain ? = * + & ! \
     testSymbolID("6a", "verb?", "ε", 1);
     testSymbolID("6b", "?verb", "ε", 1);
     testSymbolID("6c", "verb=", "ε", 1);
@@ -63,8 +63,8 @@ describe(`Parse symbol`, function() {
     testSymbolID("6h", "+verb", "ε", 1);
     testSymbolID("6i", "verb&", "ε", 1);
     testSymbolID("6j", "&verb", "ε", 1);
-    testSymbolID("6k", "verb^", "ε", 1);
-    testSymbolID("6l", "^verb", "ε", 1);
+    testSymbolID("6k", "verb!", "ε", 1);
+    testSymbolID("6l", "!verb", "ε", 1);
     testSymbolID("6m", "verb\\\\", "ε", 1);
     testSymbolID("6n", "\\\\verb", "ε", 1);
 

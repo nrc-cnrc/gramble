@@ -8,4 +8,4 @@ suffix=, table:, text, gloss
     ,       , bar, [1SG.SUBJ]
 
 word=, table:, embed, starts text, embed
-    ,       , verb, ^(m|g), suffix
+    ,       , verb, !(m|g), suffix

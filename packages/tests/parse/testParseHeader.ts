@@ -119,7 +119,7 @@ describe(`Parse header`, function() {
     testHeaderID("12k", 'text"', '(tape text")');
     testHeaderID("12l", '"text', "(error)"); 
 
-    // tape names cannot contain ? = * + & ^ \
+    // tape names cannot contain ? = * + & ! \
     testHeaderID("13a", "text?", "(error)");
     testHeaderID("13b", "?text", "(error)");
     testHeaderID("13c", "text=", "(error)");
@@ -130,8 +130,8 @@ describe(`Parse header`, function() {
     testHeaderID("13h", "*text", "(error)"); 
     testHeaderID("13i", "text&", "(error)");
     testHeaderID("13j", "&text", "(error)");
-    testHeaderID("13k", "text^", "(error)");
-    testHeaderID("13l", "^text", "(error)");
+    testHeaderID("13k", "text!", "(error)");
+    testHeaderID("13l", "!text", "(error)");
     testHeaderID("13k", "text\\\\", "(error)");
     testHeaderID("13l", "\\\\text", "(error)");
 

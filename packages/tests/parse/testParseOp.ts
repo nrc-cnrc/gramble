@@ -85,7 +85,7 @@ describe(`Parse op`, function() {
     testOpID("8l", 'verb"=', '(symbol verb")');
     testOpID("8m", '"verb=', "(error)"); 
 
-    // symbol names cannot contain = ? + * : & ^ \
+    // symbol names cannot contain = ? + * : & ! \
     testOpID("9a", "=verb=", "(error)"); 
     testOpID("9b", "verb?=", "(error)");
     testOpID("9c", "?verb=", "(error)");
@@ -97,8 +97,8 @@ describe(`Parse op`, function() {
     testOpID("9i", "verb:=", "(error)");
     testOpID("9j", "&verb=", "(error)");
     testOpID("9k", "verb&=", "(error)");
-    testOpID("9h", "^verb=", "(error)");
-    testOpID("9i", "verb^=", "(error)");
+    testOpID("9h", "!verb=", "(error)");
+    testOpID("9i", "verb!=", "(error)");
     testOpID("9j", "\\\\verb=", "(error)");
     testOpID("9k", "verb\\\\=", "(error)");
 

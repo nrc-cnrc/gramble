@@ -187,7 +187,7 @@ const REGEX_NEGATION = MPSequence(
 );
 
 const REGEX_SINGLE_NEGATION = MPSequence(
-    ["^", REGEX_SUBSEQ],
+    ["!", REGEX_SUBSEQ],
     ([c]) => new JoinGrammar(new DotGrammar(DEFAULT_TAPE), new NegationGrammar(c))
 );
 

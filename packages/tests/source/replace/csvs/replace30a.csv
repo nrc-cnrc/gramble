@@ -2,4 +2,4 @@ word=, text
     , abacad
 
 replace text:, from, to, context
-             , a,    X,  _^(b|d)
+             , a,    X,  _!(b|d)
