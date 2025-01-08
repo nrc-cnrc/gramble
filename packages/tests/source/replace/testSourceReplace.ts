@@ -644,18 +644,33 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '29. Single-char negation in post-context',
+		desc: '29a. Single-char negation in post-context',
         results: [
             {text: "abXcad"}
         ],
     });
     
     testSrc({
-		desc: '30. Single-char negation in pre-context',
+		desc: '29b. Single-char negation in pre-context',
         results: [
             {text: "bacXda"}
         ],
     });
+
+    testSrc({
+		desc: '30a. Single-char negation (using ^) in post-context',
+        results: [
+            {text: "abXcad"}
+        ],
+    });
+    
+    testSrc({
+		desc: '30b. Single-char negation (using ^) in pre-context',
+        results: [
+            {text: "bacXda"}
+        ],
+    });
+
 
     testSrc({
 		desc: '31. Negation in post-context',

@@ -132,41 +132,52 @@ describe(`Parse regex`, function() {
     testRegexID("7c", "{23}", "ε", 1);
     testRegexID("7d", "{23verb}", "ε", 1);
 
-    // symbol names are allowed to contain $ @ # & ? ' " =,
-    // but not at the beginning
+    // symbol names are allowed to contain $ @ # - ' ", but not at the beginning
     testRegexID("8a", "{verb$}", "(embed verb$)");
     testRegexID("8b", "{$verb}", "ε", 1);
     testRegexID("8c", "{verb@}", "(embed verb@)");
     testRegexID("8d", "{@verb}", "ε", 1);
     testRegexID("8e", "{verb#}", "(embed verb#)");
     testRegexID("8f", "{#verb}", "ε", 1);
-    testRegexID("8g", "{verb&}", "(embed verb&)");
-    testRegexID("8h", "{&verb}", "ε", 1);
-    testRegexID("8i", "{verb?}", "ε", 1);
-    testRegexID("8j", "{?verb}", "ε", 1);
-    testRegexID("8k", "{verb'}", "(embed verb')");
-    testRegexID("8l", "{'verb}", "ε", 1);  
-    testRegexID("8m", '{verb"}', '(embed verb")');
-    testRegexID("8n", '{"verb}', "ε", 1); 
-    testRegexID("8o", "{verb=}", "ε", 1);
-    testRegexID("8p", "{=verb}", "ε", 1); 
+    testRegexID("8g", "{verb-}", "(embed verb-)");
+    testRegexID("8h", "{-verb}", "ε", 1);
+    testRegexID("8i", "{verb'}", "(embed verb')");
+    testRegexID("8j", "{'verb}", "ε", 1);
+    testRegexID("8k", '{verb"}', '(embed verb")');
+    testRegexID("8l", '{"verb}', "ε", 1); 
+
+    // symbol names cannot contain ? = * + & ! \
+    testRegexID("9a", "{verb?}", "ε", 1);
+    testRegexID("9b", "{?verb}", "ε", 1);
+    testRegexID("9c", "{verb=}", "ε", 1);
+    testRegexID("9d", "{=verb}", "ε", 1);
+    testRegexID("9e", "{verb*}", "ε", 1);
+    testRegexID("9f", "{*verb}", "ε", 1);
+    testRegexID("9g", "{verb+}", "ε", 1);
+    testRegexID("9h", "{+verb}", "ε", 1);
+    testRegexID("9i", "{verb&}", "ε", 1);
+    testRegexID("9j", "{&verb}", "ε", 1);
+    testRegexID("9k", "{verb!}", "ε", 1);
+    testRegexID("9l", "{!verb}", "ε", 1);
+    testRegexID("9m", "{verb\\\\}", "ε", 1);
+    testRegexID("9n", "{\\\\verb}", "ε", 1);
 
     // symbol names may contain Unicode letters anywhere
-    testRegexID("9a", "{verbε}", "(embed verbε)");
-    testRegexID("9b", "{εverb}", "(embed εverb)");
-    testRegexID("9c", "{नमस्ते}", "(embed नमस्ते)");
-    testRegexID("9d", "{Привет}", "(embed Привет)");
-    testRegexID("9e", "{ᓄᓇᕕᒃ}", "(embed ᓄᓇᕕᒃ)");
-    testRegexID("9f", "{οἶκος}", "(embed οἶκος)");
-    testRegexID("9g", "{あの人}", "(embed あの人)");
-    testRegexID("9h", "{恭喜发财}", "(embed 恭喜发财)");
-    testRegexID("9i", "{ﺷﻜﺮﺍﹰ}", "(embed ﺷﻜﺮﺍﹰ)");
+    testRegexID("10a", "{verbε}", "(embed verbε)");
+    testRegexID("10b", "{εverb}", "(embed εverb)");
+    testRegexID("10c", "{नमस्ते}", "(embed नमस्ते)");
+    testRegexID("10d", "{Привет}", "(embed Привет)");
+    testRegexID("10e", "{ᓄᓇᕕᒃ}", "(embed ᓄᓇᕕᒃ)");
+    testRegexID("10f", "{οἶκος}", "(embed οἶκος)");
+    testRegexID("10g", "{あの人}", "(embed あの人)");
+    testRegexID("10h", "{恭喜发财}", "(embed 恭喜发财)");
+    testRegexID("10i", "{ﺷﻜﺮﺍﹰ}", "(embed ﺷﻜﺮﺍﹰ)");
 
     // but only in certain classes; e.g. zero-width non-joiners are invalid
-    testRegexID("9j", "{کتاب‌ها}", "ε", 1); // contains a zero-width non-joiner
+    testRegexID("10j", "{کتاب‌ها}", "ε", 1); // contains a zero-width non-joiner
 
     // nesting curly brackets parses, although it causes a warning message
-    testRegexID("10a", "{{verb}}", "(embed verb)", 1);
-    testRegexID("10b", "{{{verb}}}", "(embed verb)", 2);
+    testRegexID("11a", "{{verb}}", "(embed verb)", 1);
+    testRegexID("11b", "{{{verb}}}", "(embed verb)", 2);
 
 });

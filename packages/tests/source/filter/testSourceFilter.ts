@@ -521,14 +521,60 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '58. Starts single-char negation',
+		desc: '58a. Starts single-char negation',
+        results: [
+            {text: "foobar", gloss: "run[1SG.SUBJ]"},
+            {text: "goobar", gloss: "climb[1SG.SUBJ]"},
+        ]
+    });    
+    
+    testSrc({
+		desc: '58b. Ends single-char negation',
+        results: [
+            {text: "oofbar", gloss: "run[1SG.SUBJ]"},
+            {text: "oogbar", gloss: "climb[1SG.SUBJ]"},
+        ]
+    });    
+
+    testSrc({
+		desc: '59a. Starts single-char negation of alt',
         results: [
             {text: "foobar", gloss: "run[1SG.SUBJ]"},
         ]
     });    
     
     testSrc({
-		desc: '59. Ends single-char negation',
+		desc: '59b. Ends single-char negation of alt',
+        results: [
+            {text: "oofbar", gloss: "run[1SG.SUBJ]"},
+        ]
+    });    
+
+    testSrc({
+		desc: '60a. Starts single-char negation',
+        results: [
+            {text: "foobar", gloss: "run[1SG.SUBJ]"},
+            {text: "goobar", gloss: "climb[1SG.SUBJ]"},
+        ]
+    });    
+    
+    testSrc({
+		desc: '60b. Ends single-char negation',
+        results: [
+            {text: "oofbar", gloss: "run[1SG.SUBJ]"},
+            {text: "oogbar", gloss: "climb[1SG.SUBJ]"},
+        ]
+    });    
+
+    testSrc({
+		desc: '61a. Starts single-char negation of alt, using ^',
+        results: [
+            {text: "foobar", gloss: "run[1SG.SUBJ]"},
+        ]
+    });    
+    
+    testSrc({
+		desc: '61b. Ends single-char negation of alt, using ^',
         results: [
             {text: "oofbar", gloss: "run[1SG.SUBJ]"},
         ]

@@ -35,44 +35,55 @@ describe(`Parse symbol`, function() {
     testSymbolID("4c", "123", "ε", 1);
     testSymbolID("4d", "123verb", "ε", 1);
 
-    // symbol names are allowed to contain $ @ # & ? ' " =,
-    // but not at the beginning
+    // symbol names are allowed to contain $ @ # - ' ", but not at the beginning
     testSymbolID("5a", "verb$", "(embed verb$)");
     testSymbolID("5b", "$verb", "ε", 1);
     testSymbolID("5c", "verb@", "(embed verb@)");
     testSymbolID("5d", "@verb", "ε", 1);
     testSymbolID("5e", "verb#", "(embed verb#)");
     testSymbolID("5f", "#verb", "ε", 1);
-    testSymbolID("5g", "verb&", "(embed verb&)");
-    testSymbolID("5h", "&verb", "ε", 1);
-    testSymbolID("5i", "verb?", "ε", 1);
-    testSymbolID("5j", "?verb", "ε", 1);
-    testSymbolID("5k", "verb'", "(embed verb')");
-    testSymbolID("5l", "'verb", "ε", 1);  
-    testSymbolID("5m", 'verb"', '(embed verb")');
-    testSymbolID("5n", '"verb', "ε", 1); 
-    testSymbolID("5o", "verb=", "ε", 1);
-    testSymbolID("5p", "=verb", "ε", 1); 
+    testSymbolID("5g", "verb-", "(embed verb-)");
+    testSymbolID("5h", "-verb", "ε", 1);
+    testSymbolID("5i", "verb'", "(embed verb')");
+    testSymbolID("5j", "'verb", "ε", 1);  
+    testSymbolID("5k", 'verb"', '(embed verb")');
+    testSymbolID("5l", '"verb', "ε", 1); 
 
     // even if they're escaped
     testSymbolID("5q", "\\$verb", "ε", 1);
 
+    // symbol names cannot contain ? = * + & ! \
+    testSymbolID("6a", "verb?", "ε", 1);
+    testSymbolID("6b", "?verb", "ε", 1);
+    testSymbolID("6c", "verb=", "ε", 1);
+    testSymbolID("6d", "=verb", "ε", 1);
+    testSymbolID("6e", "verb*", "ε", 1);
+    testSymbolID("6f", "*verb", "ε", 1);
+    testSymbolID("6g", "verb+", "ε", 1);
+    testSymbolID("6h", "+verb", "ε", 1);
+    testSymbolID("6i", "verb&", "ε", 1);
+    testSymbolID("6j", "&verb", "ε", 1);
+    testSymbolID("6k", "verb!", "ε", 1);
+    testSymbolID("6l", "!verb", "ε", 1);
+    testSymbolID("6m", "verb\\\\", "ε", 1);
+    testSymbolID("6n", "\\\\verb", "ε", 1);
+
     // symbol names may contain Unicode letters anywhere
-    testSymbolID("6a", "verbε", "(embed verbε)");
-    testSymbolID("6b", "εverb", "(embed εverb)");
-    testSymbolID("6c", "नमस्ते", "(embed नमस्ते)");
-    testSymbolID("6d", "Привет", "(embed Привет)");
-    testSymbolID("6e", "ᓄᓇᕕᒃ", "(embed ᓄᓇᕕᒃ)");
-    testSymbolID("6f", "οἶκος", "(embed οἶκος)");
-    testSymbolID("6g", "あの人", "(embed あの人)");
-    testSymbolID("6h", "恭喜发财", "(embed 恭喜发财)");
-    testSymbolID("6i", "ﺷﻜﺮﺍﹰ", "(embed ﺷﻜﺮﺍﹰ)");
+    testSymbolID("7a", "verbε", "(embed verbε)");
+    testSymbolID("7b", "εverb", "(embed εverb)");
+    testSymbolID("7c", "नमस्ते", "(embed नमस्ते)");
+    testSymbolID("7d", "Привет", "(embed Привет)");
+    testSymbolID("7e", "ᓄᓇᕕᒃ", "(embed ᓄᓇᕕᒃ)");
+    testSymbolID("7f", "οἶκος", "(embed οἶκος)");
+    testSymbolID("7g", "あの人", "(embed あの人)");
+    testSymbolID("7h", "恭喜发财", "(embed 恭喜发财)");
+    testSymbolID("7i", "ﺷﻜﺮﺍﹰ", "(embed ﺷﻜﺮﺍﹰ)");
 
     // but only in certain classes; e.g. zero-width non-joiners are invalid
-    testSymbolID("6j", "کتاب‌ها", "ε", 1); // contains a zero-width non-joiner
+    testSymbolID("7j", "کتاب‌ها", "ε", 1); // contains a zero-width non-joiner
 
     // putting curly braces around a verb should parse, but it fires
     // a warning message
-    testSymbolID("7", "{verb}", "(embed verb)", 1);
+    testSymbolID("8", "{verb}", "(embed verb)", 1);
 
 });

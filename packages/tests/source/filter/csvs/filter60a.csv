@@ -1,0 +1,11 @@
+
+verb=, table:, text, gloss
+    ,       , foo, run
+    ,       , moo, jump
+    ,       , goo, climb
+
+suffix=, table:, text, gloss
+    ,       , bar, [1SG.SUBJ]
+
+word=, table:, embed, starts text, embed
+    ,       , verb, !m, suffix
