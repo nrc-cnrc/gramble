@@ -8,7 +8,11 @@ import {
 import { DEFAULT_TAPE } from "../../interpreter/src/utils/constants.js";
 
 import { testSample } from "./testSamplingUtil.js";
-import { t1, t2 } from "../testUtil.js";
+
+import {
+    t1, t2,
+} from "../testUtil.js";
+import { VERBOSE_DEBUG } from "../../interpreter/src/utils/logging.js";
 
 function splitUni(tapeName: string, text: string) {
     return CharSet(tapeName, text.split(""))
@@ -17,21 +21,100 @@ function splitUni(tapeName: string, text: string) {
 describe(`Sampling tests`, function() {
 
     testSample({
-        desc: "1. Alternation",
+        desc: "1a. Alternation (n=100) - with the default seed.",
         grammar: Uni("hello", "hell", "world", ""),
     });
 
     testSample({
-        desc: "2b. Long alternation",
+        desc: "1b. Alternation (n=10) - with the default seed.",
+        grammar: Uni("hello", "hell", "world", ""),
+        numSamples: 10,
+        results: [
+            {},
+            {$T: "hell"},
+            {$T: "hello"},
+            {$T: "world"},
+        ],
+    });
+
+    testSample({
+        desc: "1c. Alternation (n=3) - with the default seed.",
+        grammar: Uni("hello", "hell", "world", ""),
+        numSamples: 3,
+        results: [
+            {},
+            {$T: "hell"},
+        ],
+    });
+
+    testSample({
+        desc: "1d. Alternation (n=3) - a second time with the default seed.",
+        grammar: Uni("hello", "hell", "world", ""),
+        numSamples: 3,
+        results: [
+            {},
+            {$T: "hell"},
+        ],
+    });
+
+    testSample({
+        desc: "1e. Alternation (n=3) - with a different seed",
+        grammar: Uni("hello", "hell", "world", ""),
+        numSamples: 3,
+        seed: "Trying a different seed",
+        results: [
+            {},
+            {$T: "hello"},
+        ],
+    });
+
+    testSample({
+        desc: "1f. Alternation (n=3) - with yet another different seed",
+        grammar: Uni("hello", "hell", "world", ""),
+        numSamples: 3,
+        seed: "Yet another seed",
+        results: [
+            {$T: "hello"},
+            {$T: "world"},
+        ],
+    });
+
+    testSample({
+        desc: "2a. Long alternation (n=1000)",
         grammar: splitUni("t1", "abcdefghijklmnopqrstuvwxyz"),
         numSamples: 1000
     });
     
     testSample({
-        desc: "2b. Large product of alternations",
+        desc: "2b. Large product of alternations (n=1000)",
         grammar: Seq(splitUni("t1", "abcdef"),
                      splitUni("t2", "ABCDEF")),
         numSamples: 1000
+    });
+    
+    testSample({
+        desc: "2c. Large product of alternations (n=20)",
+        grammar: Seq(splitUni("t1", "abcdef"),
+                     splitUni("t2", "ABCDEF")),
+        numSamples: 20,
+        results: [
+            {t1: 'a', t2: 'A'},
+            {t1: 'a', t2: 'B'},
+            {t1: 'b', t2: 'A'},
+            {t1: 'b', t2: 'F'},
+            {t1: 'c', t2: 'A'},
+            {t1: 'c', t2: 'B'},
+            {t1: 'c', t2: 'E'},
+            {t1: 'd', t2: 'A'},
+            {t1: 'd', t2: 'D'},
+            {t1: 'd', t2: 'E'},
+            {t1: 'e', t2: 'A'},
+            {t1: 'e', t2: 'C'},
+            {t1: 'e', t2: 'F'},
+            {t1: 'f', t2: 'A'},
+            {t1: 'f', t2: 'D'},
+            {t1: 'f', t2: 'E'},
+        ],
     });
 
     testSample({

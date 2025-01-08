@@ -10,6 +10,7 @@ import {
 
 import commandLineArgs from "command-line-args";
 import commandLineUsage from "command-line-usage";
+import seedrandom from "seedrandom";
 
 import {
     fileExistsOrFail, generateToCSV, generateToJSON,
@@ -156,8 +157,9 @@ const commands: { [name: string]: Command } = {
     },
 
     sample: {
-        synopsis: `sample [--num|-n {underline n}] ${commonGenerateSampleOptions_str}`,
-        options: [
+        synopsis: "sample [--num|-n {underline n}] [--seed [{underline string}]] " + 
+                  `${commonGenerateSampleOptions_str}`,
+        options: [ 
             {
                 name: "num",
                 alias: "n",
@@ -165,6 +167,13 @@ const commands: { [name: string]: Command } = {
                 defaultValue: 5,
                 typeLabel: "{underline n}",
                 description: "sample {underline n} terms [default: 5]",
+            },        
+            {
+                name: "seed",
+                type: String,
+                typeLabel: "[{underline string}]",
+                description: "use a PRNG initialized with seed {underline string} " +
+                             "[default: no seeded PRNG; --seed default: 'Seed-2024']",
             },        
             ...commonGenerateSampleOptions
         ],
@@ -217,6 +226,17 @@ function runGenerateOrSampleCmd(
 
     if (options.verbose) {
         interpreter.devEnv.logErrors();
+    }
+
+    if (sample) {
+        if (options.seed !== undefined) {
+            if (options.seed === null || options.seed.trim().length == 0) {
+                options.seed = 'Seed-2024';
+            }
+            // Monkey patch Math.random with a seeded PRNG, making Math.random calls
+            // deterministic.
+            seedrandom(options.seed, { global: true });
+        }
     }
 
     const labels = interpreter.getTapeNames(options.symbol);

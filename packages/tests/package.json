@@ -29,14 +29,15 @@
     "url": "git+https://github.com/nrc-cnrc/gramble.git"
   },
   "mocha": {
-    "loader": "ts-node/esm"
+    "extensions": ["ts"],
+    "import": "./esmloader.js"
   },
   "scripts": {
     "build": "tsc --build --verbose",
     "prepare": "npm run build",
 
-    "test": "mocha grammar/*.ts parse/*.ts source/*/*.ts pass/*.ts cli/*.ts",
-            
+    "test": "mocha grammar/*.ts parse/*.ts source/*/*.ts pass/*.ts cli/*.ts sampling/*.ts",
+
     "testCLI": "mocha cli/*.ts",
 
     "testGrammar": "mocha grammar/*.ts",
@@ -73,7 +74,7 @@
     "testParseRuleContext": "mocha parse/testParseRuleContext.ts",
     "testParseSymbol": "mocha parse/testParseSymbol.ts",
     "testParseTokenize": "mocha parse/testParseTokenize.ts",
-    
+
     "testPass": "mocha pass/*.ts",
     "testPassID": "mocha pass/testPassID.ts",
     "testPassLength": "mocha pass/testPassLength.ts",
@@ -84,6 +85,8 @@
     "testPropertyEq": "mocha property/testPropertyEq.ts",
     "testPropertyTapeCalc": "mocha property/testPropertyTapeCalc.ts",
     "testPropertyTapeCalcOrder": "mocha property/testPropertyTapeCalcOrder.ts",
+
+    "testSampling": "mocha sampling/*.ts",
 
     "testSource": "mocha source/*/*.ts",
     "testSourceBare": "mocha source/bare/*.ts",
@@ -98,22 +101,22 @@
     "testSourceCell": "mocha source/cell/*.ts",
     "testSourceRename": "mocha source/rename/*.ts",
     "testSourceReplace": "mocha source/replace/*.ts",
-    "testSourceTest": "mocha source/test/*.ts",
-
-    "testSampling": "mocha sampling/*.ts"
+    "testSourceTest": "mocha source/test/*.ts"
   },
   "bugs": {
     "url": "https://github.com/nrc-cnrc/gramble/issues"
   },
   "devDependencies": {
     "@types/chai": "^5.0.1",
-    "@types/mocha": "^10.0.9",
+    "@types/mocha": "^10.0.10",
+    "@types/seedrandom": "^3.0.8",
     "chai": "^5.1.2",
     "mocha": "^10.8.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.3"
   },
   "dependencies": {
-    "@gramble/interpreter": "^1.0.0"
+    "@gramble/interpreter": "^1.0.0",
+    "seedrandom": "^3.0.5"
   }
 }

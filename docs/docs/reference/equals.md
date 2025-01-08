@@ -4,21 +4,22 @@ title: equals
 sidebar_label: equals
 ---
 
-# ends
+# equals
 
-The equals operator lets you filter a grammar so that only forms where the field matches a particular regex are generated.
+The `equals` operator lets you filter a grammar so that only forms where the field matches a particular regex are generated.
 
-Like starts/ends/contains, rename, and hide, it applies to the content immediately to its left, but can be chained.
+Like `starts`/`ends`/`contains`, `rename` and `hide`, `equals` applies to the content immediately to its left, but can be chained.
 
 ## Usage examples
 
-Say, for example, that the **A** symbol defines the fields `text`, `gloss`, and `class`, and `class` can be either `X`, `Y1`, or `Y2`.  The following code creates a symbol **B** that only contains entries where the class equals `C1`.
+Say, for example, that the **A** symbol defines the fields `text`, `gloss` and `class`, and `class` can be either `X`, `C1`, or `C2`.  The following code creates a symbol **B** that only contains entries where the `class` equals `C1`.
 
 | **B =** | **embed** | **equals class** |
 |----|----|-----|
 |    | A | C1 |
 
-Below an equals operator, content is interpreted as a regex.  For example, we could filter **A** only to entries where the text starts with "p", "t", or "k":
+Below an `equals` operator, content is interpreted as a regex.
+For example, we could filter **A** only to entries where the text starts with "p", "t", or "k":
 
 | **B =** | **embed** | **equals text** |
 |----|----|-----|

@@ -539,8 +539,8 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 's2a. test sample: gramble sample examples/helloworld.csv -n 40',
-        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv -n 40`,
+        desc: 's2a. test sample: gramble sample examples/helloworld.csv -n 40 --seed',
+        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv -n 40 --seed`,
         sample: 40,
         results: [
             'text',
@@ -552,8 +552,45 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 's2b. test sample: gramble sample examples/none.csv -n 40',
-        command: `gramble sample ${GRAMBLE_HOME}/examples/none.csv -n 40`,
+        desc: 's2b. test sample: gramble sample examples/helloworld.csv -n 3 --seed',
+        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv -n 3 --seed`,
+        sample: 3,
+        results: [
+            'text',
+            '"goodbyekitty"',
+            '"goodbyeworld"',
+        ],
+    });
+
+    testCLI({
+        desc: 's2c. test sample: gramble sample examples/helloworld.csv -n 3 ' +
+                '--seed Seed-2024',
+        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv -n 3 ` +
+                '--seed Seed-2024',
+        sample: 3,
+        results: [
+            'text',
+            '"goodbyekitty"',
+            '"goodbyeworld"',
+        ],
+    });
+
+    testCLI({
+        desc: 's2d. test sample: gramble sample examples/helloworld.csv -n 3 ' +
+                '--seed another-seed',
+        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv -n 3 ` +
+                '--seed another-seed',
+        sample: 3,
+        results: [
+            'text',
+            '"goodbyekitty"',
+            '"hellokitty"',
+        ],
+    });
+
+    testCLI({
+        desc: 's3. test sample: gramble sample examples/none.csv --seed -n 40',
+        command: `gramble sample ${GRAMBLE_HOME}/examples/none.csv --seed -n 40`,
         results: [],
         errors: [
             `gramble: Error: Cannot find file ${GRAMBLE_HOME}/examples/none.csv`,
@@ -561,9 +598,9 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 's3. test sample: gramble sample examples/helloworld.csv ' +
+        desc: 's4. test sample: gramble sample examples/helloworld.csv --seed ' +
                 '-s helloworld.greeting',
-        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv ` +
+        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv --seed ` +
                 '-s helloworld.greeting',
         sample: 5,
         results: [
@@ -574,10 +611,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 's4a. test sample: gramble sample examples/helloworld.csv ' +
+        desc: 's5a. test sample: gramble sample examples/helloworld.csv --seed ' +
                 '-s helloworld.greeting -n',
-        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv ` +
-                 `-s helloworld.greeting -n`,
+        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv --seed ` +
+                `-s helloworld.greeting -n`,
         sample: 5,
         results: [
             "text",
@@ -591,9 +628,9 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 's4b. test sample: gramble sample examples/helloworld.csv ' +
+        desc: 's5b. test sample: gramble sample examples/helloworld.csv --seed ' +
                 '-s helloworld.greeting -n NNN',
-        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv ` +
+        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv --seed ` +
                 `-s helloworld.greeting -n NNN`,
         sample: 5,
         results: [
@@ -608,9 +645,9 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 's5a. test sample: gramble sample examples/helloworld.csv ' +
+        desc: 's6a. test sample: gramble sample examples/helloworld.csv --seed ' +
                 '-n 40 -s helloworld.greeting',
-        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv ` +
+        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv --seed ` +
                 '-n 40 -s helloworld.greeting',
         sample: 40,
         results: [
@@ -621,9 +658,9 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 's5b. test sample: gramble sample examples/helloworld.csv ' +
+        desc: 's6b. test sample: gramble sample examples/helloworld.csv --seed ' +
                 '-n 40 -s Helloworld.All',
-        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv ` +
+        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv --seed ` +
                 '-n 40 -s Helloworld.All',
         sample: 40,
         results: [
@@ -636,8 +673,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 's5c. test sample: gramble sample examples/helloworld.csv -n 40 -s XXX',
-        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv -n 40 -s XXX`,
+        desc: 's6c. test sample: gramble sample examples/helloworld.csv --seed ' +
+                '-n 40 -s XXX',
+        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv --seed ` +
+                '-n 40 -s XXX',
         results: [],
         errors: [
             "gramble: Error: Error in sample command:",
@@ -648,10 +687,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 's6a. test sample: gramble sample examples/helloworld.csv -n 10 ' +
-                '-q text:goodbyekitty',
-        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv -n 10 ` +
-                '-q text:goodbyekitty',
+        desc: 's7a. test sample: gramble sample examples/helloworld.csv --seed ' +
+                '-n 10 -q text:goodbyekitty',
+        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv --seed ` +
+                '-n 10 -q text:goodbyekitty',
         sample: 10,
         results: [
             'text',
@@ -660,10 +699,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 's6b. test sample: gramble sample examples/helloworld.csv -n 10 ' +
-                '-q " text:goodbyekitty"',
-        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv -n 10 ` +
-                '-q " text:goodbyekitty"',
+        desc: 's7b. test sample: gramble sample examples/helloworld.csv --seed ' +
+                '-n 10 -q " text:goodbyekitty"',
+        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv --seed ` +
+                '-n 10 -q " text:goodbyekitty"',
         sample: 10,
         results: [
             'text',
@@ -672,20 +711,20 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 's6c. test sample: gramble sample examples/helloworld.csv -n 10 ' +
-                '-q text:kitty',
-        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv -n 10 ` +
-                '-q text:kitty',
+        desc: 's7c. test sample: gramble sample examples/helloworld.csv --seed ' +
+                '-n 10 -q text:kitty',
+        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv --seed ` +
+                '-n 10 -q text:kitty',
         results: [
             'text',
         ],
     });
 
     testCLI({
-        desc: 's6d. test sample: gramble sample examples/helloworld.csv -n 10 ' +
-                '-q text:goodbyekitty,text:goodbyekitty',
-        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv -n 10 ` +
-                '-q text:goodbyekitty,text:goodbyekitty',
+        desc: 's7d. test sample: gramble sample examples/helloworld.csv --seed ' +
+                '-n 10 -q text:goodbyekitty,text:goodbyekitty',
+        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv --seed ` +
+                '-n 10 -q text:goodbyekitty,text:goodbyekitty',
         sample: 10,
         results: [
             'text',
@@ -694,10 +733,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 's6e. test sample: gramble sample examples/helloworld.csv -n 10 ' +
-                '-q " text:goodbyekitty,  text:goodbyekitty "',
-        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv -n 10 ` +
-                '-q " text:goodbyekitty,  text:goodbyekitty "',
+        desc: 's7e. test sample: gramble sample examples/helloworld.csv --seed ' +
+                '-n 10 -q " text:goodbyekitty,  text:goodbyekitty "',
+        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv --seed ` +
+                '-n 10 -q " text:goodbyekitty,  text:goodbyekitty "',
         sample: 10,
         results: [
             'text',
@@ -706,10 +745,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 's6f. test sample: gramble sample examples/helloworld.csv -n 10 ' +
-                '-q text:goodbyekitty,text:kitty',
-        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv -n 10 ` +
-                '-q text:goodbyekitty,text:kitty',
+        desc: 's7f. test sample: gramble sample examples/helloworld.csv --seed ' +
+                '-n 10 -q text:goodbyekitty,text:kitty',
+        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv --seed ` +
+                '-n 10 -q text:goodbyekitty,text:kitty',
         results: [
             'text',
         ],
@@ -717,10 +756,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     // unknown tape is treated as no query in single-tape query
     testCLI({
-        desc: 's7a. test sample: gramble sample examples/helloworld.csv -n 40 ' +
-                '-q XXX:goodbye',
-        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv -n 40 ` +
-                '-q XXX:goodbye',
+        desc: 's8a. test sample: gramble sample examples/helloworld.csv --seed ' +
+                '-n 40 -q XXX:goodbye',
+        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv --seed ` +
+                '-n 40 -q XXX:goodbye',
         sample: 40,
         results: [
             'text',
@@ -733,10 +772,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     // unknown tape simply dropped in multi-tape query.
     testCLI({
-        desc: 's7b. test sample: gramble sample examples/helloworld.csv -n 10 ' +
-                '-q text:goodbyekitty,XXX:goodbye',
-        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv -n 10 ` +
-                '-q text:goodbyekitty,XXX:goodbye',
+        desc: 's8b. test sample: gramble sample examples/helloworld.csv --seed ' +
+                '-n 10 -q text:goodbyekitty,XXX:goodbye',
+        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv --seed ` +
+                '-n 10 -q text:goodbyekitty,XXX:goodbye',
         sample: 10,
         results: [
             'text',
@@ -746,8 +785,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     // missing query string
     testCLI({
-        desc: 's8a. test sample: gramble sample examples/helloworld.csv -n 40 -q',
-        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv -n 40 -q`,
+        desc: 's9a. test sample: gramble sample examples/helloworld.csv --seed ' +
+                '-n 40 -q',
+        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv --seed ` +
+                '-n 40 -q',
         sample: 40,
         results: [
             'text',
@@ -764,10 +805,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
     // syntax error - space seperated pairs in query (with quotes)
     // tries to match "goodbyekitty text:goodbyekitty" on tape text.
     testCLI({
-        desc: 's8b. test sample: gramble sample examples/helloworld.csv -n 10 ' +
-                '-q "text:goodbyekitty text:goodbyekitty"',
-        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv -n 10 ` +
-                '-q "text:goodbyekitty text:goodbyekitty"',
+        desc: 's9b. test sample: gramble sample examples/helloworld.csv --seed ' +
+                '-n 10 -q "text:goodbyekitty text:goodbyekitty"',
+        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv --seed ` +
+                '-n 10 -q "text:goodbyekitty text:goodbyekitty"',
         results: [
             'text',
         ],
@@ -775,10 +816,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     // syntax error - space seperated pairs in query (without quotes)
     testCLI({
-        desc: 's8c. test sample: gramble sample examples/helloworld.csv -n 10 ' +
-                '-q text:goodbyekitty text:goodbyekitty',
-        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv -n 10 ` +
-                '-q text:goodbyekitty text:goodbyekitty',
+        desc: 's9c. test sample: gramble sample examples/helloworld.csv --seed ' +
+                '-n 10 -q text:goodbyekitty text:goodbyekitty',
+        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv --seed ` +
+                '-n 10 -q text:goodbyekitty text:goodbyekitty',
         results: [],
         errors: [
             "gramble: Error: Error in sample command:",
@@ -789,10 +830,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     // syntax error - missing tape in second query entry
     testCLI({
-        desc: 's8d. test sample: gramble sample examples/helloworld.csv -n 10 ' +
-                '-q text:goodbyekitty,goodbye',
-        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv -n 10 ` +
-                '-q text:goodbyekitty,goodbye',
+        desc: 's9d. test sample: gramble sample examples/helloworld.csv --seed ' +
+                '-n 10 -q text:goodbyekitty,goodbye',
+        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv --seed ` +
+                '-n 10 -q text:goodbyekitty,goodbye',
         results: [],
         errors: [
             "gramble: Error: Query must consist of key:value pairs (e.g. \"text:ninapenda\").",
@@ -802,10 +843,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     // syntax error - missing tape in single query entry
     testCLI({
-        desc: 's8e. test sample: gramble sample examples/helloworld.csv -n 10 ' +
-                '-q goodbyekitty',
-        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv -n 10 ` +
-                '-q goodbyekitty',
+        desc: 's9e. test sample: gramble sample examples/helloworld.csv --seed ' +
+                '-n 10 -q goodbyekitty',
+        command: `gramble sample ${GRAMBLE_HOME}/examples/helloworld.csv --seed ` +
+                '-n 10 -q goodbyekitty',
         results: [],
         errors: [
             "gramble: Error: Query must consist of key:value pairs (e.g. \"text:ninapenda\").",
