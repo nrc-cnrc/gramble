@@ -1,8 +1,0 @@
-verb=, table:, text
-    ,       , abc
-    ,       ,     ,
-    , replace text:, from, to
-    ,         , a, ,
-
-word=, embed, equals text,
-     , verb, bc

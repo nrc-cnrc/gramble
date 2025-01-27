@@ -1,8 +1,0 @@
-
-verb=, table:, text, pos
-    ,       , foo, verb
-    ,       , moo, noun
-    ,       , goo, verb
-
-word=, table:, embed, starts pos
-    ,       , verb, v~

@@ -1,9 +1,0 @@
-word=, table:, text
-    ,       , a
-    ,       , b
-    ,       , ab
-    ,       , ba
-    ,       , aba
-    ,       ,     ,
-    , replace text:, from, to, context
-    ,         , b        , v, #_

@@ -1,7 +1,0 @@
-word=, table:, text
-    ,       , aba,
-    ,       , abad,
-    ,       , abaad,
-    ,       ,     ,
-    , replace text:, from, to, context
-    ,         , b,         v, _a+d

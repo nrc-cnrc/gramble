@@ -1,6 +1,0 @@
-nouns=, table:, text
-        ,       , moo
-        ,       , foo
-
-word=, table:, embed, text
-    ,       , {nouns}, bar

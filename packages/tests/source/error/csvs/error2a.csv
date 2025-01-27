@@ -1,6 +1,0 @@
-123verb=, table:, text, gloss
-    ,       , foo, run
-    ,       , moo, jump
-
-word=, table:, embed
-    ,       , 123verb 

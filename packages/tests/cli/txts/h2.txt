@@ -1,8 +1,0 @@
-
-Synopsis
-
-  gramble help [command] 
-
-Options
-
-
