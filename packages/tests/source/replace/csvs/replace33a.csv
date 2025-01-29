@@ -1,0 +1,8 @@
+Root =,	text			
+	  , ab
+
+replace text:,	from,	to,	    context	
+             ,      ,   X,      b_#		
+
+Word =,	embed				
+	  , Root

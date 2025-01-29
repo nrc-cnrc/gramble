@@ -1,0 +1,11 @@
+Consonant =, text
+           , b
+
+Root =,	text			
+	  , ab
+
+replace text:,	from,	to,	    context	
+             ,      ,   X,     {Consonant}_#		
+
+Word =,	embed				
+	  , Root

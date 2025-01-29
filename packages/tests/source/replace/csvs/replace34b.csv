@@ -1,0 +1,11 @@
+Vowel =, text
+	   , a
+
+Root =,	text			
+	  , abc
+
+replace text:,	from,	to,	    context	
+             ,  b    ,   X,     {Vowel}_		
+
+Word =,	embed				
+	  , Root
