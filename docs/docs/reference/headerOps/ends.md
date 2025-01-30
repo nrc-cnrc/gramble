@@ -4,7 +4,7 @@ title: ends
 sidebar_label: ends
 ---
 
-# ends
+## Description
 
 The `ends` operator lets you filter a grammar so that only forms where the field ends with a particular string/regex are generated.
 
@@ -14,17 +14,17 @@ Like `equals`/`starts`/`contains`, `rename` and `hide`, `ends` applies to the co
 
 For example, we could filter **A** only to entries where the text ends with "p", "t", or "k":
 
-| **B =** | **embed** | **ends text** |
-|----|----|-----|
-|    | A | p\|t\|k |
+| **B =&nbsp;** | **embed** | **ends text** |
+|:--:|:--:|:--:|
+|    | A  | p\|t\|k |
 
 Like `equals`, content below `ends` is interpreted as a regex.
 
 For a negative example, the following filters **A** only to those entries where the text *doesn't* end with "p", "t", or "k".
 
-| **B =** | **embed** | **ends text** |
-|----|----|-----|
-|    | A | ~(p\|t\|k) |
+| **B =&nbsp;** | **embed** | **ends text** |
+|:--:|:--:|:--:|
+|    | A  | ~(p\|t\|k) |
 
 ## Details
 

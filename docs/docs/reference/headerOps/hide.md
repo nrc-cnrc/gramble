@@ -4,7 +4,7 @@ title: hide
 sidebar_label: hide
 ---
 
-# hide
+## Description
 
 `hide` is a header operator that makes one or more fields invisible outside of its scope.
 
@@ -14,15 +14,15 @@ Like `equals`/`starts`/`ends`/`contains` and `rename`, `hide` applies to the con
 
 Say, for example, that the **A** symbol defines the fields `text`, `gloss`, and `class`.  The following code creates a symbol **B** that has the `text` and `gloss` fields of **A** but not the `class` field. 
 
-| **B =** | **embed** | **hide** |
-|----|----|-----|
-|    | A | class |
+| **B =&nbsp;** | **embed** | **hide** |
+|:--:|:--:|:--:|
+|    | A  | class |
 
 You can also hide multiple fields using a forward slash (`/`).
 
-| **B =** | **embed** | **hide** |
-|----|----|-----|
-|    | A | gloss/class |
+| **B =&nbsp;** | **embed** | **hide** |
+|:--:|:--:|:--:|
+|    | A  | gloss/class |
 
 
 ## Why would you want to use this?
@@ -33,8 +33,8 @@ This is also useful when there is some property that can vary as the word is bui
 
 How do we do that?  Fields aren't *variables*, you can't re-assign to them.  Instead, we need to think of that root and the reflexive stem as having two different `transitivity` fields: one "inside" and describing the root, and one "outside" and describing the whole stem.  In order to not have these two fields be confused, we have to hide the one inside.
 
-| **Stem =** | **embed** | **equals transitivity** | **hide** | **text** | **gloss** | **transitivity** |
-|----|----|-----|-----|-----|----|----|
+| **Stem =&nbsp;** | **embed** | **equals transitivity** | **hide** | **text** | **gloss** | **transitivity** |
+|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
 |    | Root | trans | transitivity | -ba | -REFL | intrans |
 
 Let's step through this one in detail.  First, this suffix only applies to transitive roots, so we're filtering it with an `equals`.  Having done that, we `hide` that field, because we don't want it to interact with the new `transitivity` value we're about to have.  Then we add the `text` and `gloss` of the reflexive morpheme, and finally we add the new `transitivity` value.

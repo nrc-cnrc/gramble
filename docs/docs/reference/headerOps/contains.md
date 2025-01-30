@@ -4,7 +4,7 @@ title: contains
 sidebar_label: contains
 ---
 
-# contains
+## Description
 
 The `contains` operator lets you filter a grammar so that only forms where the field contains a particular string/regex are generated.
 
@@ -14,17 +14,17 @@ Like `equals`/`starts`/`ends`, `rename` and `hide`, `contains` applies to the co
 
 For example, we could filter **A** only to entries where the text contains "p", "t", or "k":
 
-| **B =** | **embed** | **contains text** |
-|----|----|-----|
-|    | A | p\|t\|k |
+| **B =&nbsp;** | **embed** | **contains text** |
+|:--:|:--:|:--:|
+|    | A  | p\|t\|k |
 
 Like `equals`, content below `contains` is interpreted as a regex.
 
 For a negative example, the following filters **A** only to those entries where the text *doesn't* contain "p", "t", or "k".
 
-| **B =** | **embed** | **contains text** |
-|----|----|-----|
-|    | A | ~(p\|t\|k) |
+| **B =&nbsp;** | **embed** | **contains text** |
+|:--:|:--:|:--:|
+|    | A  | ~(p\|t\|k) |
 
 ## Details
 

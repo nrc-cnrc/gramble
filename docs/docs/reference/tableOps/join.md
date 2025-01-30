@@ -4,14 +4,16 @@ title: join
 sidebar_label: join
 ---
 
+## Description
+
 `join` is a table operator that performs a natural join between its sibling (the content above it) and its child (the content immediately to its right).
 
 ## Usage examples
 
 The following example is somewhat trival, since it's only joining two literal tables, but it illustrates a common usage of `join`.  
 
-| **A =** | **table:** | **text** | **person** |
-|----|----|-----|----|
+| **A =&nbsp;** | **table:** | **text** | **person** |
+|:--:|:--:|:--:|:--:|
 |    |    | pa | 1sg |
 |    |    | na | 2sg |
 |    |    | i  | 3sg |
@@ -27,8 +29,8 @@ Doing a join between a grammar and a "legend" table that associates each existin
 
 Note that, like all table operators, it is also possible to make the `join` a direct sibling of an assignment, like so:
 
-| **A =** | **text** | **person** |
-|----|-----|----|
+| **A =&nbsp;** | **text** | **person** |
+|:--:|:--:|:--:|
 |    | pa | 1sg |
 |    | na | 2sg |
 |    | i  | 3sg |

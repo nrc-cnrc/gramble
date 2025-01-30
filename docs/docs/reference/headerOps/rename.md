@@ -4,7 +4,7 @@ title: rename (>)
 sidebar_label: rename (>)
 ---
 
-# rename (>)
+## Description
 
 The `rename` operator (which is expressed using `>`) is a header operator that causes a field inside its scope to have a different name outside its scope.
 
@@ -14,9 +14,9 @@ Like `equals`/`starts`/`ends`/`contains` and `hide`, `rename` applies to the con
 
 Say, for example, that the **A** symbol defines the fields `text`, `gloss`, and `class`.  The following code creates a symbol **B** that has the `text` and `gloss` fields of **A**, but where the `class` field is now called `type`.
 
-| **B =** | **embed** | **>type** |
-|----|----|-----|
-|    | A | class |
+| **B =&nbsp;** | **embed** | **>type** |
+|:--:|:--:|:--:|
+|    | A  | class |
 
 ## Why would we want to use this?
 
@@ -26,11 +26,11 @@ You might also use this to massage the field names to something required by a cl
 
 Finally, there's a special pattern known as the Skyra Pattern, after a pair of Gramble programmers (Skyler and Kendra) who first used it.  The idea is that you may have unpredictable suppletive text forms that you want to keep in a table, but you don't yet know which is going to be used in the text.  For example, we might have an A and B form of a verb root that occur when different suffixes are added.  We can keep them in the table as different fields, and rename that field to `text` as necessary:
 
-| **Root =** | **formA** | **formB** | **gloss** |
-|----|----|-----|-----|
-|    | gar | gr | run |
+| **Root =&nbsp;** | **formA** | **formB** | **gloss** |
+|:--:|:----:|:---:|:---:|
+|    | gar  | gr  | run |
 |    | kapa | kap | jump |
-|    | sil | sl | climb |
+|    | sil  | sl  | climb |
 | &nbsp; |
 | **Stem =** | **embed** | **>text** | **text** |
 |    | Root | formA | -ti |

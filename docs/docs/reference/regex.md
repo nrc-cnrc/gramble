@@ -4,7 +4,7 @@ title: Regular Expressions
 sidebar_label: Regular Expressions
 ---
 
-# Regular expressions
+## Gramble's regular expression operators
 
 Some header operators -- `equals`, `starts`, `ends`, `contains`, `from`, and `context` -- cause the cells below them to be interpreted as regular expressions.
 
@@ -22,9 +22,9 @@ Gramble supports the following regex operations:
 
 Gramble also allows embedding an existing symbol via the syntax `{X}`.  For example, rather than type `a|e|i|o|u` all the time, you could define a symbol `Vowels` with this denotation and then embed it as `{Vowels}`.  However, this only works with symbols containing only a single field -- these are only single-"tape" regular expressions, and it would not make sense to embed a multi-field grammar in them.
 
-## Regular vs. extended regular expressions
+## Basic vs. extended regular expressions
 
-Many programming languages allow "regular expressions" with additional operators such as lookahead.  These are more properly termed *extended* regular expressions; the languages they denote are not regular in Kleene's sense.  Gramble does not yet support these.
+Many programming languages allow "regular expressions" with additional operators such as lookahead.  These are more properly termed *extended* regular expressions (EREs); the languages they denote are not regular in Kleene's sense.  Gramble does not yet support these.
 
 ## Notes about negation
 

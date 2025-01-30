@@ -4,7 +4,7 @@ title: starts
 sidebar_label: starts
 ---
 
-# starts
+## Description
 
 The `starts` operator lets you filter a grammar so that only forms where the field starting with a particular string/regex are generated.
 
@@ -14,18 +14,18 @@ Like `equals`/`ends`/`contains`, `rename` and hide, `starts` applies to the cont
 
 For example, we could filter **A** only to entries where the text starts with "p", "t", or "k":
 
-| **B =** | **embed** | **starts text** |
-|----|----|-----|
-|    | A | p\|t\|k |
+| **B =&nbsp;** | **embed** | **starts text** |
+|:--:|:--:|:--:|
+|    | A  | p\|t\|k |
 
 
 Like `equals`, content below `starts` is interpreted as a regex.
 
 For a negative example, the following filters **A** only to those entries where the text *doesn't* start with "p", "t", or "k".
 
-| **B =** | **embed** | **starts text** |
-|----|----|-----|
-|    | A | ~(p\|t\|k) |
+| **B =&nbsp;** | **embed** | **starts text** |
+|:--:|:--:|:--:|
+|    | A  | ~(p\|t\|k) |
 
 ## Details
 

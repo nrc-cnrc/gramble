@@ -4,7 +4,7 @@ title: Characters
 sidebar_label: Characters
 ---
 
-# Characters
+## Gramble characters
 
 Some aspects of programming languages operate on single characters (for example, the "dot" operator `.` of a regular expression).
 
@@ -68,7 +68,3 @@ Another gotcha to note is that, just like the UGC algorithm, Gramble will only c
 What to do here?  In general, I've found it considerably easier, when working with IPA-like orthographies, to represent pre-diacritics as post-diacritics (that is, by putting all modifiers to the right of the character, even if they happen to precede it phonetically).  Not just in Gramble; I also recommend this when working in any programming language.  It's simply easier to parse unambiguously, and when it comes time to display the string to the user you can fix it up so that it's in the proper order as specified by the orthography.  
 
 For example, some languages have both ejective stops like [tʼ] and preglottalized resonants like [ʼw].  But what if you see a sequence like [tʼw] -- does that represent [tʼ] followed by [w] or [t] followed by [ʼw]?  If we always put the apostrophe after the letter it modifies, this is no longer ambiguous: the former is now represented [tʼw] and the latter is represented [twʼ].  That latter one isn't *orthographically* correct, but unambiguous representations like this make it easier for a computer program to make the right decisions about its processing.  We can switch the [wʼ] back to [ʼw] after everything is done to present it to the user in the orthographically-correct manner.
-
-gramble_tutorial_characters.txt
-
-Displaying gramble_tutorial_characters.txt.
