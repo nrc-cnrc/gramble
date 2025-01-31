@@ -1,4 +1,4 @@
-import {VERBOSE_DEBUG } from "../../../interpreter/src/utils/logging.js";
+import {VERBOSE_DEBUG, VERBOSE_GRAMMAR } from "../../../interpreter/src/utils/logging.js";
 import {
     testSource, SourceTest, 
     Error, Warning 
@@ -691,7 +691,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '33a. Embedding a symbol with a replacement rule',
+		desc: '33a. Embedding a symbol with a replacement rule, with a literal in the context',
         results: [
             {text: "abX"}
         ]
@@ -703,27 +703,47 @@ describe(`Source ${DIR}`, function() {
             {text: "abX"}
         ]
     });
-    
+
     testSrc({
-		desc: '33c. Embedding a symbol with a replacement rule, with a symbol in from',
+		desc: '34a. Embedding a symbol with a replacement rule, with a literal in from',
         results: [
             {text: "abX"}
-        ],
-        verbose: VERBOSE_DEBUG
+        ]
     });
 
     testSrc({
-		desc: '34a. Embedding a symbol with a replacement rule 2',
+		desc: '34b. Embedding a symbol with a replacement rule, with a symbol in from',
+        results: [
+            {text: "abX"}
+        ]
+    });
+
+    testSrc({
+		desc: '35a. Embedding a symbol with a replacement rule, with two literals in from',
+        results: [
+            {text: "abX"}
+        ]
+    });
+
+    testSrc({
+		desc: '35b. Embedding a symbol with a replacement rule, with a symbol and literal in from',
+        results: [
+            {text: "abX"}
+        ]
+    });
+
+    testSrc({
+		desc: '36a. Embedding a symbol with a replacement rule 2',
         results: [
             {text: "aXc"}
         ]
     });
     
     testSrc({
-		desc: '34b. Embedding a symbol with a replacement rule 2, with a symbol in the context',
+		desc: '36b. Embedding a symbol with a replacement rule 2, with a symbol in the context',
         results: [
             {text: "aXc"}
         ]
     });
-    
+
 });

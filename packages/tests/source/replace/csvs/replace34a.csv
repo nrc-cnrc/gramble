@@ -1,8 +1,8 @@
 Root =,	text			
-	  , abc
+	  , ab
 
-replace text:,	from,	to,	    context	
-             ,  b    ,   X,     a_		
+replace text:,	from,	          to,	 
+             , b,   bX,   		
 
 Word =,	embed				
 	  , Root
