@@ -1,11 +1,8 @@
-Consonant =, text
-           , b
-
 Root =,	text			
 	  , ab
 
 replace text:,	from,	          to,	 
-             , {Consonant},   bX,   		
+             , ab,   abX,   		
 
 Word =,	embed				
 	  , Root

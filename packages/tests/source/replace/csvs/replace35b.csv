@@ -5,7 +5,7 @@ Root =,	text
 	  , ab
 
 replace text:,	from,	          to,	 
-             , {Consonant},   bX,   		
+             , a{Consonant},   abX,   		
 
 Word =,	embed				
 	  , Root
