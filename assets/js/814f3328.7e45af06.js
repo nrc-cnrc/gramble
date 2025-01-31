@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkdocs=self.webpackChunkdocs||[]).push([[7472],{5513:e=>{e.exports=JSON.parse('{"title":"Recent posts","items":[{"title":"Welcome to the Gramble blog","permalink":"/gramble/blog/welcome-post","unlisted":false,"date":"2019-05-28T00:00:00.000Z"}]}')}}]);

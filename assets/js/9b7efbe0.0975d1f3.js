@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkdocs=self.webpackChunkdocs||[]).push([[4041],{6094:e=>{e.exports=JSON.parse('{"authors":[{"name":"Patrick Littell","title":"Primary maintainer of gramble","url":"https://github.com/littell","key":"endi","page":null,"count":0}]}')}}]);
