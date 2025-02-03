@@ -1,0 +1,13 @@
+
+fricative=, text
+          , f
+
+verb=, text
+     , foo
+    , moo
+
+stem=, embed, starts text
+    ,  verb, {fricative}
+
+word=, embed,
+     , stem

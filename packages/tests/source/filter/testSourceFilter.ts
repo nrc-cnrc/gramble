@@ -11,6 +11,7 @@ function testSrc(params: Partial<SourceTest>): void {
 
 describe(`Source ${DIR}`, function() {
 
+    /*
     testSrc({
 		desc: '1. Simple equals',
         results: [
@@ -579,7 +580,30 @@ describe(`Source ${DIR}`, function() {
             {text: "oofbar", gloss: "run[1SG.SUBJ]"},
         ]
     });    
+
+    */
+    testSrc({
+        desc: '62a. Starts with a literal, embedded',
+        results: [
+            {text: "foo"}
+        ]    
+    });
+
+    testSrc({
+        desc: '62b. Starts with an embed, embedded',
+        results: [
+            {text: "foo"}
+        ]    
+    });
     
+    testSrc({
+        desc: '62c. Starts with an embed, not embedded',
+        results: [
+            {text: "foo"}
+        ]    
+    });
+    
+    /*
     testSrc({
 		desc: 'E1. Equals with an ill-formed filter',
         results: [

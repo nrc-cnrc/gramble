@@ -1,0 +1,8 @@
+Consonant =, text
+           , b
+
+Word =,	text			
+	  , ab
+
+replace text:,	from,	          to,	 
+             , {Consonant},   bX,   		
