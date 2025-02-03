@@ -59,7 +59,7 @@ export class CreateFilters extends AutoPass<Grammar> {
 
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
-            const newCond = new StartsGrammar(g.child.child, g.tapeNames);
+            const newCond = new StartsGrammar(g.child.child, g.tapeName, g.tapeNames);
             return new NegationGrammar(newCond);
         }
 
@@ -67,26 +67,26 @@ export class CreateFilters extends AutoPass<Grammar> {
             // this(x+y) -> x+this(y)
             const newChildren = [...g.child.children]; // clone the children
             const newLastChild = new StartsGrammar(
-                newChildren[newChildren.length-1], g.tapeNames);
+                newChildren[newChildren.length-1],  g.tapeName, g.tapeNames);
             newChildren[newChildren.length-1] = newLastChild;
             return new SequenceGrammar(newChildren);
         }
         
         if (g.child instanceof AlternationGrammar) {
             // this(x|y) -> this(x)|this(y)
-            const newChildren = g.child.children.map(c => new StartsGrammar(c, g.tapeNames));
+            const newChildren = g.child.children.map(c => new StartsGrammar(c,  g.tapeName, g.tapeNames));
             return new AlternationGrammar(newChildren);
         }
 
         if (g.child instanceof JoinGrammar) {
             // this(x&y) -> this(x)&this(y)
-            const newCond1 = new StartsGrammar(g.child.child1, g.tapeNames);
-            const newCond2 = new StartsGrammar(g.child.child2, g.tapeNames);
+            const newCond1 = new StartsGrammar(g.child.child1,  g.tapeName, g.tapeNames);
+            const newCond2 = new StartsGrammar(g.child.child2,  g.tapeName, g.tapeNames);
             return new JoinGrammar(newCond1, newCond2);
         }
 
         if (g.child instanceof RenameGrammar) {
-            const newCond = new StartsGrammar(g.child.child, g.child.child.tapeNames);
+            const newCond = new StartsGrammar(g.child.child,  g.tapeName, g.child.child.tapeNames);
             return new RenameGrammar(newCond, g.child.fromTape, g.child.toTape);
         }
 
@@ -105,33 +105,33 @@ export class CreateFilters extends AutoPass<Grammar> {
 
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
-            const newCond = new EndsGrammar(g.child.child, g.tapeNames);
+            const newCond = new EndsGrammar(g.child.child,  g.tapeName, g.tapeNames);
             return new NegationGrammar(newCond);
         }
 
         if (g.child instanceof SequenceGrammar && g.child.children.length > 0) {
             // this(x+y) -> this(x)+y
             const newChildren = [...g.child.children]; // clone the children
-            const newFirstChild = new EndsGrammar(newChildren[0], g.tapeNames);
+            const newFirstChild = new EndsGrammar(newChildren[0],  g.tapeName, g.tapeNames);
             newChildren[0] = newFirstChild;
             return new SequenceGrammar(newChildren);
         }
         
         if (g.child instanceof AlternationGrammar) {
             // this(x|y) -> this(x)|this(y)
-            const newChildren = g.child.children.map(c => new EndsGrammar(c, g.tapeNames));
+            const newChildren = g.child.children.map(c => new EndsGrammar(c,  g.tapeName, g.tapeNames));
             return new AlternationGrammar(newChildren);
         }
         
         if (g.child instanceof JoinGrammar) {
             // this(x&y) -> this(x)&this(y)
-            const newCond1 = new EndsGrammar(g.child.child1, g.tapeNames);
-            const newCond2 = new EndsGrammar(g.child.child2, g.tapeNames);
+            const newCond1 = new EndsGrammar(g.child.child1,  g.tapeName, g.tapeNames);
+            const newCond2 = new EndsGrammar(g.child.child2,  g.tapeName, g.tapeNames);
             return new JoinGrammar(newCond1, newCond2);
         }
         
         if (g.child instanceof RenameGrammar) {
-            const newCond = new EndsGrammar(g.child.child, g.child.child.tapeNames);
+            const newCond = new EndsGrammar(g.child.child,  g.tapeName, g.child.child.tapeNames);
             return new RenameGrammar(newCond, g.child.fromTape, g.child.toTape);
         }
 
@@ -151,35 +151,35 @@ export class CreateFilters extends AutoPass<Grammar> {
 
         if (g.child instanceof NegationGrammar) {
             // this(not(x) -> not(this(x))
-            const newCond = new ContainsGrammar(g.child.child, g.tapeNames);
+            const newCond = new ContainsGrammar(g.child.child,  g.tapeName, g.tapeNames);
             return new NegationGrammar(newCond);
         }
 
         if (g.child instanceof SequenceGrammar && g.child.children.length > 0) {
             // this(x+y) -> x+this(y)
             const newChildren = [...g.child.children]; // clone the children
-            const newFirstChild = new EndsGrammar(newChildren[0], g.tapeNames);
+            const newFirstChild = new EndsGrammar(newChildren[0],  g.tapeName, g.tapeNames);
             newChildren[0] = newFirstChild;
-            const newLastChild = new StartsGrammar(newChildren[newChildren.length-1], g.tapeNames);
+            const newLastChild = new StartsGrammar(newChildren[newChildren.length-1],  g.tapeName, g.tapeNames);
             newChildren[newChildren.length-1] = newLastChild;
             return new SequenceGrammar(newChildren);
         }
         
         if (g.child instanceof AlternationGrammar) {
             // this(x|y) -> this(x)|this(y)
-            const newChildren = g.child.children.map(c => new ContainsGrammar(c, g.tapeNames));
+            const newChildren = g.child.children.map(c => new ContainsGrammar(c,  g.tapeName, g.tapeNames));
             return new AlternationGrammar(newChildren);
         }
 
         if (g.child instanceof JoinGrammar) {
             // this(x&y) -> this(x)&this(y)
-            const newCond1 = new ContainsGrammar(g.child.child1, g.tapeNames);
-            const newCond2 = new ContainsGrammar(g.child.child2, g.tapeNames);
+            const newCond1 = new ContainsGrammar(g.child.child1,  g.tapeName, g.tapeNames);
+            const newCond2 = new ContainsGrammar(g.child.child2,  g.tapeName, g.tapeNames);
             return new JoinGrammar(newCond1, newCond2);
         }
         
         if (g.child instanceof RenameGrammar) {
-            const newCond = new ContainsGrammar(g.child.child, g.child.child.tapeNames);
+            const newCond = new ContainsGrammar(g.child.child,  g.tapeName, g.child.child.tapeNames);
             return new RenameGrammar(newCond, g.child.fromTape, g.child.toTape);
         }
 

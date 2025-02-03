@@ -165,12 +165,26 @@ export class CalculateTapes extends AutoPass<Grammar> {
         const msgs: Message[] = [];
         
         while (true) {
+
             const newMsgs: Message[] = [];
 
             // first get the initial tapes for each symbol
             let tapeIDs: TapeDict = mapValues(g.symbols, v => v.tapes);
 
+            console.log(`before resolution`)
+            for (const [k,v] of Object.entries(tapeIDs)) {
+                console.log(`-- ${k}: ${Tapes.toStr(v)}`);
+            }
+
+            console.log()
+            console.log(`resolving all`)
             tapeIDs = Tapes.resolveAll(tapeIDs);
+
+            console.log(`after resolution`)
+            for (const [k,v] of Object.entries(tapeIDs)) {
+                console.log(`-- ${k}: ${Tapes.toStr(v)}`);
+            }
+            console.log()
 
             // check for unresolved content, and throw an exception immediately.
             // otherwise we have to puzzle it out from exceptions elsewhere.
@@ -192,6 +206,17 @@ export class CalculateTapes extends AutoPass<Grammar> {
 
             g.symbols = mapValues(g.symbols, v => 
                     this.transform(v, tapePushEnv).msgTo(newMsgs));
+
+            // first get the initial tapes for each symbol
+            tapeIDs = mapValues(g.symbols, v => v.tapes);
+
+            console.log(`after pushing`)
+            for (const [k,v] of Object.entries(tapeIDs)) {
+                console.log(`-- ${k}: ${Tapes.toStr(v)}`);
+            }
+
+            console.log()
+            console.log()
 
             msgs.push(...newMsgs);
 
@@ -341,7 +366,7 @@ function getTapesSingleTape(g: SingleTapeGrammar): Grammar {
         // we know there should be a single tape, but we don't
         // yet know what it is.  let it be the dummy tape for now,
         // we'll be back later to fix it
-        const tapes = Tapes.Rename(g.child.tapes, DEFAULT_TAPE, g.tapeName);
+        const tapes = Tapes.Single(g.child.tapes, g.tapeName);
         return updateTapes(g, tapes);
     }
 
@@ -501,26 +526,21 @@ function getTapesReplaceBlock(g: ReplaceBlockGrammar): Grammar {
 /**
  * Starts/Ends/Contains have the tapes of their child AND a wildcard
  * on its tape (for the dot-star).  Sometimes because of scope adjustment
- * this tape might not actually be on the child Tapes.Anymore, so in that case
- * it's store in .extraTapes.
+ * this tape might not actually be on the child Tapes anymore, so in that case
+ * it's stored in .extraTapes.
  */
 function getTapesCondition(
     g: StartsGrammar | EndsGrammar | ContainsGrammar
 ): Grammar {
-    const extraTapes = [...g.extraTapes];
-    const extraVocab: VocabDict = {};
 
-    if (g.child.tapes.tag === Tapes.Tag.Lit) {
-        // if we know what the child tapes are, add those wildcards too
-        extraTapes.push(...g.child.tapes.tapeNames);
-    }
-
-    for (const t of extraTapes) {
-        extraVocab[t] = Vocabs.Tokenized();
-    }
+    console.log(`tapechecking a condition`)
+    const extraTapes = [g.tapeName];
+    const extraVocab: VocabDict = { [g.tapeName]: Vocabs.Tokenized() }; 
 
     const extras = Tapes.Lit(new Set(extraTapes), extraVocab);
+    console.log(`extras: ${Tapes.toStr(extras)}`)
     const tapes = Tapes.Sum(g.child.tapes, extras);
+    console.log(`final result: ${Tapes.toStr(tapes)}`)
     return updateTapes(g, tapes);
 }
 

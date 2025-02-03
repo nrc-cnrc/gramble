@@ -112,17 +112,17 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
 
     public handleStarts(h: StartsHeader, env: PassEnv): Msg<Grammar> {
         return this.handleRegex(h, env)
-                   .bind(g => new StartsGrammar(g));
+                   .bind(g => new StartsGrammar(g, h.tapeName));
     }
     
     public handleEnds(h: EndsHeader, env: PassEnv): Msg<Grammar> {
         return this.handleRegex(h, env)
-                   .bind(g => new EndsGrammar(g));
+                   .bind(g => new EndsGrammar(g, h.tapeName));
     }
 
     public handleContains(h: ContainsHeader, env: PassEnv): Msg<Grammar> {
         return this.handleRegex(h, env)
-                   .bind(g => new ContainsGrammar(g));
+                   .bind(g => new ContainsGrammar(g, h.tapeName));
     }
 
     public handleSlash(h: SlashHeader, env: PassEnv): Msg<Grammar> {

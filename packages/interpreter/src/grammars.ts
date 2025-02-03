@@ -275,6 +275,7 @@ abstract class ConditionGrammar extends UnaryGrammar {
 
     constructor(
         child: Grammar,
+        public tapeName: string,
         public extraTapes: string[] = []
     ) {
         super(child);

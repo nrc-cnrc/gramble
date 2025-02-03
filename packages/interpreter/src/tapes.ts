@@ -19,6 +19,7 @@ export const enum Tag {
     Product = "TapeProduct",
     Join = "TapeJoin",
     Rename = "TapeRename",
+    Single = "TapeSingle",
     Match = "TapeMatch",
     Cursor = "TapeCursor",
     Unknown = "TapeUnknown"
@@ -27,6 +28,7 @@ export const enum Tag {
 export type TapeSet = Lit
                     | Ref
                     | Rename
+                    | Single
                     | Sum
                     | Product
                     | Join
@@ -124,7 +126,7 @@ export function Unknown(): TapeSet {
  * (a ref or another suspend) it results in a TapeRename object
  * and the operation will be performed when it becomes available.
  */
-export type Rename =  { 
+export type Rename = { 
     tag: Tag.Rename, 
     child: TapeSet, 
     fromTape: string, 
@@ -136,17 +138,56 @@ export function Rename(
     fromTape: string, 
     toTape: string
 ): TapeSet {
+    console.log(`resolving rename from ${fromTape} to ${toTape}`)
     if (child.tag === Tag.Lit) {
+        console.log(`it's literal, value is ${toStr(child)}`)
         const newTapes = [...child.tapeNames].map(t => renameTape(t, fromTape, toTape));
         const newVocabs = { ... child.vocabMap };
         let oldVocab = newVocabs[fromTape];
-        if (oldVocab === undefined) oldVocab = Vocabs.Atomic();
+        if (oldVocab === undefined) {
+            console.log(`vocab for tape ${fromTape} is undefined`)
+            oldVocab = Vocabs.Atomic();
+        }
         delete newVocabs[fromTape];
         newVocabs[toTape] = oldVocab;
         return Lit(new Set(newTapes), newVocabs);
     }
 
+    console.log(`not literal, it's a ${child.tag}`)
     return { tag: Tag.Rename, child, fromTape, toTape }
+}
+
+/**
+ * A Single operation expresses what a SingleTapeGrammar does to the
+ * tape structure: a rename from a single tape with an unknown name to
+ * another name.  While this is, abstractly, a Rename, using the Rename
+ * type/function above won't work, because it's grabbing the vocabulary
+ * from a known tape name, and we don't know what that name is.
+ */
+
+export type Single = {
+    tag: Tag.Single,
+    child: TapeSet,
+    tapeName: string
+}
+
+export function Single(
+    child: TapeSet,
+    tapeName: string,
+): TapeSet {
+    if (child.tag === Tag.Lit) {
+        const newTapes = [ tapeName ];
+        const childVocabs = Object.values(child.vocabMap)
+
+        // if there are no child tapes, default to an empty atomic.
+        // if there are more than one, it's an error but handled elsewhere,
+        // ignore all but the first
+        const newVocabs = (childVocabs.length > 0) ? childVocabs[0]
+                                                   : Vocabs.Atomic()
+        return Lit(new Set(newTapes), {[tapeName]: newVocabs})
+    }
+
+    return { tag: Tag.Single, child, tapeName }
 }
 
 export type Match =  { 
@@ -199,7 +240,8 @@ export function toStr(t: TapeSet): string {
         case Tag.Lit: return litToStr(t);
         case Tag.Ref: return "$" + t.symbol;
         case Tag.Rename: return `${t.fromTape}>${t.toTape}(${toStr(t.child)})`;
-        case Tag.Match: return `M${t.inputTape}>${t.outputTape}(${toStr(t.child)})`;
+        case Tag.Single: return `S_${t.tapeName}(${toStr(t.child)})`
+        case Tag.Match: return `M_${t.inputTape}>${t.outputTape}(${toStr(t.child)})`;
         case Tag.Sum: return toStr(t.c1) + "+" + toStr(t.c2);
         case Tag.Product: return toStr(t.c1) + "⋅" + toStr(t.c2);
         case Tag.Join: return toStr(t.c1) + "⋈" + toStr(t.c2);
@@ -260,13 +302,17 @@ function simplify(
     t: TapeSet,
 ): TapeSet {
     switch (t.tag) {
+        case Tag.Unknown: return t;
+        case Tag.Lit:     return t;
+        case Tag.Ref:     return t;
         case Tag.Rename:  return Rename(t.child, t.fromTape, t.toTape);
+        case Tag.Single:  return Single(t.child, t.tapeName);
         case Tag.Sum:     return Sum(t.c1, t.c2);
         case Tag.Product: return Product(t.c1, t.c2);
         case Tag.Join:    return Join(t.c1, t.c2);
         case Tag.Match:   return Match(t.child, t.inputTape, t.outputTape);
         case Tag.Cursor:  return Cursor(t.child, t.tapeName);
-        default:          return t;
+        default: exhaustive(t);
     }
 }
 

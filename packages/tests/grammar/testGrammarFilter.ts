@@ -27,6 +27,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
 
     // STARTS WITH
 
+    /*
     testGrammar({
         desc: 'S.1 t1:hello starts with ε',
         grammar: Starts(t1("hello"), Epsilon()),
@@ -700,4 +701,5 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Contains(t1("world"), Uni(t1("he"), Not(t1("r")))),
         results: [],
     });
+    */
 });

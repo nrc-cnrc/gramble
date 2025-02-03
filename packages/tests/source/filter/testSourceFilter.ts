@@ -11,7 +11,6 @@ function testSrc(params: Partial<SourceTest>): void {
 
 describe(`Source ${DIR}`, function() {
 
-    /*
     testSrc({
 		desc: '1. Simple equals',
         results: [
@@ -581,7 +580,6 @@ describe(`Source ${DIR}`, function() {
         ]
     });    
 
-    */
     testSrc({
         desc: '62a. Starts with a literal, embedded',
         results: [
@@ -603,7 +601,6 @@ describe(`Source ${DIR}`, function() {
         ]    
     });
     
-    /*
     testSrc({
 		desc: 'E1. Equals with an ill-formed filter',
         results: [
@@ -809,7 +806,7 @@ describe(`Source ${DIR}`, function() {
             {gloss: "[1SG]climb",text: "amirf"}
         ]);
     }); 
-*/
+    */
 });
 
 
