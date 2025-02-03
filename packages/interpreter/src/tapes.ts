@@ -138,22 +138,17 @@ export function Rename(
     fromTape: string, 
     toTape: string
 ): TapeSet {
-    console.log(`resolving rename from ${fromTape} to ${toTape}`)
     if (child.tag === Tag.Lit) {
-        console.log(`it's literal, value is ${toStr(child)}`)
         const newTapes = [...child.tapeNames].map(t => renameTape(t, fromTape, toTape));
         const newVocabs = { ... child.vocabMap };
         let oldVocab = newVocabs[fromTape];
         if (oldVocab === undefined) {
-            console.log(`vocab for tape ${fromTape} is undefined`)
             oldVocab = Vocabs.Atomic();
         }
         delete newVocabs[fromTape];
         newVocabs[toTape] = oldVocab;
         return Lit(new Set(newTapes), newVocabs);
     }
-
-    console.log(`not literal, it's a ${child.tag}`)
     return { tag: Tag.Rename, child, fromTape, toTape }
 }
 

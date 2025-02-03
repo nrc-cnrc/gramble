@@ -171,20 +171,7 @@ export class CalculateTapes extends AutoPass<Grammar> {
             // first get the initial tapes for each symbol
             let tapeIDs: TapeDict = mapValues(g.symbols, v => v.tapes);
 
-            console.log(`before resolution`)
-            for (const [k,v] of Object.entries(tapeIDs)) {
-                console.log(`-- ${k}: ${Tapes.toStr(v)}`);
-            }
-
-            console.log()
-            console.log(`resolving all`)
             tapeIDs = Tapes.resolveAll(tapeIDs);
-
-            console.log(`after resolution`)
-            for (const [k,v] of Object.entries(tapeIDs)) {
-                console.log(`-- ${k}: ${Tapes.toStr(v)}`);
-            }
-            console.log()
 
             // check for unresolved content, and throw an exception immediately.
             // otherwise we have to puzzle it out from exceptions elsewhere.
@@ -196,27 +183,12 @@ export class CalculateTapes extends AutoPass<Grammar> {
 
             // now feed those back into the structure so that every
             // grammar node has only literal tapes
-            //const tapePusher = new CalculateTapes(true, tapeIDs);
-
             const tapePushEnv = new TapesEnv(env.opt, true, tapeIDs);
-            //for (const [k, v] of Object.entries(g.symbols)) {
-            //    const transformed = this.transform(v, tapePushEnv).msgTo(newMsgs);
-            //    g.symbols[k] = transformed;
-            //}
-
             g.symbols = mapValues(g.symbols, v => 
                     this.transform(v, tapePushEnv).msgTo(newMsgs));
 
             // first get the initial tapes for each symbol
             tapeIDs = mapValues(g.symbols, v => v.tapes);
-
-            console.log(`after pushing`)
-            for (const [k,v] of Object.entries(tapeIDs)) {
-                console.log(`-- ${k}: ${Tapes.toStr(v)}`);
-            }
-
-            console.log()
-            console.log()
 
             msgs.push(...newMsgs);
 
@@ -382,10 +354,7 @@ function getTapesSingleTape(g: SingleTapeGrammar): Grammar {
     // child; otherwise create a RenameGrammar around it.  Either way this SingleTapeGrammar
     // ceases to exist.
     const tapeToRename = Object.keys(g.child.tapes.vocabMap)[0];
-    if (g.tapeName === tapeToRename) {
-        return g.child;
-    }
-    
+    if (g.tapeName === tapeToRename) return g.child;
     const newChild = new RenameGrammar(g.child, tapeToRename, g.tapeName);
     return getTapesRename(newChild); // this handles the details of the renaming for us
 }

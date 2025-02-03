@@ -4,6 +4,7 @@ import {
     Join, Rename,
     Not, Null,
     Seq, Starts, Uni,
+    SingleTape,
 } from "../../interpreter/src/grammarConvenience.js";
 
 import {
@@ -238,9 +239,25 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: 'S.28 Rename(t2->t1, t2:hello) starts with t1: h',
+        desc: 'S.28 Rename(t2->t1, t2:hello) starts with t1:h',
         grammar: Starts("t1", Rename(t2("hello"), "t2", "t1"), t1("h")),
         results: [ 
+            {t1: 'hello'},
+        ]
+    })
+
+    testGrammar({
+        desc: 'S.29 t1:hello|world starts with Rename(t2>t1, t2:h)',
+        grammar: Starts("t1", Uni(t1("hello"), t1("world")), Rename(t2("h"), "t2", "t1")),
+        results: [
+            {t1: 'hello'},
+        ]
+    })
+
+    testGrammar({
+        desc: 'S.30 t1:hello|world starts with SingleTape(t1, t2:h)',
+        grammar: Starts("t1", Uni(t1("hello"), t1("world")), SingleTape("t1", t2("h"))),
+        results: [
             {t1: 'hello'},
         ]
     })
@@ -448,9 +465,17 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: 'S.26 Rename(t2->t1, t2:hello) ends with t1:o',
-        grammar: Ends("t1", Rename(t2("hello"), "t2", "t1"), t1("o")),
-        results: [ 
+        desc: 'E.26 t1:hello|world ends with Rename(t2>t1, t2:o)',
+        grammar: Ends("t1", Uni(t1("hello"), t1("world")), Rename(t2("o"), "t2", "t1")),
+        results: [
+            {t1: 'hello'},
+        ]
+    })
+
+    testGrammar({
+        desc: 'E.27 t1:hello|world ends with SingleTape(t1, t2:o)',
+        grammar: Ends("t1", Uni(t1("hello"), t1("world")), SingleTape("t1", t2("o"))),
+        results: [
             {t1: 'hello'},
         ]
     })
@@ -727,6 +752,22 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: 'C.35 Rename(t2->t1, t2:hello) contains t1:e',
         grammar: Contains("t1", Rename(t2("hello"), "t2", "t1"), t1("e")),
         results: [ 
+            {t1: 'hello'},
+        ]
+    })
+
+    testGrammar({
+        desc: 'C.36 t1:hello|world contains Rename(t2>t1, t2:e)',
+        grammar: Contains("t1", Uni(t1("hello"), t1("world")), Rename(t2("e"), "t2", "t1")),
+        results: [
+            {t1: 'hello'},
+        ]
+    })
+
+    testGrammar({
+        desc: 'C.37 t1:hello|world contains SingleTape(t1, t2:e)',
+        grammar: Contains("t1", Uni(t1("hello"), t1("world")), SingleTape("t1", t2("e"))),
+        results: [
             {t1: 'hello'},
         ]
     })
