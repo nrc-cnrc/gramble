@@ -539,7 +539,7 @@ function getTapesCondition(
 
     const extras = Tapes.Lit(new Set(extraTapes), extraVocab);
     console.log(`extras: ${Tapes.toStr(extras)}`)
-    const tapes = Tapes.Sum(g.child.tapes, extras);
+    const tapes = Tapes.Product(g.child.tapes, extras);
     console.log(`final result: ${Tapes.toStr(tapes)}`)
     return updateTapes(g, tapes);
 }
