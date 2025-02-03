@@ -276,10 +276,6 @@ function getTapesReplace(
     env: TapesEnv
 ): Grammar | Msg<Grammar> {
     let tapes = getChildTapes(g);
-    if (tapes.tag !== Tapes.Tag.Lit) {
-        // nothing we can do at the moment
-        return updateTapes(g, tapes);
-    }
 
     const tapeNames = new Set([INPUT_TAPE, OUTPUT_TAPE]);
     const vocabMap: VocabDict = {
@@ -287,7 +283,7 @@ function getTapesReplace(
         [OUTPUT_TAPE]: Vocabs.Tokenized()
     }
     const stringifiers = Tapes.Lit(tapeNames, vocabMap);
-    tapes = Tapes.Sum(stringifiers, tapes);
+    tapes = Tapes.Product(stringifiers, tapes);
     tapes = Tapes.Match(tapes, INPUT_TAPE, OUTPUT_TAPE);
     return updateTapes(g, tapes);
 }
@@ -532,15 +528,10 @@ function getTapesReplaceBlock(g: ReplaceBlockGrammar): Grammar {
 function getTapesCondition(
     g: StartsGrammar | EndsGrammar | ContainsGrammar
 ): Grammar {
-
-    console.log(`tapechecking a condition`)
-    const extraTapes = [g.tapeName];
-    const extraVocab: VocabDict = { [g.tapeName]: Vocabs.Tokenized() }; 
-
-    const extras = Tapes.Lit(new Set(extraTapes), extraVocab);
-    console.log(`extras: ${Tapes.toStr(extras)}`)
-    const tapes = Tapes.Product(g.child.tapes, extras);
-    console.log(`final result: ${Tapes.toStr(tapes)}`)
+    const dotStarTapeName = [g.tapeName];
+    const dotStarVocab: VocabDict = { [g.tapeName]: Vocabs.Tokenized() }; 
+    const dotStarTapes = Tapes.Lit(new Set(dotStarTapeName), dotStarVocab);
+    const tapes = Tapes.Product(g.child.tapes, dotStarTapes);
     return updateTapes(g, tapes);
 }
 

@@ -12,7 +12,6 @@ function testSrc(params: Partial<SourceTest>): void {
 
 describe(`Source ${DIR}`, function() {
 
-    /*
     testSrc({
 		desc: '1. Simple replace',
         results: [
@@ -705,7 +704,6 @@ describe(`Source ${DIR}`, function() {
         ]
     });
 
-    */
     testSrc({
 		desc: '34a. Embedding a symbol with a replacement rule, with a literal in from',
         results: [
@@ -727,7 +725,6 @@ describe(`Source ${DIR}`, function() {
         ]
     });
 
-    /*
     testSrc({
 		desc: '35a. Embedding a symbol with a replacement rule, with two literals in from',
         results: [
@@ -755,5 +752,4 @@ describe(`Source ${DIR}`, function() {
             {text: "aXc"}
         ]
     });
-    */
 });
