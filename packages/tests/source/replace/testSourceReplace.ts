@@ -719,6 +719,13 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
+		desc: '34c. Symbol with a replacement rule, with a symbol in from',
+        results: [
+            {text: "abX"}
+        ]
+    });
+
+    testSrc({
 		desc: '35a. Embedding a symbol with a replacement rule, with two literals in from',
         results: [
             {text: "abX"}
@@ -745,5 +752,4 @@ describe(`Source ${DIR}`, function() {
             {text: "aXc"}
         ]
     });
-
 });

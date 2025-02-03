@@ -210,32 +210,35 @@ export function Short(
 }
 
 export function Starts(
+    tapeName: string,
     child1: Grammar | string, 
     child2: Grammar | string
 ): FilterGrammar {
     child1 = makeGrammar(child1);
     child2 = makeGrammar(child2);
-    const filter = new StartsGrammar(child2);
+    const filter = new StartsGrammar(child2, tapeName);
     return new FilterGrammar(child1, filter);
 }
 
 export function Ends(
+    tapeName: string,
     child1: Grammar | string, 
     child2: Grammar | string
 ): FilterGrammar {
     child1 = makeGrammar(child1);
     child2 = makeGrammar(child2);
-    const filter = new EndsGrammar(child2);
+    const filter = new EndsGrammar(child2, tapeName);
     return new FilterGrammar(child1, filter);
 }
 
 export function Contains(
+    tapeName: string,
     child1: Grammar | string, 
     child2: Grammar | string
 ): FilterGrammar {
     child1 = makeGrammar(child1);
     child2 = makeGrammar(child2);
-    const filter = new ContainsGrammar(child2);
+    const filter = new ContainsGrammar(child2, tapeName);
     return new FilterGrammar(child1, filter);
 }
 

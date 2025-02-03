@@ -165,6 +165,7 @@ export class CalculateTapes extends AutoPass<Grammar> {
         const msgs: Message[] = [];
         
         while (true) {
+
             const newMsgs: Message[] = [];
 
             // first get the initial tapes for each symbol
@@ -182,16 +183,12 @@ export class CalculateTapes extends AutoPass<Grammar> {
 
             // now feed those back into the structure so that every
             // grammar node has only literal tapes
-            //const tapePusher = new CalculateTapes(true, tapeIDs);
-
             const tapePushEnv = new TapesEnv(env.opt, true, tapeIDs);
-            //for (const [k, v] of Object.entries(g.symbols)) {
-            //    const transformed = this.transform(v, tapePushEnv).msgTo(newMsgs);
-            //    g.symbols[k] = transformed;
-            //}
-
             g.symbols = mapValues(g.symbols, v => 
                     this.transform(v, tapePushEnv).msgTo(newMsgs));
+
+            // first get the initial tapes for each symbol
+            tapeIDs = mapValues(g.symbols, v => v.tapes);
 
             msgs.push(...newMsgs);
 
@@ -251,10 +248,6 @@ function getTapesReplace(
     env: TapesEnv
 ): Grammar | Msg<Grammar> {
     let tapes = getChildTapes(g);
-    if (tapes.tag !== Tapes.Tag.Lit) {
-        // nothing we can do at the moment
-        return updateTapes(g, tapes);
-    }
 
     const tapeNames = new Set([INPUT_TAPE, OUTPUT_TAPE]);
     const vocabMap: VocabDict = {
@@ -262,7 +255,7 @@ function getTapesReplace(
         [OUTPUT_TAPE]: Vocabs.Tokenized()
     }
     const stringifiers = Tapes.Lit(tapeNames, vocabMap);
-    tapes = Tapes.Sum(stringifiers, tapes);
+    tapes = Tapes.Product(stringifiers, tapes);
     tapes = Tapes.Match(tapes, INPUT_TAPE, OUTPUT_TAPE);
     return updateTapes(g, tapes);
 }
@@ -341,7 +334,7 @@ function getTapesSingleTape(g: SingleTapeGrammar): Grammar {
         // we know there should be a single tape, but we don't
         // yet know what it is.  let it be the dummy tape for now,
         // we'll be back later to fix it
-        const tapes = Tapes.Rename(g.child.tapes, DEFAULT_TAPE, g.tapeName);
+        const tapes = Tapes.Single(g.child.tapes, g.tapeName);
         return updateTapes(g, tapes);
     }
 
@@ -361,10 +354,7 @@ function getTapesSingleTape(g: SingleTapeGrammar): Grammar {
     // child; otherwise create a RenameGrammar around it.  Either way this SingleTapeGrammar
     // ceases to exist.
     const tapeToRename = Object.keys(g.child.tapes.vocabMap)[0];
-    if (g.tapeName === tapeToRename) {
-        return g.child;
-    }
-    
+    if (g.tapeName === tapeToRename) return g.child;
     const newChild = new RenameGrammar(g.child, tapeToRename, g.tapeName);
     return getTapesRename(newChild); // this handles the details of the renaming for us
 }
@@ -501,26 +491,16 @@ function getTapesReplaceBlock(g: ReplaceBlockGrammar): Grammar {
 /**
  * Starts/Ends/Contains have the tapes of their child AND a wildcard
  * on its tape (for the dot-star).  Sometimes because of scope adjustment
- * this tape might not actually be on the child Tapes.Anymore, so in that case
- * it's store in .extraTapes.
+ * this tape might not actually be on the child Tapes anymore, so in that case
+ * it's stored in .extraTapes.
  */
 function getTapesCondition(
     g: StartsGrammar | EndsGrammar | ContainsGrammar
 ): Grammar {
-    const extraTapes = [...g.extraTapes];
-    const extraVocab: VocabDict = {};
-
-    if (g.child.tapes.tag === Tapes.Tag.Lit) {
-        // if we know what the child tapes are, add those wildcards too
-        extraTapes.push(...g.child.tapes.tapeNames);
-    }
-
-    for (const t of extraTapes) {
-        extraVocab[t] = Vocabs.Tokenized();
-    }
-
-    const extras = Tapes.Lit(new Set(extraTapes), extraVocab);
-    const tapes = Tapes.Sum(g.child.tapes, extras);
+    const dotStarTapeName = [g.tapeName];
+    const dotStarVocab: VocabDict = { [g.tapeName]: Vocabs.Tokenized() }; 
+    const dotStarTapes = Tapes.Lit(new Set(dotStarTapeName), dotStarVocab);
+    const tapes = Tapes.Product(g.child.tapes, dotStarTapes);
     return updateTapes(g, tapes);
 }
 

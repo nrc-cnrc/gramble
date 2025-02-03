@@ -1,0 +1,10 @@
+
+verb=, text
+    ,  foo
+    ,  moo
+
+stem=, embed, starts text
+    ,  verb, f
+
+word=, embed,
+     , stem

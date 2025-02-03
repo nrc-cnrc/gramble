@@ -167,15 +167,15 @@ export const GRAMMAR_PASSES =
         "Calculating tapes", 
         new CalculateTapes()
     ).compose(
-
-    // some conditions (like `starts re text: ~k`) have counterintuitive
+    
+    // some conditions (like `starts text: ~k`) have counterintuitive
     // results, rescope them as necessary to try to have the 
     // semantics that the programmer anticipates 
     new TimerPass(
         "Rescoping filters", 
         new CreateFilters()
     ).compose(
-    
+
     // turn replacement blocks into the appropriate
     // structures
     new TimerPass(

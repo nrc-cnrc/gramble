@@ -153,11 +153,20 @@ export class EqualsHeader extends UnaryHeader {
     public readonly tag = "equals";
 }
 
+export abstract class ConditionHeader extends UnaryHeader {
+    constructor(
+        child: Header,
+        public tapeName: string
+    ) {
+        super(child)
+    }
+}
+
 /**
  * StartsHeader is a variant of [EqualsHeader] that only requires its predecessor (call it N) to 
  * start with X (that is, Equals(N, X.*))
  */
-export class StartsHeader extends UnaryHeader {
+export class StartsHeader extends ConditionHeader {
     public readonly tag = "starts";
 }
 
@@ -165,7 +174,7 @@ export class StartsHeader extends UnaryHeader {
  * EndsHeader is a variant of [EqualsHeader] that only requires its predecessor (call it N) to 
  * end with X (that is, Equals(N, .*X))
  */
-export class EndsHeader extends UnaryHeader {
+export class EndsHeader extends ConditionHeader {
     public readonly tag = "ends";
 }
 
@@ -173,7 +182,7 @@ export class EndsHeader extends UnaryHeader {
  * ContainsHeader is a variant of [EqualsHeader] that only requires its predecessor (call it N) to 
  * contain X (that is, Equals(N, .*X.*))
  */
-export class ContainsHeader extends UnaryHeader {
+export class ContainsHeader extends ConditionHeader {
     public readonly tag = "contains";
 }
 
@@ -303,7 +312,7 @@ const HP_STARTS = MPSequence<Header>(
                     `Starts requires tape name`, 
                     `Starts can only apply to tape names (e.g. "equals text")`);
         }
-        return new StartsHeader(c)
+        return new StartsHeader(c, c.text)
     }
 );
 
@@ -315,7 +324,7 @@ const HP_ENDS = MPSequence<Header>(
                     `Ends requires tape name`, 
                     `Ends can only apply to tape names (e.g. "equals text")`);
         }
-        return new EndsHeader(c);
+        return new EndsHeader(c, c.text);
     }
 );
 
@@ -327,7 +336,7 @@ const HP_CONTAINS = MPSequence<Header>(
                     `Contains requires tape name`, 
                     `Contains can only apply to tape names (e.g. "equals text")`);
         }
-        return new ContainsHeader(c);
+        return new ContainsHeader(c, c.text);
     }
 );
 
