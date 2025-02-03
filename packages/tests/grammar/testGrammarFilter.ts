@@ -1,7 +1,7 @@
 
 import {
     Contains, Ends, Epsilon,
-    Join,
+    Join, Rename,
     Not, Null,
     Seq, Starts, Uni,
 } from "../../interpreter/src/grammarConvenience.js";
@@ -9,7 +9,7 @@ import {
 import {
     grammarTestSuiteName,
     testGrammar,
-    t1
+    t1, t2
 } from "./testGrammarUtil.js";
 
 import {
@@ -237,6 +237,14 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         results: [],
     });
 
+    testGrammar({
+        desc: 'S.28 Rename(t2->t1, t2:hello) starts with t1: h',
+        grammar: Starts("t1", Rename(t2("hello"), "t2", "t1"), t1("h")),
+        results: [ 
+            {t1: 'hello'},
+        ]
+    })
+
     // ENDS WITH
 
     testGrammar({
@@ -438,6 +446,14 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Ends("t1", t1("hello"), Uni(t1("ld"), Not(t1("o")))),
         results: [],
     });
+
+    testGrammar({
+        desc: 'S.26 Rename(t2->t1, t2:hello) ends with t1:o',
+        grammar: Ends("t1", Rename(t2("hello"), "t2", "t1"), t1("o")),
+        results: [ 
+            {t1: 'hello'},
+        ]
+    })
 
     // CONTAINS
 
@@ -706,4 +722,12 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         grammar: Contains("t1", t1("world"), Uni(t1("he"), Not(t1("r")))),
         results: [],
     });
+
+    testGrammar({
+        desc: 'C.35 Rename(t2->t1, t2:hello) contains t1:e',
+        grammar: Contains("t1", Rename(t2("hello"), "t2", "t1"), t1("e")),
+        results: [ 
+            {t1: 'hello'},
+        ]
+    })
 });
