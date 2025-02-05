@@ -1013,7 +1013,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
 
     testGrammarTapes({
         desc: "22a",
-        grammar: Starts(t1("hello"), t1("w")),
+        grammar: Starts("t1", t1("hello"), t1("w")),
         tapes: {
             "t1": ["h","e","l","o","w"],
         },
@@ -1022,7 +1022,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
     testGrammarTapes({
         desc: "22a-atom",
         atomicity: true,
-        grammar: Starts(t1("hello"), t1("w")),
+        grammar: Starts("t1", t1("hello"), t1("w")),
         tapes: {
             "t1": ["h","e","l","o","w"],
         },
@@ -1030,7 +1030,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
 
     testGrammarTapes({
         desc: "22b",
-        grammar: Ends(t1("hello"), t1("w")),
+        grammar: Ends("t1", t1("hello"), t1("w")),
         tapes: {
             "t1": ["h","e","l","o","w"],
         },
@@ -1038,7 +1038,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
 
     testGrammarTapes({
         desc: "22c",
-        grammar: Contains(t1("hello"), t1("w")),
+        grammar: Contains("t1", t1("hello"), t1("w")),
         tapes: {
             "t1": ["h","e","l","o","w"],
         },
@@ -1047,7 +1047,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
     testGrammarTapes({
         desc: "23a",
         grammar: Collection({
-            "a": Starts(Embed("b"), t1("w")),
+            "a": Starts("t1", Embed("b"), t1("w")),
             "b": t1("hello")
         }),
         symbol: "a",
@@ -1060,7 +1060,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
         desc: "23a-atom",
         atomicity: true,
         grammar: Collection({
-            "a": Starts(Embed("b"), t1("w")),
+            "a": Starts("t1", Embed("b"), t1("w")),
             "b": t1("hello")
         }),
         symbol: "a",
@@ -1072,7 +1072,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
     testGrammarTapes({
         desc: "23b",
         grammar: Collection({
-            "a": Ends(Embed("b"), t1("w")),
+            "a": Ends("t1", Embed("b"), t1("w")),
             "b": t1("hello")
         }),
         symbol: "a",
@@ -1084,7 +1084,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
     testGrammarTapes({
         desc: "23c",
         grammar: Collection({
-            "a": Contains(Embed("b"), t1("w")),
+            "a": Contains("t1", Embed("b"), t1("w")),
             "b": t1("hello")
         }),
         symbol: "a",
@@ -1096,7 +1096,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
     testGrammarTapes({
         desc: "23a2",
         grammar: Collection({
-            "a": Starts(t1("hello"), Embed("b")),
+            "a": Starts("t1", t1("hello"), Embed("b")),
             "b": t1("w")
         }),
         symbol: "a",
@@ -1109,7 +1109,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
         desc: "23a2-atom",
         atomicity: true,
         grammar: Collection({
-            "a": Starts(t1("hello"), Embed("b")),
+            "a": Starts("t1", t1("hello"), Embed("b")),
             "b": t1("w")
         }),
         symbol: "a",
@@ -1121,7 +1121,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
     testGrammarTapes({
         desc: "23b2",
         grammar: Collection({
-            "a": Ends(t1("hello"), Embed("b")),
+            "a": Ends("t1", t1("hello"), Embed("b")),
             "b": t1("w")
         }),
         symbol: "a",
@@ -1133,7 +1133,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
     testGrammarTapes({
         desc: "23c2",
         grammar: Collection({
-            "a": Contains(t1("hello"), Embed("b")),
+            "a": Contains("t1", t1("hello"), Embed("b")),
             "b": t1("w")
         }),
         symbol: "a",
@@ -1144,7 +1144,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
 
     testGrammarTapes({
         desc: "24a",
-        grammar: Starts(Seq(t1("hello"), Dot("t1")), t1("w")),
+        grammar: Starts("t1", Seq(t1("hello"), Dot("t1")), t1("w")),
         tapes: {
             "t1": ["h","e","l","o","w"]
         },
@@ -1152,7 +1152,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
 
     testGrammarTapes({
         desc: "24b",
-        grammar: Ends(Seq(t1("hello"), Dot("t1")), t1("w")),
+        grammar: Ends("t1", Seq(t1("hello"), Dot("t1")), t1("w")),
         tapes: {
             "t1": ["h","e","l","o","w"]
         },
@@ -1160,7 +1160,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
 
     testGrammarTapes({
         desc: "24c",
-        grammar: Contains(Seq(t1("hello"), Dot("t1")), t1("w")),
+        grammar: Contains("t1", Seq(t1("hello"), Dot("t1")), t1("w")),
         tapes: {
             "t1": ["h","e","l","o","w"]
         },

@@ -51,9 +51,9 @@ describe(`Parse header`, function() {
     testHeaderID("7e", "optional text", "(optional (tape text))");
     testHeaderID("7f", "equals text", "(equals (tape text))");
     testHeaderID("7g", "equals(text)", "(equals (tape text))");
-    testHeaderID("7h", "starts text", "(starts (tape text))");
-    testHeaderID("7i", "ends text", "(ends (tape text))");
-    testHeaderID("7j", "contains text", "(contains (tape text))");
+    testHeaderID("7h", "starts text", "(starts (tape text) text)");
+    testHeaderID("7i", "ends text", "(ends (tape text) text)");
+    testHeaderID("7j", "contains text", "(contains (tape text) text)");
     testHeaderID("7k", "equals text/gloss", "(error)");
     testHeaderID("7l", "equals embed", "(error)");
     testHeaderID("7m", ">text", "(rename (tape text))");
