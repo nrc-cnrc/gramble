@@ -20,9 +20,9 @@ Next, run the `deploy` script:
 
     npm run deploy <project-path>
 
-Project path is a path on your machine where the project metadata will be stored (mostly, Google-specific hashes identifying the sheet and the script).  We suggest storing deployment metadata in a separate, private git repo; for example our own is named `gramble_deploy` and is a sister of this repo on my machine, so we run this command as:
+Project path is a path on your machine where the project metadata will be stored (mostly, Google-specific hashes identifying the sheet and the script).  We suggest storing deployment metadata in a separate, private git repo; for example our own is named `gramble_deploy` and is a sister of this repo on my machine, so (assuming our present working directory is the main gramble directory) we run this command as:
 
-    npm run deploy ../../../gramble_deploy/ProjectName
+    npm run deploy ../gramble_deploy/ProjectName
 
 If the ProjectName folder doesn't already exist there, it will create that directory, then create a new Google Sheet named "Gramble (ProjectName)", and then compile and push all the Gramble code to the project space of that sheet.  It'll tell you the link of that new sheet so just click (or ctrl-click) on that link to visit your new sheet.
 

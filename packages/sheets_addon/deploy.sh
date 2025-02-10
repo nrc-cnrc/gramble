@@ -13,40 +13,33 @@ if [[ $1 == "-h" || $1 == "--help" ]]; then
     exit 0
 fi
 
-# make sure we are in the sheets_on folder
-if [[ $(basename "$PWD") != sheets_addon ]]; then
-    if [[ ! -d packages/sheets_addon ]]; then
-        echo "Error: Unable to locate packages/sheets_addon" >&2
-        exit 1
-    fi
-    cd packages/sheets_addon
-fi
-
 PATH="$PWD"/../../node_modules/.bin:$PATH
-
-TARGET_DIR=$1
 
 IFS='/' read -ra ADDR <<< "$1"
 for i in "${ADDR[@]}"; do
     PROJ_NAME="$i"
 done
 
+TARGET_DIR="$INIT_CWD/$1"
+
+# make sure the target directory exists, 
+mkdir -p $TARGET_DIR
+
 # Create a single Gramble javascript file and wrap it as HTML
 echo "Rolling up Gramble into a single file..." >&2
-rollup ../interpreter/dist/indexGSuite.js -c --file gramble1.js --format cjs
+rollup ../interpreter/dist/indexGSuite.js -c --file $TARGET_DIR/gramble1.js --format cjs
 echo "Browserifying gramble.js..." >&2
-browserify --extension=.js -s gramble -o gramble.js gramble1.js
-if [[ ! -f gramble.js ]]; then
+browserify --extension=.js -s gramble -o $TARGET_DIR/gramble.js $TARGET_DIR/gramble1.js
+rm $TARGET_DIR/gramble1.js
+if [[ ! -f $TARGET_DIR/gramble.js ]]; then
     echo "Error: gramble.js file does not exist" >&2
     exit 1
 fi
-cat <(echo '<script>') gramble.js <(echo '</script>') >> grambleWrapped.html
+cat <(echo '<script>') $TARGET_DIR/gramble.js <(echo '</script>') >> $TARGET_DIR/grambleWrapped.html
 
-# make sure the target directory exists, and copy the project files to it
-echo "Copying project files to '$PWD'/$TARGET_DIR" >&2
-mkdir -p $TARGET_DIR
-cp Code.js gramble.js grambleWrapped.html sidebar.html style.html appsscript.json $TARGET_DIR
-rm gramble1.js gramble.js grambleWrapped.html 
+# copy the project files to the target dir
+echo "Copying project files to $TARGET_DIR" >&2
+cp Code.js sidebar.html style.html appsscript.json $TARGET_DIR
 
 cd $TARGET_DIR
 
