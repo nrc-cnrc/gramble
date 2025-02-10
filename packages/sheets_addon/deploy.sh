@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # This script transpiles and deploys Gramble as a Google Apps Script project
-USAGE='Usage: ./deploy.sh <project-name>'
+USAGE='Usage: ./deploy.sh <project-path>'
 if [[ $# != 1 ]] ; then
     echo "Error: Expected exactly 1 argument, but found $#." >&2
     echo "$USAGE" >&2
@@ -24,8 +24,12 @@ fi
 
 PATH="$PWD"/../../node_modules/.bin:$PATH
 
-PROJ_NAME=$1
-TARGET_DIR=../../deployments/$PROJ_NAME
+TARGET_DIR=$1
+
+IFS='/' read -ra ADDR <<< "$1"
+for i in "${ADDR[@]}"; do
+    PROJ_NAME="$i"
+done
 
 # Create a single Gramble javascript file and wrap it as HTML
 echo "Rolling up Gramble into a single file..." >&2

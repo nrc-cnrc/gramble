@@ -4,7 +4,7 @@
 
 This package contains scripts to build and deploy a convenient Gramble IDE into Google Sheets.
 
-First, make sure that project dependencies have been installed as per the main README. We use browserify to transpile and bundle the TypeScript into JavaScript, and we use clasp to push the results to a Google AppsScript project.
+First, make sure that all dependencies have been installed as per the main README. We use browserify to transpile and bundle the TypeScript into JavaScript, and we use clasp to push the results to a Google AppsScript project.
 
     npm install
 
@@ -16,17 +16,19 @@ You will also need to enable the Apps Script API by visiting https://script.goog
 
 From Google's point of view, you'll be the "author" of this script.  (So, for example, when users are asked if they trust the author of the script, they'll be asked if they trust you@gmail.com.)
 
-Next, choose a project name and run the `deploy` script:
+Next, run the `deploy` script:
 
-    npm run deploy <projectName>
+    npm run deploy <project-path>
 
-This will do a bunch of things.  First it compiles and bundles Gramble to JavaScript.
+Project path is a path on your machine where the project metadata will be stored (mostly, Google-specific hashes identifying the sheet and the script).  We suggest storing deployment metadata in a separate, private git repo; for example our own is named `gramble_deploy` and is a sister of this repo on my machine, so we run this command as:
 
-If the projectName doesn't already exist, it then creates a directory `deployments/projectName` in the Gramble root to house the project information.  (`deployments` is in our .gitignore by the way, so none of the information gets saved to GitHub.)  It then creates a new Google Sheet named "Gramble (projectName)", and pushes all the Gramble code to the project space of that sheet.  It'll tell you the link of that new sheet so just click (or ctrl-click) on that link to visit your new sheet.
+    npm run deploy ../../../gramble_deploy/ProjectName
 
-If the projectName already exists, it just updates the existing directory/sheet/project space with the current Gramble code.
+If the ProjectName folder doesn't already exist there, it will create that directory, then create a new Google Sheet named "Gramble (ProjectName)", and then compile and push all the Gramble code to the project space of that sheet.  It'll tell you the link of that new sheet so just click (or ctrl-click) on that link to visit your new sheet.
 
-The first time you try to run a command from the Gramble menu in your Gramble sheet, you may need to go through a series of prompts to authorize the running of the gramble command scripts.
+If the ProjectName already exists, it just updates the existing directory/sheet/project space with the current Gramble code.
+
+The first time you try to run a command from the Gramble menu in your Gramble sheet, you may need to go through a series of prompts to authorize the running of the gramble command scripts.  If it asks "Manifest file has been updated. Do you want to push and overwrite?", say "y".
 
 Tutorials and documentation
 ---------------
