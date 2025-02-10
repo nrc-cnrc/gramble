@@ -20,7 +20,21 @@ for i in "${ADDR[@]}"; do
     PROJ_NAME="$i"
 done
 
-TARGET_DIR="$INIT_CWD/$1"
+# next we relativize the path as necessary.  we can't just use the
+# bare path because as npm invokes this script, the present working
+# directory isn't what we want.  (That's why we use $INIT_CWD rather than
+# $PWD.)
+#
+# the special case for Windows is because even Unix-style absolute paths
+# in bash (e.g. /C/Users/username/github/) will get converted by the shell
+# into Windows-style ones (e.g. C:/Users/username/github).  The workaround for this
+# (MSYS_NO_PATHCONV=1) doesn't seem to work reliably for our purporses, so
+# we need to catch absolute paths that look like C:/ or C:\ as well
+case "$1" in
+  /*) TARGET_DIR="$1" ;;  # unix absolute path
+  [a-zA-Z]:[/\\]*) TARGET_DIR="$1" ;; # windows absolute path
+  *) TARGET_DIR="$INIT_CWD/$1" ;; # relative path
+esac
 
 # make sure the target directory exists, 
 mkdir -p $TARGET_DIR
@@ -32,7 +46,7 @@ echo "Browserifying gramble.js..." >&2
 browserify --extension=.js -s gramble -o $TARGET_DIR/gramble.js $TARGET_DIR/gramble1.js
 rm $TARGET_DIR/gramble1.js
 if [[ ! -f $TARGET_DIR/gramble.js ]]; then
-    echo "Error: gramble.js file does not exist" >&2
+    echo "Error compiling gramble.js" >&2
     exit 1
 fi
 cat <(echo '<script>') $TARGET_DIR/gramble.js <(echo '</script>') >> $TARGET_DIR/grambleWrapped.html
