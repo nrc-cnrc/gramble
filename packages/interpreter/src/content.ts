@@ -376,11 +376,9 @@ function defaultGrammar(pc: ParseClass): Grammar {
         case "comment":
         case "ruleContext":
         case "plaintext":
+        case "symbol":
         case "regex":
             return new EpsilonGrammar();
-
-        case "symbol":
-            return new EmbedGrammar("");
 
         case "tapename":
             return new TapeNamesGrammar([]);
