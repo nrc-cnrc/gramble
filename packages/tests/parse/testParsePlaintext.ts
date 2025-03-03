@@ -11,14 +11,16 @@ describe(`Parse plaintext`, function() {
     testPlaintextID("1g", "1SG ", "1SG");
     testPlaintextID("1h", "1 SG", "1SG");
     testPlaintextID("1i", "1\\ SG", "1 SG");
-    testPlaintextID("1j", "(1SG)", "(1SG)");
-    testPlaintextID("1k", "(1SG", "(1SG");
-    testPlaintextID("1l", "1SG)", "1SG)");
-    testPlaintextID("1m", ".", ".");
-    testPlaintextID("1n", ".*", ".*");
-    testPlaintextID("1o", "(.)", "(.)");
-    testPlaintextID("1p", "\\.", ".");
-    testPlaintextID("1q", "\\)", ")");
+    testPlaintextID("1j", "\\ 1SG", " 1SG");
+    testPlaintextID("1k", "1SG\\ ", "1SG ");
+    testPlaintextID("1l", "(1SG)", "(1SG)");
+    testPlaintextID("1m", "(1SG", "(1SG");
+    testPlaintextID("1n", "1SG)", "1SG)");
+    testPlaintextID("1o", ".", ".");
+    testPlaintextID("1p", ".*", ".*");
+    testPlaintextID("1q", "(.)", "(.)");
+    testPlaintextID("1r", "\\.", ".");
+    testPlaintextID("1s", "\\)", ")");
 
     // testing alternation
     testPlaintextID("2a", "1SG|2SG", "(alt 1SG 2SG)");

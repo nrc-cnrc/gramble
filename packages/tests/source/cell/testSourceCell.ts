@@ -19,9 +19,23 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '1b. Content with escaped space',
+		desc: '1b. Content with escaped space in middle',
         results: [
             {text: "moo foo", gloss: "run"}
+        ]
+    });
+
+    testSrc({
+		desc: '1c. Content with escaped space at beginning',
+        results: [
+            {text: " foo", gloss: "run"}
+        ]
+    });
+
+    testSrc({
+		desc: '1d. Content with escaped space at end',
+        results: [
+            {text: "foo ", gloss: "run"}
         ]
     });
 
