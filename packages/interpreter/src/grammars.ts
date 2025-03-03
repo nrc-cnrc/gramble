@@ -59,7 +59,8 @@ export type Grammar = EpsilonGrammar
              | ReplaceBlockGrammar
              | ReplaceGrammar
              | CorrespondGrammar
-             | RuleContextGrammar;
+             | RuleContextGrammar
+             | TapeNamesGrammar;
 /**
  * Grammar components represent the linguistic grammar that the
  * programmer is expressing (in terms of sequences, alternations, joins,
@@ -457,6 +458,16 @@ export class EmbedGrammar extends AtomicGrammar {
         super();
     }
 
+}
+
+export class TapeNamesGrammar extends AtomicGrammar {
+    public readonly tag = "tapename";
+
+    constructor(
+        public symbols: string[]
+    ) { 
+        super();
+    }
 }
 
 export abstract class AbstractTestGrammar extends UnaryGrammar {

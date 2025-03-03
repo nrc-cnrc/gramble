@@ -56,6 +56,7 @@ export const ALL_RESERVED = new Set([
 ]);
 
 /* RESERVED SYMBOLS */
+export const RESERVED_FOR_TAPENAME = new Set(["/"]);
 export const RESERVED_FOR_PLAINTEXT = new Set(["|"]);
 export const RESERVED_FOR_SYMBOL = new Set([...RESERVED_FOR_PLAINTEXT, ".", "{", "}"])
 export const RESERVED_FOR_REGEX = new Set([...RESERVED_FOR_SYMBOL, "(", ")", "~", "*", "?", "+", '!', '&']);

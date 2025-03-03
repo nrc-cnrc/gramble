@@ -24,7 +24,9 @@ import {
     RuleContextGrammar,
     FilterGrammar,
     ReplaceGrammar,
-    CollectionGrammar
+    CollectionGrammar,
+    EmbedGrammar,
+    TapeNamesGrammar
 } from "../grammars.js";
 import { parseClass, TapeHeader } from "../headers.js";
 import { Err, Msg, Message, msgList } from "../utils/msgs.js";
@@ -76,25 +78,70 @@ export class CreateGrammars extends Pass<TST,Grammar> {
     }
     
     public handleRename(t: TstRename, env: PassEnv): Msg<Grammar> {
+        
+        const [prevGrammar, prevMsgs] = this.transform(t.prev, env)
+                                            .destructure();
+
         if (!(t.header.header instanceof TapeHeader)) {
-            // TODO: This doesn't seem right
-            return new EpsilonGrammar().err( "Renaming error",
-                    "Rename (>) needs to have a tape name after it");
+            return prevGrammar
+                    .msg(prevMsgs)
+                    .warn("The rename header above is invalid; ignoring this cell.")
         }
-        const fromTape = t.cell.text;
-        const toTape = t.header.header.text;
-        return this.transform(t.prev, env)
-                    .bind(c => new RenameGrammar(c, fromTape, toTape))
-                    .bind(c => c.locate(t.cell.pos));
+
+        const [tapeGrammar, tapeMsgs] = parseContent("tapename", t.cell.text)
+                                            .destructure();
+
+        if (!(tapeGrammar instanceof TapeNamesGrammar)) {
+            return prevGrammar
+                    .msg(prevMsgs)
+                    .msg(tapeMsgs)
+                    .err("Renaming error", "Cannot parse this cell as a tape name")
+        }
+
+        if (tapeGrammar.symbols.length < 1) {
+            return prevGrammar
+                    .msg(prevMsgs)
+                    .msg(tapeMsgs);
+        }
+
+
+        if (tapeGrammar.symbols.length > 1) {
+            return prevGrammar
+                .msg(prevMsgs)
+                .msg(tapeMsgs)
+                .err("Renaming error", "Cannot rename from multiple tapes")
+        }
+
+        return new RenameGrammar(prevGrammar, tapeGrammar.symbols[0], t.header.header.text)
+                        .locate(t.cell.pos)
+                        .msg(prevMsgs)
+                        .msg(tapeMsgs);
     }
     
     public handleHide(t: TstHide, env: PassEnv): Msg<Grammar> {
-        let result = this.transform(t.prev, env);
-        for (const tape of t.cell.text.split("/")) {
-            if (tape.trim().length == 0) continue;  // empty strings are meaningless here, don't try to hide them as tapes
-            result = result.bind(c => new HideGrammar(c, tape.trim()));
+        
+        const [prevGrammar, prevMsgs] = this.transform(t.prev, env)
+                                            .destructure();
+
+        const [tapeGrammar, tapeMsgs] = parseContent("tapename", t.cell.text)
+                                            .destructure();
+
+        if (!(tapeGrammar instanceof TapeNamesGrammar)) {
+            return prevGrammar
+                    .err("Renaming error", "Cannot parse this cell as a tape name")
+                    .msg(prevMsgs)
+                    .msg(tapeMsgs)
         }
-        return result.bind(g => g.locate(t.pos));
+
+        let result = prevGrammar;
+        for (const tape of tapeGrammar.symbols) {
+            result = new HideGrammar(result, tape);
+        }
+
+        return result
+                .locate(t.pos)
+                .msg(prevMsgs)
+                .msg(tapeMsgs)
     }
 
     public handleFilter(t: TstFilter, env: PassEnv): Msg<Grammar> {

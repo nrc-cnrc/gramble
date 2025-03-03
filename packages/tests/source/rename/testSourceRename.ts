@@ -52,4 +52,93 @@ describe(`Source ${DIR}`, function() {
             Error(10,3)
         ]
     });
+
+    testSrc({
+		desc: '5. Renaming to an invalid tape name',        
+        errors: [ 
+            Error(0,3),
+            Warning(1,3)
+        ],
+        results: [
+            {verb: "foo", gloss: "run" }
+        ]
+    });
+
+    testSrc({
+		desc: '6. Renaming from an invalid tape name',        
+        errors: [ 
+            Error(1,3) 
+        ],
+        results: [
+            {verb: "foo", gloss: "run" }
+        ]
+    });
+
+    testSrc({
+		desc: '7. Renaming from two tapes',        
+        errors: [ 
+            Error(4,2) 
+        ],
+        results: [
+            {verb: "foo", gloss: "run" }
+        ]
+    });
+
+    testSrc({
+		desc: '8a. Renaming from two tapes, the first of which is invalid',        
+        errors: [ 
+            Error(4,2) 
+        ],
+        results: [
+            {verb: "foo", text: "run" }
+        ]
+    });
+
+    testSrc({
+		desc: '8b. Renaming from two tapes, the second of which is invalid',        
+        errors: [ 
+            Error(4,2) 
+        ],
+        results: [
+            {text: "foo", gloss: "run" }
+        ]
+    });
+
+
+    testSrc({
+		desc: '9a. Renaming with an extraneous slash before',        
+        errors: [ 
+            Error(4,2) 
+        ],
+        results: [
+            {verb: "foo", gloss: "run" }
+        ]
+    });
+    
+    testSrc({
+		desc: '9b. Renaming with an extraneous slash after',        
+        errors: [ 
+            Error(4,2) 
+        ],
+        results: [
+            {verb: "foo", gloss: "run" }
+        ]
+    });
+    
+    testSrc({
+		desc: '9c. Renaming with an extraneous slash between',        
+        errors: [ 
+            Error(4,2) 
+        ],
+        results: [
+            {verb: "foo", gloss: "run" }
+        ]
+    });
+
+    testSrc({
+		desc: '10. Empty tape name under rename',       
+        results: [
+            {verb: "foo", gloss: "run" }
+        ]
+    });
 });

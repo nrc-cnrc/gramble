@@ -180,6 +180,7 @@ export function lengthRange(
         case "ends":
         case "contains":
         case "collection":
+        case "tapename":
             throw new Error("not implemented");
 
         default: exhaustive(g);

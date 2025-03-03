@@ -5,7 +5,8 @@ import {
     JoinGrammar, 
     LiteralGrammar, NegationGrammar, 
     RepeatGrammar, RuleContextGrammar, 
-    SequenceGrammar 
+    SequenceGrammar, 
+    TapeNamesGrammar
 } from "./grammars.js";
 
 import { ParseClass } from "./headers.js";
@@ -28,10 +29,12 @@ import {
     RESERVED_FOR_PLAINTEXT, 
     RESERVED_FOR_REGEX, 
     RESERVED_FOR_SYMBOL, 
+    RESERVED_FOR_TAPENAME, 
     RESERVED_WORDS 
 } from "./utils/reserved.js";
 import { DEFAULT_TAPE } from "./utils/constants.js";
 import { Msg } from "./utils/msgs.js";
+import { exhaustive } from "./utils/func.js";
 
 export type RegexParser = MPParser<Grammar>;
 
@@ -94,7 +97,7 @@ const SYMBOL_UNIT = MPAlt(
     SYMBOL_UNRESERVED,
     SYMBOL_BRACKETED,
     SYMBOL_CHAIN,
-)
+);
 
 const SYMBOL_ALTERNATION = MPSequence(
     [ SYMBOL_UNIT, "|", SYMBOL_NONEMPTY ],
@@ -104,6 +107,46 @@ const SYMBOL_ALTERNATION = MPSequence(
 const SYMBOL_EXPR = MPAlt(
     SYMBOL_EMPTY, 
     SYMBOL_NONEMPTY
+);
+
+/* TAPENAME GRAMMAR */
+
+const TAPENAME_SEQUENCE: RegexParser = MPDelay(() => MPSequence(
+    [ TAPENAME_UNRESERVED, "/", TAPENAME_NONEMPTY ],
+    ([c1, c2]) => {
+        if (!(c1 instanceof TapeNamesGrammar) || !(c2 instanceof TapeNamesGrammar)) {
+            return new TapeNamesGrammar([]);
+        }
+        return new TapeNamesGrammar([...c1.symbols, ...c2.symbols]);
+    }
+));
+
+const TAPENAME_UNRESERVED = MPUnreserved<Grammar>(
+    (s) => {
+        if (isValidSymbol(s)) {
+            return new TapeNamesGrammar([s])
+        } else {
+            throw new TapeNamesGrammar([]).err(
+                `Invalid tape name`, 
+                `${s} looks like it should be an identifier, ` +
+                `but it doesn't follow the rules for one.`
+            );
+        }
+    } 
+);
+
+const TAPENAME_EMPTY = MPEmpty(
+    () => new TapeNamesGrammar([])
+);
+
+const TAPENAME_NONEMPTY = MPAlt(
+    TAPENAME_UNRESERVED,
+    TAPENAME_SEQUENCE
+);
+
+const TAPENAME_EXPR = MPAlt(    
+    TAPENAME_EMPTY,
+    TAPENAME_NONEMPTY
 );
 
 /* REGEX GRAMMAR */
@@ -296,6 +339,12 @@ const parseParams = {
         splitters: RESERVED_FOR_SYMBOL, 
         reserved: RESERVED_WORDS, 
         expr: SYMBOL_EXPR
+    },
+
+    "tapename": {
+        splitters: RESERVED_FOR_TAPENAME, 
+        reserved: RESERVED_FOR_TAPENAME, 
+        expr: TAPENAME_EXPR
     }
 }
 
@@ -304,14 +353,14 @@ export function parseContent(
     text: string
 ): Msg<Grammar> {
     if (parseClass == "none" || parseClass == "comment") {
-        return new EpsilonGrammar().msg();
+        return defaultGrammar(parseClass).msg();
     }
     const params = parseParams[parseClass];
     const env = new MiniParseEnv(params.splitters, params.reserved);
     const results = miniParse(env, params.expr, text);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
-        return new EpsilonGrammar().err("Cell parsing error", 
+        return defaultGrammar(parseClass).err("Cell parsing error", 
                     `Cannot parse ${text} as a ${parseClass}`);
     }
     if (results.length > 1) {
@@ -319,4 +368,23 @@ export function parseContent(
         throw new Error(`Ambiguous, cannot uniquely parse ${text}`);
     }
     return results[0];
+}
+
+function defaultGrammar(pc: ParseClass): Grammar {
+    switch (pc) {
+        case "none":
+        case "comment":
+        case "ruleContext":
+        case "plaintext":
+        case "regex":
+            return new EpsilonGrammar();
+
+        case "symbol":
+            return new EmbedGrammar("");
+
+        case "tapename":
+            return new TapeNamesGrammar([]);
+
+        default: exhaustive(pc);
+    }
 }

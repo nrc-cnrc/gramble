@@ -15,7 +15,7 @@ import { exhaustive } from "./utils/func.js";
 export const DEFAULT_SATURATION = 0.05;
 export const DEFAULT_VALUE = 1.0;
 
-export type ParseClass = "plaintext" | "regex" | "symbol" | "ruleContext" | "none" | "comment";
+export type ParseClass = "plaintext" | "regex" | "symbol" | "ruleContext" | "tapename" | "none" | "comment";
 
 /**
  * A Header is a cell in the top row of a table, consisting of one of
@@ -371,8 +371,8 @@ export function parseClass(h: Header): ParseClass {
         case "ends":     return "regex";
         case "contains": return "regex";
         case "slash":    return "plaintext";
-        case "hide":     return "none";
-        case "rename":   return "none";
+        case "hide":     return "tapename";
+        case "rename":   return "tapename";
         case "error":    return "none";
         case "from":     return "regex";
         case "to":       return "plaintext";
@@ -387,6 +387,7 @@ export function fontColor(h: Header): string {
     switch (pc) {
         case "comment":     return "#669944";
         case "none":        return "#000000";
+        case "tapename":    return "#000000";
         case "plaintext":   return "#064a3f";
         case "regex":       return "#bd1128";
         case "ruleContext": return "#bd1128";

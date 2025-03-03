@@ -1,0 +1,5 @@
+root=, verb, gloss,
+    ,  foo, run,
+
+word=, embed, >text
+     , root, verb/gloss
