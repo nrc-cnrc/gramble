@@ -86,7 +86,7 @@ describe(`Parse header`, function() {
     testHeaderID("10b", "text, text", "(error)");
     testHeaderID("10c", "text,", "(error)");
     testHeaderID("10d", "text\\,", "(error)");
-    testHeaderID("10e", "text\\", "(error)");
+    testHeaderID("10e", "text\\ ", "(error)");
     testHeaderID("10f", "text\\\\text", "(error)");
     testHeaderID("10g", ",text", "(error)");
     testHeaderID("10h", ".text", "(error)");

@@ -79,6 +79,41 @@ function constructTokenizer(reserved: Set<string>): RegExp {
     ")");
 }
 
+function tokenize(s: string, splitters: Set<string>): string[] {
+
+    let escaped = false;
+    const results: string[] = [""];
+    for (let i = 0; i < s.length; i++) {
+        const c = s.charAt(i);
+        if (escaped) {
+            results[results.length-1] += "\\" + c;
+            escaped = false;
+            continue;
+        }
+
+        if (c === "\\") {
+            escaped = true;
+            continue;
+        }
+
+        if (/\s/.test(c)) {
+            results.push("");
+            continue;
+        }
+
+        if (splitters.has(c)) {
+            results.push(c);
+            results.push("");
+            continue;
+        }
+
+        results[results.length-1] += c;
+    }
+
+    return results;
+}
+
+
 /**
  * MiniParseEnv is a env parameter that's passed through all the
  * parsing functions, containing information like what characters can
@@ -91,18 +126,15 @@ function constructTokenizer(reserved: Set<string>): RegExp {
  */
 export class MiniParseEnv {
 
-    protected tokenizer: RegExp;
-
     constructor(
         public splitters: Set<string>,
         public reserved: Set<string>
-    ) { 
-        this.tokenizer = constructTokenizer(splitters);
-    }
+    ) { }
 
     public tokenize(text: string): string[] {
-        return text.split(this.tokenizer)
-                   .filter(stringIsNontrivial)
+        const result = tokenize(text, this.splitters)
+                            .filter(stringIsNontrivial);
+        return result;
     }
 }
 
