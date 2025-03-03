@@ -9,7 +9,7 @@
     "tests": "npm run --workspace packages/tests",
     "gramble": "gramble",
     "clasp": "clasp",
-    "deploy": "npm run deploy --workspace packages/sheets_addon"
+    "deploy": "npm run build && npm run deploy --workspace packages/sheets_addon"
   },
   "workspaces": [
     "packages/*"

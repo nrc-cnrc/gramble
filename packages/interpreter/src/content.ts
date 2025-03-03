@@ -45,6 +45,10 @@ const CELL_EMPTY = MPEmpty(
     () => new LiteralGrammar(DEFAULT_TAPE, "")
 );
 
+const SYMBOL_EMPTY = MPEmpty(
+    () => new EmbedGrammar("")
+);
+
 /***********************/
 /* SYMBOL NAME GRAMMAR */
 /***********************/
@@ -98,7 +102,7 @@ const SYMBOL_ALTERNATION = MPSequence(
 );
 
 const SYMBOL_EXPR = MPAlt(
-    CELL_EMPTY, 
+    SYMBOL_EMPTY, 
     SYMBOL_NONEMPTY
 );
 

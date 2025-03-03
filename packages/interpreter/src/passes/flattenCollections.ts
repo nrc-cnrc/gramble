@@ -77,6 +77,10 @@ export class FlattenCollections extends Pass<Grammar,Grammar> {
     }
 
     public transformEmbed(g: EmbedGrammar, env: PassEnv): Grammar|Msg<Grammar> {
+        if (g.symbol.length === 0) {
+            return new EpsilonGrammar();
+        }
+
         const symbolPieces = g.symbol.split(".");
         for (let i = this.qualifierStack.length; i >=1; i--) {
             // we go down the stack asking each to try to find it
