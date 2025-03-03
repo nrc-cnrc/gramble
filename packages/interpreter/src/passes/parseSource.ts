@@ -122,9 +122,17 @@ export class ParseSource extends Pass<Source,TST> {
 
             for (let colIndex = 0; colIndex < maxCol; colIndex++) {
     
-                const cellText = (colIndex < colWidth)
-                               ? s.cells[rowIndex][colIndex].trim().normalize("NFD")
+                let cellText = (colIndex < colWidth)
+                               ? s.cells[rowIndex][colIndex].normalize("NFD")
                                : "";
+                
+                const cellTextTrimmed = cellText.trim();
+                const cellIsEmpty = cellTextTrimmed.length === 0;
+
+                // cells ending in "\" are treated as being "\ "
+                if (cellText[cellText.length-1] === "\\") {
+                    cellText += " "
+                }
                 
                 const cellPos = new Pos(s.name, rowIndex, colIndex);
                 const cell = new Cell(cellText, cellPos);
@@ -140,7 +148,7 @@ export class ParseSource extends Pass<Source,TST> {
                 // the stack.  keep popping until the top of the stack 
                 // is allowed to add this cell as a child op, header,
                 // or content
-                while (cell.text != "" && colIndex <= top.col) {
+                while (!cellIsEmpty && colIndex <= top.col) {
                     stack.pop();
                     top = stack[stack.length-1];
                 }
@@ -154,12 +162,12 @@ export class ParseSource extends Pass<Source,TST> {
                 }
     
                 // all of the following steps require there to be some explicit content
-                if (cellText.length == 0) {
+                if (cellIsEmpty) {
                     continue;
                 }
     
                 // either we're still in the spec row, or there's no spec row yet
-                if (cellText.endsWith(":") || cellText.endsWith("=")) {
+                if (cellTextTrimmed.endsWith(":") || cellTextTrimmed.endsWith("=")) {
                     // it's an operation, which starts a new enclosures
                     const op = parseOp(cellText).localize(cellPos).msgTo(msgs);
                     const newEnclosure = new TstOp(cell, op);

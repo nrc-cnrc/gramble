@@ -1,4 +1,4 @@
-word=, text, , gloss
-    ,  foo, , run
-    ,     , ,
-    ,  moo, , jump
+word=, text, gloss
+    ,  foo, run
+    ,     ,
+    ,  moo, jump

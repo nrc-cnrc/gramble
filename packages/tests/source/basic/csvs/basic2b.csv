@@ -1,0 +1,11 @@
+
+Verb= , table:, text, gloss
+    ,       , foo, run
+    ,       , moo, jump
+
+ Suffix=, table: , text, gloss
+    ,       , bar, -1SG
+    ,       , baz, -2SG
+
+ Word= , table:, embed, embed
+    ,       ,verb,  suffix  

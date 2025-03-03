@@ -44,7 +44,17 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '2. Embeds',
+		desc: '2b. Embeds',
+        results: [
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG"}
+        ]
+    });
+
+    testSrc({
+		desc: '2b. Embeds, with varied spacing around symbol names',
         results: [
             {text: "foobar", gloss: "run-1SG"},
             {text: "moobar", gloss: "jump-1SG"},

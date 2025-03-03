@@ -36,7 +36,7 @@ export class AssociateHeaders extends Pass<TST,TST> {
                 for (const content of row.content) {
                     const header = this.findHeader(t.headers, content.pos.col);
                     if (header == undefined) {
-                        if (content.text.length != 0) {
+                        if (content.text.trim().length != 0) {
                             Warn("Cannot associate this cell with " +
                                     "any valid header above; ignoring.")
                                 .localize(content.pos).msgTo(msgs);

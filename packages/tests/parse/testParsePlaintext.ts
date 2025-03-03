@@ -22,6 +22,15 @@ describe(`Parse plaintext`, function() {
     testPlaintextID("1r", "\\.", ".");
     testPlaintextID("1s", "\\)", ")");
 
+    
+    testPlaintextID("1t", "\\\\", "\\");
+    testPlaintextID("1u", "1\\\\SG", "1\\SG");
+    testPlaintextID("1v", "\\\\1SG", "\\1SG");
+    testPlaintextID("1w", "1SG\\\\", "1SG\\");
+    testPlaintextID("1x", "1\\\\ SG", "1\\SG");
+    testPlaintextID("1y", "\\\\ 1SG", "\\1SG");
+    testPlaintextID("1z", "1SG\\\\ ", "1SG\\");
+
     // testing alternation
     testPlaintextID("2a", "1SG|2SG", "(alt 1SG 2SG)");
     testPlaintextID("2b", "1SG\\|2SG", "1SG|2SG");
@@ -33,6 +42,8 @@ describe(`Parse plaintext`, function() {
     testPlaintextID("2h", "1SG 2SG|3SG", "(alt 1SG2SG 3SG)");
     testPlaintextID("2i", "1SG|2SG 3SG", "(alt 1SG 2SG3SG)");
     testPlaintextID("2j", "\\|", "|");
+    
+    testPlaintextID("2k", "1SG\\\\|2SG", "(alt 1SG\\ 2SG)");
 
     // plaintext may contain Unicode letters anywhere
     testPlaintextID("3a", "textε", "textε");

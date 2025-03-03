@@ -24,6 +24,13 @@ describe(`Source ${DIR}`, function() {
             {text: "moo foo", gloss: "run"}
         ]
     });
+    
+    testSrc({
+		desc: '1b-2. Content with escaped backslash and space in middle',
+        results: [
+            {text: "moo\\foo", gloss: "run"}
+        ]
+    });
 
     testSrc({
 		desc: '1c. Content with escaped space at beginning',
@@ -36,6 +43,20 @@ describe(`Source ${DIR}`, function() {
 		desc: '1d. Content with escaped space at end',
         results: [
             {text: "foo ", gloss: "run"}
+        ]
+    });
+
+    testSrc({
+        desc: '1e. Content with an escaped backslash at end',
+        results: [
+            {text: "foo\\", gloss: "run"}
+        ]
+    });
+    
+    testSrc({
+        desc: '1f. Content with an escaped backslash and space at end',
+        results: [
+            {text: "foo\\", gloss: "run"}
         ]
     });
 

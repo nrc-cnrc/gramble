@@ -157,7 +157,7 @@ export function parseOp(text: string): Msg<Op> {
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
         return new ErrorOp().err("Invalid operator",
-                "This ends in a colon so it looks like an operator, but it cannot be parsed.");
+                "This looks like an operator, but it cannot be parsed.");
     }
     
     if (results.length > 1) {
