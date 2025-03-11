@@ -150,7 +150,7 @@
                 
                 devEnv = new SidebarDevEnvironment(cellsBySheet);
                 project = gramble.Interpreter.fromSheet(devEnv, currentSheetName, 
-                        {verbose: gramble.VERBOSE_TIME});
+                        {verbose: gramble.VERBOSE_TIME | gramble.VERBOSE_GRAMMAR});
 
                 createErrorButtons(devEnv.errors);
                 reloadSymbols();

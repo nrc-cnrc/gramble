@@ -3,7 +3,7 @@ import { Interpreter } from "./interpreter.js";
 import { TextDevEnvironment } from "./textInterface.js";
 import {
     timeIt, SILENT, VERBOSE_DEBUG,
-    VERBOSE_STATES, VERBOSE_TIME
+    VERBOSE_STATES, VERBOSE_TIME, VERBOSE_GRAMMAR
 } from "./utils/logging.js";
 import { Message } from "./utils/msgs.js";
 
@@ -16,5 +16,6 @@ export {
     VERBOSE_DEBUG,
     VERBOSE_TIME,
     VERBOSE_STATES,
+    VERBOSE_GRAMMAR,
     Message,
 };
