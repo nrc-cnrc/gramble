@@ -28,7 +28,7 @@ export class CreateCursors extends Pass<Grammar,Grammar> {
 
     public transformAux(g: Grammar, env: SymbolEnv): Grammar {
         const priorities = prioritizeTapes(g, env);
-        //console.log(`priorities = ${priorities}`);
+        console.log(`priorities = ${priorities}`);
         return Cursor(priorities, g).tapify(env);
     }
 }
@@ -50,15 +50,18 @@ export function prioritizeTapes(
     });
 
     const computedPriorities = priorities.filter(([t, priority]) => priority >= 0)
-                                    .sort((a, b) => b[1] - a[1])
-                                    .map(([a,_]) => a);
+                                    .sort((a, b) => b[1] - a[1]);
+
+    console.log(`priorities = ${computedPriorities}`);
+
+    const prioritiesOnly = computedPriorities.map(([a,_]) => a);
 
     if (env.opt.priority.length == 0)
-        return computedPriorities;
+        return prioritiesOnly;
 
     // Concatenate explicit tape priorities from env.opt with the computed ones,
     // and remove the duplicates.
-    const result = env.opt.priority.concat(computedPriorities)
+    const result = env.opt.priority.concat(prioritiesOnly)
                         .filter((e, idx, self) => idx === self.indexOf(e));
 
     // console.log(`result: ${result}`);
@@ -225,9 +228,9 @@ function getTapePriorityJoin(
     const c1priority = getTapePriority(g.child1, tapeName, symbolsVisited, env);
     const c2priority = getTapePriority(g.child2, tapeName, symbolsVisited, env);
     if (c1tapes.has(tapeName) && c2tapes.has(tapeName)) {
-        return c1priority + c2priority * 10;
+        return c1priority + c2priority;
     }
-    return (c1priority + c2priority);
+    return (c1priority + c2priority) / 2;
 }
 
 function getTapePriorityReplace(
@@ -241,7 +244,7 @@ function getTapePriorityReplace(
     const c1priority = getTapePriority(g.inputChild, tapeName, symbolsVisited, env);
     const c2priority = getTapePriority(g.outputChild, tapeName, symbolsVisited, env);
     if (c1tapes.has(tapeName) && c2tapes.has(tapeName)) {
-        return c1priority + c2priority * 10;
+        return c1priority + c2priority;
     }
     return (c1priority + c2priority);
 }

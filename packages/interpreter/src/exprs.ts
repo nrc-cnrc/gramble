@@ -1296,6 +1296,9 @@ class JoinExpr extends BinaryExpr {
     }
 
     public get id(): string {
+        if (this.child !== undefined) {
+            return `\$${this.symbol}(${this.child.id})`
+        }
         return `\$${this.symbol}`;
     }
 
@@ -1683,6 +1686,7 @@ export class CursorExpr extends UnaryExpr {
             const newOutput = this.output.addOutput(env, d.result);
             env.logDeriv(d.result, d.next);
             env.indentLog(1);
+
             for (const [_, nNext] of d.next.forward(env)) {
                 const finished = (d.result instanceof TokenExpr && d.result.text == "");
 
