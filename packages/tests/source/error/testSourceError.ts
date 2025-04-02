@@ -17,7 +17,7 @@ describe(`Source ${DIR}`, function() {
             {text: "foobar", gloss: "run-1SG"}
         ],
         errors: [
-            Error(4,4),
+            Error(4, 4, "Invalid header: 'table'"),
             Warning(5,4)
         ]
     });
@@ -29,7 +29,7 @@ describe(`Source ${DIR}`, function() {
             {gloss: "-2SG",text: "baz"}
         ],
         errors: [
-            Error(1,0),
+            Error(1, 0, "Invalid operator: 'optional='"),
             Warning(1,0)
         ]
     });
@@ -39,7 +39,7 @@ describe(`Source ${DIR}`, function() {
         filename: "optional",
         results: undefined,
         errors: [
-            Error(0, 0, "optional")
+            Error(0, 0, "Reserved sheet name: 'optional'", "optional")
         ]
     });
 
@@ -49,9 +49,9 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Error(0,0),
+            Error(0, 0, "Invalid identifier: '123verb'"),
             Warning(0,0),
-            Error(5,2)
+            Error(5, 2, "Invalid symbol name: '123verb'")
         ]
     });
 
@@ -62,9 +62,9 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Error(0,0),
+            Error(0, 0, "Invalid operator: 'verb vorb='"),
             Warning(0,0),
-            Error(5,2)
+            Error(5, 2, "Error parsing cell: 'verb vorb'")
         ]
     });
 
@@ -75,7 +75,7 @@ describe(`Source ${DIR}`, function() {
             {text: "foo", gloss: "run"}
         ],
         errors: [
-            Error(4,0)
+            Error(4, 0, "Reassigning existing symbol: 'word'")
         ]
     });
     
@@ -86,7 +86,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moo", gloss: "jump"}
         ],
         errors: [
-            Error(6,3)
+            Error(6, 3, "Undefined symbol: 'suffix'")
         ]
     });  
 
@@ -97,7 +97,7 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Warning(9,0),
-            Error(9,1)
+            Error(9, 1, "Missing argument to 'or:'") // "This operator requires content above it, but it's empty or erroneous."
         ]
     });
 
@@ -108,7 +108,7 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Error(0,0),
+            Error(0, 0, "Missing argument to 'join:'"), // "This operator requires content above it, but it's empty or erroneous."
             Warning(0,0)
         ]
     });
@@ -137,7 +137,7 @@ describe(`Source ${DIR}`, function() {
             {text: "foobar", gloss: "run-1SG"}
         ],
         errors: [
-            Error(12,2)
+            Error(12, 2, "Wayward assignment: 'suffixless'")
         ]
     });
 
@@ -152,7 +152,7 @@ describe(`Source ${DIR}`, function() {
             {text: "foobar", gloss: "run-1SG"}
         ],
         errors: [
-            Error(9,1)
+            Error(9, 1, "Wayward assignment: 'suffixed'")
         ]
     });
     
@@ -165,7 +165,7 @@ describe(`Source ${DIR}`, function() {
             {text: "foobar", gloss: "run-1SG"}
         ],
         errors: [
-            Error(9,1)
+            Error(9, 1, "Wayward assignment: 'word2'")
         ]
     });
     
@@ -195,7 +195,7 @@ describe(`Source ${DIR}`, function() {
             {text: "foobarbaz", gloss: "run-1SG-2SG"}
         ],
         errors: [
-            Error(4,4)
+            Error(4, 4, "Unexpected operator: 'table:'")
         ]
     });
     
@@ -206,7 +206,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moo", gloss: "jump"}
         ],
         errors: [
-            Error(8,3),
+            Error(8, 3, "Invalid header: 'blarg embed'"),
             Warning(9,3)
         ]
     });
@@ -217,29 +217,60 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Error(0,1),
+            Error(0, 1, "Missing/invalid plain header"),
+            Error(0, 1, "Invalid tape name: 'text text'"),
             Warning(1,1)
         ]
     });
 
     testSrc({
-		desc: '8c. Tape name beginning with number',
+		desc: '8c0. No header after symbol assignment',
+        results: [],
+        errors: []
+    });
+
+    testSrc({
+		desc: '8c1. Space in a header after symbol assignment',
         results: [
             {}
         ],
         errors: [
-            Error(0,1),
+            Error(0, 1, "Missing/invalid plain header"),
+            Error(0, 1, "Invalid header: 'text text'"),
             Warning(1,1)
         ]
     });
 
     testSrc({
-		desc: '8d. Only header in a row in unparsable',
+		desc: '8c2. Space in a header between symbol assignment & plain header',
+        results: [
+            {text: "xxx"},
+        ],
+        errors: [
+            Error(0, 1, "Invalid header: 'text text'"),
+            Warning(1,1)
+        ]
+    });
+
+    testSrc({
+		desc: '8c3. Space in a header after symbol assignment & plain header',
+        results: [
+            {text: "xxx"},
+        ],
+        errors: [
+            Error(0, 2, "Invalid header: 'text text'"),
+            Warning(1,2)
+        ]
+    });
+
+    testSrc({
+		desc: '8d. Tape name header beginning with number',
         results: [
             {}
         ],
         errors: [
-            Error(0,1),
+            Error(0, 1, "Missing/invalid plain header"),
+            Error(0, 1, "Invalid tape name: '9text'"),
             Warning(1,1)
         ]
     });
@@ -263,7 +294,7 @@ describe(`Source ${DIR}`, function() {
             {text: "foobar", gloss: "run-1SG"}
         ],
         errors: [
-            Error(0,2)
+            Error(0, 2, "Invalid 'unique' header: 'unique text'")
         ]
     });
 

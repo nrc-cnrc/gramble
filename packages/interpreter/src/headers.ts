@@ -236,8 +236,9 @@ const HP_UNRESERVED = MPUnreserved<Header>(
             return new TapeHeader(s)
         } else {
             throw new ErrorHeader().err(
-                `Invalid tape name`, 
-                `${s} looks like it should be a tape name, but tape names should start with letters or _`);
+                `Invalid tape name: '${s}'`, 
+                `'${s}' looks like it should be a tape name, ` +
+                "but tape names should start with letters or _");
         }
     } 
 );
@@ -310,7 +311,7 @@ const HP_STARTS = MPSequence<Header>(
         if (!(c instanceof TapeHeader)) {
             throw new ErrorHeader().err(
                     `Starts requires tape name`, 
-                    `Starts can only apply to tape names (e.g. "equals text")`);
+                    `Starts can only apply to tape names (e.g. "starts text")`);
         }
         return new StartsHeader(c, c.text)
     }
@@ -322,7 +323,7 @@ const HP_ENDS = MPSequence<Header>(
         if (!(c instanceof TapeHeader)) {
             throw new ErrorHeader().err(
                     `Ends requires tape name`, 
-                    `Ends can only apply to tape names (e.g. "equals text")`);
+                    `Ends can only apply to tape names (e.g. "ends text")`);
         }
         return new EndsHeader(c, c.text);
     }
@@ -334,7 +335,7 @@ const HP_CONTAINS = MPSequence<Header>(
         if (!(c instanceof TapeHeader)) {
             throw new ErrorHeader().err(
                     `Contains requires tape name`, 
-                    `Contains can only apply to tape names (e.g. "equals text")`);
+                    `Contains can only apply to tape names (e.g. "contains text")`);
         }
         return new ContainsHeader(c, c.text);
     }
@@ -348,10 +349,9 @@ export function parseHeaderCell(text: string): Msg<Header> {
     const results = miniParse(env, HP_EXPR, text);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
-        return new ErrorHeader().err(
-            "Invalid header",
-            "Cannot parse this header"
-        );
+        const trimmedText = text.trim();
+        return new ErrorHeader().err(`Invalid header: '${trimmedText}'`,
+                                    `Cannot parse '${trimmedText}' as a header`);
     }
     if (results.length > 1) {
         // if this happens, it's an error on our part

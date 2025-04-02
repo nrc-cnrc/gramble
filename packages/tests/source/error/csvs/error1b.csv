@@ -1,5 +1,5 @@
 
-optional:, table:, text, gloss
+optional=, table:, text, gloss
     ,       , foo, run
     ,       , moo, jump
 

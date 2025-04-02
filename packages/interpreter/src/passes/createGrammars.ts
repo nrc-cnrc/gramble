@@ -280,8 +280,8 @@ export class CreateGrammars extends Pass<TST,Grammar> {
             const existingReferent = getCaseInsensitive(newColl.symbols, child.name);
             if (existingReferent != undefined) {
                 // we're reassigning an existing symbol!
-                Err('Reassigning existing symbol', 
-                    `The symbol ${child.name} already refers to another grammar above.`)
+                Err(`Reassigning existing symbol: '${child.name}'`, 
+                    `The symbol '${child.name}' already refers to another grammar above.`)
                     .localize(child.pos).msgTo(msgs);
                 continue;
             }     

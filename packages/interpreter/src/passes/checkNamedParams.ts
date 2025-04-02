@@ -77,15 +77,15 @@ export class CheckNamedParams extends Pass<TST,TST> {
         const msgs: Message[] = [];
         
         // now check that the required params are present.  if the
-        // child is a TstGrid, we have to check more closely.  if the
-        // child isn't a TstGrid, then  
+        // child is a TstGrid, we have to check more closely.
         if (t.child instanceof TstHeadedGrid) {
             for (const param of requiredParams(t.op)) {
-                if (t.child.headers.length > 0 && !t.child.providesParam(param)) {
+                if (!t.child.providesParam(param)) {
                     const paramDesc = param == DEFAULT_PARAM 
-                                    ? "a plain header (e.g. not 'from', not 'to', not 'unique')"
-                                    : `a ${param} header`;
-                    Err("Missing named param",
+                                    ? "a plain header (e.g. not 'from', 'to', 'unique')"
+                                    : `a '${param}' header`;
+                    const paramName = param == DEFAULT_PARAM ? "plain" : `'${param}'`;
+                    Err(`Missing/invalid ${paramName} header`,
                         `This operator requires ${paramDesc}, but ` +
                         "the content to the right doesn't have one.")
                         .localize(t.cell.pos).msgTo(msgs);
@@ -93,12 +93,12 @@ export class CheckNamedParams extends Pass<TST,TST> {
             }
         } else {
             // if the child isn't a TstGrid, it can only provide
-            // the unnamed parameter `__`, so loop through the required
-            // params and complain if they're not `__`.
+            // the unnamed parameter DEFAULT_PARAM, so loop through the required
+            // params and complain if they're not DEFAULT_PARAM.
             for (const param of requiredParams(t.op)) {
                 if (param != DEFAULT_PARAM) {
-                    Err("Missing named param",
-                        `This operator requires a ${param} header, but ` +
+                    Err(`Missing/invalid '${param}' header`,
+                        `This operator requires a '${param}' header, but ` +
                         "the content to the right doesn't have one.")
                         .localize(t.cell.pos).msgTo(msgs);
                 }
@@ -124,20 +124,19 @@ export class CheckNamedParams extends Pass<TST,TST> {
             // it's an unexpected header
             const param = (tag == DEFAULT_PARAM) ?
                               "an unnamed parameter" :
-                              `a parameter named ${tag}`;
+                              `an operand named '${tag}'`;
 
-            if (h.header instanceof UniqueHeader && this.permissibleParams.has(DEFAULT_PARAM)) {
-                // if we can easily remove the tag, try that
-                const newHeader = new TstHeader(h.cell, h.header.child);
-                return newHeader.err("Invalid parameter",
-                        `The operator to the left does not expect ${param}`)
-                        .localize(h.pos);
-            }
-
-            // otherwise return empty
-            return new TstEmpty().err("Invalid parameter",
-                `The operator to the left does not expect ${param}`)
-                .localize(h.pos);
+            // if we can easily remove the tag, try that; otherwise return empty
+            const newHeader = (h.header instanceof UniqueHeader
+                                    && this.permissibleParams.has(DEFAULT_PARAM)) ?
+                                new TstHeader(h.cell, h.header.child) :
+                                new TstEmpty();
+            const operandName = (tag == DEFAULT_PARAM) ? "plain" : `'${tag}'`;
+            const trimmedText = t.cell.text.trim();
+            return newHeader.err(`Invalid ${operandName} header: '${trimmedText}'`,
+                                "The operator to the left does not expect " +
+                                `${param}: '${trimmedText}'`)
+                            .localize(h.pos);
         }) as MsgFunc<TstHeader,TST>);
     }
 }

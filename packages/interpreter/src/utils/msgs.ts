@@ -85,8 +85,8 @@ export class MissingSymbolError extends Error {
     constructor(
         public symbol: string
     ) {
-        super("Undefined symbol", 
-            `Undefined symbol: ${symbol}`)
+        super(`Undefined symbol: '${symbol}'`, 
+            `'${symbol}' is a reference to a symbol that has not been defined.`)
     }
 }
 

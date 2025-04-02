@@ -99,7 +99,7 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
         if (!(h.child instanceof TapeHeader)) {
             // shouldn't happen, should already be taken care of, more for linting
             return new EpsilonGrammar().err("Invalid header",
-                'This header can only take a plain tape name (e.g. "text").');
+                "This header can only take a plain tape name (e.g. 'text').");
         }
         const tapeName = h.child.text;
         return msg(this.cellGrammar)

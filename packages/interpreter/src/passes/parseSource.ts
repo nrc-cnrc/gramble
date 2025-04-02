@@ -40,9 +40,10 @@ export class ParseSource extends Pass<Source,TST> {
         for (const [sheetName, sheet] of Object.entries(s.sheets)) {
             
             if (RESERVED_WORDS.has(sheetName.toLowerCase())) {
-                msgs.push(Err("Reserved sheet name",
-                    `${sheetName} is a reserved word; you cannot name a sheet this.`)
-                    .localize(new Pos(sheetName, 0, 0)))
+                msgs.push(Err(`Reserved sheet name: '${sheetName}'`,
+                                `'${sheetName}' is a reserved word; ` +
+                                "you cannot name a sheet this.")
+                            .localize(new Pos(sheetName, 0, 0)))
                 continue;
             }
             const tstSheet = this.transform(sheet, env).msgTo(msgs) as TstAssignment;
@@ -174,8 +175,8 @@ export class ParseSource extends Pass<Source,TST> {
                     new OpMsg().msgTo(msgs, cellPos);
 
                     if (top.tst instanceof TstGrid) {
-                        Err(`Unexpected operator`,
-                            "This looks like an operator, " +
+                        Err(`Unexpected operator: '${cellTextTrimmed}'`,
+                            `'${cellTextTrimmed}' looks like an operator, ` +
                             " but only a header can follow a header.")
                             .msgTo(msgs, cellPos);
                         continue;

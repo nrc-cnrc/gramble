@@ -105,8 +105,9 @@ const OP_UNRESERVED = MPUnreserved<Op>(
             return new SymbolOp(s)
         } else {
             throw new ErrorOp().err(
-                `Invalid identifier`, 
-                `${s} looks like it should be an identifier, but it contains an invalid symbol.`
+                `Invalid identifier: '${s}'`, 
+                `'${s}' looks like it should be an identifier, ` +
+                "but it contains an invalid symbol."
             );
         }
     } 
@@ -156,13 +157,14 @@ export function parseOp(text: string): Msg<Op> {
     const results = miniParse(env, OP_EXPR, trimmedText);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
-        return new ErrorOp().err("Invalid operator",
-                "This looks like an operator, but it cannot be parsed.");
+        return new ErrorOp().err(`Invalid operator: '${trimmedText}'`,
+                                `'${trimmedText}' looks like an operator, ` +
+                                "but it cannot be parsed as one");
     }
     
     if (results.length > 1) {
         // if this happens, it's an error on our part
-        throw new Error(`Ambiguous, cannot uniquely parse ${text}`);
+        throw new Error(`Ambiguous, cannot uniquely parse '${trimmedText}'`);
     }
     return results[0];
 }

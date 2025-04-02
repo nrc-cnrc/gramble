@@ -10,5 +10,5 @@ suffix=, table:, text, gloss
 word=, table:, embed, embed
     ,       , verb, suffix 
     ,
-    , or:   , suffixless:, embed
+    , or:   , suffixless=, embed
     ,       ,            , verb

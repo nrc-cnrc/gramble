@@ -326,8 +326,9 @@ export function testErrors(
 ): void {
     testNumErrors(interpreter, expectedErrors.length);
     for (const err of expectedErrors) {
-        const levelMsg = (err.tag === "error") ? `an ${err.tag}` : `an ${err.tag}`;
-        it(`should have ${levelMsg} at ${err.sheet}:${err.row}:${err.col}`, function() {
+        const an = err.tag === "error" ? 'an' : 'a';
+        it(`should have ${an} ${err.tag} at ${err.sheet}:${err.row}:${err.col}` +
+                `:${err.shortMsg ?? ""}`, function() {
             try {
                 const msgs = interpreter.devEnv.getErrors(err);
                 expect(msgs.length).to.be.greaterThan(0);

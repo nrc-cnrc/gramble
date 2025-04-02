@@ -77,9 +77,9 @@ export class ConstructReplaceBlocks extends AutoPass<Grammar> {
             // new-style rules, but just in case
             throw new EpsilonGrammar()
                         .tapify(env)
-                        .err( "Multitape rule", 
-                            "This rule has the wrong number of tapes " +
-                              ` in "pre/from/post": ${inputMaterial.tapeNames}`);
+                        .err( "Non-single-tape rule", 
+                              "This rule has the wrong number of tapes " +
+                              `in "pre/from/post": ${inputMaterial.tapeNames}`);
         }
 
         /*

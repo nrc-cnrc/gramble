@@ -24,14 +24,14 @@ const module = import.meta
 
 const TEST_DIR = dirname(module.filename);
 
-export function Error(row: number, col: number, sheet?: string): Partial<Message> {
-    if (sheet === undefined) return { row, col, tag: Msgs.Tag.Error };
-    return {sheet, row, col, tag: Msgs.Tag.Error} 
+export function Error(row: number, col: number, shortMsg?: string, sheet?: string): Partial<Message> {
+    let err: Partial<Message> = {sheet, row, col, tag: Msgs.Tag.Error};
+    if (shortMsg !== undefined) err = {shortMsg, ...err};
+    return err;
 }
 
 export function Warning(row: number, col: number, sheet?: string):  Partial<Message> {
-    if (sheet === undefined) return { row, col, tag: Msgs.Tag.Warning };
-    return { row, col, tag: Msgs.Tag.Warning };
+    return { sheet, row, col, tag: Msgs.Tag.Warning };
 }
 
 export interface SourceTestAux extends Options {

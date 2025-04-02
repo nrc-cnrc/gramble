@@ -75,8 +75,8 @@ const SYMBOL_UNRESERVED = MPUnreserved<Grammar>(
             return new EmbedGrammar(s)
         } else {
             throw new EpsilonGrammar().err(
-                `Invalid symbol name`, 
-                `${s} looks like it should be an identifier, ` +
+                `Invalid symbol name: '${s}'`, 
+                `'${s}' looks like it should be an identifier, ` +
                 `but it doesn't follow the rules for one.`
             );
         }
@@ -127,9 +127,9 @@ const TAPENAME_UNRESERVED = MPUnreserved<Grammar>(
             return new TapeNamesGrammar([s])
         } else {
             throw new TapeNamesGrammar([]).err(
-                `Invalid tape name`, 
-                `${s} looks like it should be an identifier, ` +
-                `but it doesn't follow the rules for one.`
+                `Invalid tape name: '${s}'`, 
+                `'${s}' looks like it should be an identifier, ` +
+                "but it doesn't follow the rules for one."
             );
         }
     } 
@@ -360,12 +360,13 @@ export function parseContent(
     const results = miniParse(env, params.expr, text);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
-        return defaultGrammar(parseClass).err("Cell parsing error", 
-                    `Cannot parse ${text} as a ${parseClass}`);
+        const trimmedText = text.trim();
+        return defaultGrammar(parseClass).err(`Error parsing cell: '${trimmedText}'`, 
+                    `Cannot parse '${trimmedText}' as a ${parseClass}`);
     }
     if (results.length > 1) {
         // if this happens, it's an error on our part
-        throw new Error(`Ambiguous, cannot uniquely parse ${text}`);
+        throw new Error(`Ambiguous, cannot uniquely parse '${text}'`);
     }
     return results[0];
 }

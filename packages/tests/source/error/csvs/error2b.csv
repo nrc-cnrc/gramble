@@ -1,6 +1,6 @@
-verb vorb:, table:, text, gloss
+verb vorb=, table:, text, gloss
     ,       , foo, run
     ,       , moo, jump
 
 word=, table:, embed
-    ,       , verb vorb 
+     ,       , verb vorb

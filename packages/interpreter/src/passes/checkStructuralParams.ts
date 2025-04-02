@@ -41,18 +41,18 @@ export class CheckStructuralParams extends Pass<TST,TST> {
             // and replace it with its child
             if (t.sibling instanceof TstOp 
                  && t.sibling.op instanceof SymbolOp) {
-                Err("Wayward assignment",
-                    "This looks like an assignment, but isn't in an " +
-                    " appropriate position for one and will be ignored.")
+                Err(`Wayward assignment: '${t.sibling.op.text}'`,
+                    `This looks like an assignment to '${t.sibling.op.text}', but ` +
+                    "isn't in an appropriate position for one and will be ignored.")
                     .localize(t.sibling.pos).msgTo(msgs);
                 t.sibling = t.sibling.child;
             }
         
             if (t.child instanceof TstOp && 
                 t.child.op instanceof SymbolOp) {
-                Err("Wayward assignment",
-                    "This looks like an assignment, but isn't in an " +
-                    " appropriate position for one and will be ignored.")
+                Err(`Wayward assignment: '${t.child.op.text}'`,
+                    `This looks like an assignment to '${t.child.op.text}', but ` +
+                    "isn't in an appropriate position for one and will be ignored.")
                     .localize(t.child.pos).msgTo(msgs);
                 t.child = t.child.child;
             }
@@ -106,25 +106,27 @@ export class CheckStructuralParams extends Pass<TST,TST> {
         if (childMustBeGrid(t.op) == "required" && 
             !(t.child instanceof TstGrid)) {
             throw t.sibling.err(`'${t.op.tag}' requires grid`,
-                    `This ${t.op.tag} operator requires a grid to the right, ` +
+                    `This '${t.op.tag}' operator requires a grid to the right, ` +
                     "but has another operator instead.");
         }
 
+        const trimmedText = t.cell.text.trim();
         // if the op must have a sibling, but has neither a sibling
         // nor a child, issue an error, and return empty.
         if (siblingRequired(t.op) == "required" 
                 && t.sibling instanceof TstEmpty
                 && t.child instanceof TstEmpty) {
-            throw new TstEmpty().err(`Missing args to '${t.cell.text}'`,
-                            "This operator requires content above it and to the right, " +
-                            "but both are empty or erroneous.")
+            throw new TstEmpty().err(`Missing arguments to '${trimmedText}'`,
+                            `The '${trimmedText}' operator requires content above it `  +
+                            "and to the right, but both are empty or erroneous.")
         }
 
         // if the op must have a sibling and doesn't, issue an error,
         // and return empty
         if (siblingRequired(t.op) == "required" && t.sibling instanceof TstEmpty) {
-            throw new TstEmpty().err(`Missing argument to ${t.cell.text}`,
-                            "This operator requires content above it, but it's empty or erroneous.");
+            throw new TstEmpty().err(`Missing argument to '${trimmedText}'`,
+                            `The '${trimmedText}' operator requires content above it, ` +
+                            "but it's empty or erroneous.");
         }
 
         // all operators need something in their .child param.  if
@@ -138,9 +140,9 @@ export class CheckStructuralParams extends Pass<TST,TST> {
         // warn about it.
         if (siblingRequired(t.op) == "forbidden" &&
                 !(t.sibling instanceof TstEmpty)) {
-            throw t.warn("This content does not get " +
-                "assigned to anything and will be ignored.")
-                .localize(t.sibling.pos);
+            throw t.warn("This content does not get assigned to anything " +
+                        "and will be ignored.")
+                    .localize(t.sibling.pos);
         }
 
         return t;
