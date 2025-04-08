@@ -13,7 +13,7 @@ export const REQUIRED_REPLACE_PARAMS = new Set([
 export const REPLACE_PARAMS = new Set([
     "context",
     ...REQUIRED_REPLACE_PARAMS
-]);
+]); 
 
 export const TEST_PARAMS = new Set([
     "unique",
@@ -31,7 +31,7 @@ export const RESERVED_HEADERS = new Set([
     "ends", 
     "contains",
     "re",
-    ...REPLACE_PARAMS,
+    //...REPLACE_PARAMS,
     ...TEST_PARAMS
 ]);
 

@@ -15,7 +15,20 @@ import { exhaustive } from "./utils/func.js";
 export const DEFAULT_SATURATION = 0.05;
 export const DEFAULT_VALUE = 1.0;
 
-export type ParseClass = "plaintext" | "regex" | "symbol" | "ruleContext" | "tapename" | "none" | "comment";
+
+/** Each header is associated with a ParseClass, which is the answer to the question
+ * "According to what grammar should the content under me be parsed?"  E.g., an ordinary
+ * tapename header causes the content under it to be parsed as plaintext -- where most 
+ * special symbols are parsed as literals with very few exceptions -- whereas a filter
+ * header like "equals text" causes the content under it to be parsed as a regex.
+ */
+export type ParseClass = "plaintext" 
+                       | "regex" 
+                       | "symbol" 
+                       | "ruleContext" 
+                       | "tapename" 
+                       | "none" 
+                       | "comment";
 
 /**
  * A Header is a cell in the top row of a table, consisting of one of
@@ -212,8 +225,8 @@ export class ErrorHeader extends Component {
 const HP_NON_COMMENT_EXPR: MPParser<Header> = MPDelay(() =>
     MPAlt(
         HP_OPTIONAL, HP_SLASH,
-        HP_FROM, HP_TO, 
-        HP_RULE_CONTEXT,
+        //HP_FROM, HP_TO, 
+        //HP_RULE_CONTEXT,
         HP_UNIQUE,
         HP_RENAME, HP_EQUALS, HP_STARTS, 
         HP_ENDS, HP_CONTAINS, HP_SUBEXPR)
@@ -258,6 +271,7 @@ const HP_OPTIONAL = MPSequence<Header>(
     ([c]) => new OptionalHeader(c)
 );
 
+/*
 const HP_FROM = MPSequence<Header>(
     ["from"],
     () => new FromHeader()
@@ -271,7 +285,7 @@ const HP_TO = MPSequence<Header>(
 const HP_RULE_CONTEXT = MPSequence<Header>(
     ["context"],
     () => new RuleContextHeader()
-);
+); */
 
 const HP_UNIQUE = MPSequence<Header>(
     ["unique", HP_NON_COMMENT_EXPR],

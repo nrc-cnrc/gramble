@@ -4,7 +4,7 @@ import {
 } from "../tsts.js";
 import { Pass } from "../passes.js";
 import { Err, Message, MsgFunc, Msg, Warn } from "../utils/msgs.js";
-import { UniqueHeader, paramName } from "../headers.js";
+import { FromHeader, RuleContextHeader, ToHeader, UniqueHeader, paramName } from "../headers.js";
 import {
     allowedParams, 
     paramsMustBePerfect, 
@@ -15,18 +15,28 @@ import { PassEnv } from "../components.js";
 
 /**
  * This pass checks whether named parameters in headers
- * (e.g. `from text`) are appropriately licensed by the operator that
+ * (e.g. `from`) are appropriately licensed by the operator that
  * encloses them.
  * 
- * If the named parameter is invalid, it creates an error message, and
- * tries to fix the header.  If the header is a TagHeader and the operator
+ * One named parameter -- the "unique" param of testnot -- is a reserved
+ * word, and can't otherwise be used, so that already has a built-in param
+ * name.  
+ * 
+ * The rest, however, are not reserved words (the programmer is allowed to 
+ * name a tape "context", for example, even though this is a parameter name
+ * to the replace opration).  So at this stage their headers
+ * are still TapeHeaders.  If we find to/from/context in the right syntactic
+ * environment we replace them with FromHeader etc.
+ * 
+ * If the named parameter is invalid, we create an error message, and
+ * try to fix the header.  If the header is a TagHeader and the operator
  * allows unnamed params, then the fix is to remove that TagHeader in favor 
  * of its child.  Otherwise, the fix is to remove the header entirely.
  */
 export class CheckNamedParams extends Pass<TST,TST> {
 
     constructor(
-        public permissibleParams: Set<string> = new Set([DEFAULT_PARAM])
+        public allowedParams: Set<string> = new Set([DEFAULT_PARAM])
     ) { 
         super();
     }
@@ -117,18 +127,47 @@ export class CheckNamedParams extends Pass<TST,TST> {
     public handleHeader(t: TstHeader, env: PassEnv): TST|Msg<TST> {
         const mapped = t.mapChildren(this, env) as Msg<TstHeader>;
         return mapped.bind((h => {
+
+            // first, from/to/context headers are still TapeHeaders
+            // at this stage.  if we're in Replace context, we need to 
+            // turn those into FromHeader/ToHeader/ContextHeader.
+
+            if (h.header.tag === "tape" 
+                    && h.header.text.toLowerCase() === "from" 
+                    && this.allowedParams.has("from")) {
+                return new TstHeader(t.cell, new FromHeader());
+            }
+
+            if (h.header.tag === "tape" 
+                && h.header.text.toLowerCase() === "to" 
+                && this.allowedParams.has("to")) {
+                return new TstHeader(t.cell, new ToHeader());
+            }
+
+            if (h.header.tag === "tape" 
+                && h.header.text.toLowerCase() === "context" 
+                && this.allowedParams.has("context")) {
+                return new TstHeader(t.cell, new RuleContextHeader());
+            }
+
+            // it's not any of those.  other than the above three, every
+            // header has a fixed param name.  "unique" has the param name
+            // "unique", everything else has the default name "__".
+
             const tag = paramName(h.header);
-            if (this.permissibleParams.has(tag)) {
+            if (this.allowedParams.has(tag)) {
                 return h; // we're good
             }
+
             // it's an unexpected header
             const param = (tag == DEFAULT_PARAM) ?
                               "an unnamed parameter" :
                               `an operand named '${tag}'`;
 
-            // if we can easily remove the tag, try that; otherwise return empty
+            // if we can easily remove the tag, try that as the fix
+            // otherwise return empty
             const newHeader = (h.header instanceof UniqueHeader
-                                    && this.permissibleParams.has(DEFAULT_PARAM)) ?
+                                    && this.allowedParams.has(DEFAULT_PARAM)) ?
                                 new TstHeader(h.cell, h.header.child) :
                                 new TstEmpty();
             const operandName = (tag == DEFAULT_PARAM) ? "plain" : `'${tag}'`;

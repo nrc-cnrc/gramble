@@ -98,6 +98,7 @@
     "testSourceHide": "mocha source/hide/*.ts",
     "testSourceMulti": "mocha source/multi/*.ts",
     "testSourceOp": "mocha source/op/*.ts",
+    "testSourceOperand": "mocha source/operand/*.ts",
     "testSourceCell": "mocha source/cell/*.ts",
     "testSourceRename": "mocha source/rename/*.ts",
     "testSourceReplace": "mocha source/replace/*.ts",

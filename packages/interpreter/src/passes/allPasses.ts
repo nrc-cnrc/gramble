@@ -77,7 +77,7 @@ export const SOURCE_PASSES =
         new CheckStructuralParams()
     ).compose(
 
-    // parse the first row of TstPreGrids into TstHeaders
+    // parse the first row of TstGrids into TstHeaders
     new TimerPass<TST,TST>(
         "Parsing headers",    
         new CreateHeaders()

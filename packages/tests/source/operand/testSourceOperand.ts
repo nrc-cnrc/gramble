@@ -137,4 +137,11 @@ describe(`Source ${DIR}`, function() {
         ]
     });
 
+    testSrc({
+        desc: '2. to/from/context used as tape names outside of a replace',
+        results: [
+            {text: "foo",    gloss: "run", from: "x", to: "y", context: "z"},
+            {text: "moo",    gloss: "jump", from: "x", to: "y", context: "z"}
+        ]
+    });
 });
