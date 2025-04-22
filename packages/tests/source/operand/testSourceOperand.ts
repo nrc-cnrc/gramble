@@ -34,6 +34,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"}
         ],
         errors: [
+            Error(12,1, "Missing/invalid 'to' header"),
             Warning(12,1),
             Error(12, 3, "Invalid plain header: 'too'"),
         ]
@@ -52,7 +53,8 @@ describe(`Source ${DIR}`, function() {
         errors: [
             Error(12,1, "Missing/invalid 'from' header"),
             Error(12,1, "Missing/invalid 'to' header"),
-            Error(12,2, "Invalid header: 'from/to'"),
+            Warning(12,1),
+            Error(12, 2, "Invalid plain header: 'from/to'"),
         ]
     });
 
@@ -69,7 +71,8 @@ describe(`Source ${DIR}`, function() {
         errors: [
             Error(12,1, "Missing/invalid 'from' header"),
             Error(12,1, "Missing/invalid 'to' header"),
-            Error(12,2, "Invalid header: 'to/from'"),
+            Warning(12,1),
+            Error(12, 2, "Invalid plain header: 'to/from'"),
         ]
     });
 
@@ -85,7 +88,8 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(12,1, "Missing/invalid 'to' header"),
-            Error(12,3, "Invalid header: 'to/xxx'"),
+            Warning(12,1),
+            Error(12, 3, "Invalid plain header: 'to/xxx'"),
         ]
     });
 
@@ -101,7 +105,8 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(12,1, "Missing/invalid 'to' header"),
-            Error(12,2, "Invalid header: 'to/xxx'"),
+            Warning(12,1),
+            Error(12, 2, "Invalid plain header: 'to/xxx'"),
         ]
     });
 
@@ -117,7 +122,8 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(12,1, "Missing/invalid 'from' header"),
-            Error(12,3, "Invalid header: 'from/xxx'"),
+            Warning(12,1),
+            Error(12, 3, "Invalid plain header: 'from/xxx'"),
         ]
     });
 
@@ -133,7 +139,8 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(12,1, "Missing/invalid 'from' header"),
-            Error(12,2, "Invalid header: 'from/xxx'"),
+            Warning(12,1),
+            Error(12, 2, "Invalid plain header: 'from/xxx'"),
         ]
     });
 

@@ -42,7 +42,6 @@ export class CheckNamedParams extends Pass<TST,TST> {
     }
 
     public transformAux(t: TST, env: PassEnv): TST|Msg<TST> {
-
         switch(t.tag) {
             case "op":          return this.handleOp(t, env);
             case "header":      return this.handleHeader(t, env);
@@ -68,18 +67,19 @@ export class CheckNamedParams extends Pass<TST,TST> {
                                           .localize(t.pos)
                                           .destructure();
         
+        // check whether all required params are present
+        const result = new TstOp(t.cell, t.op, sib, child);
+        const [op, opMsgs] = this.checkRequiredParams(result).destructure();
+
         // if there are any problems with params and we require
         // perfection, warn and return the sibling
         if (paramsMustBePerfect(t.op) && childMsgs.length > 0) {
             Warn("This op has erroneous parameters and will not execute.")
-                .localize(t.cell.pos).msgTo(childMsgs);
-            return sib.msg(sibMsgs).msg(childMsgs);
+                .localize(t.cell.pos).msgTo(opMsgs);
+            return sib.msg(sibMsgs).msg(childMsgs).msg(opMsgs);
         }
 
-        // otherwise check whether all required params are present
-        const result = new TstOp(t.cell, t.op, sib, child);
-        return this.checkRequiredParams(result)
-                   .msg(sibMsgs).msg(childMsgs);
+        return op.msg(sibMsgs).msg(childMsgs).msg(opMsgs);
     }
 
     public checkRequiredParams(t: TstOp): Msg<TST> {
@@ -127,23 +127,19 @@ export class CheckNamedParams extends Pass<TST,TST> {
     public handleHeader(t: TstHeader, env: PassEnv): TST|Msg<TST> {
         const mapped = t.mapChildren(this, env) as Msg<TstHeader>;
         return mapped.bind((h => {
-
             // first, from/to/context headers are still TapeHeaders
             // at this stage.  if we're in Replace context, we need to 
             // turn those into FromHeader/ToHeader/ContextHeader.
-
             if (h.header.tag === "tape" 
                     && h.header.text.toLowerCase() === "from" 
                     && this.allowedParams.has("from")) {
                 return new TstHeader(t.cell, new FromHeader());
             }
-
             if (h.header.tag === "tape" 
                 && h.header.text.toLowerCase() === "to" 
                 && this.allowedParams.has("to")) {
                 return new TstHeader(t.cell, new ToHeader());
             }
-
             if (h.header.tag === "tape" 
                 && h.header.text.toLowerCase() === "context" 
                 && this.allowedParams.has("context")) {
@@ -153,7 +149,6 @@ export class CheckNamedParams extends Pass<TST,TST> {
             // it's not any of those.  other than the above three, every
             // header has a fixed param name.  "unique" has the param name
             // "unique", everything else has the default name "__".
-
             const tag = paramName(h.header);
             if (this.allowedParams.has(tag)) {
                 return h; // we're good
@@ -171,7 +166,7 @@ export class CheckNamedParams extends Pass<TST,TST> {
                                 new TstHeader(h.cell, h.header.child) :
                                 new TstEmpty();
             const operandName = (tag == DEFAULT_PARAM) ? "plain" : `'${tag}'`;
-            const trimmedText = t.cell.text.trim();
+            const trimmedText = h.cell.text.trim();
             return newHeader.err(`Invalid ${operandName} header: '${trimmedText}'`,
                                 "The operator to the left does not expect " +
                                 `${param}: '${trimmedText}'`)

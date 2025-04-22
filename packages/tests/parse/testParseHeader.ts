@@ -25,9 +25,9 @@ describe(`Parse header`, function() {
     testHeaderID("4d", "%text", "(comment)");
     testHeaderID("4e", "% text", "(comment)");
     testHeaderID("4f", "comment", "(tape comment)");
-    testHeaderID("4g", "from", "(from)");
-    testHeaderID("4h", "to", "(to)");
-    testHeaderID("4i", "context", "(context)");
+    testHeaderID("4g", "from", "(tape from)");
+    testHeaderID("4h", "to", "(tape to)");
+    testHeaderID("4i", "context", "(tape context)");
 
     // using atomics as if they're unary
     testHeaderID("5a", "pre text", "(error)");
