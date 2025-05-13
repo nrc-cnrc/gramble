@@ -1,0 +1,8 @@
+PREF_TENSE_PREV=, embed
+                , multi17external.w3
+
+multi17external= ,collection:, w1=, embed,           text
+     ,           ,           ,      PREF_TENSE_PREV, able
+
+RESULT= ,embed
+        ,multi17external.ALL

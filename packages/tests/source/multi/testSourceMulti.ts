@@ -111,6 +111,76 @@ describe(`Source ${DIR}`, function() {
             {text: "mooable", gloss: "jump"},
         ]
     });
+
+    testSrc({
+		desc: '12. Reference to an external document, shadowed by a local assignment',
+        results: [
+            {text: "zooable"},
+        ]
+    });
+
+    testSrc({
+		desc: '13. External reference in a collection, shadowed by a local assignment',
+        symbol: "x.word",
+        results: [
+            {text: "zooable"},
+        ]
+    });
+    
+    testSrc({
+		desc: '14. Collection with the same name as an external sheet',
+        symbol: "word",
+        results: [
+            {text: "zoo"},
+        ]
+    });
+    
+    testSrc({
+		desc: '15. Collection with the same name as an external sheet, with a reference to it inside',
+        symbol: "multi15external.w1",
+        results: [
+            {text: "zoo"},
+        ]
+    });
+
+    testSrc({
+		desc: '16. Two references to the same sheet with different casing',
+        symbol: "result",
+        results: [
+            {text: "foo"},
+        ]
+    });
+    
+    testSrc({
+		desc: '17a. Collection with the same name as an external sheet, references both lowercase',
+        symbol: "result",
+        results: [
+            {text: "fooable"},
+        ]
+    });
+    
+    testSrc({
+		desc: '17b. Same as 17a but sheet ref lowercase, collection ref uppercase',
+        symbol: "result",
+        results: [
+            {text: "fooable"},
+        ]
+    });
+
+    testSrc({
+		desc: '17c. Same as 17a but sheet ref uppercase, collection ref lowercase',
+        symbol: "result",
+        results: [
+            {text: "fooable"},
+        ]
+    });
+    
+    testSrc({
+		desc: '17d. Same as 17a but references both uppercase',
+        symbol: "result",
+        results: [
+            {text: "fooable"},
+        ]
+    });
+
 });
-
-

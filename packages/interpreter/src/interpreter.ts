@@ -15,7 +15,7 @@ import { Expr, SelectionExpr } from "./exprs.js";
 import { DevEnvironment, SimpleDevEnvironment } from "./devEnv.js";
 import { generate } from "./generator.js";
 import { MissingSymbolError, Message, THROWER, msg } from "./utils/msgs.js";
-import { SOURCE_PASSES, GRAMMAR_PASSES } from "./passes/allPasses.js";
+import { SOURCE_PASSES, GRAMMAR_PASSES, SYMBOL_PASSES } from "./passes/allPasses.js";
 import { ExecuteTests } from "./passes/executeTests.js";
 import { CreateCursors } from "./passes/createCursors.js";
 import { constructExpr } from "./passes/constructExpr.js";
@@ -325,9 +325,8 @@ function addSheet(
     const grammar = SOURCE_PASSES.getEnvAndTransform(project, opt)
                                      .msgTo((_) => {});
     // check to see if any names didn't get qualified
-    const [_, nameMsgs] =  new FlattenCollections()
-                                .getEnvAndTransform(grammar, opt)
-                                .destructure();
+    const [_, nameMsgs] =  SYMBOL_PASSES.getEnvAndTransform(grammar, opt)
+                                        .destructure();
 
     const unqualifiedSymbols: Set<string> = new Set(); 
     for (const msg of nameMsgs) {
@@ -335,7 +334,7 @@ function addSheet(
             continue;
         }
         const firstPart = msg.symbol.split(".")[0];
-        unqualifiedSymbols.add(firstPart);
+        unqualifiedSymbols.add(firstPart.toLowerCase());
     }
 
     for (const possibleSheetName of unqualifiedSymbols) {

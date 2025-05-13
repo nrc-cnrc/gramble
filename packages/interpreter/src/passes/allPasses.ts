@@ -137,7 +137,7 @@ export const SOURCE_PASSES =
         new CombineLiterals()
     )))))))))))));
 
-export const GRAMMAR_PASSES = 
+export const SYMBOL_PASSES =
 
     // Assign default symbols to collections that don't already
     // have a default defined.
@@ -153,7 +153,11 @@ export const GRAMMAR_PASSES =
     new TimerPass(
         "Qualifying names", 
         new FlattenCollections()
-    ).compose(
+    ));
+
+export const GRAMMAR_PASSES = 
+
+    SYMBOL_PASSES.compose(
 
     // handles some local tape renaming for plaintext/regex
     new TimerPass<Grammar,Grammar>(
@@ -181,6 +185,6 @@ export const GRAMMAR_PASSES =
     new TimerPass(
         "Creating replacement rule blocks", 
         new ConstructReplaceBlocks()
-    ))))));
+    )))));
 
 export const ALL_PASSES = SOURCE_PASSES.compose(GRAMMAR_PASSES);
