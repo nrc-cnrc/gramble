@@ -1,7 +1,9 @@
-import { parseCSV } from "./utils/strings.js";
+import { Dict } from "./utils/func.js";
+import { logDebug } from "./utils/logging.js";
 import { Message } from "./utils/msgs.js";
 import * as Messages from "./utils/msgs.js";
-import { Dict } from "./utils/func.js";
+import { Options } from "./utils/options.js";
+import { parseCSV } from "./utils/strings.js";
 
 /**
  * DevEnvironment
@@ -12,6 +14,10 @@ import { Dict } from "./utils/func.js";
  * that particular cells are errors, comments, column headers, etc.
  */
 export interface DevEnvironment {
+    opt: Options;
+
+    logDebug(...msgs: any[]): void;
+
     getErrors(query?: Partial<Message>): Message[];
     logErrors(query?: Partial<Message>): void;
 
@@ -35,6 +41,12 @@ export class SimpleDevEnvironment implements DevEnvironment {
 
     protected sources: {[name: string]: string[][]} = {};
     protected errors: Dict<Message> = {};
+
+    public opt: Options;
+
+    constructor(opt: Partial<Options> = {}) {
+        this.opt = Options(opt);
+    }
 
     public hasSource(sheet: string): boolean {
         return sheet in this.sources;
@@ -91,5 +103,9 @@ export class SimpleDevEnvironment implements DevEnvironment {
     public highlight(): void {}
 
     public alert(msg: string): void { }
+
+    public logDebug(...msgs: any[]) {
+        logDebug(this.opt.verbose, ...msgs);
+    }
 
 }

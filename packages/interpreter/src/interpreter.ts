@@ -55,22 +55,18 @@ export class Interpreter {
     // but hasn't undergone SelectSymbol.
     public grammar: Grammar;
 
-    public opt: Options;
-
     // for convenience, rather than parse it as a header every time
     public tapeColors: Dict<string> = {};
 
     constructor(
         public devEnv: DevEnvironment,
         g: Grammar,
-        opt: Partial<Options> = {}
     ) { 
 
         // reset indices to zero
         INDICES.HIDE = 0;
         INDICES.REPLACE = 0;
 
-        this.opt = Options(opt);
         const timeVerbose = (this.opt.verbose & VERBOSE_TIME) != 0;
 
         // Next, we perform a variety of grammar-to-grammar passes in order
@@ -79,40 +75,40 @@ export class Interpreter {
         // scope problems adjusted, etc.
         const env = new PassEnv(this.opt);  
         this.grammar = msg(g)
-                        .bind(g => GRAMMAR_PASSES.getEnvAndTransform(g, opt))
+                        .bind(g => GRAMMAR_PASSES.getEnvAndTransform(g, devEnv.opt))
                         .msgTo(m => sendMsg(this.devEnv, m));
 
         logGrammar(this.opt.verbose, this.grammar);
     }
 
+    get opt(): Options {
+        return this.devEnv.opt;
+      }
+    
     public static fromCSV(
         csv: string,
         opt: Partial<Options> = {}
     ): Interpreter {
-        const devEnv = new SimpleDevEnvironment();
+        const devEnv = new SimpleDevEnvironment(opt);
         devEnv.addSourceAsText(DEFAULT_PROJECT_NAME, csv);
-        return Interpreter.fromSheet(devEnv, DEFAULT_PROJECT_NAME, opt);
+        return Interpreter.fromSheet(devEnv, DEFAULT_PROJECT_NAME);
     }
 
     public static fromSheet(
         devEnv: DevEnvironment, 
         mainSheetName: string,
-        opt: Partial<Options> = {}
     ): Interpreter {
-
-        const opts = Options(opt);
-
         // First, load all the sheets
         let startTime = Date.now();
         const workbook = new Workbook(mainSheetName);
-        addSheet(workbook, mainSheetName, devEnv, opts);
+        addSheet(workbook, mainSheetName, devEnv);
         let elapsedTime = msToTime(Date.now() - startTime);
-        logTime(opts.verbose, `Sheets loaded; ${elapsedTime}`);
+        logTime(devEnv.opt.verbose, `Sheets loaded; ${elapsedTime}`);
         
-        const grammar = SOURCE_PASSES.getEnvAndTransform(workbook, opts)
+        const grammar = SOURCE_PASSES.getEnvAndTransform(workbook, devEnv.opt)
                                   .msgTo(m => devEnv.message(m));
 
-        const result = new Interpreter(devEnv, grammar, opts);
+        const result = new Interpreter(devEnv, grammar);
         result.workbook = workbook;
         return result;
     }
@@ -121,7 +117,7 @@ export class Interpreter {
         grammar: Grammar | Dict<Grammar>, 
         opt: Partial<Options> = {}
     ): Interpreter {
-        const devEnv = new SimpleDevEnvironment();
+        const devEnv = new SimpleDevEnvironment(opt);
 
         if ((grammar instanceof CollectionGrammar)) {
             grammar = grammar;
@@ -134,7 +130,7 @@ export class Interpreter {
             grammar = coll;
         }
 
-        return new Interpreter(devEnv, grammar, opt);
+        return new Interpreter(devEnv, grammar);
     }
 
     public allSymbols(): string[] {
@@ -301,7 +297,6 @@ function addSheet(
     project: Workbook, 
     sheetName: string,
     devEnv: DevEnvironment,
-    opt: Partial<Options>
 ): void {
 
     if (project.hasSheet(sheetName)) {
@@ -317,15 +312,14 @@ function addSheet(
         return;
     }
 
-    //console.log(`loading source file ${sheetName}`);
     const cells = devEnv.loadSource(sheetName);
 
     const sheet = new Worksheet(sheetName, cells);
     project.sheets[sheetName] = sheet;
-    const grammar = SOURCE_PASSES.getEnvAndTransform(project, opt)
+    const grammar = SOURCE_PASSES.getEnvAndTransform(project, devEnv.opt)
                                      .msgTo((_) => {});
     // check to see if any names didn't get qualified
-    const [_, nameMsgs] =  SYMBOL_PASSES.getEnvAndTransform(grammar, opt)
+    const [_, nameMsgs] =  SYMBOL_PASSES.getEnvAndTransform(grammar, devEnv.opt)
                                         .destructure();
 
     const unqualifiedSymbols: Set<string> = new Set(); 
@@ -338,7 +332,7 @@ function addSheet(
     }
 
     for (const possibleSheetName of unqualifiedSymbols) {
-        addSheet(project, possibleSheetName, devEnv, opt);
+        addSheet(project, possibleSheetName, devEnv);
     } 
 
     return;

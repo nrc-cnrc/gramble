@@ -1,16 +1,22 @@
 import { DevEnvironment } from "./devEnv.js";
 import { Interpreter } from "./interpreter.js";
-import { SILENT, VERBOSE_DEBUG, 
-    VERBOSE_STATES, VERBOSE_TIME, 
-    VERBOSE_GRAMMAR, timeIt } from "./utils/logging.js";
+import {
+    timeIt, logDebug,
+    SILENT, VERBOSE_DEBUG, VERBOSE_EXPR,
+    VERBOSE_GRAMMAR, VERBOSE_STATES, VERBOSE_TIME,
+} from "./utils/logging.js";
+import { Options } from "./utils/options.js";
 
 export { 
     Interpreter, 
     type DevEnvironment, 
+    logDebug,
     timeIt,
     SILENT,
-    VERBOSE_TIME,
     VERBOSE_DEBUG,
+    VERBOSE_EXPR,
+    VERBOSE_GRAMMAR,
     VERBOSE_STATES,
-    VERBOSE_GRAMMAR
+    VERBOSE_TIME,
+    Options,
 };

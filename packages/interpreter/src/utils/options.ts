@@ -1,5 +1,5 @@
 import { DEFAULT_MAX_CHARS, DEFAULT_MAX_RECURSION } from "./constants.js";
-import { SILENT } from "./logging.js";
+import { SILENT, logDebug } from "./logging.js";
 import { Dict } from "./func.js";
 
 export const INDICES = {
@@ -26,7 +26,13 @@ export const DEFAULT_OPTIONS: Options = {
 }
 
 export function Options(opt: Partial<Options> = {}): Options {
-    return {...DEFAULT_OPTIONS, ...opt};
+    // Remove any undefined entries from opt.
+    const defOpt = {...opt};
+    (Object.keys(defOpt) as Array<keyof typeof defOpt>).forEach(key => {
+        if (defOpt[key] === undefined) delete defOpt[key];
+    });
+
+    return {...DEFAULT_OPTIONS, ...defOpt};
 }
 
 export class Env<T = any> {
@@ -41,6 +47,10 @@ export class Env<T = any> {
 
     public update(t: T): Env<T> {
         return this;
+    }
+
+    public logDebug(...msgs: any[]): void {
+        logDebug(this.opt.verbose, ...msgs);
     }
 
 }

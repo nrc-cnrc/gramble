@@ -28,7 +28,7 @@ export class CreateCursors extends Pass<Grammar,Grammar> {
 
     public transformAux(g: Grammar, env: SymbolEnv): Grammar {
         const priorities = prioritizeTapes(g, env);
-        //console.log(`priorities = ${priorities}`);
+        //env.logDebug(`priorities = ${priorities}`);
         return Cursor(priorities, g).tapify(env);
     }
 }
@@ -61,7 +61,7 @@ export function prioritizeTapes(
     const result = env.opt.priority.concat(computedPriorities)
                         .filter((e, idx, self) => idx === self.indexOf(e));
 
-    // console.log(`result: ${result}`);
+    // env.logDebug(`result: ${result}`);
     return result;
 }
 
