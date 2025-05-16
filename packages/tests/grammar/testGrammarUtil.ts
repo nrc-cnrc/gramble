@@ -8,19 +8,15 @@ import {
     Grammar
 } from "../../interpreter/src/grammars.js";
 
-import {
-    DEFAULT_MAX_CHARS,
-    DEFAULT_MAX_RECURSION
-} from "../../interpreter/src/utils/constants.js";
 import { Dict, StringDict } from "../../interpreter/src/utils/func.js";
 import {
-    timeIt, SILENT,
-    VERBOSE_DEBUG, VERBOSE_GRAMMAR
+    logDebug,
+    timeIt,
 } from "../../interpreter/src/utils/logging.js";
 import { Options } from "../../interpreter/src/utils/options.js";
 
 import {
-    testSuiteName, verbose,
+    testSuiteName,
     testHasTapes, testHasVocab,
     testGenerate, generateOutputs,
     testNumErrors, testNumOutputs, testMatchOutputs,
@@ -71,12 +67,12 @@ export function testGrammarAux({
     numErrors = 0,
 
     // General options
-    verbose = SILENT,
-    directionLTR = true,
-    optimizeAtomicity = true,
-    maxRecursion = DEFAULT_MAX_RECURSION,
-    maxChars = DEFAULT_MAX_CHARS,
-    priority = [],
+    verbose,
+    directionLTR,
+    optimizeAtomicity,
+    maxRecursion,
+    maxChars,
+    priority,
 }: Partial<GrammarTestAux>): void {
 
     const opt = Options({
@@ -132,7 +128,7 @@ function testDefault(params: Partial<GrammarTest>): () => void {
             msg = `-- ${params["desc"]}`;
     }
     if (msg !== undefined && params["verbose"] !== undefined)
-        verbose(params["verbose"], msg);
+        logDebug(params["verbose"], msg);
     const shortDesc = (params["desc"] !== undefined) ?
                       params["desc"].split(" ")[0] : "";
 

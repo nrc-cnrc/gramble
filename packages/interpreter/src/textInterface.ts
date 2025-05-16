@@ -2,14 +2,16 @@ import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 
 import { SimpleDevEnvironment } from "./devEnv.js";
+import { Options } from "./utils/options.js";
 import { parseCSV } from "./utils/strings.js";
 
 export class TextDevEnvironment extends SimpleDevEnvironment {
 
     constructor(
-        public dirname: string 
+        public dirname: string,
+        opt: Partial<Options>
     ) { 
-        super();
+        super(opt);
     }
 
     public hasSource(sheet: string): boolean {

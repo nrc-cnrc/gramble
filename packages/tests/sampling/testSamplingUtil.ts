@@ -4,14 +4,8 @@ import seedrandom from "seedrandom";
 import { Grammar } from "../../interpreter/src/grammars.js";
 import { Interpreter } from "../../interpreter/src/interpreter.js";
 
-import {
-    DEFAULT_MAX_CHARS,
-    DEFAULT_MAX_RECURSION
-} from "../../interpreter/src/utils/constants.js";
-
 import { StringDict } from "../../interpreter/src/utils/func.js";
-// import { stringDictToStr } from "../../interpreter/src/utils/func.js";
-import { SILENT, VERBOSE_DEBUG } from "../../interpreter/src/utils/logging.js";
+import { logDebug } from "../../interpreter/src/utils/logging.js";
 import { Options } from "../../interpreter/src/utils/options.js";
 
 import {
@@ -38,11 +32,11 @@ export function testSample({
     numSamples = 100,
     seed = 'Seed-2024',
     // General options
-    verbose = SILENT,
-    directionLTR = true,
-    optimizeAtomicity = true,
-    maxRecursion = DEFAULT_MAX_RECURSION,
-    maxChars = DEFAULT_MAX_CHARS,
+    verbose,
+    directionLTR,
+    optimizeAtomicity,
+    maxRecursion,
+    maxChars,
 }: SampleTest): void {
 
     const opt = Options({
@@ -66,15 +60,13 @@ export function testSample({
                 results = generateOutputs(interpreter, symbol, {}, true, false);
             }
             const sOutputs = sampleOutputs(interpreter, numSamples, symbol, true, false);
-            if ((verbose & VERBOSE_DEBUG) == VERBOSE_DEBUG) {
-                console.log(`-- ${desc}`);
-                console.log("Expected/Generated Outputs: ", results);
-                console.log("Sampled Outputs: ", sOutputs);
-                // const gOutputStrs = gOutputs.map(o => stringDictToStr(o)).sort();
-                // const sOutputStrs = sOutputs.map(o => stringDictToStr(o)).sort();
-                // console.log("Generated Outputs (sorted): ", gOutputStrs);
-                // console.log("Sampled Outputs (sorted): ", sOutputStrs);
-            }
+            logDebug(opt.verbose, `-- ${desc}`);
+            logDebug(opt.verbose, "Expected/Generated Outputs: ", results);
+            logDebug(opt.verbose, "Sampled Outputs: ", sOutputs);
+            // const gOutputStrs = gOutputs.map(o => stringDictToStr(o)).sort();
+            // const sOutputStrs = sOutputs.map(o => stringDictToStr(o)).sort();
+            // logDebug(opt.verbose, "Generated Outputs (sorted): ", gOutputStrs);
+            // logDebug(opt.verbose, "Sampled Outputs (sorted): ", sOutputStrs);
             testMatchOutputs(sOutputs, results, symbol, verbose);
         } catch (e) {
             it("Unexpected Exception", function() {

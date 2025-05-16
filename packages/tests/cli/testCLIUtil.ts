@@ -3,17 +3,13 @@ import { assert, expect } from "chai";
 import { spawnSync } from "child_process";
 
 import {
-    DEFAULT_MAX_CHARS,
-    DEFAULT_MAX_RECURSION
-} from "../../interpreter/src/utils/constants.js";
-import {
-    timeIt, SILENT,
-    VERBOSE_DEBUG,
+    logDebug,
+    timeIt,
 } from "../../interpreter/src/utils/logging.js";
 import { Options } from "../../interpreter/src/utils/options.js";
 
 import {
-    testSuiteName, verbose,
+    testSuiteName,
     VERBOSE_TEST_L2    
 } from '../testUtil.js';
 
@@ -38,12 +34,12 @@ export function testCLIAux({
     shortDesc = "",
 
     // General options
-    verbose = SILENT,
-    directionLTR = true,
-    optimizeAtomicity = true,
-    maxRecursion = DEFAULT_MAX_RECURSION,
-    maxChars = DEFAULT_MAX_CHARS,
-    priority = [],
+    verbose,
+    directionLTR,
+    optimizeAtomicity,
+    maxRecursion,
+    maxChars,
+    priority,
 }: Partial<CLITestAux>): void {
 
     const opt = Options({
@@ -137,7 +133,7 @@ function testDefault(params: Partial<CLITest>): () => void {
             msg = `-- ${params["desc"]}`;
     }
     if (msg !== undefined && params["verbose"] !== undefined)
-        verbose(params["verbose"], msg);
+        logDebug(params["verbose"], msg);
     const shortDesc = (params["desc"] !== undefined) ?
                       params["desc"].split(" ")[0] : "";
 

@@ -117,7 +117,7 @@ class BackgroundColorStyler extends Styler {
 
 class GoogleSheetsDevEnvironment {
 
-    constructor(currentSheetName) {
+    constructor(currentSheetName, opt) {
         this.currentSheetName = currentSheetName;
         this.noteStylers = new Map(); // :Map<string, NoteStyler>
         this.bgColorStylers  = new Map(); // :Map<string, BackgroundColorStyler>
@@ -126,6 +126,7 @@ class GoogleSheetsDevEnvironment {
         this.borderStyler = new BorderStyler();
         this.boldStyler = new BoldStyler();
         this.centerStyler = new CenterStyler();
+        this.opt = gramble.Options(opt);
     }
 
     message(msg) {
@@ -246,7 +247,11 @@ class GoogleSheetsDevEnvironment {
         for (const styler of this.noteStylers.values()) {
             styler.applyToSheet(sheet);
         }
-    } 
+    }
+
+    logDebug(...msgs) {
+        gramble.logDebug(this.opt.verbose, ...msgs)
+    }
 }
 
 
@@ -310,9 +315,9 @@ function makeInterpreter() {
     const sheet = spreadsheet.getActiveSheet();
     const sheetName = sheet.getName();
 
-    const devEnv = new GoogleSheetsDevEnvironment(sheetName);
     const opts = { verbose: gramble.VERBOSE_TIME };
-    const interpreter = gramble.Interpreter.fromSheet(devEnv, sheetName, opts);
+    const devEnv = new GoogleSheetsDevEnvironment(sheetName, opts);
+    const interpreter = gramble.Interpreter.fromSheet(devEnv, sheetName);
     return [interpreter, devEnv];
 }
 

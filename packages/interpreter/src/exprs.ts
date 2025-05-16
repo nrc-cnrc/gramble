@@ -1,23 +1,27 @@
-import {
-    Gen,
-    difference, foldRight, foldLeft,
-    Dict,
-    StringDict,
-    outputProduct,
-    flatten,
-    iterUnit,
-    update,
-    Func,
-    mapDict,
-} from "./utils/func.js";
 import { renameTape } from "./tapes.js";
 import { INPUT_TAPE, OUTPUT_TAPE } from "./utils/constants.js";
-import { VERBOSE_DEBUG, logDebug, logStates, logTime } from "./utils/logging.js";
+import { CounterStack } from "./utils/counter.js";
+import {
+    Dict,
+    difference,
+    flatten,
+    foldLeft,
+    foldRight,
+    Func,
+    Gen,
+    iterUnit,
+    outputProduct,
+    StringDict,
+    update,
+} from "./utils/func.js";
+import {
+    VERBOSE_EXPR,
+    logStates,
+    logTime
+} from "./utils/logging.js";
 import { Namespace } from "./utils/namespace.js";
 import { Env, Options } from "./utils/options.js";
-import { CounterStack } from "./utils/counter.js";
 import { randomCut, randomCutIter } from "./utils/random.js";
-import { InfinityProtection } from "./passes/infinityProtection.js";
 
 export type Query = TokenExpr | DotExpr | EpsilonTokenExpr;
 
@@ -96,17 +100,17 @@ export class DerivEnv extends Env {
 
     public logIndent(msg: string): void {
         const indent = "  ".repeat(this.stats.indentation);
-        this.logDebug(indent + msg);
+        this.logExpr(indent + msg);
     }
 
     public logDelta(tapeName: string, next: Expr): void {
-        if ((this.opt.verbose & VERBOSE_DEBUG) == VERBOSE_DEBUG) {
+        if ((this.opt.verbose & VERBOSE_EXPR) == VERBOSE_EXPR) {
             this.logIndent(`└ d_${tapeName} = ${next.id}`);
         }
     }
 
     public logDeriv(result: Expr, next: Expr): void {
-        if ((this.opt.verbose & VERBOSE_DEBUG) == VERBOSE_DEBUG) {
+        if ((this.opt.verbose & VERBOSE_EXPR) == VERBOSE_EXPR) {
             if (result instanceof TokenExpr && result.text == "") {
                 this.logIndent(`└ d_${result.tapeName} = ${next.id}`);
                 return;
@@ -115,18 +119,20 @@ export class DerivEnv extends Env {
         }
     }
 
-    public logDebug(msg: string): void {
-        logDebug(this.opt.verbose, msg);
+    public logExpr(...msgs: any[]): void {
+        if ((this.opt.verbose & VERBOSE_EXPR) == VERBOSE_EXPR) {
+            console.log(...msgs);
+        }
     }
 
-    public logDebugId(msg: string, expr: Expr): void {
-        if ((this.opt.verbose & VERBOSE_DEBUG) == VERBOSE_DEBUG) {
+    public logExprId(msg: string, expr: Expr): void {
+        if ((this.opt.verbose & VERBOSE_EXPR) == VERBOSE_EXPR) {
             console.log(`${msg} ${expr.id}`);
         }
     }
 
-    public logDebugOutput(msg: string, output: Expr): void {
-        if ((this.opt.verbose & VERBOSE_DEBUG) == VERBOSE_DEBUG) {
+    public logExprOutput(msg: string, output: Expr): void {
+        if ((this.opt.verbose & VERBOSE_EXPR) == VERBOSE_EXPR) {
             console.log(`${msg} ${JSON.stringify(output.getOutputs(this))}`);
         }
     }
@@ -2372,7 +2378,7 @@ export class MatchExpr extends UnaryExpr {
                 this.child.deriv(fromQuery, env)) {
             const wrapped = constructMatch(env, d.next, this.inputTape, this.outputTape);
             if (d.result instanceof EpsilonExpr) {
-                env.logDebug("========= EpsilonToken ==========");
+                env.logExpr("========= EpsilonToken ==========");
                 yield d;
                 continue;
             }

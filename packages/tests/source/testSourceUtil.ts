@@ -2,22 +2,16 @@ import { assert, expect } from 'chai';
 import { dirname, basename } from "path";
 import { existsSync } from "fs";
 
+import { Epsilon } from '../../interpreter/src/grammarConvenience.js';
 import { Interpreter } from "../../interpreter/src/interpreter.js";
 import { TextDevEnvironment } from "../../interpreter/src/textInterface.js";
 
-import {
-    DEFAULT_MAX_RECURSION,
-    DEFAULT_MAX_CHARS
-} from "../../interpreter/src/utils/constants.js";
-
 import { StringDict } from '../../interpreter/src/utils/func.js';
-import { SILENT } from "../../interpreter/src/utils/logging.js";
+import { Message } from '../../interpreter/src/utils/msgs.js';
 import { Options } from "../../interpreter/src/utils/options.js";
+import * as Msgs from '../../interpreter/src/utils/msgs.js';
 
 import { testErrors, testGenerate } from '../testUtil.js';
-import { Epsilon } from '../../interpreter/src/grammarConvenience.js';
-import { Message } from '../../interpreter/src/utils/msgs.js';
-import * as Msgs from '../../interpreter/src/utils/msgs.js';
 
 // const mod = typeof __filename === undefined ? module : import.meta
 const module = import.meta
@@ -50,11 +44,11 @@ export function testSourceAux({
     symbol = "word",
     results = undefined,
     errors = [],
-    verbose = SILENT,
-    directionLTR = true,
-    optimizeAtomicity = true,
-    maxRecursion = DEFAULT_MAX_RECURSION,
-    maxChars = DEFAULT_MAX_CHARS,
+    verbose,
+    directionLTR,
+    optimizeAtomicity,
+    maxRecursion,
+    maxChars,
 }: Partial<SourceTestAux>): void {
 
     const opt = Options({
@@ -120,9 +114,10 @@ export function sheetFromFile(
     }
     const dir = dirname(path);
     const sheetName = basename(path, ".csv");
-    const devEnv = new TextDevEnvironment(dir);
+    const devEnv = new TextDevEnvironment(dir, opt);
     try {
-        return Interpreter.fromSheet(devEnv, sheetName, opt);
+        const result =  Interpreter.fromSheet(devEnv, sheetName);
+        return result;
     } catch (e) {
         it("Unexpected Exception", function() {
             console.log("");

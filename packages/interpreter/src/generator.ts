@@ -48,20 +48,20 @@ export function* generate(
     let states: (Expr|ForwardGen)[] = [expr];
     let prev: Expr | ForwardGen | undefined = undefined;
 
-    env.logDebug("");
-    env.logDebugId("*** Generating for expr", expr);
+    env.logExpr("");
+    env.logExprId("*** Generating for expr", expr);
 
     while (prev = states.pop()) {
 
-        env.logDebug("");
+        env.logExpr("");
 
         if (prev instanceof Expr) {
-            env.logDebugOutput("prevOutput is", prev);
-            env.logDebugId("prevExpr is", prev);
+            env.logExprOutput("prevOutput is", prev);
+            env.logExprId("prevExpr is", prev);
         }
 
         if (prev instanceof EpsilonExpr || prev instanceof OutputExpr) {
-            env.logDebugOutput("YIELD", prev);
+            env.logExprOutput("YIELD", prev);
             const outputs = prev.getOutputs(env);
             yield* randomCut(outputs, env.random);
             continue;
@@ -86,13 +86,13 @@ export function* generate(
                 const prevID = prev instanceof Expr ? prev.id : "GEN";
                 throw new Error(`Unhandled forward: prev = ${prevID}, next = ${cNext.id}`);
             }
-            env.logDebugOutput("->", cNext);
+            env.logExprOutput("->", cNext);
             states.push(cNext);
         }
     }
 
-    env.logDebug("");
-    env.logDebugId("*** Finished generating for expr", expr);
+    env.logExpr("");
+    env.logExprId("*** Finished generating for expr", expr);
     env.logStates(`States visited: ${env.stats.statesVisited}`);
     const elapsedTime = msToTime(Date.now() - startingTime);
     env.logTime(`Generation time: ${elapsedTime}`);

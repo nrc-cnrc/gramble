@@ -35,12 +35,13 @@
 
                 errors = {};
 
-                constructor(cellsBySheet) {
+                constructor(cellsBySheet, opt) {
                     this.cellsBySheet = {};
                     for (const sheetName in cellsBySheet) {
                         const lowercaseName = sheetName.toLowerCase();
                         this.cellsBySheet[lowercaseName] = cellsBySheet[sheetName];
                     }; // {[key: string}: string[][]
+                    this.opt = gramble.Options(opt);
                 }
 
                 hasSource(sheetName) { 
@@ -75,6 +76,9 @@
                 markSymbol(msg) { }
                 highlight() { }
 
+                logDebug(...msgs) {
+                    gramble.logDebug(this.opt.verbose, ...msgs)
+                }
             }
 
             function scriptRunPromise() {
@@ -148,9 +152,9 @@
 
                 previousSheetName = currentSheetName;
                 
-                devEnv = new SidebarDevEnvironment(cellsBySheet);
-                project = gramble.Interpreter.fromSheet(devEnv, currentSheetName, 
-                        {verbose: gramble.VERBOSE_TIME | gramble.VERBOSE_GRAMMAR});
+                const opt = {verbose: gramble.VERBOSE_TIME | gramble.VERBOSE_GRAMMAR};
+                devEnv = new SidebarDevEnvironment(cellsBySheet, opt);
+                project = gramble.Interpreter.fromSheet(devEnv, currentSheetName);
 
                 createErrorButtons(devEnv.errors);
                 reloadSymbols();

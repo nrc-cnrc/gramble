@@ -3,19 +3,25 @@ import { assert, expect } from "chai";
 import { readFileSync } from "fs";
 import { basename } from "path";
 
- import {
+import { PassEnv } from "../interpreter/src/components.js";
+import {
     Dot, Epsilon,
     Lit, Rep, Seq,
  } from "../interpreter/src/grammarConvenience.js";
-import { Grammar, CollectionGrammar, QualifiedGrammar } from "../interpreter/src/grammars.js";
-import { Component, PassEnv } from "../interpreter/src/components.js";
+import {
+    Grammar,
+    QualifiedGrammar
+} from "../interpreter/src/grammars.js";
 import { Interpreter } from "../interpreter/src/interpreter.js";
-import { DEFAULT_SYMBOL, HIDDEN_PREFIX } from "../interpreter/src/utils/constants.js";
-import { Dict, getCaseInsensitive, StringDict, stringDictToStr } from "../interpreter/src/utils/func.js";
-import { Options } from "../interpreter/src/utils/options.js";
-import { Message } from "../interpreter/src/utils/msgs.js";
-import * as Messages from "../interpreter/src/utils/msgs.js";
-
+import {
+    DEFAULT_SYMBOL,
+    HIDDEN_PREFIX
+} from "../interpreter/src/utils/constants.js";
+import { Dict,
+    getCaseInsensitive,
+    StringDict,
+    stringDictToStr
+} from "../interpreter/src/utils/func.js";
 import {
     logDebug,
     timeIt,
@@ -23,11 +29,8 @@ import {
     VERBOSE_DEBUG,
     VERBOSE_GRAMMAR,
 } from "../interpreter/src/utils/logging.js";
-
-import * as Tapes from "../interpreter/src/tapes.js";
-import * as Vocab from "../interpreter/src/vocab.js";
-import { SelectSymbol } from "../interpreter/src/passes/selectSymbol.js";
-import { Op } from "../interpreter/src/ops.js";
+import { Message } from "../interpreter/src/utils/msgs.js";
+import { Options } from "../interpreter/src/utils/options.js";
 
 
 // Permit global control over verbose output in tests.
@@ -38,12 +41,6 @@ import { Op } from "../interpreter/src/ops.js";
 export const VERBOSE_TEST_L1: boolean = true;
 export const VERBOSE_TEST_L2: boolean = false;
 
-export function verbose(vb: boolean | number, ...msgs: string[]) {
-    if (!vb)
-        return;
-    logDebug(vb ? VERBOSE_DEBUG : SILENT, ...msgs);
-}
-
 export function testSuiteName(mod: NodeModule | ImportMeta ): string {
     return `${basename(mod.filename)}`
 }
@@ -51,8 +48,10 @@ export function testSuiteName(mod: NodeModule | ImportMeta ): string {
 export function logTestSuite(suiteName: string, vb: boolean = VERBOSE_TEST_L1): void {
     if (!vb)
         return;
+    const verbosity = vb ? VERBOSE_DEBUG : SILENT;
     const date_str: string = (new Date()).toUTCString();
-    verbose(vb, "", `--- ${suiteName} [${date_str}] ---`);
+    logDebug(verbosity, "");
+    logDebug(verbosity, `--- ${suiteName} [${date_str}] ---`);
 }
 
 export const t1 = (s: string) => Lit("t1", s);
