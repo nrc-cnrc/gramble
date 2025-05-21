@@ -1,4 +1,5 @@
 import { Component } from "./components.js";
+import { EpsilonGrammar, Grammar } from "./grammars.js";
 import { DEFAULT_SYMBOL } from "./utils/constants.js";
 
 export type Source = Workbook
@@ -8,6 +9,7 @@ export class Workbook extends Component {
     public readonly tag = "workbook";
 
     public sheets: {[name: string]: Worksheet} = {};
+    public grammar: Grammar = new EpsilonGrammar();
 
     constructor(
         public mainSheetName: string
