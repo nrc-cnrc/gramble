@@ -1,38 +1,74 @@
+import {
+    Component,
+    PassEnv
+} from "./components.js";
+import {
+    DevEnvironment,
+    SimpleDevEnvironment
+} from "./devEnv.js";
+import {
+    Expr,
+    SelectionExpr
+} from "./exprs.js";
+import { generate } from "./generator.js";
 import { 
     CollectionGrammar,
     Grammar, 
-    QualifiedGrammar,
 } from "./grammars.js";
+import {
+    backgroundColor,
+    parseHeaderCell
+} from "./headers.js";
+import {
+    Workbook,
+    Worksheet,
+} from "./sources.js";
 
-import { 
-    Gen, iterTake, 
-    StringDict,
-    Dict,
-} from "./utils/func.js";
-import { Worksheet, Workbook } from "./sources.js";
-import { backgroundColor, parseHeaderCell } from "./headers.js";
-import { Expr, SelectionExpr } from "./exprs.js";
-import { DevEnvironment, SimpleDevEnvironment } from "./devEnv.js";
-import { generate } from "./generator.js";
-import { MissingSymbolError, Message, THROWER, msg } from "./utils/msgs.js";
-import { SOURCE_PASSES, GRAMMAR_PASSES, SYMBOL_PASSES } from "./passes/allPasses.js";
-import { ExecuteTests } from "./passes/executeTests.js";
-import { CreateCursors } from "./passes/createCursors.js";
+import {
+    GRAMMAR_PASSES,
+    SOURCE_PASSES,
+    SYMBOL_PASSES
+} from "./passes/allPasses.js";
 import { constructExpr } from "./passes/constructExpr.js";
-import { toStr } from "./passes/toStr.js";
-import { ALL_SYMBOL, DEFAULT_PROJECT_NAME, DEFAULT_SYMBOL, HIDDEN_PREFIX } from "./utils/constants.js";
-import { VERBOSE_GRAMMAR, VERBOSE_TIME, logTime, msToTime } from "./utils/logging.js";
-import { INDICES, Options } from "./utils/options.js";
-import { SelectSymbol } from "./passes/selectSymbol.js";
-import { getAllSymbols } from "./passes/getAllSymbols.js";
-import { FlattenCollections } from "./passes/flattenCollections.js";
+import { CreateCursors } from "./passes/createCursors.js";
 import { CreateQuery } from "./passes/createQuery.js";
+import { ExecuteTests } from "./passes/executeTests.js";
+import { getAllSymbols } from "./passes/getAllSymbols.js";
 import { InfinityProtection } from "./passes/infinityProtection.js";
-import { Component, PassEnv } from "./components.js";
+import { ResolveVocab } from "./passes/resolveVocab.js";
+import { SelectSymbol } from "./passes/selectSymbol.js";
+import { toStr } from "./passes/toStr.js";
+
+import {
+    ALL_SYMBOL,
+    DEFAULT_PROJECT_NAME,
+    DEFAULT_SYMBOL,
+    HIDDEN_PREFIX
+} from "./utils/constants.js";
+import { 
+    Dict,
+    Gen,
+    iterTake, 
+    StringDict,
+} from "./utils/func.js";
+import {
+    logTime,
+    msToTime,
+    VERBOSE_GRAMMAR,
+    VERBOSE_TIME,
+} from "./utils/logging.js";
+import {
+    Message,
+    MissingSymbolError,
+    msg,
+    THROWER,
+} from "./utils/msgs.js";
+import {
+    INDICES,
+    Options
+} from "./utils/options.js";
 
 import * as Tapes from "./tapes.js";
-import { ResolveVocab } from "./passes/resolveVocab.js";
-
 import * as Vocabs from "./vocab.js";
 
 /**
@@ -104,11 +140,8 @@ export class Interpreter {
         addSheet(workbook, mainSheetName, devEnv);
         let elapsedTime = msToTime(Date.now() - startTime);
         logTime(devEnv.opt.verbose, `Sheets loaded; ${elapsedTime}`);
-        
-        const grammar = SOURCE_PASSES.getEnvAndTransform(workbook, devEnv.opt)
-                                  .msgTo(m => devEnv.message(m));
 
-        const result = new Interpreter(devEnv, grammar);
+        const result = new Interpreter(devEnv, workbook.grammar);
         result.workbook = workbook;
         return result;
     }
@@ -316,10 +349,10 @@ function addSheet(
 
     const sheet = new Worksheet(sheetName, cells);
     project.sheets[sheetName] = sheet;
-    const grammar = SOURCE_PASSES.getEnvAndTransform(project, devEnv.opt)
-                                     .msgTo((_) => {});
+    project.grammar = SOURCE_PASSES.getEnvAndTransform(project, devEnv.opt)
+                                     .msgTo(m => devEnv.message(m));
     // check to see if any names didn't get qualified
-    const [_, nameMsgs] =  SYMBOL_PASSES.getEnvAndTransform(grammar, devEnv.opt)
+    const [_, nameMsgs] =  SYMBOL_PASSES.getEnvAndTransform(project.grammar, devEnv.opt)
                                         .destructure();
 
     const unqualifiedSymbols: Set<string> = new Set(); 
