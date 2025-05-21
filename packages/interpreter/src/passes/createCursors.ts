@@ -1,7 +1,6 @@
 import { Pass, SymbolEnv } from "../passes.js";
 import { 
-    QualifiedGrammar,
-    GreedyCursorGrammar, DotGrammar, 
+    DotGrammar, 
     EmbedGrammar, Grammar, 
     HideGrammar, JoinGrammar, 
     LiteralGrammar, 
@@ -52,7 +51,7 @@ export function prioritizeTapes(
     const computedPriorities = priorities.filter(([t, priority]) => priority >= 0)
                                     .sort((a, b) => b[1] - a[1]);
 
-    console.log(`priorities = ${computedPriorities}`);
+    //console.log(`priorities = ${computedPriorities}`);
 
     const prioritiesOnly = computedPriorities.map(([a,_]) => a);
 

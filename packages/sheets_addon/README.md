@@ -49,13 +49,6 @@ Next, go to the command line, and make a new directory where you want to house t
 
 Now you can go back to your Gramble source code directory and run `npm run deploy <path-to-project-dir>`, just like you did in the previous section. 
 
-I got a file-not-found error when deploying
----------------------
-
-If you get a file-not-found error when deploying (ENOENT: no such file or directory, scandir ''), this has something to do with a change in the way clasp & Google handle locally directory references.  .clasp.json manifest files used to use absolute paths to the rootDir (the directory in which your project resides locally), but this made it very difficult for two people to handle deployment (or even one person on two systems).  So they switched to using relative paths, but at least on some computers (like my corporate laptop), clasp fails to resolve the path correctly.
-
-So if you get this error, check the .clasp.json file in your project directory.  If there's an entry `rootDir=""`, paste in the absolute path to your project directory instead, then try `npm run deploy <path-to-project-dir>` again.
-
 Tutorials and documentation
 ---------------
 

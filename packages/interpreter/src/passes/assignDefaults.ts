@@ -2,7 +2,6 @@ import { PassEnv } from "../components.js";
 import { 
     EmbedGrammar,
     Grammar,
-    QualifiedGrammar,
     AlternationGrammar,
     CollectionGrammar
 } from "../grammars.js";

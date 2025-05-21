@@ -22,19 +22,20 @@ import { Grammar } from "../grammars.js";
 import { TST } from "../tsts.js";
 
 /**
- * There are three main sequences of Passes.  
+ * There are four main sequences of Passes.  
  * 
  * The first, SOURCE_PASSES, is concerned with turning grids of cells representing Gramble
  * programs into Grammars. 
  * 
- * The second, GRAMMAR_PASSES, is operations on Grammars like qualification of names, inference of tapes, 
- * and various translations into lower-level Grammars (e.g. the conversion of ReplaceBlock to the appropriate
+ * The second, SYMBOL_PASSES, deals with the resolution of symbol names and the
+ * 
+ * The third, TAPE_PASSES, handles the resolution of tapes and vocabs, 
+ * and various translations into lower-level Grammars that rely on this information
+ * (e.g. the conversion of ReplaceBlock to the appropriate
  * sequences of renames and joins).
  * 
- * The reason these two are separated out is because many of our unit tests construct Grammars directly
- * out of convenience functions like `Lit()` and `Seq()` and `Replace()`.  They don't have to go through 
- * the SOURCE_PASSES -- they're not source -- but they do have to have their names qualified, their tapes 
- * inferred, etc.
+ * (These are separated out because different uses of the compilation pipeline require
+ * only a subset of these.)
  * 
  * There's also a sequence of passes that happens after these, in which the grammar
  * undergoes further transformations in response to queries from a client.  Those can't be pre-composed with
@@ -155,7 +156,7 @@ export const SYMBOL_PASSES =
         new FlattenCollections()
     ));
 
-export const GRAMMAR_PASSES = 
+export const TAPE_PASSES = 
 
     SYMBOL_PASSES.compose(
 
@@ -187,4 +188,6 @@ export const GRAMMAR_PASSES =
         new ConstructReplaceBlocks()
     )))));
 
-export const ALL_PASSES = SOURCE_PASSES.compose(GRAMMAR_PASSES);
+export const ALL_PASSES = SOURCE_PASSES
+                            .compose(SYMBOL_PASSES)
+                            .compose(TAPE_PASSES);

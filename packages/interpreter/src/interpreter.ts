@@ -15,7 +15,7 @@ import { Expr, SelectionExpr } from "./exprs.js";
 import { DevEnvironment, SimpleDevEnvironment } from "./devEnv.js";
 import { generate } from "./generator.js";
 import { MissingSymbolError, Message, THROWER, msg } from "./utils/msgs.js";
-import { SOURCE_PASSES, GRAMMAR_PASSES, SYMBOL_PASSES } from "./passes/allPasses.js";
+import { SOURCE_PASSES, SYMBOL_PASSES, TAPE_PASSES } from "./passes/allPasses.js";
 import { ExecuteTests } from "./passes/executeTests.js";
 import { CreateCursors } from "./passes/createCursors.js";
 import { constructExpr } from "./passes/constructExpr.js";
@@ -73,9 +73,9 @@ export class Interpreter {
         // to get the grammar into an executable state: symbol references fully-qualified,
         // semantically impossible tape structures are massaged into well-formed ones, some 
         // scope problems adjusted, etc.
-        const env = new PassEnv(this.opt);  
         this.grammar = msg(g)
-                        .bind(g => GRAMMAR_PASSES.getEnvAndTransform(g, devEnv.opt))
+                        .bind(g => SYMBOL_PASSES.getEnvAndTransform(g, devEnv.opt))
+                        .bind(g => TAPE_PASSES.getEnvAndTransform(g, devEnv.opt))
                         .msgTo(m => sendMsg(this.devEnv, m));
 
         logGrammar(this.opt.verbose, this.grammar);
