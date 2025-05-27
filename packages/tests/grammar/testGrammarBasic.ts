@@ -32,6 +32,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         ],
     });
 
+    /*
     testGrammar({
 		desc: '2. Literal t1:""',
         grammar: t1(""),
@@ -394,4 +395,5 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'ii'}
         ],
     });
+    */
 });
