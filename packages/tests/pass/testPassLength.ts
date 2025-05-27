@@ -9,7 +9,7 @@ import {
 
 import { Grammar } from '../../interpreter/src/grammars.js';
 import { SymbolEnv } from '../../interpreter/src/passes.js';
-import { lengthRange } from '../../interpreter/src/passes/infinityProtection.js';
+import { getTapeSize } from '../../interpreter/src/passes/infinityProtection.js';
 import { CounterStack } from '../../interpreter/src/utils/counter.js';
 
 import {
@@ -28,19 +28,19 @@ function testLength(
 ): void {
     const env = new SymbolEnv();
     grammar = grammar.tapify(env);
-    const length = lengthRange(grammar, tape, new CounterStack(2), env);
+    const length = getTapeSize(grammar, tape, new CounterStack(2), env);
     
     if (expectedLength === null) {
         it(`${tape} should have null length`, function() {
-            expect(length.null).to.be.true;
+            expect(length.cardinality).to.be.true;
         });
         return;
     }
 
     it(`${tape} should be length ${expectedLength[0]}-${expectedLength[1]}`, function() {
-        expect(length.null).to.be.false;
-        expect(length.min).to.equal(expectedLength[0]);
-        expect(length.max).to.equal(expectedLength[1]);
+        expect(length.cardinality).to.be.false;
+        expect(length.minLength).to.equal(expectedLength[0]);
+        expect(length.maxLength).to.equal(expectedLength[1]);
     });
 
 }
