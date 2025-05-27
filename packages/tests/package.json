@@ -77,7 +77,7 @@
 
     "testPass": "mocha pass/*.ts",
     "testPassID": "mocha pass/testPassID.ts",
-    "testPassLength": "mocha pass/testPassLength.ts",
+    "testPassSize": "mocha pass/testPassSize.ts",
     "testPassTapes": "mocha pass/testPassTapes.ts",
     "testPassVocab": "mocha pass/testPassVocab.ts",
 

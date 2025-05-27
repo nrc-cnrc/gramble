@@ -34,7 +34,7 @@ export function getTapeSize(
 
     switch (g.tag) {
 
-        // ones with a specific length
+        // grammars with a specific size
         case "epsilon": return TAPE_SIZE_EPSILON;
         case "null": 
             return { cardinality: 0, minLength: 0, maxLength: 0 };
@@ -54,7 +54,7 @@ export function getTapeSize(
                 return getTapeSize(g.child, tapeName, stack, env);
             return { cardinality: Infinity, minLength: 0, maxLength: Infinity };
 
-        // ones where the length is just the child's length
+        // ones where the size is just the child's size
         case "short": 
         case "test": 
         case "testnot":
@@ -109,10 +109,10 @@ function getTapeSizeSeq(g: SequenceGrammar, tapeName: string, stack: CounterStac
     let maxLength = 0;
     let cardinality = 1;
     for (const child of g.children) {
-        const childLength = getTapeSize(child, tapeName, stack, env);
-        cardinality *= childLength.cardinality;
-        minLength += childLength.minLength;
-        maxLength += childLength.maxLength;
+        const childSize = getTapeSize(child, tapeName, stack, env);
+        cardinality *= childSize.cardinality;
+        minLength += childSize.minLength;
+        maxLength += childSize.maxLength;
     }
     return { cardinality, minLength, maxLength };  
 }
@@ -122,28 +122,28 @@ function getTapeSizeAlt(g: AlternationGrammar, tapeName: string, stack: CounterS
     let maxLength = 0;
     let cardinality = 0;
     for (const child of g.children) {
-        const childLength = getTapeSize(child, tapeName, stack, env);
-        cardinality = cardinality + childLength.cardinality;
-        minLength = Math.min(minLength, childLength.minLength);
-        maxLength = Math.max(maxLength, childLength.maxLength);
+        const childSize = getTapeSize(child, tapeName, stack, env);
+        cardinality = cardinality + childSize.cardinality;
+        minLength = Math.min(minLength, childSize.minLength);
+        maxLength = Math.max(maxLength, childSize.maxLength);
     }
     return { cardinality, minLength, maxLength };
 }
 
 function getTapeSizeJoin(g: JoinGrammar, tapeName: string, stack: CounterStack, env: SymbolEnv): TapeSize {
-    const child1Length = getTapeSize(g.child1, tapeName, stack, env);
-    const child2Length = getTapeSize(g.child2, tapeName, stack, env);
+    const child1Size = getTapeSize(g.child1, tapeName, stack, env);
+    const child2Size = getTapeSize(g.child2, tapeName, stack, env);
 
     const child1tapes = new Set(g.child1.tapeNames);
     const child2tapes = new Set(g.child2.tapeNames);
 
-    if (!(child1tapes.has(tapeName))) return child2Length;
-    if (!(child2tapes.has(tapeName))) return child1Length;
+    if (!(child1tapes.has(tapeName))) return child2Size;
+    if (!(child2tapes.has(tapeName))) return child1Size;
 
     return { 
-        cardinality: Math.min(child1Length.cardinality, child2Length.cardinality),
-        minLength: Math.max(child1Length.minLength, child2Length.minLength),
-        maxLength: Math.min(child1Length.maxLength, child2Length.maxLength)
+        cardinality: Math.min(child1Size.cardinality, child2Size.cardinality),
+        minLength: Math.max(child1Size.minLength, child2Size.minLength),
+        maxLength: Math.min(child1Size.maxLength, child2Size.maxLength)
     }
 }
 
@@ -157,12 +157,12 @@ function getTapeSizeMatch(g: MatchGrammar, tapeName: string, stack: CounterStack
 }
 
 function getTapeSizeCount(g: CountGrammar, tapeName: string, stack: CounterStack, env: SymbolEnv): TapeSize {
-    const childLength = getTapeSize(g.child, tapeName, stack, env);
-    if (tapeName !== g.tapeName) return childLength;
+    const childSize = getTapeSize(g.child, tapeName, stack, env);
+    if (tapeName !== g.tapeName) return childSize;
     return {
-        cardinality: childLength.cardinality,
-        minLength: childLength.minLength,
-        maxLength: Math.min(childLength.maxLength, g.maxChars)
+        cardinality: childSize.cardinality,
+        minLength: childSize.minLength,
+        maxLength: Math.min(childSize.maxLength, g.maxChars)
     }
 }
 
@@ -184,11 +184,11 @@ function getTapeSizeHide(g: HideGrammar, tapeName: string, stack: CounterStack, 
 }
 
 function getTapeSizeRepeat(g: RepeatGrammar, tapeName: string, stack: CounterStack, env: SymbolEnv): TapeSize {
-    const childLength = getTapeSize(g.child, tapeName, stack, env);
+    const childSize = getTapeSize(g.child, tapeName, stack, env);
     return {
-        cardinality: childLength.cardinality,
-        minLength: multAux(childLength.minLength, g.minReps),
-        maxLength: multAux(childLength.maxLength, g.maxReps)
+        cardinality: Infinity,
+        minLength: multAux(childSize.minLength, g.minReps),
+        maxLength: multAux(childSize.maxLength, g.maxReps)
     };
 }
 
