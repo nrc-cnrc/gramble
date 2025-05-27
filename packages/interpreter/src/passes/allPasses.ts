@@ -158,8 +158,6 @@ export const SYMBOL_PASSES =
 
 export const TAPE_PASSES = 
 
-    SYMBOL_PASSES.compose(
-
     // handles some local tape renaming for plaintext/regex
     new TimerPass<Grammar,Grammar>(
         "Handling single-tape environments", 
@@ -186,8 +184,4 @@ export const TAPE_PASSES =
     new TimerPass(
         "Creating replacement rule blocks", 
         new ConstructReplaceBlocks()
-    )))));
-
-export const ALL_PASSES = SOURCE_PASSES
-                            .compose(SYMBOL_PASSES)
-                            .compose(TAPE_PASSES);
+    ))));
