@@ -10,9 +10,9 @@ import {
 
 import { INPUT_TAPE, OUTPUT_TAPE } from "../utils/constants.js";
 import { AutoPass, SymbolEnv } from "../passes.js";
-import { lengthRange } from "./infinityProtection.js";
 import { CounterStack } from "../utils/counter.js";
 import { Options } from "../utils/options.js";
+import { getTapeSize } from "./tapeSize.js";
 
 /**
  * This pass handles the transformation of replacement rule blocks 
@@ -82,21 +82,9 @@ export class ConstructReplaceBlocks extends AutoPass<Grammar> {
                               `in "pre/from/post": ${inputMaterial.tapeNames}`);
         }
 
-        /*
-        const inputTape = inputMaterial.tapeNames[0];
-        const inputLength = lengthRange(inputMaterial, inputTape, stack, env);
-        if (inputLength.null == false && inputLength.min == 0 && 
-                    //!g.optional && 
-                    !g.beginsWith && !g.endsWith) {
-            throw new EpsilonGrammar().err(
-                        "Unconditional insertion",
-                        "This rule can execute unconditionally " +
-                        "(i.e. can trigger on an empty input).");
-        }
-        */
         const outputTape = g.outputChild.tapeNames[0];
-        const outputLength = lengthRange(g.outputChild, outputTape, stack, env);
-        if (outputLength.null == false && outputLength.max == Infinity) {
+        const outputLength = getTapeSize(g.outputChild, outputTape, stack, env);
+        if (outputLength.cardinality > 0 && outputLength.maxLength == Infinity) {
             // this shouldn't be syntactically possible to express in sheets, but if
             // it does happen, it's bad news because it's infinite generation.
             throw new EpsilonGrammar()

@@ -110,7 +110,6 @@ export class CalculateTapes extends AutoPass<Grammar> {
 
             // just the union of children's tapes
             case "alt":
-            case "priority":
             case "count": 
             case "test":
             case "testnot":

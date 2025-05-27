@@ -5,7 +5,6 @@ import {
     Grammar, HideGrammar,
     JoinGrammar, MatchGrammar,
     NegationGrammar, PreTapeGrammar, 
-    PriorityUnionGrammar, 
     RenameGrammar, RepeatGrammar,
     ReplaceGrammar, SequenceGrammar, 
     ShortGrammar,
@@ -20,7 +19,7 @@ import {
     constructDot, constructDotStar, constructEmbed, 
     constructJoin, constructLiteral, 
     constructMatch, constructNegation, constructPreTape, 
-    constructPrecede, constructRename, constructRepeat, 
+    constructRename, constructRepeat, 
     constructSeq, constructShort, constructReplace,
     constructGreedyCursor
 } from "../exprs.js";
