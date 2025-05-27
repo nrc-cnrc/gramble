@@ -40,13 +40,13 @@ export class InfinityProtection extends Pass<Grammar,Grammar> {
         env: SymbolEnv
     ): Grammar {
         const stack = new CounterStack(2);
-        const len = getTapeSize(g.child, g.tapeName, stack, env);
+        const tapeSize = getTapeSize(g.child, g.tapeName, stack, env);
 
         // it's null, it doesn't matter
-        if (len.cardinality == 0) return g;
+        if (tapeSize.cardinality == 0) return g;
         
         // if it's not potentially infinite, replace with a greedy cursor
-        if (len.maxLength !== Infinity) {
+        if (tapeSize.maxLength !== Infinity) {
             return new GreedyCursorGrammar(g.tapeName, g.child, g.vocab)
                                         .tapify(env);
         }
@@ -75,9 +75,9 @@ export function infinityProtection(
     const stack = new CounterStack(2);
 
     for (const tape of tapes) {
-        const len = getTapeSize(grammar, tape, stack, env);
-        if (len.cardinality == 0) continue;
-        if (len.maxLength == Infinity && env.opt.maxChars != Infinity) {
+        const tapeSize = getTapeSize(grammar, tape, stack, env);
+        if (tapeSize.cardinality == 0) continue;
+        if (tapeSize.maxLength == Infinity && env.opt.maxChars != Infinity) {
             if (typeof env.opt.maxChars === 'number')
                 maxCharsDict[tape] = env.opt.maxChars;
             else if (tape in maxCharsDict)

@@ -83,8 +83,8 @@ export class ConstructReplaceBlocks extends AutoPass<Grammar> {
         }
 
         const outputTape = g.outputChild.tapeNames[0];
-        const outputLength = getTapeSize(g.outputChild, outputTape, stack, env);
-        if (outputLength.cardinality > 0 && outputLength.maxLength == Infinity) {
+        const outputSize = getTapeSize(g.outputChild, outputTape, stack, env);
+        if (outputSize.cardinality > 0 && outputSize.maxLength == Infinity) {
             // this shouldn't be syntactically possible to express in sheets, but if
             // it does happen, it's bad news because it's infinite generation.
             throw new EpsilonGrammar()
