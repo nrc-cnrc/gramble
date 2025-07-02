@@ -97,7 +97,7 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Warning(9,0),
-            Error(9, 1, "Missing argument to 'or:'") // "This operator requires content above it, but it's empty or erroneous."
+            Error(9, 1, "Missing content for 'or:'") // "This operator requires content above it, but it's empty or erroneous."
         ]
     });
 
@@ -108,7 +108,7 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Error(0, 0, "Missing argument to 'join:'"), // "This operator requires content above it, but it's empty or erroneous."
+            Error(0, 0, "Missing content for 'join:'"), // "This operator requires content above it, but it's empty or erroneous."
             Warning(0,0)
         ]
     });
@@ -217,8 +217,8 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Error(0, 1, "Missing/invalid plain header"),
-            Error(0, 1, "Invalid tape name: 'text text'"),
+            Error(0, 1, "Missing ordinary header for 'table'"),
+            Error(0, 1, "Invalid header: 'text text'"),
             Warning(1,1)
         ]
     });
@@ -235,7 +235,7 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Error(0, 1, "Missing/invalid plain header"),
+            Error(0, 1, "Missing ordinary header for 'table'"),
             Error(0, 1, "Invalid header: 'text text'"),
             Warning(1,1)
         ]
@@ -269,8 +269,8 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Error(0, 1, "Missing/invalid plain header"),
-            Error(0, 1, "Invalid tape name: '9text'"),
+            Error(0, 1, "Missing ordinary header for 'table'"),
+            Error(0, 1, "Invalid header: '9text'"),
             Warning(1,1)
         ]
     });

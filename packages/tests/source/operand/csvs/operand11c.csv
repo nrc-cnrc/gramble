@@ -1,0 +1,10 @@
+
+verb=, table:, context, pos
+    ,       , foo, v
+    ,       , moo, n
+    ,       , goo, v
+    ,       , faa, n
+    ,       , fao, v
+
+word=, table:, embed, contains context
+    ,       , verb, a

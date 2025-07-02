@@ -36,4 +36,8 @@ export class Cell {
         return this.pos.toString();
     }
 
+    public toString(): string {
+        return `${this.pos.toString()} '${this.text}'`;
+    }
+
 }

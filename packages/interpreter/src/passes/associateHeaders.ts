@@ -52,11 +52,12 @@ export class AssociateHeaders extends Pass<TST,TST> {
                     const param = paramName(header.header);
                     if (param != DEFAULT_PARAM && param != "unique") {
                         if (param in newRow.params) {
-                            Warn("Named parameters can only occur once; " +
+                            Warn(`The ${param} header can only occur once in a row; ` +
                                 "this cell will be ignored.")
                                 .localize(content.pos).msgTo(msgs);
+                        } else {
+                            newRow.params[param] = newCell;
                         }
-                        newRow.params[param] = newCell;
                         continue;
                     }
 

@@ -1,0 +1,10 @@
+
+verb=, table:, from, pos
+    ,       , foo, v
+    ,       , moo, n
+    ,       , goo, v
+    ,       , faa, n
+    ,       , fao, n
+
+word=, table:, embed, ends from
+    ,       , verb, oo

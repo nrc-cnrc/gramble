@@ -27,9 +27,11 @@ export class SelectSymbol extends Pass<Grammar,Grammar> {
     
     public transformAux(g: Grammar, env: PassEnv): Grammar {
         switch (g.tag) {
-            case "qualified": return this.selectSymbol(g, env);
-            default:           throw g.err("Symbol not found", 
-                                    `Cannot find symbol ${this.symbol} in ${g.tag} grammar`);
+            case "qualified":
+                return this.selectSymbol(g, env);
+            default:
+                throw g.err("Symbol '${this.symbol}' not found", 
+                            `Cannot find symbol '${this.symbol}' in ${g.tag} grammar.`);
         }
     }
 
@@ -37,15 +39,16 @@ export class SelectSymbol extends Pass<Grammar,Grammar> {
 
         const resolution = qualifySymbol(g, this.symbol);
         if (resolution == undefined) {
-            throw g.err("Cannot resolve symbol", 
-                `Cannot find symbol ${this.symbol} in grammar, candidates: ${Object.keys(g.symbols)}.`);
+            throw g.err("Cannot resolve symbol: ${this.symbol}", 
+                        `Cannot find symbol ${this.symbol} in grammar, ` +
+                        `candidates: ${Object.keys(g.symbols)}.`);
         }
 
         const referent = g.symbols[resolution[0]];
         if (referent == undefined) {
             // a resolved symbol should always exist
-            throw new Error(
-                `Cannot find symbol ${this.symbol} in grammar, candidates: ${Object.keys(g.symbols)}.`);
+            throw new Error(`Cannot find symbol ${this.symbol} in grammar, ` +
+                            `candidates: ${Object.keys(g.symbols)}.`);
         }
 
         const result = new SelectionGrammar(g.symbols, resolution[0]);

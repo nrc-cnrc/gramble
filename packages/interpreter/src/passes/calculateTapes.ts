@@ -1,40 +1,41 @@
-import { Err, Message, Msg } from "../utils/msgs.js";
+import { Message, Msg } from "../utils/msgs.js";
 import { 
     Grammar,
-    QualifiedGrammar,
-    EmbedGrammar,
-    HideGrammar,
-    RenameGrammar,
-    FilterGrammar,
-    ReplaceBlockGrammar,
-    EpsilonGrammar,
-    LiteralGrammar,
-    DotGrammar,
-    SingleTapeGrammar,
-    MatchGrammar,
-    JoinGrammar,
-    StartsGrammar,
-    EndsGrammar,
     ContainsGrammar,
-    SequenceGrammar,
-    RepeatGrammar,
-    ShortGrammar,
-    NegationGrammar,
     CorrespondGrammar,
-    GreedyCursorGrammar,
-    ReplaceGrammar,
     CursorGrammar,
+    DotGrammar,
+    EmbedGrammar,
+    EndsGrammar,
+    EpsilonGrammar,
+    FilterGrammar,
+    GreedyCursorGrammar,
+    HideGrammar,
+    JoinGrammar,
+    LiteralGrammar,
+    MatchGrammar,
+    NegationGrammar,
+    QualifiedGrammar,
+    RenameGrammar,
+    RepeatGrammar,
+    ReplaceBlockGrammar,
+    ReplaceGrammar,
     SelectionGrammar,
+    SequenceGrammar,
+    ShortGrammar,
+    SingleTapeGrammar,
+    StartsGrammar,
 } from "../grammars.js";
 import { AutoPass } from "../passes.js";
 import { 
+    dictLen,
+    foldRight,
+    getCaseInsensitive,
+    mapDict, 
     mapValues, 
-    exhaustive, update, 
-    foldRight, dictLen, mapDict, 
-    getCaseInsensitive
+    update, 
 } from "../utils/func.js";
 import { 
-    DEFAULT_TAPE, 
     INPUT_TAPE, 
     OUTPUT_TAPE 
 } from "../utils/constants.js";
@@ -44,7 +45,7 @@ import { TapeSet, TapeDict } from "../tapes.js";
 import * as Tapes from "../tapes.js";
 import { VocabDict } from "../vocab.js";
 import * as Vocabs from "../vocab.js";
-import { PassEnv, children } from "../components.js";
+import { children } from "../components.js";
 import { Env, Options } from "../utils/options.js";
 
 
@@ -68,7 +69,6 @@ export class TapesEnv extends Env<Grammar> {
                 return this;
         }
     }
-    
 }
 
 /**
@@ -150,7 +150,6 @@ export class CalculateTapes extends AutoPass<Grammar> {
 
             default: throw new Error(`unhandled grammar in getTapes: ${g.tag}`);
         }
-
     }
 
     getTapesSelection(g: SelectionGrammar, env: TapesEnv): Grammar {
@@ -278,7 +277,6 @@ function getTapesCorrespond(
     const stringifiers = Tapes.Lit(tapeNames, vocabMap);
     tapes = Tapes.Sum(stringifiers, tapes);
     return updateTapes(g, tapes);
-
 }
 
 function getTapesNot(g: NegationGrammar): Grammar {
@@ -395,7 +393,7 @@ function getTapesRename(g: RenameGrammar): Grammar {
     }
 
     if (g.child.tapes.vocabMap[g.fromTape] === undefined) {
-        throw g.child.err("Renaming missing tape",
+        throw g.child.err("Renaming missing from tape",
             `The grammar to undergo renaming does not contain the tape ${g.fromTape}. ` +
             `Available tapes: [${[...g.child.tapeNames]}]`);
     }
@@ -407,7 +405,6 @@ function getTapesRename(g: RenameGrammar): Grammar {
     }
 
     return result;
-
 }
 
 function getTapesHide(g: HideGrammar): Grammar {
@@ -461,9 +458,9 @@ function getTapesReplaceBlock(g: ReplaceBlockGrammar): Grammar {
     // we generate infinitely
     if (g.child.tapes.tag === Tapes.Tag.Lit &&
         g.child.tapes.vocabMap[g.inputTape] === undefined) {
-        throw g.child.err("Replacing non-existent tape",
+        throw g.child.err(`Replacing non-existent tape: '${g.inputTape}'`,
                     `The grammar above does not have a tape ` +
-                    `${g.inputTape} to replace on`);
+                    `'${g.inputTape}' to replace on.`);
     }
 
     // filter out Tapes.Any non-rules caused by children disappearing

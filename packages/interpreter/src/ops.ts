@@ -159,7 +159,7 @@ export function parseOp(text: string): Msg<Op> {
         // if there are no results, the programmer made a syntax error
         return new ErrorOp().err(`Invalid operator: '${trimmedText}'`,
                                 `'${trimmedText}' looks like an operator, ` +
-                                "but it cannot be parsed as one");
+                                "but it cannot be parsed as one.");
     }
     
     if (results.length > 1) {

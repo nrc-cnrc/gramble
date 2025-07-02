@@ -116,7 +116,7 @@ export class CheckStructuralParams extends Pass<TST,TST> {
         if (siblingRequired(t.op) == "required" 
                 && t.sibling instanceof TstEmpty
                 && t.child instanceof TstEmpty) {
-            throw new TstEmpty().err(`Missing arguments to '${trimmedText}'`,
+            throw new TstEmpty().err(`Missing content for '${trimmedText}'`,
                             `The '${trimmedText}' operator requires content above it `  +
                             "and to the right, but both are empty or erroneous.")
         }
@@ -124,7 +124,7 @@ export class CheckStructuralParams extends Pass<TST,TST> {
         // if the op must have a sibling and doesn't, issue an error,
         // and return empty
         if (siblingRequired(t.op) == "required" && t.sibling instanceof TstEmpty) {
-            throw new TstEmpty().err(`Missing argument to '${trimmedText}'`,
+            throw new TstEmpty().err(`Missing content for '${trimmedText}'`,
                             `The '${trimmedText}' operator requires content above it, ` +
                             "but it's empty or erroneous.");
         }

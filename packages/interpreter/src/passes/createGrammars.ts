@@ -1,41 +1,46 @@
 import { 
     TstAssignment,
-    TstOr,
+    TstCollection, 
     TstEmpty, 
-    TstFilter, TstHeaderPair, 
-    TstHide, TstCollection, 
-    TstTestNot, TstRename,
-    TstReplace, TstSequence, 
-    TstTable, TstTest, TstJoin, TST 
+    TstFilter,
+    TstHeaderPair, 
+    TstHide,
+    TstJoin,
+    TstOr,
+    TstRename,
+    TstReplace,
+    TstSequence, 
+    TstTable,
+    TstTest,
+    TstTestNot,
+    TST 
 } from "../tsts.js";
 import { Pass } from "../passes.js";
 import { 
-    AlternationGrammar,
-    EpsilonGrammar, 
     Grammar, 
-    HideGrammar,  
-    ReplaceBlockGrammar, 
-    TestNotGrammar, 
-    QualifiedGrammar, 
-    RenameGrammar, 
-    SequenceGrammar, 
-    TestGrammar, 
-    JoinGrammar,
-    RuleContextGrammar,
-    FilterGrammar,
-    ReplaceGrammar,
+    AlternationGrammar,
     CollectionGrammar,
-    EmbedGrammar,
-    TapeNamesGrammar
+    EpsilonGrammar, 
+    FilterGrammar,
+    HideGrammar,  
+    JoinGrammar,
+    ReplaceBlockGrammar, 
+    RenameGrammar, 
+    ReplaceGrammar,
+    RuleContextGrammar,
+    SequenceGrammar, 
+    TapeNamesGrammar,
+    TestGrammar, 
+    TestNotGrammar, 
 } from "../grammars.js";
+import { PassEnv } from "../components.js";
+import { parseContent } from "../content.js";
 import { parseClass, TapeHeader } from "../headers.js";
+import { DEFAULT_PARAM } from "../utils/constants.js";
+import { getCaseInsensitive } from "../utils/func.js";
 import { Err, Msg, Message, msgList } from "../utils/msgs.js";
 import { HeaderToGrammar } from "./headerToGrammar.js";
-import { parseContent } from "../content.js";
-import { DEFAULT_PARAM } from "../utils/constants.js";
 import { uniqueLiterals } from "./uniqueLiterals.js";
-import { PassEnv } from "../components.js";
-import { getCaseInsensitive } from "../utils/func.js";
 
 /**
  * This is the workhorse of grammar creation, turning the 
@@ -95,7 +100,8 @@ export class CreateGrammars extends Pass<TST,Grammar> {
             return prevGrammar
                     .msg(prevMsgs)
                     .msg(tapeMsgs)
-                    .err("Renaming error", "Cannot parse this cell as a tape name")
+                    .err("Renaming error",
+                         "Cannot parse this cell as an ordinary header (field name).")
         }
 
         if (tapeGrammar.symbols.length < 1) {
@@ -109,7 +115,8 @@ export class CreateGrammars extends Pass<TST,Grammar> {
             return prevGrammar
                 .msg(prevMsgs)
                 .msg(tapeMsgs)
-                .err("Renaming error", "Cannot rename from multiple tapes")
+                .err("Renaming error",
+                     "Cannot rename from multiple headers (field names).")
         }
 
         return new RenameGrammar(prevGrammar, tapeGrammar.symbols[0], t.header.header.text)
@@ -128,7 +135,8 @@ export class CreateGrammars extends Pass<TST,Grammar> {
 
         if (!(tapeGrammar instanceof TapeNamesGrammar)) {
             return prevGrammar
-                    .err("Renaming error", "Cannot parse this cell as a tape name")
+                    .err("Renaming error",
+                         "Cannot parse this cell as an ordinary (field name).")
                     .msg(prevMsgs)
                     .msg(tapeMsgs)
         }

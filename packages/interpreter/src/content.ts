@@ -127,7 +127,7 @@ const TAPENAME_UNRESERVED = MPUnreserved<Grammar>(
             return new TapeNamesGrammar([s])
         } else {
             throw new TapeNamesGrammar([]).err(
-                `Invalid tape name: '${s}'`, 
+                `Invalid identifier: '${s}'`, 
                 `'${s}' looks like it should be an identifier, ` +
                 "but it doesn't follow the rules for one."
             );
