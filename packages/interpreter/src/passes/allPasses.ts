@@ -20,6 +20,7 @@ import { CalculateTapes } from "./calculateTapes.js";
 import { TimerPass } from "../passes.js";
 import { Grammar } from "../grammars.js";
 import { TST } from "../tsts.js";
+import { IdentifyCompilationTargets } from "./identifyCompilationTargets.js";
 
 /**
  * There are four main sequences of Passes.  
@@ -184,4 +185,9 @@ export const TAPE_PASSES =
     new TimerPass(
         "Creating replacement rule blocks", 
         new ConstructReplaceBlocks()
-    ))));
+    ).compose(
+
+    new TimerPass(
+        "Identifying compilation targets",
+        new IdentifyCompilationTargets()
+    )))));
