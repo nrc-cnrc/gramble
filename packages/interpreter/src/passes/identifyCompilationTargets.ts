@@ -5,13 +5,13 @@ import {
     QualifiedGrammar,
 } from "../grammars.js";
 
-import { AutoPass, Pass, SymbolEnv } from "../passes.js";
+import { Pass, SymbolEnv } from "../passes.js";
 import { CounterStack } from "../utils/counter.js";
 import { Options } from "../utils/options.js";
-import { Dict, listIntersection } from "../utils/func.js";
+import { listIntersection } from "../utils/func.js";
 import { getTapeSize } from "./tapeSize.js";
 import { toStr } from "./toStr.js";
-import { Message, Msg, MsgList } from "../utils/msgs.js";
+import { Message, Msg } from "../utils/msgs.js";
 
 /**
  * This pass handles the transformation of replacement rule blocks 
@@ -60,7 +60,7 @@ export class IdentifyCompilationTargets extends Pass<Grammar,Grammar> {
         const sharedTapes = listIntersection(newJoin.child1.tapeNames, newJoin.child2.tapeNames);
         if (sharedTapes.length != 1) {
             // we only want to compile joins with single tapes
-            return g;
+            return newJoin.msg(msgs);
         }
 
         const sharedTape = sharedTapes[0]
@@ -71,17 +71,19 @@ export class IdentifyCompilationTargets extends Pass<Grammar,Grammar> {
             return newJoin.msg(msgs);
         }
 
-        if (g.child1.tag != "embed") {
+        if (newJoin.child1.tag != "embed") {
             // compiling joined embeds is our priority
             return newJoin.msg(msgs);
         }
 
-        const newEmbedName = "$" + g.child1.symbol + "_" + sharedTape;
-        console.log(`found one: ${newEmbedName}`);
-
-        env.symbolNS[newEmbedName] = g;
+        const newEmbedName = "$" + newJoin.child1.symbol + "_" + sharedTape;
+        
+        env.symbolNS[newEmbedName] = newJoin;
 
         const newEmbed = new EmbedGrammar(newEmbedName);
+        newEmbed.tapes = newJoin.tapes; // can't use tapify here, 
+                        // due to env issues, but we already know the answer
+
         return newEmbed;
     }
 

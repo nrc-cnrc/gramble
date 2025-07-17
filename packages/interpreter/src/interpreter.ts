@@ -114,7 +114,7 @@ export class Interpreter {
                         .bind(g => TAPE_PASSES.getEnvAndTransform(g, devEnv.opt))
                         .msgTo(m => sendMsg(this.devEnv, m));
 
-        logGrammar(this.opt.verbose, this.grammar);
+        logGrammar(this.opt.verbose | VERBOSE_GRAMMAR, this.grammar);
     }
 
     get opt(): Options {

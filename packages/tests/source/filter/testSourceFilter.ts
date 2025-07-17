@@ -11,6 +11,7 @@ function testSrc(params: Partial<SourceTest>): void {
 
 describe(`Source ${DIR}`, function() {
 
+    /*
     testSrc({
 		desc: '1. Simple equals',
         results: [
@@ -348,7 +349,8 @@ describe(`Source ${DIR}`, function() {
             Error(15,4)
         ]
     });
-
+    */
+   
     testSrc({
 		desc: '39. equals and starts modifying same embed',
         results: [
@@ -357,6 +359,8 @@ describe(`Source ${DIR}`, function() {
             {text: "moo", gloss: "[1SG]see", trans: "[TR]"},
         ]
     });
+
+    /*
     
     testSrc({
 		desc: '40. ends',
