@@ -105,7 +105,7 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Warning(1, 0),
-            Error(1, 1)
+            Error(1, 1, "'table' operator requires non-empty grid")
         ]
     });
     
@@ -182,7 +182,7 @@ describe(`Source ${DIR}`, function() {
         results: [{}],
         errors: [
             Warning(0, 0),
-            Error(0, 1)
+            Error(0, 1, "'table' operator requires grid, not 'table:'")
         ]
     });
 });

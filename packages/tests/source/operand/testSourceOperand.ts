@@ -257,7 +257,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-        desc: '6. to/from/context used as tape names outside of a replace',
+        desc: '6. to/from/context used as header names outside of a replace',
         results: [
             {text: "foo", gloss: "run", from: "x", to: "y", context: "z"},
             {text: "moo", gloss: "jump", from: "x", to: "y", context: "z"},
@@ -265,7 +265,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-        desc: '7a. Simple replace with non-existent from as the tape in replace',
+        desc: '7a. Simple replace with non-existent from as the header in replace',
         results: [
             {text: "foo",    gloss: "run.3SG"},
             {text: "foobaz", gloss: "run-2SG"},
@@ -275,7 +275,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"},
         ],
         errors: [
-            Error(12, 1, "Replacing non-existent tape: 'from'"),
+            Error(12, 1, "Replacing on non-existent header: 'from'"),
         ]
     });
 
@@ -292,7 +292,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-        desc: '7c. Simple replace with non-existent to as the tape in replace',
+        desc: '7c. Simple replace with non-existent to as the header in replace',
         results: [
             {text: "foo",    gloss: "run.3SG"},
             {text: "foobaz", gloss: "run-2SG"},
@@ -302,12 +302,12 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"},
         ],
         errors: [
-            Error(12, 1, "Replacing non-existent tape: 'to'"),
+            Error(12, 1, "Replacing on non-existent header: 'to'"),
         ]
     });
 
     testSrc({
-        desc: '7d. Simple replace with to as the tape throughout',
+        desc: '7d. Simple replace with to as the header throughout',
         results: [
             {to: "foo",    gloss: "run.3SG"},
             {to: "foovaz", gloss: "run-2SG"},
@@ -319,7 +319,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-        desc: '7e. Simple replace with non-existent context as the tape in replace',
+        desc: '7e. Simple replace with non-existent context as the header in replace',
         results: [
             {text: "foo",    gloss: "run.3SG"},
             {text: "foobaz", gloss: "run-2SG"},
@@ -329,12 +329,12 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"},
         ],
         errors: [
-            Error(12, 1, "Replacing non-existent tape: 'context'"),
+            Error(12, 1, "Replacing on non-existent header: 'context'"),
         ]
     });
 
     testSrc({
-        desc: '7f. Simple replace with context as the tape throughout',
+        desc: '7f. Simple replace with context as the header throughout',
         results: [
             {context: "foo",    gloss: "run.3SG"},
             {context: "foovaz", gloss: "run-2SG"},
@@ -346,7 +346,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '8a. Simple equals with from as the tape',
+		desc: '8a. Simple equals with from as the header',
         results: [
             {from: "v", text: "fao"},
             {from: "v", text: "foo"},
@@ -355,7 +355,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '8b. Simple equals with to as the tape',
+		desc: '8b. Simple equals with to as the header',
         results: [
             {to: "v", text: "fao"},
             {to: "v", text: "foo"},
@@ -364,7 +364,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '8c. Simple equals with context as the tape',
+		desc: '8c. Simple equals with context as the header',
         results: [
             {context: "v", text: "fao"},
             {context: "v", text: "foo"},
@@ -373,7 +373,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '9a. Simple starts with from as the tape',
+		desc: '9a. Simple starts with from as the header',
         results: [
             {from: "faa", pos: "n"},
             {from: "fao", pos: "v"},
@@ -381,7 +381,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '9b. Simple starts with to as the tape',
+		desc: '9b. Simple starts with to as the header',
         results: [
             {to: "faa", pos: "n"},
             {to: "fao", pos: "v"},
@@ -389,7 +389,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '9c. Simple starts with context as the tape',
+		desc: '9c. Simple starts with context as the header',
         results: [
             {context: "faa", pos: "n"},
             {context: "fao", pos: "v"},
@@ -397,7 +397,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '10a. Simple ends with from as the tape',
+		desc: '10a. Simple ends with from as the header',
         results: [
             {from: "foo", pos: "v"},
             {from: "goo", pos: "v"},
@@ -406,7 +406,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '10b. Simple ends with to as the tape',
+		desc: '10b. Simple ends with to as the header',
         results: [
             {to: "foo", pos: "v"},
             {to: "goo", pos: "v"},
@@ -415,7 +415,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '10c. Simple ends with context as the tape',
+		desc: '10c. Simple ends with context as the header',
         results: [
             {context: "foo", pos: "v"},
             {context: "goo", pos: "v"},
@@ -424,7 +424,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '11a. Simple contains with from as the tape',
+		desc: '11a. Simple contains with from as the header',
         results: [
             {from: "faa", pos: "n"},
             {from: "fao", pos: "v"},
@@ -432,7 +432,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '11b. Simple contains with to as the tape',
+		desc: '11b. Simple contains with to as the header',
         results: [
             {to: "faa", pos: "n"},
             {to: "fao", pos: "v"},
@@ -440,7 +440,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '11c. Simple contains with context as the tape',
+		desc: '11c. Simple contains with context as the header',
         results: [
             {context: "faa", pos: "n"},
             {context: "fao", pos: "v"},
@@ -481,7 +481,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '13. Simple table with unique as the tape',
+		desc: '13. Simple table with unique as the header',
         results: [
             {pos: "n"},
             {pos: "v"},

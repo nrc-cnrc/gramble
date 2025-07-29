@@ -1,3 +1,4 @@
+import { VERBOSE_DEBUG } from "@gramble/interpreter";
 import {
     testSource, SourceTest, 
     Error, Warning 
@@ -59,7 +60,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(13,2)
+            Error(13, 2, "Ill-formed unit testnot")
         ]
     });
 
@@ -84,11 +85,12 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(13,2),
-            Error(14,2),
-            Error(15,2),
-            Error(16,2)
-        ]
+            Error(13, 2, "Ill-formed unit test"),
+            Error(14, 2, "Failed unit test - no outputs"),
+            Error(15, 2, "Failed unit test - no outputs"),
+            Error(16, 2, "Failed unit test - no outputs")
+        ],
+        // verbose: VERBOSE_DEBUG
     });
 
     testSrc({
@@ -102,7 +104,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobat", gloss: "jump"}
         ],
         errors: [
-            Error(15,2),
+            Error(15 ,2, "Failed unit test - no outputs"),
         ]
     });
 
@@ -115,7 +117,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(13,2)
+            Error(13, 2, "Failed unit testnot - has outputs")
         ]
     });
     
@@ -125,7 +127,7 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Error(9,1),
+            Error(9, 1, "Missing content for 'test:'"),
             Warning(9,0)
         ]
     });
@@ -136,7 +138,7 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Error(9,1),
+            Error(9, 1, "Missing content for 'testnot:'"),
             Warning(9,0)
         ],
     });
@@ -150,7 +152,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12,1)
+            Error(12, 1, "'test' operator requires non-empty grid")
         ]
     });
 
@@ -163,7 +165,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12,1)
+            Error(12, 1, "'testnot' operator requires non-empty grid")
         ]
     });
 
@@ -176,7 +178,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12,1)
+            Error(12, 1, "'test' operator requires grid, not 'table:'")
         ]
     });
 
@@ -189,7 +191,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12,1)
+            Error(12, 1, "'testnot' operator requires grid, not 'table:'")
         ]
     });
 
@@ -202,7 +204,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12,1)
+            Error(12, 1, "'test' operator requires grid, not 'or:'")
         ],
     });
 
@@ -215,7 +217,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12,1)
+            Error(12, 1, "'testnot' operator requires grid, not 'or:'")
         ]
     });
 
@@ -250,9 +252,9 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(14,2),
-            Error(16,2),
-            Error(17,2)
+            Error(14, 2, "Failed unit test - 'gloss' conflict"),
+            Error(16, 2, "Failed unit test - 'gloss' conflict"),
+            Error(17, 2, "Failed unit test - no outputs")
         ]
     });
 
@@ -268,7 +270,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(14,2)
+            Error(14, 2, "Failed unit test - output missing 'pos'")
         ],
     });
 
@@ -283,7 +285,7 @@ describe(`Source ${DIR}`, function() {
             {root: "jump", subj: "[2SG]", text: "moobaz", gloss: "jump[2SG]"}
         ],
         errors: [
-            Error(14,2)
+            Error(14, 2, "Failed unit test - 'text' conflict")
         ],
     });
     
@@ -293,7 +295,7 @@ describe(`Source ${DIR}`, function() {
             {text: "foobar", gloss: "run"}
         ],
         errors: [
-            Error(3,3),
+            Error(3, 3, "Non-literal test content: 'optional gloss'"),
             Warning(4,3)
         ],
     });
@@ -304,7 +306,7 @@ describe(`Source ${DIR}`, function() {
             {text: "foobar", gloss: "run", eng: "run"}
         ],
         errors: [
-            Error(3,3),
+            Error(3, 3, "Non-literal test content: 'gloss/eng'"),
             Warning(4,3)
         ],
     });
@@ -315,7 +317,7 @@ describe(`Source ${DIR}`, function() {
             {text: "foobar", gloss: "run-1SG"}
         ],
         errors: [
-            Error(6,3),
+            Error(6, 3, "Non-literal test content: 'embed'"),
             Warning(7,3)
         ],
     });

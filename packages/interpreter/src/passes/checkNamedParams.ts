@@ -119,7 +119,7 @@ export class CheckNamedParams extends Pass<TST,TST> {
             // params and complain if they're not DEFAULT_PARAM.
             for (const param of requiredParams(t.op)) {
                 if (param != DEFAULT_PARAM) {
-                    Err(`Missing '${param}' header for '${t.op.tag}'`,
+                    Err(`Missing '${param}' header for '${t.op.tag}'.`,
                         `This '${t.op.tag}' operator requires a '${param}' header, but ` +
                         "the content to the right doesn't have one.")
                         .localize(t.cell.pos).msgTo(msgs);
@@ -174,11 +174,11 @@ export class CheckNamedParams extends Pass<TST,TST> {
                                     && this.allowedParams.has(DEFAULT_PARAM)) ?
                                 new TstHeader(h.cell, h.header.child) :
                                 new TstEmpty();
-            const headerType = (tag == DEFAULT_PARAM) ? "ordinary " : `'${tag}' `;
+            const headerType = (tag == DEFAULT_PARAM) ? "ordinary" : `'${tag}'`;
             const trimmedText = h.cell.text.trim();
-            return newHeader.err(`Invalid ${headerType}header: '${trimmedText}'`,
-                                `The '${t.cell.toString()}' operator to the left does ` +
-                                `not expect this ${headerType}header: '${trimmedText}'`)
+            return newHeader.err(`Invalid ${headerType} header: '${trimmedText}'`,
+                                "The operator to the left does not expect this " +
+                                `${headerType} header: '${trimmedText}'`)
                             .localize(h.pos);
         }) as MsgFunc<TstHeader,TST>);
     }

@@ -103,11 +103,17 @@ export class CheckStructuralParams extends Pass<TST,TST> {
 
         // if the op requires a grid to the right, but doesn't have one,
         // issue an error, and return the sibling as the new value.
-        if (childMustBeGrid(t.op) == "required" && 
-            !(t.child instanceof TstGrid)) {
-            throw t.sibling.err(`'${t.op.tag}' requires grid`,
+        if (childMustBeGrid(t.op) == "required"
+                && !(t.child instanceof TstGrid)) {
+            if (t.child instanceof TstEmpty) {
+                throw t.sibling.err(`'${t.op.tag}' operator requires non-empty grid`,
+                        `This '${t.op.tag}' operator requires a non-empty grid to ` +
+                        "the right, but none was found.");
+            }
+            throw t.sibling.err(`'${t.op.tag}' operator requires grid, ` +
+                    `not '${t.child.cell.text.trim()}'`,
                     `This '${t.op.tag}' operator requires a grid to the right, ` +
-                    "but has another operator instead.");
+                    `but has another operator instead: '${t.child.cell.text.trim()}'.`);
         }
 
         const trimmedText = t.cell.text.trim();

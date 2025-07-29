@@ -28,15 +28,14 @@ export class CheckTestLiterals extends AutoPass<TST> {
     }
 
     public handleOp(t: TstOp): TST {
-
         const msgs: Message[] = [];
         if (paramsMustBeLiteral(t.op) && t.child instanceof TstHeadedGrid) {
             const newHeaders: TstHeader[] = []
             for (const header of t.child.headers) {
                 if (!this.isLiteral(header.header)) {
-                    Err("Non-literal test content",
+                    Err(`Non-literal test content: '${header.text.trim()}'`,
                         "Tests can only contain plain literal content " +
-                        "(e.g. no embeds, no special headers, etc.)")
+                        "(i.e. no embeds, no special headers except unique, etc.).")
                         .localize(header.pos).msgTo(msgs);
                 } else {
                     newHeaders.push(header);

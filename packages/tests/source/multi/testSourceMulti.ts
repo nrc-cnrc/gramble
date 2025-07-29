@@ -33,7 +33,7 @@ describe(`Source ${DIR}`, function() {
             {text: "able"}
         ],
         errors: [
-            Error(1,1)
+            Error(1, 1, "Undefined symbol: 'multi1external'")
         ]
     });
     
@@ -51,7 +51,7 @@ describe(`Source ${DIR}`, function() {
             {text: "able"}
         ],
         errors: [
-            Error(1,1)
+            Error(1, 1, "Undefined symbol: 'multi5external.prefix'")
         ]
     });
     
@@ -61,7 +61,7 @@ describe(`Source ${DIR}`, function() {
             {text: "able"}
         ],
         errors: [
-            Error(1,1)
+            Error(1, 1, "Error parsing cell: 'optional.word'")
         ]
     });
 
@@ -71,7 +71,7 @@ describe(`Source ${DIR}`, function() {
             {text: "able"}
         ],
         errors: [
-            Error(1,1)
+            Error(1, 1, "Undefined symbol: 'nonexistantGrammar.word'")
         ]
     });
 

@@ -44,12 +44,12 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '2a. Assignment to an invalid identifier',
+		desc: '2a. Assignment to an invalid symbol name',
         results: [
             {}
         ],
         errors: [
-            Error(0, 0, "Invalid identifier: '123verb'"),
+            Error(0, 0, "Invalid symbol name: '123verb'"),
             Warning(0,0),
             Error(5, 2, "Invalid symbol name: '123verb'")
         ]

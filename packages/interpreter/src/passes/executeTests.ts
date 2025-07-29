@@ -50,15 +50,15 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
         for (const testTape of g.test.tapeNames) {
             if (childTapes.has(testTape)) continue;
             Err("Ill-formed unit test", 
-                `This expects a tape called ${testTape} but none exists in the grammar being tested.` + 
-                "Some tests may not execute.").msgTo(msgs);
+                `This expects a header called '${testTape}', but none exists ` +
+                "in the grammar being tested. Some tests may not execute.").msgTo(msgs);
         }
 
         if (msgs.length > 0) return g.msg(msgs);
 
         const results = this.executeTest(g, env);
         if (results.length == 0) {
-            Err("Failed unit test",
+            Err("Failed unit test - no outputs",
                 "The grammar above has no outputs compatible with these inputs.").msgTo(msgs);
         } else {
             Succeed(
@@ -68,16 +68,16 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
         uniqueLoop: for (const unique of g.uniques) {
             resultLoop: for (const result of results) {
                 if (!(unique.tapeName in result)) {
-                    const resultStr = mapDict(result, (k,v) => `${k}:${v}`);
-                    Err("Failed unit test",
-                        `An output on this line does not contain a ${unique.tapeName} field: ` +
-                        `${resultStr}`).msgTo(msgs);
+                    const resultStr = Object.entries(result).map(([k,v]) => `${k}:${v}`);
+                    Err(`Failed unit test - output missing '${unique.tapeName}'`,
+                        "An output for this line does not contain a " +
+                        `'${unique.tapeName}' field: [${resultStr}]`).msgTo(msgs);
                     break uniqueLoop;
                 }
                 if (result[unique.tapeName] != unique.text) {
-                    Err("Failed unit test",
-                        `An output on this line has a conflicting result for this field: ` +
-                        `${result[unique.tapeName]}`).msgTo(msgs);
+                    Err(`Failed unit test - '${unique.tapeName}' conflict`,
+                        "An output for this line has a conflicting result for the " +
+                        `'${unique.tapeName}' field: ${result[unique.tapeName]}`).msgTo(msgs);
                     break resultLoop;
                 }
             }
@@ -92,16 +92,16 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
         const childTapes = new Set(g.child.tapeNames);
         for (const testTape of g.test.tapeNames) {
             if (childTapes.has(testTape)) continue;
-            Err("Ill-formed unit test", 
-                `This expects a tape called ${testTape} but none exists in the grammar being tested.` + 
-                "Some tests may not execute.").msgTo(msgs);
+            Err("Ill-formed unit testnot", 
+                `This expects a header called '${testTape}', but none exists ` +
+                "in the grammar being tested. Some tests may not execute.").msgTo(msgs);
         }
 
         if (msgs.length > 0) return g.msg(msgs);
 
         const results = this.executeTest(g, env);
         if (results.length > 0) {
-            return g.err("Failed unit test",
+            return g.err("Failed unit testnot - has outputs",
                 "The grammar above incorrectly has outputs compatible with these inputs.");
         } 
 

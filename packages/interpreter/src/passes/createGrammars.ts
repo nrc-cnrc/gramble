@@ -115,8 +115,8 @@ export class CreateGrammars extends Pass<TST,Grammar> {
             return prevGrammar
                 .msg(prevMsgs)
                 .msg(tapeMsgs)
-                .err("Renaming error",
-                     "Cannot rename from multiple headers (field names).")
+                .err("Renaming multiple headers error",
+                     `Cannot rename from multiple headers: [${tapeGrammar.symbols}].`)
         }
 
         return new RenameGrammar(prevGrammar, tapeGrammar.symbols[0], t.header.header.text)

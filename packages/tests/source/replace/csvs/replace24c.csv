@@ -1,0 +1,11 @@
+vowels=, text
+       , a
+       , i
+
+word=, table:, text, text2
+    ,       , aba,   ABA
+    ,       , abra,  ABRA
+    ,       , abi,   ABI
+    ,       ,     ,
+    , replace text/text2:, from,     to, 
+    ,                    , {vowels}, o,

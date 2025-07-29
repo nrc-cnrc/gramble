@@ -41,22 +41,22 @@ describe(`Source ${DIR}`, function() {
     });
     
     testSrc({
-		desc: '5. Replacing wrong tape',
+		desc: '5. Replacing wrong header',
         results: [
             {text: "aba"}
         ],
         errors: [
-            Error(3,1)
+            Error(3, 1, "Replacing on non-existent header: 'gloss'")
         ]
     });
 
     testSrc({
-		desc: '6. Replace but the tape is a reserved word',
+		desc: '6. Replace but the header is a reserved word',
         results: [
             {text: "aba"}
         ],
         errors: [
-            Error(3,1)
+            Error(3, 1, "Invalid operator: 'replace test:'")
         ]
     });
 
@@ -311,7 +311,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"}
         ],
         errors: [
-            Error(12,4),
+            Error(12, 4, "Invalid ordinary header: 'surface'"),
             Warning(12,1)
         ]
     });
@@ -327,7 +327,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"}
         ],
         errors: [
-            Error(12,4),
+            Error(12, 4, "Invalid 'unique' header: 'unique text'"),
             Warning(12,1)
         ]
     });
@@ -338,7 +338,7 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Error(0,1),
+            Error(0, 1, "Missing content for 'replace text:'"),
             Warning(0,0)
         ],
     });
@@ -350,7 +350,7 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Error(0,0),
+            Error(0, 0, "Missing content for 'replace text:'"),
             Warning(0,0)
         ],
     });
@@ -361,7 +361,7 @@ describe(`Source ${DIR}`, function() {
             {text: "aba"}
         ],
         errors: [
-            Error(3,1)
+            Error(3, 1, "'replace' operator requires non-empty grid")
         ]
     });
 
@@ -376,7 +376,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"}
         ],
         errors: [
-            Error(12,1)
+            Error(12, 1, "Missing 'from' header for 'replace'")
         ]
     });
 
@@ -391,7 +391,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"}
         ],
         errors: [
-            Error(12,1)
+            Error(12, 1, "Missing 'to' header for 'replace'")
         ]
     });
 
@@ -525,28 +525,40 @@ describe(`Source ${DIR}`, function() {
     });
     
     testSrc({
-		desc: '24a. Replace with a multi-tape symbol in regex in from',
+		desc: '24a. Replace with a multi-field symbol in regex in from',
         results: [
             {text: "abi"},
             {text: "abra"},
             {text: "aba"}
         ],
         errors: [
-            Error(10,2),
-            Error(9,1),
+            Error(10, 2, "Embedding multi-field symbol in regex/rule"),
+            Error(9, 1, "Non-single-header rule"),
             Warning(9,1)
-        ]
+        ],
     });
 
     testSrc({
-		desc: '24b. Replace with a multi-tape symbol in regex in post',
+		desc: '24b. Replace with a multi-field symbol in regex in context',
         results: [
             {text: "ava"},
             {text: "avra"},
             {text: "avi"}
         ],
         errors: [
-            Error(10,4)
+            Error(10, 4, "Embedding multi-field symbol in regex/rule")
+        ]
+    });
+    
+    testSrc({
+		desc: '24c. Replace with multiple /-separated names in  operator',
+        results: [
+            {text: "abi", text2: "ABI"},
+            {text: "abra", text2: "ABRA"},
+            {text: "aba", text2: "ABA"}
+        ],
+        errors: [
+            Error(9, 1, "Invalid operator: 'replace text/text2:'"),
         ]
     });
 
@@ -561,7 +573,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"}
         ],
         errors: [
-            Error(12,1)
+            Error(12, 1, "'replace' operator requires grid, not 'table:'")
         ]
     });
     
@@ -576,7 +588,22 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"}
         ],
         errors: [
-            Error(12,1)
+            Error(12, 1, "'replace' operator requires non-empty grid")
+        ]
+    });
+    
+    testSrc({
+		desc: '25c. Replace with no operands',
+        results: [
+            {text: "foo", gloss: "run.3SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moo", gloss: "jump.3SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+            {text: "moobar", gloss: "jump-1SG"}
+        ],
+        errors: [
+            Error(12, 1, "'replace' operator requires non-empty grid")
         ]
     });
 

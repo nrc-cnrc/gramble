@@ -100,9 +100,9 @@ export class TstContent extends TstCellComponent {
 
 
 /**
- * An enclosure represents a single-cell unit containing a command or identifier (call that the "startCell"),
- * and a rectangular region describing further details (like the parameters of the command,
- * or what is to be assigned to the identifier). 
+ * An enclosure represents a single-cell unit containing a operator or symbol
+ * (call that the "startCell"), and a rectangular region describing further details
+ * (like the operands of the operator, or what is to be assigned to the symbol). 
  * 
  * An enclosure contains all cells to the right of it, and the cells below the cells to the right
  * (more precisely, a enclosure with its startCell in (r,c) contains all cells (x,y) where x >= r 

@@ -19,12 +19,12 @@ describe(`Source ${DIR}`, function() {
     });
     
     testSrc({
-		desc: '2. Hiding an irrelevant tape',
+		desc: '2. Hiding an irrelevant header',
         results: [
             {text: "foo", gloss: "run"}
         ],
         errors: [
-            Error(1,4)
+            Error(1, 4, "Hiding missing header 'class'")
         ]
     });
     
@@ -111,12 +111,12 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '8. Hiding an ill-formed tape',
+		desc: '8. Hiding an ill-formed header name',
         results: [
             {text: "foo", gloss: "run"}
         ],
         errors: [
-            Error(1,4)
+            Error(1, 4, "Invalid header name: '$gloss'")
         ]
     });
     
@@ -131,7 +131,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moo",    subj: "[3SG]", gloss: "jump[3SG]"}
         ],
         errors: [
-            Error(14,3)
+            Error(14, 3, "Invalid header name: '$subj'")
         ]
     });
     
@@ -146,7 +146,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moo",    pos: "v",gloss: "jump[3SG]"}
         ],
         errors: [
-            Error(14,3)
+            Error(14, 3, "Invalid header name: '$pos'")
         ]
     });
 
@@ -161,7 +161,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moo",    subj: "[3SG]", pos: "v", gloss: "jump[3SG]"}
         ],
         errors: [
-            Error(14,3)
+            Error(14, 3, "Error parsing cell: '/subj'") // "Cannot parse '/subj' as a tapename"
         ]
     });
     
@@ -176,7 +176,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moo",    subj: "[3SG]", pos: "v", gloss: "jump[3SG]"}
         ],
         errors: [
-            Error(14,3)
+            Error(14, 3, "Error parsing cell: 'subj/'")
         ]
     });
     
@@ -191,7 +191,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moo",    subj: "[3SG]", pos: "v", gloss: "jump[3SG]"}
         ],
         errors: [
-            Error(14,3)
+            Error(14, 3, "Error parsing cell: 'subj//pos'")
         ]
     });
 });

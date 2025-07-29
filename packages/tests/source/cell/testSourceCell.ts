@@ -145,30 +145,30 @@ describe(`Source ${DIR}`, function() {
     testSrc({
 		desc: '6a. Embed with alternation',
         results: [
-            {"text":"boobar"},
-            {"text":"goobar"},
-            {"text":"foobar"},
-            {"text":"moobar"}
+            {text: "boobar"},
+            {text: "goobar"},
+            {text: "foobar"},
+            {text: "moobar"},
         ]
     });
     
     testSrc({
 		desc: '6b. Embed with three-way alternation',
         results: [
-            {"text":"boobar"},
-            {"text":"goobar"},
-            {"text":"foobar"},
-            {"text":"moobar"},
-            {"text":"noobar"},
-            {"text":"soobar"}
+            {text: "boobar"},
+            {text: "goobar"},
+            {text: "foobar"},
+            {text: "moobar"},
+            {text: "noobar"},
+            {text: "soobar"},
         ]
     });
     
     testSrc({
 		desc: '7a. Embed with curly braces',
         results: [
-            {"text":"foobar"},
-            {"text":"moobar"}
+            {text: "foobar"},
+            {text: "moobar"},
         ],
         errors: [
             Warning(5,2)
@@ -178,10 +178,10 @@ describe(`Source ${DIR}`, function() {
     testSrc({
 		desc: '7b. Embed with alt and curly braces',
         results: [
-            {"text":"boobar"},
-            {"text":"goobar"},
-            {"text":"foobar"},
-            {"text":"moobar"}
+            {text: "boobar"},
+            {text: "goobar"},
+            {text: "foobar"},
+            {text: "moobar"},
         ],
         errors: [
             Warning(9,2)
@@ -191,10 +191,10 @@ describe(`Source ${DIR}`, function() {
     testSrc({
 		desc: '7c. Embed with alt and curly braces 2',
         results: [
-            {"text":"boobar"},
-            {"text":"goobar"},
-            {"text":"foobar"},
-            {"text":"moobar"}
+            {text: "boobar"},
+            {text: "goobar"},
+            {text: "foobar"},
+            {text: "moobar"},
         ],
         errors: [
             Warning(9,2)
@@ -204,20 +204,20 @@ describe(`Source ${DIR}`, function() {
     testSrc({
 		desc: '8a. Embed with sequence',
         results: [
-            {"text":"bar"},
+            {text: "bar"},
         ],
         errors: [
-            Error(9,2)
+            Error(9, 2, "Error parsing cell: 'nouns verbs'")
         ]
     });
     
     testSrc({
 		desc: '8b. Embed with alternation and space',
         results: [
-            {"text":"bar"},
+            {text: "bar"},
         ],
         errors: [
-            Error(13,2)
+            Error(13, 2, "Error parsing cell: 'nouns|verbs preps'")
         ]
     });
 });

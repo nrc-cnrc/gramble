@@ -342,9 +342,9 @@ function getTapesSingleTape(g: SingleTapeGrammar): Grammar {
 
     if (dictLen(g.child.tapes.vocabMap) > 1) {
         throw new EpsilonGrammar()
-                .err("Embedding multi-field symbol",
-                        `Only grammars with one field (e.g. just "text" but not any other fields) ` +
-                        `can be embedded into a regex or rule context.`)
+                .err("Embedding multi-field symbol in regex/rule",
+                    "Only grammars with one field (e.g. just 'text' but not any " +
+                    "other fields) can be embedded into a regex or rule context.")
                 .localize(g.child.pos);
     }
 
@@ -393,15 +393,15 @@ function getTapesRename(g: RenameGrammar): Grammar {
     }
 
     if (g.child.tapes.vocabMap[g.fromTape] === undefined) {
-        throw g.child.err("Renaming missing from tape",
-            `The grammar to undergo renaming does not contain the tape ${g.fromTape}. ` +
-            `Available tapes: [${[...g.child.tapeNames]}]`);
+        throw g.child.err(`Renaming missing from header '${g.fromTape}'`,
+            `The grammar being renamed does not contain the header '${g.fromTape}'.\n` +
+            `Available headers: [${g.child.tapeNames}]`);
     }
 
     if (g.fromTape !== g.toTape && g.child.tapes.vocabMap[g.toTape] !== undefined) {
-        throw g.child.err("Destination tape already exists",
-                  `Trying to rename ${g.fromTape}->${g.toTape} but the grammar ` +
-                  `to the left already contains the tape ${g.toTape}.`)
+        throw g.child.err(`Destination header '${g.toTape}' already exists`,
+                  `Trying to rename '${g.fromTape}'->'${g.toTape}' but the grammar ` +
+                  `to the left already contains the header '${g.toTape}'.`)
     }
 
     return result;
@@ -410,9 +410,9 @@ function getTapesRename(g: RenameGrammar): Grammar {
 function getTapesHide(g: HideGrammar): Grammar {
     if (g.child.tapes.tag === Tapes.Tag.Lit &&
         g.child.tapes.vocabMap[g.tapeName] === undefined) {
-        throw g.child.err("Hiding missing tape",
-                    `The grammar being hidden does not contain the tape ${g.tapeName}. ` +
-                    ` Available tapes: [${[...g.child.tapeNames]}]`);
+        throw g.child.err(`Hiding missing header '${g.tapeName}'`,
+                `The grammar being hidden does not contain the header '${g.tapeName}'.\n` +
+                `Available headers: [${g.child.tapeNames}]`);
     }
 
     const tapes = Tapes.Rename(g.child.tapes, g.tapeName, g.toTape);
@@ -445,8 +445,8 @@ function getTapesFilter(g: FilterGrammar): Grammar {
 
     const t2 = g.child2.tapeNames[0];
     if (g.child1.tapes.vocabMap[t2] === undefined) {
-        throw g.child1.err("Filtering non-existent tape", 
-        `This filter references a tape "${t2}" that does not exist`);
+        throw g.child1.err(`Filtering non-existent header '${t2}'`, 
+        `This filter references a header '${t2}' that does not exist`);
     }
 
     return getTapesJoin(g);
@@ -458,8 +458,8 @@ function getTapesReplaceBlock(g: ReplaceBlockGrammar): Grammar {
     // we generate infinitely
     if (g.child.tapes.tag === Tapes.Tag.Lit &&
         g.child.tapes.vocabMap[g.inputTape] === undefined) {
-        throw g.child.err(`Replacing non-existent tape: '${g.inputTape}'`,
-                    `The grammar above does not have a tape ` +
+        throw g.child.err(`Replacing on non-existent header: '${g.inputTape}'`,
+                    `The grammar above does not have a header ` +
                     `'${g.inputTape}' to replace on.`);
     }
 

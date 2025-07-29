@@ -105,8 +105,8 @@ const OP_UNRESERVED = MPUnreserved<Op>(
             return new SymbolOp(s)
         } else {
             throw new ErrorOp().err(
-                `Invalid identifier: '${s}'`, 
-                `'${s}' looks like it should be an identifier, ` +
+                `Invalid symbol name: '${s}'`, 
+                `'${s}' looks like it should be a symbol name, ` +
                 "but it contains an invalid symbol."
             );
         }
