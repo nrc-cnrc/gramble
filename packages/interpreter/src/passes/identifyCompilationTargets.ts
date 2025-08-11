@@ -19,10 +19,6 @@ import { Message, Msg } from "../utils/msgs.js";
  */
 export class IdentifyCompilationTargets extends Pass<Grammar,Grammar> {
 
-    /* constructor(
-        public symbols: Dict<Grammar>
-    ) */
-
     public getEnv(opt: Partial<Options>): SymbolEnv {
         return new SymbolEnv(opt);
     }
@@ -76,7 +72,13 @@ export class IdentifyCompilationTargets extends Pass<Grammar,Grammar> {
             return newJoin.msg(msgs);
         }
 
-        const newEmbedName = "$" + newJoin.child1.symbol + "_" + sharedTape;
+        // we need a name that uniquely identifies this grammar wherever it occurs.  this
+        // join might happen many times in a grammar, and we don't want a different name each 
+        // time; that would defeat the purpose of JIT compilation.  the toStr representation 
+        // suffices, at least for the simple grammars that will be picked out by the above 
+        // constraints.  it's not a valid identifier but at this point in compilation that's 
+        // fine; the identifier rules are only constraints on programmers.
+        const newEmbedName = '$' + toStr(newJoin);
         
         env.symbolNS[newEmbedName] = newJoin;
 

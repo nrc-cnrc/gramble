@@ -103,7 +103,7 @@ export class Interpreter {
         INDICES.HIDE = 0;
         INDICES.REPLACE = 0;
 
-        const timeVerbose = (this.opt.verbose & VERBOSE_TIME) != 0;
+        //const timeVerbose = (this.opt.verbose & VERBOSE_TIME) != 0;
 
         // Next, we perform a variety of grammar-to-grammar passes in order
         // to get the grammar into an executable state: symbol references fully-qualified,
@@ -114,7 +114,7 @@ export class Interpreter {
                         .bind(g => TAPE_PASSES.getEnvAndTransform(g, devEnv.opt))
                         .msgTo(m => sendMsg(this.devEnv, m));
 
-        logGrammar(this.opt.verbose | VERBOSE_GRAMMAR, this.grammar);
+        logGrammar(this.opt.verbose, this.grammar);
     }
 
     get opt(): Options {
