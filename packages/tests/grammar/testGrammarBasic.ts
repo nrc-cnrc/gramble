@@ -41,7 +41,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {},
         ],
     });
-
+    
     testGrammar({
 		desc: '3. Just ε',
         grammar: Epsilon(),

@@ -170,7 +170,6 @@ export class CalculateTapes extends AutoPass<Grammar> {
 
             // first get the initial tapes for each symbol
             let tapeIDs: TapeDict = mapValues(g.symbols, v => v.tapes);
-
             tapeIDs = Tapes.resolveAll(tapeIDs);
 
             // check for unresolved content, and throw an exception immediately.

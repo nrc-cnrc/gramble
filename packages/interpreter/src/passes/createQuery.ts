@@ -39,6 +39,9 @@ export class CreateQuery extends Pass<Grammar,Grammar> {
 
         // otherwise turn it into a product of literals and join it
         const querySeq = Query(this.query).tapify(env);
+        if (querySeq.tag == "epsilon") {
+            return g;
+        }
         const result = new JoinGrammar(g, querySeq)
                         .tapify(env);
         return result;
