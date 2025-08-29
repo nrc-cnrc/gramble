@@ -128,17 +128,17 @@ export function Query(
     if ('tapify' in query)
         return query as Grammar;
 
-    if (! Array.isArray(query)) {
+    if (!Array.isArray(query)) {
         query = [query];
     }
-    let queries: SequenceGrammar[] = [];
+    let queries: Grammar[] = [];
     for (let q of query) {
         const queryLiterals = Object.entries(q).map(([key, value]) => {
             key = key.normalize("NFD"); 
             value = value.normalize("NFD");
             return new LiteralGrammar(key, value);
         });
-        const seq = new SequenceGrammar(queryLiterals)
+        const seq = queryLiterals.length == 0 ? Epsilon() : new SequenceGrammar(queryLiterals)
         queries.push(seq);
     }
     if (queries.length == 1) {
