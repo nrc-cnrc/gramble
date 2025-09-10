@@ -41,7 +41,7 @@ export class CheckStructuralParams extends Pass<TST,TST> {
             // and replace it with its child
             if (t.sibling instanceof TstOp 
                  && t.sibling.op instanceof SymbolOp) {
-                Err(`Wayward assignment: '${t.sibling.op.text}'`,
+                Err(`Wayward assignment: '${t.sibling.op.text}'.`,
                     `This looks like an assignment to '${t.sibling.op.text}', but ` +
                     "isn't in an appropriate position for one and will be ignored.")
                     .localize(t.sibling.pos).msgTo(msgs);
@@ -122,7 +122,7 @@ export class CheckStructuralParams extends Pass<TST,TST> {
         if (siblingRequired(t.op) == "required" 
                 && t.sibling instanceof TstEmpty
                 && t.child instanceof TstEmpty) {
-            throw new TstEmpty().err(`Missing content for '${trimmedText}'`,
+            throw new TstEmpty().err(`Missing content for '${trimmedText}'.`,
                             `The '${trimmedText}' operator requires content above it `  +
                             "and to the right, but both are empty or erroneous.")
         }

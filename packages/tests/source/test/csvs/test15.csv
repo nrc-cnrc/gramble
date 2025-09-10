@@ -1,16 +1,34 @@
 
 verb=, table:, text, gloss/root
-    ,       , foo, run
-    ,       , moo, jump
+     ,       , foo,  run
+     ,       , goo,  run
+     ,       , moo,  jump
 
 suffix=, table:, text, gloss/subj
-    ,       , bar, [1SG]
-    ,       , baz, [2SG]
+       ,       , bar,  [1SG]
+       ,       , baz,  [2SG]
+       ,       , baz,  [2PL]
 
 word=, table:, embed, embed
-    ,       , verb, suffix 
+     ,       , verb,  suffix 
 
-    , test:, root, subj, unique text, unique gloss
-    ,     , run, [1SG], foobar, run[1SG],
-    ,     , jump, [1SG], moobar, jump[1SG],
-    ,     , run, [2SG], foobaz, run[2SG]
+     , test:, root, subj,  unique text, unique gloss, % comment
+     ,      , jump, [1SG], moobar,      jump[1SG],
+     ,      , jump, [2SG], moobaz,      jump[2SG],
+     ,      , jump, [2PL], moobaz,      jump[2PL],
+     ,      , run,  [1SG], foobar,      run[1SG],     % unexpected 'text' result
+     ,      , run,  [1SG], goobar,      run[1SG],     % unexpected 'text' result
+     ,      , run,  [2SG], foobaz,      run[2SG],     % unexpected 'text' result
+     ,      , run,  [2SG], goobaz,      run[2SG],     % unexpected 'text' result
+     ,      , run,  [2PL], foobaz,      run[2PL],     % unexpected 'text' result
+     ,      , run,  [2PL], goobaz,      run[2PL],     % unexpected 'text' result
+			
+     ,      , jump, [2SG], moobat,      jump[2SG],    % no matching outputs (bad text) & unexpected 'text' result
+     ,      , jump, [2PL], moobat,      jump[2PL],    % no matching outputs (bad text) & unexpected 'text' result
+     ,      , run,  [2SG], foobat,      run[2SG],     % no matching outputs (bad text) & unexpected 'text' result
+     ,      , run,  [2PL], foobat,      run[2PL],     % no matching outputs (bad text) & unexpected 'text' result
+			
+     ,      , jump, [2SG], moobaz,      run[2SG],     % no matching outputs (root/gloss mismatch) & unexpected 'gloss' result
+     ,      , jump, [2SG], moobaz,      jump[3SG],    % no matching outputs (subj/gloss mismatch) & unexpected 'gloss' result
+     ,      , jump, [3SG], moobaz,      jump[3SG],    % no matching outputs (bad subj)
+     ,      , jump, [2SG], moobat,      jump[3SG],    % no matching outputs (subj/gloss mismatch & bad text) & unexpected 'gloss' result & unexpected 'text' result

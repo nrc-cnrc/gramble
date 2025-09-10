@@ -210,6 +210,7 @@ export function childMustBeGrid(op: Op): Requirement {
 export function allowedParams(op: Op): Set<string> {
     switch (op.tag) {
         // most ops only allow the __ param
+        case "testnot":
         case "table": 
         case "collection":
         case "or":  
@@ -218,8 +219,7 @@ export function allowedParams(op: Op): Set<string> {
         case "error":      return BLANK_PARAM_SET;
 
         // test allows "unique" and __
-        case "test":
-        case "testnot":    return TEST_PARAM_SET;
+        case "test":       return TEST_PARAM_SET;
 
         // replace only allows from/to/context
         case "replace":    return REPLACE_PARAMS;

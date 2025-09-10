@@ -10,14 +10,10 @@ suffix=, table:, text, gloss
 word=, table:, embed, embed
      ,       , verb,  suffix 
      ,
-     , test:, text,   gloss
-     ,      , foobar, run-1SG,
-     ,      , moobar, jump-1SG,
-     ,      , foobaz, run-2SG
-     ,
      , testnot:, text,   gloss
      ,         , foobax, run-1SG,
+     ,         , foobar, run-2SG,
      ,         , foobaz, run-1SG,
+     ,         , moobax, jump-1SG,
      ,         , moobar, jump-2SG,
      ,         , moobaz, jump-1SG,
-     ,         , foobaz, jump-2SG

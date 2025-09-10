@@ -136,7 +136,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
         if (!(tapeGrammar instanceof TapeNamesGrammar)) {
             return prevGrammar
                     .err("Renaming error",
-                         "Cannot parse this cell as an ordinary (field name).")
+                         "Cannot parse this cell as an ordinary header (field name).")
                     .msg(prevMsgs)
                     .msg(tapeMsgs)
         }

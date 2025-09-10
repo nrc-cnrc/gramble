@@ -4,7 +4,7 @@ import {
 } from "../tsts.js";
 import { AutoPass } from "../passes.js";
 import { Err, Message, Msg } from "../utils/msgs.js";
-import { Header, UniqueHeader, TapeHeader } from "../headers.js";
+import { Header, CommentHeader, TapeHeader, UniqueHeader } from "../headers.js";
 import { paramsMustBeLiteral } from "../ops.js";
 import { PassEnv } from "../components.js";
 
@@ -22,20 +22,20 @@ export class CheckTestLiterals extends AutoPass<TST> {
 
     public postTransform(t: TST, env: PassEnv): TST {
         switch(t.tag) {
-            case "op": return this.handleOp(t);
+            case "op": return this.handleOp(t, env);
             default:   return t;
         }
     }
 
-    public handleOp(t: TstOp): TST {
+    public handleOp(t: TstOp, env: PassEnv): TST {
         const msgs: Message[] = [];
         if (paramsMustBeLiteral(t.op) && t.child instanceof TstHeadedGrid) {
             const newHeaders: TstHeader[] = []
             for (const header of t.child.headers) {
                 if (!this.isLiteral(header.header)) {
-                    Err(`Non-literal test content: '${header.text.trim()}'`,
-                        "Tests can only contain plain literal content " +
-                        "(i.e. no embeds, no special headers except unique, etc.).")
+                    Err(`Not a plain header: '${header.text.trim()}'`,
+                        "Tests can only contain plain headers (field names), i.e., " +
+                        "no /, no embeds, no special headers (except unique), etc.")
                         .localize(header.pos).msgTo(msgs);
                 } else {
                     newHeaders.push(header);
@@ -53,6 +53,9 @@ export class CheckTestLiterals extends AutoPass<TST> {
         }
         if (t instanceof UniqueHeader) {
             return this.isLiteral(t.child);
+        }
+        if (t instanceof CommentHeader) {
+            return true;
         }
         return false;
     }

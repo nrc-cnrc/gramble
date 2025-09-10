@@ -8,6 +8,9 @@ suffix=, table:, text, gloss
        ,       , baz,  -2SG
 
 word=, table:, embed, embed
-     ,       , verb, suffix 
+     ,       , verb,  suffix 
      ,
-     , test:
+     , test:, text,   gloss
+     ,      , foobar, run-1SG,
+     ,      , moobar, jump-1SG,
+     ,      , foobaz, run-2SG

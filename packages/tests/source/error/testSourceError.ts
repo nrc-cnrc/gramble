@@ -152,7 +152,7 @@ describe(`Source ${DIR}`, function() {
             {text: "foobar", gloss: "run-1SG"}
         ],
         errors: [
-            Error(9, 1, "Wayward assignment: 'suffixed'")
+            Error(9, 1, "Wayward assignment: 'suffixed'.")
         ]
     });
     

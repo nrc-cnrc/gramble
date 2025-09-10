@@ -1,0 +1,22 @@
+
+verb=, table:, text, gloss
+     ,       , foo,  run
+     ,       , moo,  jump
+
+suffix=, table:, text, gloss
+       ,       , bar,  -1SG
+       ,       , baz,  -2SG
+
+word=, table:, embed, embed
+     ,       , verb,  suffix 
+     ,
+     , test:, text,    gloss,    % COMMENT
+     ,      , foobar,  run-1SG,  % should PASS
+     ,      , foobar,  run-2SG,  % should FAIL
+     ,      , moobar,  jump-1SG, % should PASS
+     ,      , moobar,  jump-2SG, % should FAIL
+     ,      , moobeer, jump-1SG, % should FAIL
+     ,      , foobaz,  run-2SG,  % should PASS
+     ,      , foobaz,  roon-2SG, % should FAIL
+     ,      , moobaz,  jump-2SG, % should PASS
+     ,      , moobax,  jump-2SG, % should FAIL

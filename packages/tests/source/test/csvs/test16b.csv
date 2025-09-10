@@ -1,0 +1,19 @@
+
+verb=, table:, text, gloss, pos
+     ,       , foo,  run,
+     ,       , foo,  eat,   verb 
+     ,       , goo,  run,
+     ,       , moo,  jump,  verb
+
+suffix=, table:, text, gloss
+       ,       , bar,  -1SG
+       ,       , baz,  -2SG
+
+word=, table:, embed, embed
+     ,       , verb,  suffix 
+
+     , test:, text,   unique pos
+     ,      , foobar, verb
+     ,      , foobar,
+     ,      , goobar,
+     ,      , moobaz,

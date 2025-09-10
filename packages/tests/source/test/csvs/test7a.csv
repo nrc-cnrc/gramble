@@ -1,0 +1,19 @@
+
+verb=, table:, text, gloss
+     ,       , foo,  run
+     ,       , moo,  jump
+
+suffix=, table:, text, gloss/subj
+       ,       , bar,  [1SG]
+       ,       , baz,  [2SG]
+       ,       , bat,
+
+word=, table:, embed, embed
+     ,       , verb,  suffix 
+     ,
+     , test:, text,   gloss,    subj,  % COMMENT
+     ,      , foobar, run[1SG], [1SG], % should PASS
+     ,      , foobar, run[1SG],      , % should FAIL
+     ,      , foobat, run,           , % should PASS
+     ,      , foobat, run[1SG],      , % should FAIL
+     ,      , foobat, run,      [1SG], % should FAIL

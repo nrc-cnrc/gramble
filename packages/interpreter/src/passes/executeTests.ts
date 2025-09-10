@@ -49,38 +49,60 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
         const childTapes = new Set(g.child.tapeNames);
         for (const testTape of g.test.tapeNames) {
             if (childTapes.has(testTape)) continue;
-            Err("Ill-formed unit test", 
-                `This expects a header called '${testTape}', but none exists ` +
+            Err(`Ill-formed unit test - no '${testTape}' header`, 
+                `This test expects a header called '${testTape}', but none exists ` +
                 "in the grammar being tested. Some tests may not execute.").msgTo(msgs);
         }
 
         if (msgs.length > 0) return g.msg(msgs);
 
         const results = this.executeTest(g, env);
-        if (results.length == 0) {
-            Err("Failed unit test - no outputs",
-                "The grammar above has no outputs compatible with these inputs.").msgTo(msgs);
-        } else {
-            Succeed(
-                "The grammar above has outputs compatible with these inputs.").msgTo(msgs);
+
+        let match = false;
+        resultLoop: for (const result of results) {
+            match = true;
+            uniqueLoop: for (const unique of g.uniques) {
+                if (unique.text == "" && !(unique.tapeName in result)) {
+                    continue;
+                }
+                if(!(unique.tapeName in result)
+                        || result[unique.tapeName] != unique.text) {
+                    match = false;
+                    break uniqueLoop;
+                }
+            }
+            if (match) break resultLoop;
         }
 
-        uniqueLoop: for (const unique of g.uniques) {
-            resultLoop: for (const result of results) {
+        if (!match) {
+            Err("Failed unit test - no matching outputs",
+                "The grammar above has no outputs compatible with this specification.").msgTo(msgs);
+        }
+
+        uniqueLoop2: for (const unique of g.uniques) {
+            resultLoop2: for (const result of results) {
+                if (unique.text == "" && !(unique.tapeName in result)) {
+                    continue;
+                }
                 if (!(unique.tapeName in result)) {
                     const resultStr = Object.entries(result).map(([k,v]) => `${k}:${v}`);
                     Err(`Failed unit test - output missing '${unique.tapeName}'`,
-                        "An output for this line does not contain a " +
+                        "An output for this line's inputs does not contain a " +
                         `'${unique.tapeName}' field: [${resultStr}]`).msgTo(msgs);
-                    break uniqueLoop;
+                    break uniqueLoop2;
                 }
                 if (result[unique.tapeName] != unique.text) {
-                    Err(`Failed unit test - '${unique.tapeName}' conflict`,
-                        "An output for this line has a conflicting result for the " +
+                    Err(`Failed unit test - unexpected '${unique.tapeName}' result`,
+                        "An output for this line's inputs has an unexpected result for the " +
                         `'${unique.tapeName}' field: ${result[unique.tapeName]}`).msgTo(msgs);
-                    break resultLoop;
+                    break resultLoop2;
                 }
             }
+        }
+
+        if (msgs.length == 0) {
+            Succeed("The grammar above correctly has outputs compatible with this specification.")
+                .msgTo(msgs);
         }
 
         return g.msg(msgs);
@@ -92,8 +114,8 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
         const childTapes = new Set(g.child.tapeNames);
         for (const testTape of g.test.tapeNames) {
             if (childTapes.has(testTape)) continue;
-            Err("Ill-formed unit testnot", 
-                `This expects a header called '${testTape}', but none exists ` +
+            Err(`Ill-formed unit testnot - no '${testTape}' header`, 
+                `This testnot expects a header called '${testTape}', but none exists ` +
                 "in the grammar being tested. Some tests may not execute.").msgTo(msgs);
         }
 
@@ -101,12 +123,12 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
 
         const results = this.executeTest(g, env);
         if (results.length > 0) {
-            return g.err("Failed unit testnot - has outputs",
-                "The grammar above incorrectly has outputs compatible with these inputs.");
+            return g.err("Failed unit testnot - has matching outputs",
+                "The grammar above incorrectly has outputs compatible with this specification.");
         } 
 
         return g.msg(Succeed(
-            "The grammar above correctly has no outputs compatible with these inputs."));
+            "The grammar above correctly has no outputs compatible with this specification."));
     }
     
     public executeTest(
