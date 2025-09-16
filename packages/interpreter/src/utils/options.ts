@@ -1,5 +1,5 @@
 import { DEFAULT_MAX_CHARS, DEFAULT_MAX_RECURSION } from "./constants.js";
-import { SILENT, logDebug } from "./logging.js";
+import { SILENT, logDebug, logObject } from "./logging.js";
 import { Dict } from "./func.js";
 
 export const INDICES = {
@@ -51,6 +51,10 @@ export class Env<T = any> {
 
     public logDebug(...msgs: any[]): void {
         logDebug(this.opt.verbose, ...msgs);
+    }
+
+    public logObject(obj: any, depth: number | null = 2): void {
+        logObject(this.opt.verbose, obj, depth);
     }
 
 }

@@ -11,6 +11,12 @@ export function logDebug(verbose: number = SILENT, ...msgs: any[]): void {
     }
 }
 
+export function logObject(verbose: number = SILENT, obj: any, depth: number | null = 2): void {
+    if ((verbose & VERBOSE_DEBUG) == VERBOSE_DEBUG) {
+        console.dir(obj, {depth: depth});
+    }
+}
+
 export function logTime(verbose: number, msg: string): void {
     if ((verbose & VERBOSE_TIME) == VERBOSE_TIME) {
         console.log(msg);
