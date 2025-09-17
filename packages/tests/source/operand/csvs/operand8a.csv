@@ -1,0 +1,10 @@
+
+verb=, table:, text, from
+    ,       , foo, v
+    ,       , moo, n
+    ,       , goo, v
+    ,       , faa, n
+    ,       , fao, v
+
+word=, table:, embed, equals from
+    ,       , verb, v

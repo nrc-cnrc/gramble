@@ -1,3 +1,4 @@
+import { VERBOSE_DEBUG } from "@gramble/interpreter";
 import {
     testSource, SourceTest, 
     Error, Warning 
@@ -18,7 +19,8 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"},
             {text: "foobaz", gloss: "run-2SG"},
             {text: "moobaz", gloss: "jump-2SG"}
-        ]
+        ],
+        // verbose: VERBOSE_DEBUG
     });
     
     testSrc({
@@ -97,7 +99,7 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Error(11,1)
+            Error(11, 1, "Undefined symbol: 'x.all.all'")
         ]
     });
 
@@ -141,7 +143,7 @@ describe(`Source ${DIR}`, function() {
             {text: "baz", gloss: "-2SG"}
         ],
         errors: [
-            Error(9,2)
+            Error(9, 2, "Undefined symbol: 'y.verb'")
         ]
     });
 
@@ -152,7 +154,7 @@ describe(`Source ${DIR}`, function() {
             {text: "baz", gloss: "-2SG"}
         ],
         errors: [
-            Error(9,2)
+            Error(9, 2, "Undefined symbol: 'x.noun'")
         ]
     });
     
@@ -163,7 +165,7 @@ describe(`Source ${DIR}`, function() {
             {text: "baz", gloss: "-2SG"}
         ],
         errors: [
-            Error(9,2)
+            Error(9, 2, "Undefined symbol: 'verb'")
         ]
     });
 
@@ -209,7 +211,7 @@ describe(`Source ${DIR}`, function() {
             Warning(0,0)
         ]
     });
-    
+
     testSrc({
 		desc: '11b. Unnamed collection as second child',
         results: [
@@ -220,7 +222,7 @@ describe(`Source ${DIR}`, function() {
             Warning(4,0)
         ]
     });
-    
+
     testSrc({
 		desc: '11c. Unnamed collection as last child',
         results: undefined,
@@ -228,7 +230,7 @@ describe(`Source ${DIR}`, function() {
             Warning(8,0)
         ]
     });
-    
+
     testSrc({
 		desc: '12a. Op with collection as a child',
         results: [
@@ -239,10 +241,11 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(11,2)
-        ]
+            Error(11, 2, "Wayward collection, operand of 'or'")
+        ],
+        // verbose: VERBOSE_DEBUG,
     });
-    
+
     testSrc({
 		desc: '12b. Op with collection as a sibling',
         results: [
@@ -253,10 +256,23 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(8,1)
-        ]
+            Error(8, 1, "Wayward collection, operand of 'or'")
+        ],
+        // verbose: VERBOSE_DEBUG,
     });
-    
+
+    testSrc({
+		desc: '12c. Op with table:collection as a sibling?',
+        results: [
+            {},
+        ],
+        errors: [
+            Warning(8,0),   // This symbol will not contain any content.
+            Error(11, 1, "12c Missing content for 'or:'")
+        ],
+        verbose: VERBOSE_DEBUG,
+    });
+
     testSrc({
 		desc: '13a. Importing .all from external file',
         results: [

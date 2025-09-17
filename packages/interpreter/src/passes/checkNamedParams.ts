@@ -3,8 +3,20 @@ import {
     TstOp, TstHeadedGrid, TST 
 } from "../tsts.js";
 import { Pass } from "../passes.js";
-import { Err, Message, MsgFunc, Msg, Warn } from "../utils/msgs.js";
-import { FromHeader, RuleContextHeader, ToHeader, UniqueHeader, paramName } from "../headers.js";
+import {
+    Err,
+    Message,
+    Msg,
+    MsgFunc,
+    Warn
+} from "../utils/msgs.js";
+import {
+    FromHeader,
+    RuleContextHeader,
+    ToHeader,
+    UniqueHeader,
+    paramName
+} from "../headers.js";
 import {
     allowedParams, 
     paramsMustBePerfect, 
@@ -46,7 +58,7 @@ export class CheckNamedParams extends Pass<TST,TST> {
             case "op":          return this.handleOp(t, env);
             case "header":      return this.handleHeader(t, env);
             case "headedgrid":  return this.handleHeadedGrid(t, env);
-            default: 
+            default:
                 const defaultThis = new CheckNamedParams();
                 return t.mapChildren(defaultThis, env);
         }
@@ -74,7 +86,7 @@ export class CheckNamedParams extends Pass<TST,TST> {
         // if there are any problems with params and we require
         // perfection, warn and return the sibling
         if (paramsMustBePerfect(t.op) && childMsgs.length > 0) {
-            Warn("This op has erroneous parameters and will not execute.")
+            Warn(`This '${t.op.tag}' operator has erroneous operands and will not execute.`)
                 .localize(t.cell.pos).msgTo(opMsgs);
             return sib.msg(sibMsgs).msg(childMsgs).msg(opMsgs);
         }
@@ -92,11 +104,11 @@ export class CheckNamedParams extends Pass<TST,TST> {
             for (const param of requiredParams(t.op)) {
                 if (!t.child.providesParam(param)) {
                     const paramDesc = param == DEFAULT_PARAM 
-                                    ? "a plain header (e.g. not 'from', 'to', 'unique')"
+                                    ? "an ordinary header (e.g. 'text', not 'unique')"
                                     : `a '${param}' header`;
-                    const paramName = param == DEFAULT_PARAM ? "plain" : `'${param}'`;
-                    Err(`Missing/invalid ${paramName} header`,
-                        `This operator requires ${paramDesc}, but ` +
+                    const paramName = param == DEFAULT_PARAM ? "ordinary" : `'${param}'`;
+                    Err(`Missing ${paramName} header for '${t.op.tag}'`,
+                        `This '${t.op.tag}' operator requires ${paramDesc}, but ` +
                         "the content to the right doesn't have one.")
                         .localize(t.cell.pos).msgTo(msgs);
                 }
@@ -107,8 +119,8 @@ export class CheckNamedParams extends Pass<TST,TST> {
             // params and complain if they're not DEFAULT_PARAM.
             for (const param of requiredParams(t.op)) {
                 if (param != DEFAULT_PARAM) {
-                    Err(`Missing/invalid '${param}' header`,
-                        `This operator requires a '${param}' header, but ` +
+                    Err(`Missing '${param}' header for '${t.op.tag}'.`,
+                        `This '${t.op.tag}' operator requires a '${param}' header, but ` +
                         "the content to the right doesn't have one.")
                         .localize(t.cell.pos).msgTo(msgs);
                 }
@@ -155,9 +167,6 @@ export class CheckNamedParams extends Pass<TST,TST> {
             }
 
             // it's an unexpected header
-            const param = (tag == DEFAULT_PARAM) ?
-                              "an unnamed parameter" :
-                              `an operand named '${tag}'`;
 
             // if we can easily remove the tag, try that as the fix
             // otherwise return empty
@@ -165,11 +174,11 @@ export class CheckNamedParams extends Pass<TST,TST> {
                                     && this.allowedParams.has(DEFAULT_PARAM)) ?
                                 new TstHeader(h.cell, h.header.child) :
                                 new TstEmpty();
-            const operandName = (tag == DEFAULT_PARAM) ? "plain" : `'${tag}'`;
+            const headerType = (tag == DEFAULT_PARAM) ? "ordinary" : `'${tag}'`;
             const trimmedText = h.cell.text.trim();
-            return newHeader.err(`Invalid ${operandName} header: '${trimmedText}'`,
-                                "The operator to the left does not expect " +
-                                `${param}: '${trimmedText}'`)
+            return newHeader.err(`Invalid ${headerType} header: '${trimmedText}'`,
+                                "The operator to the left does not expect this " +
+                                `${headerType} header: '${trimmedText}'`)
                             .localize(h.pos);
         }) as MsgFunc<TstHeader,TST>);
     }

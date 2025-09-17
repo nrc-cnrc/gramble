@@ -36,9 +36,10 @@ export class CheckCollections extends Pass<TST,TST> {
         }
 
         // it's just a weird collection hanging out on its own
-        throw new TstEmpty().err("Wayward collection",
-                "A collection cannot occur here; it needs " +
-                "to be assigned to something in the cell to the left.");
+        throw new TstEmpty().err(`Wayward collection, operand of '${this.parent.tag}'`,
+                "A collection cannot occur here; it needs to be assigned to " +
+                "something in the cell to the left, and cannot be an operand of " +
+                `'${this.parent.tag}' at ${this.parent.pos?.toString()}`);
 
     }
 

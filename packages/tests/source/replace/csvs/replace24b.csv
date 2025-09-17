@@ -8,4 +8,4 @@ word=, table:, text
     ,       , abi
     ,       ,     ,
     , replace text:, from, to, context
-    ,         , b,         v         , _{vowels}
+    ,              , b   , v , _{vowels}

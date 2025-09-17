@@ -98,8 +98,8 @@ export class HeaderToGrammar extends Pass<Header, Grammar> {
     public handleRegex(h: UnaryHeader, env: PassEnv): Msg<Grammar> {
         if (!(h.child instanceof TapeHeader)) {
             // shouldn't happen, should already be taken care of, more for linting
-            return new EpsilonGrammar().err("Invalid header",
-                "This header can only take a plain tape name (e.g. 'text').");
+            return new EpsilonGrammar().err(`Invalid 'h.child.tag' header for '${h.tag}'`,
+                `This '${h.tag}' header must refer to an ordinary header (e.g. 'text').`);
         }
         const tapeName = h.child.text;
         return msg(this.cellGrammar)

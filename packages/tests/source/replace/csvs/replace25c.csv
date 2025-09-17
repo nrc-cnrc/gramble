@@ -1,4 +1,3 @@
-
 verb=, table:, text, gloss
     ,       , foo, run
     ,       , moo, jump
@@ -6,11 +5,9 @@ verb=, table:, text, gloss
 suffix=, table:, text, gloss
     ,       , bar, -1SG
     ,       , baz, -2SG
+    ,       ,    , .3SG
 
 word=, table:, embed, embed
-    ,       , verb, suffix 
-    ,
-    , test:, text, unique gloss
-    ,     , foobar, run-1SG,
-    ,     , moobar, jump-1SG,
-    ,     , foobaz, run-2SG
+    ,       , verb, suffix
+    ,       ,     ,
+    , replace text:, 

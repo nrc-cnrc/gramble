@@ -76,7 +76,7 @@ const SYMBOL_UNRESERVED = MPUnreserved<Grammar>(
         } else {
             throw new EpsilonGrammar().err(
                 `Invalid symbol name: '${s}'`, 
-                `'${s}' looks like it should be an identifier, ` +
+                `'${s}' looks like it should be a symbol name, ` +
                 `but it doesn't follow the rules for one.`
             );
         }
@@ -127,9 +127,9 @@ const TAPENAME_UNRESERVED = MPUnreserved<Grammar>(
             return new TapeNamesGrammar([s])
         } else {
             throw new TapeNamesGrammar([]).err(
-                `Invalid tape name: '${s}'`, 
-                `'${s}' looks like it should be an identifier, ` +
-                "but it doesn't follow the rules for one."
+                            `Invalid header name: '${s}'`, 
+                            `'${s}' looks like it should be a header name, ` +
+                            "but it doesn't follow the rules for one."
             );
         }
     } 

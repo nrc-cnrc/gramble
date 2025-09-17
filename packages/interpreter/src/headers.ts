@@ -249,9 +249,9 @@ const HP_UNRESERVED = MPUnreserved<Header>(
             return new TapeHeader(s)
         } else {
             throw new ErrorHeader().err(
-                `Invalid tape name: '${s}'`, 
-                `'${s}' looks like it should be a tape name, ` +
-                "but tape names should start with letters or _");
+                `Invalid header: '${s}'`, 
+                `'${s}' looks like it should be a header, ` +
+                "but headers should start with letters or _");
         }
     } 
 );
@@ -312,8 +312,8 @@ const HP_EQUALS = MPSequence<Header>(
     ([c]) => {
         if (!(c instanceof TapeHeader)) {
             throw new ErrorHeader().err( 
-                    `Equals requires tape name`, 
-                    `Equals can only apply to tape names (e.g. "equals text")`);
+                    `Equals requires an ordinary header`, 
+                    `Equals can only apply to ordinary headers (e.g. "equals text").`);
         }
         return new EqualsHeader(c);
     }
@@ -324,8 +324,8 @@ const HP_STARTS = MPSequence<Header>(
     ([c]) => {
         if (!(c instanceof TapeHeader)) {
             throw new ErrorHeader().err(
-                    `Starts requires tape name`, 
-                    `Starts can only apply to tape names (e.g. "starts text")`);
+                    `Starts requires an ordinary header`, 
+                    `Starts can only apply to ordinary headers (e.g. "starts text").`);
         }
         return new StartsHeader(c, c.text)
     }
@@ -336,8 +336,8 @@ const HP_ENDS = MPSequence<Header>(
     ([c]) => {
         if (!(c instanceof TapeHeader)) {
             throw new ErrorHeader().err(
-                    `Ends requires tape name`, 
-                    `Ends can only apply to tape names (e.g. "ends text")`);
+                    `Ends requires an ordinary header`, 
+                    `Ends can only apply to ordinary headers (e.g. "ends text").`);
         }
         return new EndsHeader(c, c.text);
     }
@@ -348,8 +348,8 @@ const HP_CONTAINS = MPSequence<Header>(
     ([c]) => {
         if (!(c instanceof TapeHeader)) {
             throw new ErrorHeader().err(
-                    `Contains requires tape name`, 
-                    `Contains can only apply to tape names (e.g. "contains text")`);
+                    `Contains an ordinary header`, 
+                    `Contains can only apply to ordinary headers (e.g. "contains text").`);
         }
         return new ContainsHeader(c, c.text);
     }
@@ -365,11 +365,11 @@ export function parseHeaderCell(text: string): Msg<Header> {
         // if there are no results, the programmer made a syntax error
         const trimmedText = text.trim();
         return new ErrorHeader().err(`Invalid header: '${trimmedText}'`,
-                                    `Cannot parse '${trimmedText}' as a header`);
+                                    `Cannot parse '${trimmedText}' as a header.`);
     }
     if (results.length > 1) {
         // if this happens, it's an error on our part
-        throw new Error(`Ambiguous, cannot uniquely parse ${text}`);
+        throw new Error(`Ambiguous, cannot uniquely parse '${text}'.`);
     }
     return results[0];
 }

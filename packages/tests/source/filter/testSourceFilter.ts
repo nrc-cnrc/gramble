@@ -1,3 +1,4 @@
+import { VERBOSE_DEBUG } from "@gramble/interpreter";
 import {
     testSource, SourceTest, 
     Error, Warning 
@@ -188,7 +189,7 @@ describe(`Source ${DIR}`, function() {
             {text: "foo", pos: "v", class: "v"}
         ],
         errors: [
-            Error(6,3),
+            Error(6, 3, "Equals requires an ordinary header"),
             Warning(7,3)
         ]
     });
@@ -237,7 +238,7 @@ describe(`Source ${DIR}`, function() {
             {text: "bar", gloss: "[1SG]", subj: "[1SG]"}
         ],
         errors: [
-            Error(13,3)
+            Error(13, 3, "Embedding multi-field symbol in regex/rule")
         ]
     });
 
@@ -345,7 +346,7 @@ describe(`Source ${DIR}`, function() {
             {text: "umfoo", gloss: "[1SG]run"} 
         ],
         errors: [
-            Error(15,4)
+            Error(15, 4, "Embedding multi-field symbol in regex/rule")
         ]
     });
 
@@ -609,20 +610,21 @@ describe(`Source ${DIR}`, function() {
             {text: "foo", pos: "v"}
         ],
         errors: [
-            Error(7,3)
+            Error(7, 3, "Error parsing cell: 'v~'")
         ]
     });
 
     testSrc({
-		desc: 'E2. Equals where the filter references a non-existent tape',
+		desc: 'E2. Equals where the filter references a non-existent header',
         results: [
             {text: "goo"},
             {text: "moo"},
             {text: "foo"}
         ],
         errors: [
-            Error(7,3)
-        ]
+            Error(7, 3, "Filtering non-existent header 'pos'")
+        ],
+        // verbose: VERBOSE_DEBUG
     });
     
     testSrc({
@@ -633,20 +635,21 @@ describe(`Source ${DIR}`, function() {
             {text: "foo", pos: "verb"}
         ],
         errors: [
-            Error(7,3)
+            Error(7, 3, "Error parsing cell: 'v~'")
         ]
     });
     
     testSrc({
-		desc: 'E4. Starts where the filter references a non-existent tape',
+		desc: 'E4. Starts where the filter references a non-existent header',
         results: [
             {text: "goo"},
             {text: "moo"},
             {text: "foo"}
         ],
         errors: [
-            Error(7,3)
-        ]
+            Error(7, 3, "Filtering non-existent header 'pos'")
+        ],
+        verbose: VERBOSE_DEBUG
     });
 
     testSrc({
@@ -657,19 +660,43 @@ describe(`Source ${DIR}`, function() {
             {text: "foo", pos: "verb"}
         ],
         errors: [
-            Error(7,3)
+            Error(7, 3, "Error parsing cell: 'v~'")
         ],
     });
     
     testSrc({
-		desc: 'E6. Ends where the filter references a non-existent tape',
+		desc: 'E6. Ends where the filter references a non-existent header',
         results: [
             {text: "goo"},
             {text: "moo"},
             {text: "foo"}
         ],
         errors: [
-            Error(7,3)
+            Error(7, 3, "Filtering non-existent header 'pos'")
+        ]
+    });
+
+    testSrc({
+		desc: 'E7. Contains with an ill-formed filter',
+        results: [
+            {text: "goo", pos: "verb"},
+            {text: "moo", pos: "noun"},
+            {text: "foo", pos: "verb"}
+        ],
+        errors: [
+            Error(7, 3, "Error parsing cell: 'v~'")
+        ],
+    });
+    
+    testSrc({
+		desc: 'E8. Contains where the filter references a non-existent header',
+        results: [
+            {text: "goo"},
+            {text: "moo"},
+            {text: "foo"}
+        ],
+        errors: [
+            Error(7, 3, "Filtering non-existent header 'pos'")
         ]
     });
    

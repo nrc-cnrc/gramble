@@ -41,7 +41,7 @@ export class CheckStructuralParams extends Pass<TST,TST> {
             // and replace it with its child
             if (t.sibling instanceof TstOp 
                  && t.sibling.op instanceof SymbolOp) {
-                Err(`Wayward assignment: '${t.sibling.op.text}'`,
+                Err(`Wayward assignment: '${t.sibling.op.text}'.`,
                     `This looks like an assignment to '${t.sibling.op.text}', but ` +
                     "isn't in an appropriate position for one and will be ignored.")
                     .localize(t.sibling.pos).msgTo(msgs);
@@ -103,11 +103,17 @@ export class CheckStructuralParams extends Pass<TST,TST> {
 
         // if the op requires a grid to the right, but doesn't have one,
         // issue an error, and return the sibling as the new value.
-        if (childMustBeGrid(t.op) == "required" && 
-            !(t.child instanceof TstGrid)) {
-            throw t.sibling.err(`'${t.op.tag}' requires grid`,
+        if (childMustBeGrid(t.op) == "required"
+                && !(t.child instanceof TstGrid)) {
+            if (t.child instanceof TstEmpty) {
+                throw t.sibling.err(`'${t.op.tag}' operator requires non-empty grid`,
+                        `This '${t.op.tag}' operator requires a non-empty grid to ` +
+                        "the right, but none was found.");
+            }
+            throw t.sibling.err(`'${t.op.tag}' operator requires grid, ` +
+                    `not '${t.child.cell.text.trim()}'`,
                     `This '${t.op.tag}' operator requires a grid to the right, ` +
-                    "but has another operator instead.");
+                    `but has another operator instead: '${t.child.cell.text.trim()}'.`);
         }
 
         const trimmedText = t.cell.text.trim();
@@ -116,7 +122,7 @@ export class CheckStructuralParams extends Pass<TST,TST> {
         if (siblingRequired(t.op) == "required" 
                 && t.sibling instanceof TstEmpty
                 && t.child instanceof TstEmpty) {
-            throw new TstEmpty().err(`Missing arguments to '${trimmedText}'`,
+            throw new TstEmpty().err(`Missing content for '${trimmedText}'.`,
                             `The '${trimmedText}' operator requires content above it `  +
                             "and to the right, but both are empty or erroneous.")
         }
@@ -124,7 +130,7 @@ export class CheckStructuralParams extends Pass<TST,TST> {
         // if the op must have a sibling and doesn't, issue an error,
         // and return empty
         if (siblingRequired(t.op) == "required" && t.sibling instanceof TstEmpty) {
-            throw new TstEmpty().err(`Missing argument to '${trimmedText}'`,
+            throw new TstEmpty().err(`Missing content for '${trimmedText}'`,
                             `The '${trimmedText}' operator requires content above it, ` +
                             "but it's empty or erroneous.");
         }

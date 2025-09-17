@@ -74,12 +74,16 @@ export class ConstructReplaceBlocks extends AutoPass<Grammar> {
         const inputMaterial = new SequenceGrammar([g.preChild, g.inputChild, g.postChild]).tapify(env);
         if (inputMaterial.tapeNames.length != 1) {
             // I don't think this is actually possible with 
-            // new-style rules, but just in case
+            // new-style rules, but just in case...
+            // Update: It's possible to get a rule with no tapes if another error 
+            // has caused from to be changed to an EpsilonGrammar.
             throw new EpsilonGrammar()
                         .tapify(env)
-                        .err( "Non-single-tape rule", 
-                              "This rule has the wrong number of tapes " +
-                              `in "pre/from/post": ${inputMaterial.tapeNames}`);
+                        .err( "Non-single-header rule", 
+                              "This replace rule has the wrong number of header names " +
+                              `in its operands: [${inputMaterial.tapeNames}]; ` +
+                              "probably due to another error, such as embedding " +
+                              "a multi-field symbol in 'from'.");
         }
 
         /*

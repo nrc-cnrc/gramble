@@ -92,7 +92,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ], 
         errors: [
-            Error(5,0)
+            Error(5, 0, "Reassigning existing symbol: 'VERB'")
         ]
     });
     
@@ -106,7 +106,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(5,0)
+            Error(5, 0, "Reassigning existing symbol: 'verb'")
         ]
     });
 });

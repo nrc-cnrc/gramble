@@ -1,0 +1,21 @@
+
+verb=, table:, text, gloss
+     ,       , foo,  run
+     ,       , moo,  jump
+
+suffix=, table:, text, gloss
+       ,       , bar,  -1SG
+       ,       , baz,  -2SG
+       ,       , baz,  -2PL
+
+word=, table:, embed, embed
+     ,       , verb,  suffix 
+     ,
+     , testnot:, text,   unique gloss
+     ,         , foobar, run-1SG
+     ,         , moobar, jump-1SG
+     ,         , foobaz, run-2SG
+     ,         , foobaz, run-2PL
+     ,         , foobiz, run-3SG,
+     ,         , foobar, run-3SG,
+     ,         , foobaz, run-3SG,

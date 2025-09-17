@@ -1,0 +1,30 @@
+
+verb=, table:, text, gloss
+     ,       , foo,  run
+     ,       , foo,  eat
+     ,       , goo,  run
+     ,       , moo,  jump
+
+suffix=, table:, text, gloss
+       ,       , bar,  -1SG
+       ,       , baz,  -2SG
+       ,       , baz,  -2PL
+
+word=, table:, embed, embed
+     ,       , verb,  suffix 
+     ,
+     , test:, text,   unique gloss, % comment
+     ,      , foobar, run-1SG,      % unexpected 'gloss' result
+     ,      , foobar, eat-1SG,      % unexpected 'gloss' result
+     ,      , goobar, run-1SG,
+     ,      , moobar, jump-1SG,
+     ,      , foobaz, run-2SG,      % unexpected 'gloss' result
+     ,      , foobaz, run-2PL,      % unexpected 'gloss' result
+     ,      , foobaz, eat-2SG,      % unexpected 'gloss' result
+     ,      , goobaz, run-2SG,      % unexpected 'gloss' result
+     ,      , goobaz, run-2PL,      % unexpected 'gloss' result
+     ,      , moobaz, jump-2SG,     % unexpected 'gloss' result
+     ,      , moobaz, jump-2PL,     % unexpected 'gloss' result
+     ,      , foobiz, run-3SG,      % no matching outputs (bad text & gloss)
+     ,      , foobar, run-3SG,      % no matching outputs (bad gloss) & unexpected 'gloss' result
+     ,      , foobaz, run-3SG,      % no matching outputs (bad gloss) & unexpected 'gloss' result

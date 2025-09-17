@@ -1,0 +1,10 @@
+
+verb=, table:, text, context
+    ,       , foo, v
+    ,       , moo, n
+    ,       , goo, v
+    ,       , faa, n
+    ,       , fao, v
+
+word=, table:, embed, equals context
+    ,       , verb, v

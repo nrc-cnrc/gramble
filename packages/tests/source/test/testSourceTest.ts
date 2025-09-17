@@ -1,3 +1,4 @@
+import { VERBOSE_DEBUG } from "@gramble/interpreter";
 import {
     testSource, SourceTest, 
     Error, Warning 
@@ -12,14 +13,21 @@ function testSrc(params: Partial<SourceTest>): void {
 describe(`Source ${DIR}`, function() {
 
     testSrc({
-		desc: '1. Simple grammar with unit tests',
+		desc: '1a. Simple grammar with unit tests',
         results: [
             {text: "foobar", gloss: "run-1SG"}
         ]
     });
 
     testSrc({
-		desc: '2. Embeds and unit tests',
+		desc: '1b. Simple grammar with negative unit tests',
+        results: [
+            {text: "foobar", gloss: "run-1SG"}
+        ]
+    });
+
+    testSrc({
+		desc: '2a. Embeds and unit tests',
         results: [
             {text: "foobar", gloss: "run-1SG"},
             {text: "moobar", gloss: "jump-1SG"},
@@ -29,7 +37,17 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '3. Test with an empty string',
+		desc: '2b. Embeds and negative unit tests',
+        results: [
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG"}
+        ]
+    });
+
+    testSrc({
+		desc: '3a. Unit test with an empty string',
         results: [
             {text: "foobar", gloss: "run[1SG]", subj: "[1SG]"},
             {text: "moobar", gloss: "jump[1SG]", subj: "[1SG]"},
@@ -41,30 +59,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '4. Testing a grammar directly underneath (without "table:" op)',
-        results: [
-            {text: "foobar", gloss: "run-1SG"},
-            {text: "moobar", gloss: "jump-1SG"},
-            {text: "foobaz", gloss: "run-2SG"},
-            {text: "moobaz", gloss: "jump-2SG"}
-        ]
-    });
-
-    testSrc({
-		desc: '5. Negative tests',
-        results: [
-            {text: "foobar", gloss: "run-1SG"},
-            {text: "moobar", gloss: "jump-1SG"},
-            {text: "foobaz", gloss: "run-2SG"},
-            {text: "moobaz", gloss: "jump-2SG"}
-        ],
-        errors: [
-            Error(13,2)
-        ]
-    });
-
-    testSrc({
-		desc: '6. Negative test with an empty string',
+		desc: '3b. Negative unit test with an empty string',
         results: [
             {text: "foobar", gloss: "run[1SG]", subj: "[1SG]"},
             {text: "moobar", gloss: "jump[1SG]", subj: "[1SG]"},
@@ -76,7 +71,27 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '7. Failing unit tests',
+		desc: '4a. Testing a grammar directly underneath (no "table:" op)',
+        results: [
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG"}
+        ]
+    });
+
+    testSrc({
+		desc: '4b. Negative testing a grammar directly underneath (no "table:" op)',
+        results: [
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG"}
+        ]
+    });
+
+    testSrc({
+		desc: '5a. Failing unit tests',
         results: [
             {text: "foobar", gloss: "run-1SG"},
             {text: "moobar", gloss: "jump-1SG"},
@@ -84,15 +99,63 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(13,2),
-            Error(14,2),
-            Error(15,2),
-            Error(16,2)
+            Error(14, 2, "Failed unit test - no matching outputs"),
+            Error(16, 2, "Failed unit test - no matching outputs"),
+            Error(17, 2, "Failed unit test - no matching outputs"),
+            Error(19, 2, "Failed unit test - no matching outputs"),
+            Error(21, 2, "Failed unit test - no matching outputs"),
+        ],
+    });
+
+    testSrc({
+		desc: '5b. Failing negative unit tests',
+        results: [
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG"}
+        ],
+        errors: [
+            Error(14, 2, "Failed unit testnot - has matching outputs"),
+            Error(16, 2, "Failed unit testnot - has matching outputs"),
+            Error(18, 2, "Failed unit testnot - has matching outputs"),
+            Error(20, 2, "Failed unit testnot - has matching outputs"),
         ]
     });
 
     testSrc({
-		desc: '8. Failed test with an empty string',
+		desc: '6a. Unit tests with unknown header',
+        results: [
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG"}
+        ],
+        errors: [
+            Error(13, 2, "Ill-formed unit test - no 'pos' header"),
+            Error(14, 2, "Failed unit test - no matching outputs"),
+            Error(16, 2, "Failed unit test - no matching outputs"),
+            Error(17, 2, "Failed unit test - no matching outputs"),
+            Error(19, 2, "Failed unit test - no matching outputs"),
+        ],
+    });
+
+    testSrc({
+		desc: '6b. Negative unit tests with unknown header',
+        results: [
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG"}
+        ],
+        errors: [
+            Error(13, 2, "Ill-formed unit testnot - no 'pos' header"),
+            Error(15, 2, "Failed unit testnot - has matching outputs"),
+        ]
+    });
+
+    testSrc({
+		desc: '7a. Failing unit tests with an empty string',
         results: [
             {text: "foobar", gloss: "run[1SG]", subj: "[1SG]"},
             {text: "moobar", gloss: "jump[1SG]", subj: "[1SG]"},
@@ -102,43 +165,92 @@ describe(`Source ${DIR}`, function() {
             {text: "moobat", gloss: "jump"}
         ],
         errors: [
-            Error(15,2),
-        ]
-    });
-
-    testSrc({
-		desc: '9. Failing negative tests',
-        results: [
-            {text: "foobar", gloss: "run-1SG"},
-            {text: "moobar", gloss: "jump-1SG"},
-            {text: "foobaz", gloss: "run-2SG"},
-            {text: "moobaz", gloss: "jump-2SG"}
-        ],
-        errors: [
-            Error(13,2)
+            Error(15, 2, "Failed unit test - no matching outputs"),
+            Error(17, 2, "Failed unit test - no matching outputs"),
+            Error(18, 2, "Failed unit test - no matching outputs"),
         ]
     });
     
     testSrc({
-		desc: '10a. Testing nothing',
+		desc: '7b. Failing negative unit tests with an empty string',
+        results: [
+            {text: "foobar", gloss: "run[1SG]", subj: "[1SG]"},
+            {text: "moobar", gloss: "jump[1SG]", subj: "[1SG]"},
+            {text: "foobaz", gloss: "run[2SG]", subj: "[2SG]"},
+            {text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]"},
+            {text: "foobat", gloss: "run"},
+            {text: "moobat", gloss: "jump"}
+        ],
+        errors: [
+            Error(14, 2, "Failed unit testnot - has matching outputs"),
+            Error(16, 2, "Failed unit testnot - has matching outputs"),
+        ]
+    });
+
+    testSrc({
+		desc: '8a. Testing nothing',
         results: [
             {}
         ],
         errors: [
-            Error(9,1),
+            Error(9, 1, "Missing content for 'test:'"),
             Warning(9,0)
         ]
     });
     
     testSrc({
-		desc: '10b. Negative testing nothing',
+		desc: '8b. Negative testing nothing',
         results: [
             {}
         ],
         errors: [
-            Error(9,1),
+            Error(9, 1, "Missing content for 'testnot:'"),
             Warning(9,0)
         ],
+    });
+
+    testSrc({
+		desc: '9a. Testing empty table:',
+        results: [
+            {}
+        ],
+        errors: [
+            Error(11, 1, "Missing content for 'test:'"),
+            Warning(9,0)
+        ]
+    });
+
+    testSrc({
+		desc: '9b. Negative testing empty table:',
+        results: [
+            {}
+        ],
+        errors: [
+            Error(11, 1, "Missing content for 'testnot:'"),
+            Warning(9,0)
+        ]
+    });
+
+    testSrc({
+		desc: '10a. Testing empty table: with headers',
+        results: [
+        ],
+        errors: [
+            Error(12, 2, "Ill-formed unit test - no 'text' header"),
+            Error(12, 2, "Ill-formed unit test - no 'gloss' header"),
+            Error(13, 2, "Failed unit test - no matching outputs"),
+            Error(14, 2, "Failed unit test - no matching outputs"),
+        ]
+    });
+
+    testSrc({
+		desc: '10b. Negative testing empty table: with headers',
+        results: [
+        ],
+        errors: [
+            Error(12, 2, "Ill-formed unit testnot - no 'text' header"),
+            Error(12, 2, "Ill-formed unit testnot - no 'gloss' header"),
+        ]
     });
 
     testSrc({
@@ -150,7 +262,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12,1)
+            Error(12, 1, "'test' operator requires non-empty grid")
         ]
     });
 
@@ -163,7 +275,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12,1)
+            Error(12, 1, "'testnot' operator requires non-empty grid")
         ]
     });
 
@@ -176,7 +288,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12,1)
+            Error(12, 1, "'test' operator requires grid, not 'table:'")
         ]
     });
 
@@ -189,7 +301,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12,1)
+            Error(12, 1, "'testnot' operator requires grid, not 'table:'")
         ]
     });
 
@@ -202,7 +314,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12,1)
+            Error(12, 1, "'test' operator requires grid, not 'or:'")
         ],
     });
 
@@ -215,32 +327,104 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12,1)
+            Error(12, 1, "'testnot' operator requires grid, not 'or:'")
         ]
     });
 
     testSrc({
-		desc: '14. Uniqueness tests',
+		desc: '14a. Uniqueness unit tests, many failing',
+        results: [
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "foobar", gloss: "eat-1SG"},
+            {text: "goobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "foobaz", gloss: "eat-2SG"},
+            {text: "goobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+            {text: "foobaz", gloss: "run-2PL"},
+            {text: "foobaz", gloss: "eat-2PL"},
+            {text: "goobaz", gloss: "run-2PL"},
+            {text: "moobaz", gloss: "jump-2PL"},
+        ],
+        errors: [
+            Error(16, 2, "Failed unit test - unexpected 'gloss' result"),  // foobar, run-1SG
+            Error(17, 2, "Failed unit test - unexpected 'gloss' result"),  // foobar, eat-1SG
+            Error(20, 2, "Failed unit test - unexpected 'gloss' result"),  // foobaz, run-2SG
+            Error(21, 2, "Failed unit test - unexpected 'gloss' result"),  // foobaz, run-2PL
+            Error(22, 2, "Failed unit test - unexpected 'gloss' result"),  // foobaz, eat-2SG
+            Error(23, 2, "Failed unit test - unexpected 'gloss' result"),  // goobaz, run-2SG
+            Error(24, 2, "Failed unit test - unexpected 'gloss' result"),  // goobaz, run-2PL
+            Error(25, 2, "Failed unit test - unexpected 'gloss' result"),  // moobaz, jump-2SG
+            Error(26, 2, "Failed unit test - unexpected 'gloss' result"),  // moobaz, jump-2PL
+            Error(27, 2, "Failed unit test - no matching outputs"),        // foobiz, run-3SG
+            Error(28, 2, "Failed unit test - no matching outputs"),        // foobar, run-3SG
+            Error(28, 2, "Failed unit test - unexpected 'gloss' result"),
+            Error(29, 2, "Failed unit test - no matching outputs"),        // foobaz, run-3SG
+            Error(29, 2, "Failed unit test - unexpected 'gloss' result"),
+        ],
+    });
+
+    testSrc({
+		desc: '14b. Negative unit tests don\'t allow unique',
         results: [
             {text: "foobar", gloss: "run-1SG"},
             {text: "moobar", gloss: "jump-1SG"},
             {text: "foobaz", gloss: "run-2SG"},
-            {text: "moobaz", gloss: "jump-2SG"}
+            {text: "moobaz", gloss: "jump-2SG"},
+            {text: "foobaz", gloss: "run-2PL"},
+            {text: "moobaz", gloss: "jump-2PL"},
+        ],
+        errors: [
+            Error(13, 3, "Invalid 'unique' header: 'unique gloss'"),
+            Warning(13,1),
         ]
     });
 
     testSrc({
-		desc: '15. Uniqueness tests with multiple uniqueness fields',
+		desc: '15. Uniqueness tests with multiple uniqueness fields, many failing',
         results: [
-            {root: "run", subj: "[1SG]", text: "foobar", gloss: "run[1SG]"},
+            {root: "run",  subj: "[1SG]", text: "foobar", gloss: "run[1SG]"},
+            {root: "run",  subj: "[1SG]", text: "goobar", gloss: "run[1SG]"},
             {root: "jump", subj: "[1SG]", text: "moobar", gloss: "jump[1SG]"},
-            {root: "run", subj: "[2SG]", text: "foobaz", gloss: "run[2SG]"},
-            {root: "jump", subj: "[2SG]", text: "moobaz", gloss: "jump[2SG]"} 
+            {root: "run",  subj: "[2SG]", text: "foobaz", gloss: "run[2SG]"},
+            {root: "run",  subj: "[2SG]", text: "goobaz", gloss: "run[2SG]"},
+            {root: "jump", subj: "[2SG]", text: "moobaz", gloss: "jump[2SG]"},
+            {root: "run",  subj: "[2PL]", text: "foobaz", gloss: "run[2PL]"},
+            {root: "run",  subj: "[2PL]", text: "goobaz", gloss: "run[2PL]"},
+            {root: "jump", subj: "[2PL]", text: "moobaz", gloss: "jump[2PL]"},
+        ],
+        errors: [
+            Error(18, 2, "Failed unit test - unexpected 'text' result"),  // run, [1SG], foobar, run[1SG]
+            Error(19, 2, "Failed unit test - unexpected 'text' result"),  // run, [1SG], goobar, run[1SG]
+            Error(20, 2, "Failed unit test - unexpected 'text' result"),  // run, [2SG], foobaz, run[2SG]
+            Error(21, 2, "Failed unit test - unexpected 'text' result"),  // run, [2SG], goobaz, run[2SG]
+            Error(22, 2, "Failed unit test - unexpected 'text' result"),  // run, [2PL], foobaz, run[2PL]
+            Error(23, 2, "Failed unit test - unexpected 'text' result"),  // run, [2PL], goobaz, run[2PL]
+            Error(25, 2, "Failed unit test - no matching outputs"),       // jump, [2SG], moobat, jump[2SG]
+            Error(25, 2, "Failed unit test - unexpected 'text' result"),
+            Error(26, 2, "Failed unit test - no matching outputs"),       // jump, [2PL], moobat, jump[2PL]
+            Error(26, 2, "Failed unit test - unexpected 'text' result"),
+            Error(27, 2, "Failed unit test - no matching outputs"),       // run, [2SG], foobat, run[2SG]
+            Error(27, 2, "Failed unit test - unexpected 'text' result"),
+            Error(28, 2, "Failed unit test - no matching outputs"),       // run, [2PL], foobat, run[2PL]
+            Error(28, 2, "Failed unit test - unexpected 'text' result"),
+            Error(30, 2, "Failed unit test - no matching outputs"),       // jump, [2SG], moobaz, run[2SG]
+            Error(30, 2, "Failed unit test - unexpected 'gloss' result"),
+            Error(31, 2, "Failed unit test - no matching outputs"),       // jump, [2SG], moobaz, jump[3SG]
+            Error(31, 2, "Failed unit test - unexpected 'gloss' result"),
+            Error(32, 2, "Failed unit test - no matching outputs"),       // jump, [3SG], moobaz, jump[3SG]
+            Error(33, 2, "Failed unit test - no matching outputs"),       // jump, [2SG], moobat, jump[3SG]
+            Error(33, 2, "Failed unit test - unexpected 'gloss' result"),
+            Error(33, 2, "Failed unit test - unexpected 'text' result"),
         ]
     });
 
+    // The following test explores error messages for uniqueness tests where
+    // the "unique" test field doesn't exist in the grammar being tested.
+    // Tests with and without "unique" are included for comparison.
     testSrc({
-		desc: '16. Uniqueness tests failing',
+		desc: '16a. Uniqueness tests failing due to unknown header',
         results: [
             {text: "foobar", gloss: "run-1SG"},
             {text: "foobar", gloss: "eat-1SG"},
@@ -250,100 +434,95 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(14,2),
-            Error(16,2),
-            Error(17,2)
-        ]
+            Error(14, 2, "Failed unit test - no matching outputs"),  // foobar, verb
+            Error(14, 2, "Failed unit test - output missing 'pos'"),
+            Error(22, 2, "Ill-formed unit test - no 'pos' header"),
+        ],
     });
 
-    
     testSrc({
-		desc: '17. Uniqueness tests failing due to missing field',
+		desc: '16b. Uniqueness tests with some failing due to missing field',
         results: [
             {text: "foobar", gloss: "run-1SG"},
-            {text: "foobar", gloss: "eat-1SG"},
-            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobar", gloss: "eat-1SG", pos: "verb"},
+            {text: "goobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG", pos: "verb"},
             {text: "foobaz", gloss: "run-2SG"},
-            {text: "foobaz", gloss: "eat-2SG"},
-            {text: "moobaz", gloss: "jump-2SG"}
+            {text: "foobaz", gloss: "eat-2SG", pos: "verb"},
+            {text: "goobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG", pos: "verb"}
         ],
         errors: [
-            Error(14,2)
+            Error(15, 2, "Failed unit test - output missing 'pos'"),    // foobar, verb
+            Error(16, 2, "Failed unit test - unexpected 'pos' result"), // foobar
+            Error(18, 2, "Failed unit test - no matching outputs"),     // moobaz
+            Error(18, 2, "Failed unit test - unexpected 'pos' result"),
         ],
     });
 
     testSrc({
-		desc: '18. Uniqueness tests with multiple uniqueness fields, failing',
-        results: [
-            {root: "run", subj: "[1SG]", text: "foobar", gloss: "run[1SG]"},
-            {root: "run", subj: "[1SG]", text: "goobar", gloss: "run[1SG]"},
-            {root: "jump", subj: "[1SG]", text: "moobar", gloss: "jump[1SG]"},
-            {root: "run", subj: "[2SG]", text: "foobaz", gloss: "run[2SG]"},
-            {root: "run", subj: "[2SG]", text: "goobaz", gloss: "run[2SG]"},
-            {root: "jump", subj: "[2SG]", text: "moobaz", gloss: "jump[2SG]"}
-        ],
-        errors: [
-            Error(14,2)
-        ],
-    });
-    
-    testSrc({
-		desc: '19. Unit test with optional header',
+		desc: '17a. Unit test with optional header',
         results: [
             {text: "foobar", gloss: "run"}
         ],
         errors: [
-            Error(3,3),
+            Error(3, 3, "Not a plain header: 'optional gloss'"),
             Warning(4,3)
         ],
     });
     
     testSrc({
-		desc: '20. Unit test with a slash header',
+		desc: '17b. Unit test with a slash header',
         results: [
             {text: "foobar", gloss: "run", eng: "run"}
         ],
         errors: [
-            Error(3,3),
+            Error(3, 3, "Not a plain header: 'gloss/eng'"),
             Warning(4,3)
         ],
     });
 
     testSrc({
-		desc: '21. Unit test with an embed header',
+		desc: '17c. Unit test with an embed header',
         results: [
             {text: "foobar", gloss: "run-1SG"}
         ],
         errors: [
-            Error(6,3),
+            Error(6, 3, "Not a plain header: 'embed'"),
             Warning(7,3)
         ],
     });
 
     testSrc({
-		desc: '22a. Unit test of a replace',
+		desc: '18a. Unit test of a replace',
         results: [
             {text: "Xbc"}
         ],
-        errors: []
     });
     
     testSrc({
-		desc: '22b. Unit test of a replace, deletion at beginning',
+		desc: '18b. Unit test of a replace, deletion at beginning',
         results: [
             {text: "bc"}
         ],
-        errors: []
     });
 
     testSrc({
-		desc: '22c. Unit test of a replace, deletion at end',
+		desc: '18c. Unit test of a replace, deletion at end',
         results: [
             {text: "ab"}
         ],
-        errors: []
     });
 
+    testSrc({
+		desc: '19. Both positive and negative unit tests for same grammar',
+        results: [
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG"}
+        ]
+    });
 
 });
 
