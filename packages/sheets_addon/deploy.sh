@@ -52,8 +52,9 @@ fi
 cat <(echo '<script>') $TARGET_DIR/gramble.js <(echo '</script>') >> $TARGET_DIR/grambleWrapped.html
 
 # copy the project files to the target dir
+ORIG_DIR=$PWD
 echo "Copying project files to $TARGET_DIR" >&2
-cp Code.js sidebar.html style.html appsscript.json $TARGET_DIR
+cp Code.js sidebar.html style.html $TARGET_DIR
 
 cd $TARGET_DIR
 
@@ -62,6 +63,12 @@ if [[ ! -f ".clasp.json" ]]; then
     echo "Creating Clasp project 'Gramble ($PROJ_NAME)'" >&2
     clasp create --title "Gramble ($PROJ_NAME)" --type sheets
 fi
+
+# copy over the app metadata.  we have to do this after
+# creating the project in the last step, otherwise it would
+# overwrite our metadata with a fresh one, and we'd lose the
+# right OAuth scope requests.
+cp $ORIG_DIR/appsscript.json $TARGET_DIR
 
 # push to Google
 echo "Pushing project 'Gramble ($PROJ_NAME)' to Google" >&2
