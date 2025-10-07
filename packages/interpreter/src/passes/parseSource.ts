@@ -168,7 +168,9 @@ export class ParseSource extends Pass<Source,TST> {
                 }
     
                 // either we're still in the spec row, or there's no spec row yet
-                if (cellTextTrimmed.endsWith(":") || cellTextTrimmed.endsWith("=")) {
+                if (!cellTextTrimmed.startsWith("%") 
+                        && (cellTextTrimmed.endsWith(":") 
+                            || cellTextTrimmed.endsWith("="))) {
                     // it's an operation, which starts a new enclosures
                     const op = parseOp(cellText).localize(cellPos).msgTo(msgs);
                     const newEnclosure = new TstOp(cell, op);
@@ -189,9 +191,9 @@ export class ParseSource extends Pass<Source,TST> {
                     continue;
                 } 
     
-                // it's a header, but we don't yet distinguish that
+                // it's a plain or comment header, but we don't yet distinguish that
                 // from content
-                
+
                 // if the top isn't a TstGrid, make it so
                 if (!(top.tst instanceof TstGrid)) {
                     const newGrid = new TstGrid(cell);

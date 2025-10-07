@@ -185,4 +185,27 @@ describe(`Source ${DIR}`, function() {
             Error(0, 1, "'table' operator requires grid, not 'table:'")
         ]
     });
+
+    testSrc({
+        desc: '12. Commented operators & assignments',
+        results: [
+            {text: "goo1goo2goo3goo4"},
+        ],
+        // This test yielded the following error messages before we fixed
+        // parseSource.handleWorksheetcolumn to correctly parse headers
+        // that looked like operators or assignments (i.e. ended in ':' or '=').
+        // errors: [
+        //     Warning(0, 0), // This symbol will not contain any content.
+        //     Error(0, 1, "'table' operator requires grid, not 'text'"),
+        //     Error(0, 2, "Invalid operator: '%table:'"),
+        //     Error(3, 3, "Invalid operator: '%table:'"),
+        //     Error(3, 3, "Unexpected operator: '%table:'"),
+        //     Warning(6, 0), // This symbol will not contain any content.
+        //     Error(6, 1, "'table' operator requires grid, not 'text'"),
+        //     Error(6, 2, "Invalid operator: '%noun='"),
+        //     Error(9, 3, "Invalid operator: '%noun='"),
+        //     Error(9, 3, "Unexpected operator: '%noun='"),
+        // ],
+    });
+
 });
