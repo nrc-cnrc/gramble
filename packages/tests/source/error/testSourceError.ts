@@ -1,3 +1,4 @@
+import {VERBOSE_DEBUG } from "../../../interpreter/src/utils/logging.js";
 import {
     testSource, SourceTest, 
     Error, Warning 
@@ -296,6 +297,68 @@ describe(`Source ${DIR}`, function() {
         errors: [
             Error(0, 2, "Invalid 'unique' header: 'unique text'")
         ]
+    });
+
+    testSrc({
+        desc: '12a. Nested Errors: Wayward assignment + "or:" Op',
+        results: [
+            {text: "goo"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+        ],
+        errors: [
+            Error(8, 1, "Wayward assignment: 'word2'."),
+        ],
+    });
+
+    testSrc({
+        desc: '12b. Nested Errors: Wayward assignment with table: + "or:" Op',
+        results: [
+            {text: "goo"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+        ],
+        errors: [
+            Error(8, 1, "Wayward assignment: 'word2'."),
+        ],
+    });
+
+    testSrc({
+        desc: '12c. Nested Errors: 2 Wayward assignments with table: + "or:" Op',
+        results: [
+            {text: "goo"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+        ],
+        errors: [
+            Error(8, 1, "Wayward assignment: 'word2'."),
+            Error(8, 2, "Wayward assignment: 'noun'"),
+        ],
+    });
+
+    testSrc({
+        desc: '12d. Nested Errors: Wayward assignment with table: followed by ' +
+              'another wayward assignment + "or:" Op',
+        results: [
+            {},
+        ],
+        errors: [
+            Warning(8,0),   // This symbol will not contain any content.
+            Warning(8,1),   // This symbol will not contain any content.
+            Error(8, 1, "Wayward assignment: 'word2'."),
+            // The message on cell 8,2 is clearly WRONG, so we leave it in a
+            // failing state as a reminder to track down and fix the problem.
+            Error(8, 2, "12d 'table' operator requires grid, not 'text'"),
+            Error(8, 3, "Wayward assignment: 'noun'"),
+            Error(11, 1, "Missing content for 'or:'"),
+        ],
+        // verbose: VERBOSE_DEBUG,
     });
 
 });

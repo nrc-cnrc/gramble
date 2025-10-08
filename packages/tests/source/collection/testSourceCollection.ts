@@ -1,4 +1,4 @@
-import { VERBOSE_DEBUG } from "@gramble/interpreter";
+import {VERBOSE_DEBUG } from "../../../interpreter/src/utils/logging.js";
 import {
     testSource, SourceTest, 
     Error, Warning 
@@ -246,6 +246,9 @@ describe(`Source ${DIR}`, function() {
         // verbose: VERBOSE_DEBUG,
     });
 
+    // Note tests 12b and 12c should be equivalent, but we get different errors.
+    // 12b uses collection:, while 12c uses table: collection:
+
     testSrc({
 		desc: '12b. Op with collection as a sibling',
         results: [
@@ -268,9 +271,10 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Warning(8,0),   // This symbol will not contain any content.
-            Error(11, 1, "12c Missing content for 'or:'")
+            Error(8, 1, "'table' operator requires grid, not 'collection:'"),
+            Error(11, 1, "Missing content for 'or:'"),
         ],
-        verbose: VERBOSE_DEBUG,
+        // verbose: VERBOSE_DEBUG,
     });
 
     testSrc({

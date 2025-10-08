@@ -1,4 +1,4 @@
-import { VERBOSE_DEBUG } from "@gramble/interpreter";
+import {VERBOSE_DEBUG } from "../../../interpreter/src/utils/logging.js";
 import {
     testSource, SourceTest, 
     Error, Warning 
@@ -215,6 +215,7 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
+            Error(9, 1, "'table' operator requires non-empty grid"),
             Error(11, 1, "Missing content for 'test:'"),
             Warning(9,0)
         ]
@@ -226,6 +227,7 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
+            Error(9, 1, "'table' operator requires non-empty grid"),
             Error(11, 1, "Missing content for 'testnot:'"),
             Warning(9,0)
         ]

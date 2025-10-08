@@ -146,11 +146,16 @@ export class Msg<T> {
     }
 
     public bind<T2>(f: MsgFunc<T,T2>): Msg<T2> {
-        let result = f(this.item);
-        if (!(result instanceof Msg)) {
-            result = new Msg(result);
+        try {
+            let result = f(this.item);
+            if (!(result instanceof Msg)) {
+                result = new Msg(result);
+            }
+            return result.msg(this.msgs);
+        } catch (e) {
+            if (!(e instanceof Msg)) throw e;
+            throw e.msg(this.msgs)
         }
-        return result.msg(this.msgs);
     }
 
     public msg(m: Message | Message[] | MsgVoid = []): Msg<T> {

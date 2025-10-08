@@ -588,7 +588,8 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"}
         ],
         errors: [
-            Error(12, 1, "'replace' operator requires non-empty grid")
+            Error(12, 1, "'replace' operator requires non-empty grid"),
+            Error(12, 2, "Missing content for 'test:'"),
         ]
     });
     

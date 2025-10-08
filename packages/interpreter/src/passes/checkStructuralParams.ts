@@ -59,20 +59,26 @@ export class CheckStructuralParams extends Pass<TST,TST> {
 
             // don't bother doing structural param checks on ErrorOps
             if (t.op instanceof ErrorOp) {
-                return this.handleError(t).msg(msgs);
+                return this.handleError(t, env).msg(msgs);
             }
 
             // assignments have some special behavior, like that they
             // don't disappear if they don't have a child
             if (t.op instanceof SymbolOp) {
-                return this.handleAssignment(t).msg(msgs);
+                return this.handleAssignment(t, env).msg(msgs);
             }
 
-            return this.handleOp(t).msg(msgs);
+            return this.handleOp(t, env).msg(msgs);
         });
     }
 
-    public handleAssignment(t: TstOp): Msg<TST> {
+    // Note: In handleAssignment, handleError and handleOp, we must not "throw",
+    // error/warning msgs; instead we must "return" them. This is because the
+    // function (passed to bind) that calls them collects errors/warnings.
+    // If we throw an error msg from, say, handleOp, then any messages already
+    // accumulated are dropped on the floor.
+
+    public handleAssignment(t: TstOp, env: PassEnv): Msg<TST> {
         
         const msgs: Message[] = [];
 
@@ -93,27 +99,27 @@ export class CheckStructuralParams extends Pass<TST,TST> {
 
     }
 
-    public handleError(t: TstOp): TST {
-        return (t.sibling instanceof TstEmpty) 
+    public handleError(t: TstOp, env: PassEnv): TST {
+        return (t.sibling instanceof TstEmpty)
                         ? t.child
-                        : t.sibling   
+                        : t.sibling
     }
 
-    public handleOp(t: TstOp): TST {
+    public handleOp(t: TstOp, env: PassEnv): Msg<TST> {
 
         // if the op requires a grid to the right, but doesn't have one,
         // issue an error, and return the sibling as the new value.
         if (childMustBeGrid(t.op) == "required"
                 && !(t.child instanceof TstGrid)) {
             if (t.child instanceof TstEmpty) {
-                throw t.sibling.err(`'${t.op.tag}' operator requires non-empty grid`,
-                        `This '${t.op.tag}' operator requires a non-empty grid to ` +
-                        "the right, but none was found.");
+                return t.sibling.err(`'${t.op.tag}' operator requires non-empty grid`,
+                            `This '${t.op.tag}' operator requires a non-empty grid to ` +
+                            "the right, but none was found.")
             }
-            throw t.sibling.err(`'${t.op.tag}' operator requires grid, ` +
-                    `not '${t.child.cell.text.trim()}'`,
-                    `This '${t.op.tag}' operator requires a grid to the right, ` +
-                    `but has another operator instead: '${t.child.cell.text.trim()}'.`);
+            return t.sibling.err(`'${t.op.tag}' operator requires grid, ` +
+                        `not '${t.child.cell.text.trim()}'`,
+                        `This '${t.op.tag}' operator requires a grid to the right, ` +
+                        `but has another operator instead: '${t.child.cell.text.trim()}'.`)
         }
 
         const trimmedText = t.cell.text.trim();
@@ -122,35 +128,40 @@ export class CheckStructuralParams extends Pass<TST,TST> {
         if (siblingRequired(t.op) == "required" 
                 && t.sibling instanceof TstEmpty
                 && t.child instanceof TstEmpty) {
-            throw new TstEmpty().err(`Missing content for '${trimmedText}'.`,
+            return new TstEmpty().err(`Missing content for '${trimmedText}'.`,
                             `The '${trimmedText}' operator requires content above it `  +
                             "and to the right, but both are empty or erroneous.")
+                        .localize(t.sibling.pos);
         }
 
         // if the op must have a sibling and doesn't, issue an error,
         // and return empty
-        if (siblingRequired(t.op) == "required" && t.sibling instanceof TstEmpty) {
-            throw new TstEmpty().err(`Missing content for '${trimmedText}'`,
+        if (siblingRequired(t.op) == "required"
+                && t.sibling instanceof TstEmpty) {
+            return new TstEmpty().err(`Missing content for '${trimmedText}'`,
                             `The '${trimmedText}' operator requires content above it, ` +
-                            "but it's empty or erroneous.");
+                            "but it's empty or erroneous.")
+                        .localize(t.sibling.pos);
         }
 
         // all operators need something in their .child param.  if
         // it's empty, issue a warning, and return the sibling as the new value.
         if (t.child instanceof TstEmpty) {
-            throw t.sibling.warn("This will not contain any content.")
+            env.logDebug("***Warning: This will not contain any content.");
+            return t.sibling.warn("This will not contain any content.")
                             .localize(t.pos);
         }
 
         // if there's something in the sibling, but it's forbidden,
         // warn about it.
-        if (siblingRequired(t.op) == "forbidden" &&
-                !(t.sibling instanceof TstEmpty)) {
+        if (siblingRequired(t.op) == "forbidden"
+                && !(t.sibling instanceof TstEmpty)) {
             throw t.warn("This content does not get assigned to anything " +
                         "and will be ignored.")
                     .localize(t.sibling.pos);
         }
 
-        return t;
+        return t.msg([]);
     }
+
 }
