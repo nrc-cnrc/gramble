@@ -1,3 +1,4 @@
+import { VERBOSE_DEBUG } from "../../../interpreter/src/utils/logging.js";
 import {
     testSource, SourceTest,
     Error, Warning
@@ -98,17 +99,45 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '5. Empty "table:" op',
+		desc: '5a. Empty "table:" op',
         results: [
+            {text:"bar", gloss:"-1SG"},
             {text:"baz", gloss:"-2SG"},
-            {text:"bar", gloss:"-1SG"}
         ],
         errors: [
-            Warning(1, 0),
+            Warning(1, 0),  // This symbol will not contain any content.
             Error(1, 1, "'table' operator requires non-empty grid")
         ]
     });
-    
+
+    testSrc({
+		desc: '5b. Empty "table:" op followed by comment header',
+        results: [
+            {text:"bar", gloss:"-1SG"},
+            {text:"baz", gloss:"-2SG"},
+        ],
+        errors: [
+            Warning(1, 0),  // This symbol will not contain any content.
+            Error(1, 1, "'table' operator requires non-empty grid")
+        ],
+    });
+
+    testSrc({
+		desc: '5c. "table:" op with empty text content & empty comment',
+        results: [
+            {text:"bar", gloss:"-1SG"},
+            {text:"baz", gloss:"-2SG"},
+        ],
+    });
+
+    testSrc({
+		desc: '5d. "table:" op with empty text content & non-empty comment',
+        results: [
+            {text:"bar", gloss:"-1SG"},
+            {text:"baz", gloss:"-2SG"},
+        ],
+    });
+
     testSrc({
 		desc: '6a. "optional text" header',
         results: [
@@ -192,8 +221,8 @@ describe(`Source ${DIR}`, function() {
             {text: "goo1goo2goo3goo4"},
         ],
         // This test yielded the following error messages before we fixed
-        // parseSource.handleWorksheetcolumn to correctly parse headers
-        // that looked like operators or assignments (i.e. ended in ':' or '=').
+        // ParseSource.handleWorksheet to correctly parse comment headers that
+        // looked like operators or assignments (i.e. ended in ':' or '=').
         // errors: [
         //     Warning(0, 0), // This symbol will not contain any content.
         //     Error(0, 1, "'table' operator requires grid, not 'text'"),
