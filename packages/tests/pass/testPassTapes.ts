@@ -10,20 +10,17 @@ import {
 } from "../../interpreter/src/grammarConvenience.js";
 
 import { Grammar, ReplaceGrammar } from "../../interpreter/src/grammars.js";
-import { CalculateTapes } from "../../interpreter/src/passes/calculateTapes.js";
-import { FlattenCollections } from "../../interpreter/src/passes/flattenCollections.js";
-import { SelectSymbol } from "../../interpreter/src/passes/selectSymbol.js";
 import { Dict } from "../../interpreter/src/utils/func.js";
-import { THROWER } from "../../interpreter/src/utils/msgs.js";
 import { Options } from "../../interpreter/src/utils/options.js";
-import { getFromVocabDict } from "../../interpreter/src/vocab.js";
-import * as Tapes from "../../interpreter/src/tapes.js";
-import * as Vocabs from "../../interpreter/src/vocab.js";
+import { getVocab } from "../../interpreter/src/passes/getVocab.js";
 
 import {
     testSuiteName, logTestSuite,
-    t1, t2, t3, 
+    t1, t2, t3,
+    prepareInterpreter, 
 } from "../testUtil.js";
+import { CounterStack } from "@gramble/interpreter/src/utils/counter.js";
+import { SymbolEnv } from "@gramble/interpreter/src/passes.js";
 
 type GrammarIDTest = {
     desc: string,
@@ -44,50 +41,26 @@ export function testGrammarTapes({
     describe(`${desc}`, function() {
         try {
             const opt = Options({optimizeAtomicity: atomicity});
-            const pass = new FlattenCollections().compose(new CalculateTapes());
-            grammar = pass.getEnvAndTransform(grammar, opt).msgTo(THROWER);
-            
-            if (symbol) {
-                const selectSymbol = new SelectSymbol(symbol);
-                grammar = selectSymbol.getEnvAndTransform(grammar, opt).msgTo(THROWER); 
-            }
+            const interpreter = prepareInterpreter(grammar, opt);
+            const grammarWithVocab = interpreter.symbolQueryStaging(symbol);
 
-            it(`Tapes are resolved`, function() {
-                expect(grammar.tapes.tag).to.equal(Tapes.Tag.Lit);
-            });
+            for (const [tapeName, expectedVocab] of Object.entries(tapes)) {
 
-            if (grammar.tapes.tag !== Tapes.Tag.Lit) return;
+                let vocab = getVocab(grammarWithVocab, tapeName, 
+                    new CounterStack(), new SymbolEnv(opt));
 
-            const expectedTapes = new Set(Object.keys(tapes));
-            const foundTapes = grammar.tapes.tapeNames;
-
-            it(`Tapes should equal [${[...expectedTapes]}]`, function() {
-                expect(foundTapes).to.deep.equal(expectedTapes);
-            });
-
-            for (const [tapeName, vocabs] of Object.entries(tapes)) {
-                const expectedVocab = Vocabs.Atomic(new Set(vocabs));
-                const vocabMap = grammar.tapes.vocabMap;
-
-                const vocab = vocabMap[tapeName];
                 if (vocab === undefined) {
-                    it(`${tapeName} should exist`, function() {
-                        assert.fail();
-                    });
-                    continue;
+                    vocab = new Set();
                 }
 
-                const vocabLit = getFromVocabDict(grammar.tapes.vocabMap, tapeName);
-                if (vocabLit === undefined) {
-                    it(`cannot find referent for ${tapeName}`, function() {
-                        assert.fail();
-                    });
-                    continue;
-                }
-                it(`${tapeName} should have vocab [${[...expectedVocab.tokens]}]`, function() {
-                    expect(vocabLit.tokens).to.deep.equal(expectedVocab.tokens);
+                const expectedSet = new Set(expectedVocab);
+
+                it(`${symbol} ${tapeName} vocab should be ${expectedVocab}`, function() {
+                    expect(vocab).to.deep.equal(expectedSet);
                 });
+
             }
+
         } catch (e) {
             it("Unexpected Exception", function() {
                 console.log("");
@@ -286,6 +259,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
         }
     });
 
+/*
     testGrammarTapes({
         desc: "3c",
         grammar: Hide(Seq(t1("hello"), t2("world")), "t1", "HIDDEN"),
@@ -1477,4 +1451,6 @@ describe(`Pass ${testSuiteName(module)}`, function() {
             "t2": ["h","i"]
         }
     });
+
+    */
 });

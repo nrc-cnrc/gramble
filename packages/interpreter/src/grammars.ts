@@ -353,10 +353,13 @@ export class NegationGrammar extends UnaryGrammar {
 export class CursorGrammar extends UnaryGrammar {
     public readonly tag = "cursor";
 
+    public key: string = "";
+    public alphabet: Set<string> = new Set();
+
     constructor(
         public tapeName: string,
         child: Grammar,
-        public vocab: Vocab = Vocabs.Ref(tapeName)
+        public vocab: Vocab = Vocabs.Ref(tapeName),
     ) {
         super(child);
     }
@@ -364,6 +367,9 @@ export class CursorGrammar extends UnaryGrammar {
 
 export class GreedyCursorGrammar extends UnaryGrammar {
     public readonly tag = "greedyCursor";
+
+    public key: string = "";
+    public alphabet: Set<string> = new Set();
 
     constructor(
         public tapeName: string,
