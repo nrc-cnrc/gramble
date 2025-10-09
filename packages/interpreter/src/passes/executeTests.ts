@@ -14,11 +14,8 @@ import { constructExpr } from "./constructExpr.js";
 import { CreateCursors } from "./createCursors.js";
 import { InfinityProtection } from "./infinityProtection.js";
 import { Options, Env } from "../utils/options.js";
-import { CalculateTapes, TapesEnv } from "./calculateTapes.js";
 import { ResolveVocab } from "./resolveVocab.js";
 
-import * as Tapes from "../tapes.js";
-import * as Vocabs from "../vocab.js";
 
 export class ExecuteTests extends Pass<Grammar,Grammar> {
 

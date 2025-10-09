@@ -1,4 +1,4 @@
-import { AutoPass, Pass } from "../passes.js";
+import { AutoPass, Pass, SymbolEnv } from "../passes.js";
 import { 
     GreedyCursorGrammar, 
     Grammar,
@@ -11,6 +11,8 @@ import {
     DotGrammar,
     FilterGrammar,
     RepeatGrammar,
+    EmbedGrammar,
+    RenameGrammar,
 } from "../grammars.js";
 import { Dict, exhaustive, getCaseInsensitive, update } from "../utils/func.js";
 import { Msg } from "../utils/msgs.js";
@@ -21,8 +23,169 @@ import * as Vocabs from "../vocab.js";
 import { children } from "../components.js";
 import { toStr } from "./toStr.js";
 import { tokenizeUnicode } from "../utils/strings.js";
+import { CounterStack } from "../utils/counter.js";
 
 type VocabMode = "atomic" | "concat" | "join" | "tokenized";
+
+class VocabLibrary {
+
+    constructor(
+        public opt: Partial<Options>,
+        public tapeToKey: [Dict<string>] = [{}],
+        public keyToMode: [Dict<VocabMode>] = [{}],
+        public keyToVocab: Dict<VocabContainer|string> = {},
+    ) { }
+
+    public pushTape(tapeName: string): void {
+        const tapeToKey = this.tapeToKey[this.tapeToKey.length-1];
+        const keyToMode = this.keyToMode[this.keyToMode.length-1];
+
+        const newTapeToKey = {...tapeToKey};
+        const newKeyToMode = {...keyToMode};
+        
+        const newKey = Object.keys(this.keyToVocab).length.toString();
+        newTapeToKey[tapeName] = newKey;
+        newKeyToMode[newKey] = this.opt.optimizeAtomicity 
+                                    ? "atomic" 
+                                    : "tokenized";
+
+        this.tapeToKey.push(newTapeToKey);
+        this.keyToMode.push(newKeyToMode);
+        this.keyToVocab[newKey] = new AtomicVocab();
+    }
+
+    public popTape(): void {
+        this.tapeToKey.pop();
+        this.keyToMode.pop();
+    }
+
+    public pushRenameTape(oldTapeName: string, newTapeName: string) {
+
+        const tapeToKey = this.tapeToKey[this.tapeToKey.length-1];
+        if (!(oldTapeName in tapeToKey)) {
+            throw `Tape not found in vocab: ${oldTapeName}, tapeToKey is ${[...Object.entries(tapeToKey)]}`;
+        }
+
+        const key = tapeToKey[oldTapeName];
+        const newTapeToKey = {...tapeToKey};
+        delete newTapeToKey[oldTapeName];
+        newTapeToKey[newTapeName] = key;
+        this.tapeToKey.push(newTapeToKey);
+    }
+
+    public popRenameTape(): void {
+        this.tapeToKey.pop();
+    }
+
+    public combineMode(oldMode: VocabMode, newMode: VocabMode) {
+        switch (newMode) {
+
+            // Changing to atomic just keeps the old mode
+            case "atomic": return oldMode;
+
+            // If we're in a joining context, concatting makes
+            // it tokenized
+            case "concat":
+                switch(oldMode) {
+                    case "atomic": return "concat";
+                    case "concat": return "concat";
+                    case "join": return "tokenized";
+                    case "tokenized": return "tokenized";
+                }
+
+            // Join makes things join.  (Even if we're in a concatting context,
+            // it's only join(concat(X,Y)) that we're worried about,
+            // not concat(join(X,Y))
+            case "join": 
+                switch(oldMode) {
+                    case "atomic": return "join";
+                    case "concat": return "join";
+                    case "join": return "join";
+                    case "tokenized": return "tokenized";
+                }
+            // No matter what the old mode was, tokenized
+            // makes it tokenized
+            case "tokenized": return "tokenized";
+        }
+    }
+
+    public pushModes(tapeToMode: Dict<VocabMode>): void {
+        const tapeToKey = this.tapeToKey[this.tapeToKey.length-1];
+        const keyToMode = this.keyToMode[this.keyToMode.length-1];
+        const newKeyToMode = {...keyToMode};
+
+        for (const [tape, mode] of Object.entries(tapeToMode)) {
+            const key = tapeToKey[tape];
+            const oldMode = keyToMode[key];
+            const newMode = this.combineMode(oldMode, mode);
+            newKeyToMode[key] = newMode;
+        }
+
+        this.keyToMode.push(newKeyToMode);
+    }
+
+
+    public popModes(): void {
+        this.keyToMode.pop();
+    }
+
+    public getKey(tapeName: string): [string, VocabMode] {
+
+        const tapeToKey = this.tapeToKey[this.tapeToKey.length-1];
+        const keyToMode = this.keyToMode[this.keyToMode.length-1];
+
+        if (!(tapeName in tapeToKey)) {
+            throw `Tape not found in vocab: ${tapeName}, tapeToKey is ${[...Object.entries(tapeToKey)]}`;
+        }
+
+        const key = tapeToKey[tapeName]
+        return [key, keyToMode[key]];
+    }
+
+    public add(tapeName: string, str: string): void {
+        const [key, mode] = this.getKey(tapeName);
+        this.addAux(key, str, mode);
+    }
+
+    public addAux(key: string, str: string, mode: VocabMode): void {
+        const vocab = this.keyToVocab[key];
+        if (vocab instanceof VocabContainer) {
+            this.keyToVocab[key] = vocab.add(str, mode);
+            return;
+        }
+
+        // vocab is actually a string referencing another vocab
+        this.addAux(vocab, str, mode);
+    }
+
+    public tokenize(tapeName: string) {
+        const [key, mode] = this.getKey(tapeName);
+        this.tokenizeAux(key);
+    }
+
+    public tokenizeAux(key: string) {
+        const vocab = this.keyToVocab[key];
+        if (vocab instanceof VocabContainer) {
+            this.keyToVocab[key] = vocab.tokenize();
+            return;
+        }
+
+        // vocab is actually a string referencing another vocab
+        this.tokenizeAux(vocab);
+    }
+
+    public getVocab(key: string): Set<string> {
+        const vocab = this.keyToVocab[key];
+        if (vocab instanceof VocabContainer) {
+            return vocab.vocab;
+        }
+
+        // it's a reference to another vocab
+        return this.getVocab(vocab);
+    }
+
+}
+
 
 abstract class VocabContainer {
     public vocab: Set<string> = new Set();
@@ -74,13 +237,25 @@ class TokenizedVocab extends VocabContainer {
     }
 }
 
-export class ResolveVocabEnv extends Env<Grammar> {
+export class ResolveVocabEnv extends SymbolEnv {
 
     constructor(
         opt: Partial<Options>,
-        public vocabs: VocabDict = {}
+        public vocabs: VocabDict = {},
+        public vocabLib: VocabLibrary = new VocabLibrary(opt),
+        public stack: CounterStack = new CounterStack()
     ) { 
         super(opt);
+    }
+    
+    public update(g: Grammar): ResolveVocabEnv {
+        switch (g.tag) {
+            case "selection":
+            case "qualified":
+                return update(this, {symbolNS: g.symbols});
+            default:
+                return this;
+        }
     }
 }
 
@@ -93,17 +268,29 @@ export class ResolveVocab extends Pass<Grammar, Grammar> {
     public transform(g: Grammar, env: ResolveVocabEnv): Msg<Grammar> {
 
         if (g.tapes.tag !== Tapes.Tag.Lit) {
-            throw new Error("at tapes at vocab resolution");
+            throw new Error("nonliteral tapes at vocab resolution");
         }
 
-        const newEnv = new ResolveVocabEnv(env.opt, g.tapes.vocabMap);
-        const child = new ResolveVocabAux();
-        return child.transform(g, newEnv);
+        const vocabLib = new VocabLibrary(env.opt)
+        const newEnv = new ResolveVocabEnv(env.opt, 
+                                g.tapes.vocabMap,
+                                vocabLib);
+        
+        collectVocab(g, vocabLib, newEnv);
+
+        const childPass = new InjectVocab(vocabLib);
+        return childPass.transform(g, newEnv);
     }
 
 }
 
-export class ResolveVocabAux extends AutoPass<Grammar> {
+export class InjectVocab extends AutoPass<Grammar> {
+
+    constructor(
+        public vocabLib: VocabLibrary
+    ) { 
+        super();
+    }
 
     public postTransform(g: Grammar, env: ResolveVocabEnv): Grammar {
         switch (g.tag) {
@@ -118,164 +305,167 @@ export class ResolveVocabAux extends AutoPass<Grammar> {
         g: CursorGrammar | GreedyCursorGrammar, 
         env: ResolveVocabEnv
     ): Grammar {
-        
-        let voc = new AtomicVocab();
-        voc = collectVocab(g.child, g.tapeName, "atomic", voc, env);
-        console.log(`${g.tapeName}: ${[...voc.vocab]}`);
+
+        const alphabet = env.vocabLib.getVocab(g.key);
 
         if (g.vocab.tag === Vocabs.Tag.Lit) {
             // we're done already
-            return g;
+            return update(g, {alphabet});
         }
 
         const vocab = Vocabs.getFromVocabDict(env.vocabs, g.vocab.key);
         if (vocab == undefined) {
             throw new Error(`resolved vocab for ${g.tapeName}, key = ${g.vocab.key}, is undefined! map is ${Vocabs.vocabDictToStr(env.vocabs)}`);
         }
-        return update(g, {vocab});
+
+        return update(g, {vocab, alphabet});
     }
 
 }
 
 function collectVocab(
     g: Grammar,
-    tapeName: string,
-    vocabMode: VocabMode,
-    vocabSoFar: VocabContainer,
-    env: ResolveVocabEnv
-): VocabContainer {
+    vocabLib: VocabLibrary,
+    env: ResolveVocabEnv,
+): void {
     switch (g.tag) {
         case "epsilon": 
         case "null":
-                        return vocabSoFar;
+                        return;
 
         case "lit":     
-                        return collectVocabLit(g, tapeName, vocabMode, vocabSoFar, env); 
+                        return collectVocabLit(g, vocabLib, env); 
         case "dot":
-                        return collectVocabDot(g, tapeName, vocabMode, vocabSoFar, env);
+                        return collectVocabDot(g, vocabLib, env);
 
         case "selection":
-                        return collectVocabSelection(g, tapeName, vocabMode, vocabSoFar, env);
+                        return collectVocabSelection(g, vocabLib, env);
         case "cursor":
         case "greedyCursor":
-                        return collectVocabCursor(g, tapeName, vocabMode, vocabSoFar, env);
+                        return collectVocabCursor(g, vocabLib, env);
 
+        case "seq":     return collectVocabSequence(g, vocabLib, env);
+        case "repeat":  return collectVocabRepeat(g, vocabLib, env);
+
+
+        /*
         case "join": 
         case "filter":
-                        return collectVocabJoin(g, tapeName, vocabMode, vocabSoFar, env);
-        case "seq":     return collectVocabSequence(g, tapeName, vocabMode, vocabSoFar, env);
-        case "repeat":  return collectVocabRepeat(g, tapeName, vocabMode, vocabSoFar, env);
+                        return collectVocabJoin(g, vocabLib, env);
+        
                         
         
         case "starts":
         case "ends":
         case "contains":
         case "short":
-                        return collectVocabTokenized(g, tapeName, vocabMode, vocabSoFar, env);
+                        return collectVocabTokenized(g, vocabLib, env);
+        */
 
+        case "embed":
+                        return collectVocabEmbed(g, vocabLib, env);
+        case "rename":
+                        return collectVocabRename(g, vocabLib, env);
         case "alt":    
         case "count":
         case "not":
         case "priority":
         case "correspond":
-                        return collectVocabDefault(g, tapeName, vocabMode, vocabSoFar, env); 
+                        return collectVocabDefault(g, vocabLib, env); 
         default: 
-            console.log(`No collection function for ${g.tag}`);
-            return vocabSoFar;
+            throw `No collection function for ${g.tag}`;
     }
 }
 
 function collectVocabLit(
     g: LiteralGrammar, 
-    tapeName: string, 
-    vocabMode: VocabMode,
-    vocabSoFar: VocabContainer,
+    vocabLib: VocabLibrary,
     env: ResolveVocabEnv
-): VocabContainer {
-    if (g.tapeName !== tapeName) {
-        return vocabSoFar;
-    }
+): void {
 
-    return vocabSoFar.add(g.text, vocabMode);
-}
-
-function collectVocabDot(
-    g: DotGrammar, 
-    tapeName: string, 
-    vocabMode: VocabMode,
-    vocabSoFar: VocabContainer,
-    env: ResolveVocabEnv
-): VocabContainer {
-    if (g.tapeName !== tapeName) {
-        return vocabSoFar;
-    }
-
-    return vocabSoFar.tokenize();
+    return vocabLib.add(g.tapeName, g.text);
 }
 
 function collectVocabDefault(    
     g: Grammar, 
-    tapeName: string, 
-    vocabMode: VocabMode,
-    vocabSoFar: VocabContainer,
+    vocabLib: VocabLibrary,
     env: ResolveVocabEnv
-): VocabContainer {
+): void {
     for (const child of children(g)) {
-        vocabSoFar = collectVocab(child, tapeName, vocabMode, vocabSoFar, env);
+        collectVocab(child, vocabLib, env);
     }
-    return vocabSoFar;
 }
+
+function collectVocabDot(
+    g: DotGrammar, 
+    vocabLib: VocabLibrary,
+    env: ResolveVocabEnv
+): void {
+    vocabLib.tokenize(g.tapeName);
+} 
 
 function collectVocabSequence(    
     g: SequenceGrammar, 
-    tapeName: string, 
-    vocabMode: VocabMode,
-    vocabSoFar: VocabContainer,
+    vocabLib: VocabLibrary,
     env: ResolveVocabEnv
-): VocabContainer {
+): void {
     
-    // to determine in what mode we should collect child vocabs, 
-    // we have to determine if we're truly a concat for the purposes of this tape
-    let tapeFoundCount = 0;
+    // we have to determine if we're truly a concat for
+    // the purposes of this tape, which means having at least
+    // two children with that tape.  this is a dict
+    // from tape names to either "atomic" (only 1 child has the
+    // tape) or "concat" (at least two do).  This dict is then
+    // used by VocabLibrary to decide what mode to use in this
+    // scope.  (Note: it's not necessary "atomic" or "concat", these
+    // modes may combine with others.)
+    const modes: Dict<VocabMode> = {};
     for (const child of children(g)) {
-        const tapeSet = new Set(child.tapeNames);
-        if (tapeSet.has(tapeName)) {
-            tapeFoundCount++;
+        for (const tapeName of child.tapeNames) {
+            if (!(tapeName in modes)) {
+                modes[tapeName] = "atomic";
+            }
+            modes[tapeName] = "concat";
         }
     }
 
-    let hasTape = tapeFoundCount > 1;
-    let newVocabMode = vocabMode;
-    if (hasTape && vocabMode == "atomic") newVocabMode = "concat";
-    if (hasTape && vocabMode == "join") newVocabMode = "tokenized";
+    vocabLib.pushModes(modes);
 
     for (const child of children(g)) {
-        vocabSoFar = collectVocab(child, tapeName, newVocabMode, vocabSoFar, env);
+        collectVocab(child, vocabLib, env);
     }
-    return vocabSoFar;
+
+    vocabLib.popModes();
 }
 
 function collectVocabRepeat(    
     g: RepeatGrammar, 
-    tapeName: string, 
-    vocabMode: VocabMode,
-    vocabSoFar: VocabContainer,
+    vocabLib: VocabLibrary,
     env: ResolveVocabEnv
-): VocabContainer {
-    const hasTape = g.maxReps < 2;
-    let newVocabMode = vocabMode;
-    if (hasTape && vocabMode === "atomic") newVocabMode = "concat";
-    if (hasTape && vocabMode === "join") newVocabMode = "tokenized";
-    return vocabSoFar;
+): void {
+    const nontriv = g.maxReps > 1;
+
+    // A repeat isn't necessarily a true concat-like; only if it's nontrivial.
+    // We pass in dictionary from tape names to mode changes, either "atomic" or
+    // concat.  See the commentary in collectVocabSeq to better understand
+    // what this does.
+    const modes: Dict<VocabMode> = {};
+    for (const tapeName of g.tapeNames) {
+        modes[tapeName] = nontriv ? "concat" : "atomic";
+    }
+
+    vocabLib.pushModes(modes);
+    collectVocab(g.child, vocabLib, env);
+    vocabLib.popModes();
 }
+
+
+/*
 
 function collectVocabJoin(    
     g: JoinGrammar | FilterGrammar, 
-    tapeName: string, 
-    vocabMode: VocabMode,
-    vocabSoFar: VocabContainer,
+    vocabLib: VocabLibrary,
     env: ResolveVocabEnv
-): VocabContainer {
+): void {
     // first determine if we're really a join w.r.t. this tape
     const child1HasTape = new Set(g.child1.tapeNames).has(tapeName);
     const child2HasTape = new Set(g.child2.tapeNames).has(tapeName);
@@ -293,44 +483,68 @@ function collectVocabJoin(
 
 function collectVocabTokenized(    
     g: Grammar, 
-    tapeName: string, 
-    vocabMode: VocabMode,
-    vocabSoFar: VocabContainer,
+    vocabLib: VocabLibrary,
     env: ResolveVocabEnv
-): VocabContainer {
+): void {
     // we force tokenization on all children
     for (const child of children(g)) {
         vocabSoFar = collectVocab(child, tapeName, "tokenized", vocabSoFar, env);
     }
     return vocabSoFar;
 }
+*/
 
 function collectVocabSelection(
     g: SelectionGrammar, 
-    tapeName: string, 
-    vocabMode: VocabMode,
-    vocabSoFar: VocabContainer,
+    vocabLib: VocabLibrary,
     env: ResolveVocabEnv
-): VocabContainer {
-
+): void {
+    const newEnv = env.update(g);
     const referent = getCaseInsensitive(g.symbols, g.selection);
     if (referent === undefined) { 
         // something's wrong, but now is not the time to complain
-        return vocabSoFar;
+        return;
     }
-    return collectVocab(referent, tapeName, vocabMode, vocabSoFar, env);
+    return collectVocab(referent, vocabLib, newEnv);
 }
 
 function collectVocabCursor(
     g: CursorGrammar | GreedyCursorGrammar, 
-    tapeName: string, 
-    vocabMode: VocabMode,
-    vocabSoFar: VocabContainer,
+    vocabLib: VocabLibrary,
     env: ResolveVocabEnv
-): VocabContainer {
-    if (tapeName === g.tapeName) {
-        // it's not the same tape, outside and inside a cursor
-        return vocabSoFar;
+): void {
+    vocabLib.pushTape(g.tapeName);
+    const [key, _] = vocabLib.getKey(g.tapeName);
+    g.key = key;
+    collectVocab(g.child, vocabLib, env);
+    vocabLib.popTape();
+}
+
+function collectVocabEmbed(
+    g: EmbedGrammar, 
+    vocabLib: VocabLibrary,
+    env: ResolveVocabEnv
+): void {
+    if (env.stack.get(g.symbol) >= 1)
+        return;
+
+    const newStack = env.stack.add(g.symbol);
+    const newEnv = {...env, stack: newStack } as ResolveVocabEnv;
+    const referent = env.symbolNS[g.symbol];
+    if (referent === undefined) {
+        throw new Error(`undefined referent ${g.symbol}, candidates are [${Object.keys(env.symbolNS)}]`);
     }
-    return collectVocab(g.child, tapeName, vocabMode, vocabSoFar, env);
+
+    collectVocab(referent, vocabLib, newEnv);
+}
+
+function collectVocabRename(
+    g: RenameGrammar, 
+    vocabLib: VocabLibrary,
+    env: ResolveVocabEnv
+): void {
+    vocabLib.pushRenameTape(g.toTape, g.fromTape);
+    collectVocab(g.child, vocabLib, env);
+    vocabLib.popRenameTape();
+
 }
