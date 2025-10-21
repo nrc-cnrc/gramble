@@ -259,7 +259,6 @@ describe(`Pass ${testSuiteName(module)}`, function() {
         }
     });
 
-/*
     testGrammarTapes({
         desc: "3c",
         grammar: Hide(Seq(t1("hello"), t2("world")), "t1", "HIDDEN"),
@@ -527,8 +526,8 @@ describe(`Pass ${testSuiteName(module)}`, function() {
         atomicity: true,
         grammar: Match(t1("hello"), "t1", "t2"),
         tapes: {
-            "t1": ["hello"],
-            "t2": ["hello"],
+            "t1": ["h","e","l","o"],
+            "t2": ["h","e","l","o"],
         }
     });
 
@@ -540,7 +539,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
             "t3": [],
         }
     });
-    
+
     testGrammarTapes({
         desc: "11c",
         grammar: Match(t1("hello"), "t1", "t2", "t3"),
@@ -573,8 +572,8 @@ describe(`Pass ${testSuiteName(module)}`, function() {
         }),
         symbol: "a",
         tapes: {
-            "t1": ["hello"],
-            "t2": ["hello"],
+            "t1": ["h","e","l","o"],
+            "t2": ["h","e","l","o"],
         }
     });
 
@@ -605,6 +604,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
         }
     });
 
+    /*
     testGrammarTapes({
         desc: "12a",
         grammar: Join(t1("hello"), t2("world")),
