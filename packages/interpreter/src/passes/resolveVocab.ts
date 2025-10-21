@@ -13,8 +13,10 @@ import {
     RepeatGrammar,
     EmbedGrammar,
     RenameGrammar,
+    HideGrammar,
+    MatchGrammar,
 } from "../grammars.js";
-import { Dict, exhaustive, getCaseInsensitive, update } from "../utils/func.js";
+import { Dict, exhaustive, getCaseInsensitive, union, update } from "../utils/func.js";
 import { Msg } from "../utils/msgs.js";
 import { Env, Options } from "../utils/options.js";
 import { VocabDict } from "../vocab.js";
@@ -159,7 +161,7 @@ class VocabLibrary {
     }
 
     public tokenize(tapeName: string) {
-        const [key, mode] = this.getKey(tapeName);
+        const [key, _] = this.getKey(tapeName);
         this.tokenizeAux(key);
     }
 
@@ -172,6 +174,35 @@ class VocabLibrary {
 
         // vocab is actually a string referencing another vocab
         this.tokenizeAux(vocab);
+    }
+
+    public mergeTapes(tapeName1: string, tapeName2: string): void {
+        const [key1, _1] = this.getKey(tapeName1);
+        const [key2, _2] = this.getKey(tapeName2);
+        this.mergeTapesAux(key1, key2);
+    }
+
+    public mergeTapesAux(key1: string, key2: string): void {
+        const vocab1 = this.keyToVocab[key1];
+
+        if (!(vocab1 instanceof VocabContainer)) {
+            this.mergeTapesAux(vocab1, key2);
+            return;
+        }
+        
+        const vocab2 = this.keyToVocab[key1];
+        if (!(vocab2 instanceof VocabContainer)) {
+            this.mergeTapesAux(key1, vocab2);
+            return;
+        }
+
+        const tokenized1 = vocab1.tokenize();
+        const tokenized2 = vocab2.tokenize();
+        const allTokens = union(tokenized1.vocab, tokenized2.vocab);
+        const merged = new TokenizedVocab(allTokens);
+
+        this.keyToVocab[key1] = key2;
+        this.keyToVocab[key2] = merged;
     }
 
     public getVocab(key: string): Set<string> {
@@ -188,7 +219,11 @@ class VocabLibrary {
 
 
 abstract class VocabContainer {
-    public vocab: Set<string> = new Set();
+
+    constructor(
+        public vocab: Set<string> = new Set()
+    ) { }
+
     public abstract tokenize(): TokenizedVocab;
     public abstract add(str: string, mode: VocabMode): VocabContainer;
 }
@@ -366,6 +401,10 @@ function collectVocab(
                         return collectVocabEmbed(g, vocabLib, env);
         case "rename":
                         return collectVocabRename(g, vocabLib, env);
+        case "hide":
+                        return collectVocabHide(g, vocabLib, env);
+        case "match":
+                        return collectVocabMatch(g, vocabLib, env);
         case "alt":    
         case "count":
         case "not":
@@ -547,4 +586,29 @@ function collectVocabRename(
     collectVocab(g.child, vocabLib, env);
     vocabLib.popRenameTape();
 
+}
+
+function collectVocabHide(
+    g: HideGrammar, 
+    vocabLib: VocabLibrary,
+    env: ResolveVocabEnv
+): void {
+    vocabLib.pushRenameTape(g.toTape, g.tapeName);
+    collectVocab(g.child, vocabLib, env);
+    vocabLib.popRenameTape();
+
+}
+
+function collectVocabMatch(
+    g: MatchGrammar,
+    vocabLib: VocabLibrary,
+    env: ResolveVocabEnv
+): void {
+    const names = new Set(g.tapeNames);
+    if (!names.has(g.inputTape) || !names.has(g.outputTape)) {
+        collectVocab(g.child, vocabLib, env);
+        return;
+    }
+    vocabLib.mergeTapes(g.inputTape, g.outputTape);
+    collectVocab(g.child, vocabLib, env);
 }
