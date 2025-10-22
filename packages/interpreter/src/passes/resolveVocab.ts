@@ -192,7 +192,7 @@ class VocabLibrary {
             return;
         }
         
-        const vocab2 = this.keyToVocab[key1];
+        const vocab2 = this.keyToVocab[key2];
         if (!(vocab2 instanceof VocabContainer)) {
             this.mergeTapesAux(key1, vocab2);
             return;
@@ -207,10 +207,10 @@ class VocabLibrary {
         this.keyToVocab[key2] = merged;
     }
 
-    public getVocab(key: string): Set<string> {
+    public getVocab(key: string): [Set<string>, boolean] {
         const vocab = this.keyToVocab[key];
         if (vocab instanceof VocabContainer) {
-            return vocab.vocab;
+            return [vocab.vocab, vocab.atomic];
         }
 
         // it's a reference to another vocab
@@ -221,6 +221,7 @@ class VocabLibrary {
 
 
 abstract class VocabContainer {
+    public atomic = false;
 
     constructor(
         public vocab: Set<string> = new Set()
@@ -231,7 +232,8 @@ abstract class VocabContainer {
 }
 
 class AtomicVocab extends VocabContainer {
-
+    public atomic = true;
+    
     public tokenize(): TokenizedVocab {
         const newVocab = new TokenizedVocab();
         for (const atom of this.vocab) {
@@ -256,6 +258,7 @@ class AtomicVocab extends VocabContainer {
 }
 
 class TokenizedVocab extends VocabContainer {
+    public atomic = false;
 
     public tokenize(): TokenizedVocab {
         return this;
@@ -332,40 +335,19 @@ export class InjectVocab extends AutoPass<Grammar> {
     public postTransform(g: Grammar, env: ResolveVocabEnv): Grammar {
         switch (g.tag) {
             case "cursor": 
-            case "greedyCursor": return this.transformCursor(g, env);
-            case "pretape": return this.transformPreTape(g, env);
+            case "greedyCursor": 
+            case "pretape": return this.transformCursor(g, env);
             default: return g;
         }
     }
 
     public transformCursor(
-        g: CursorGrammar | GreedyCursorGrammar, 
+        g: CursorGrammar | GreedyCursorGrammar | PreTapeGrammar, 
         env: ResolveVocabEnv
     ): Grammar {
-
-        const alphabet = env.vocabLib.getVocab(g.key);
-
-        if (g.vocab.tag === Vocabs.Tag.Lit) {
-            // we're done already
-            return update(g, {alphabet});
-        }
-
-        const vocab = Vocabs.getFromVocabDict(env.vocabs, g.vocab.key);
-        if (vocab == undefined) {
-            throw new Error(`resolved vocab for ${g.tapeName}, key = ${g.vocab.key}, is undefined! map is ${Vocabs.vocabDictToStr(env.vocabs)}`);
-        }
-
-        return update(g, {vocab, alphabet});
+        const [vocab, atomic] = env.vocabLib.getVocab(g.key);
+        return update(g, {vocab, atomic});
     }
-    
-    public transformPreTape(
-        g: PreTapeGrammar, 
-        env: ResolveVocabEnv
-    ): Grammar {
-        const alphabet = env.vocabLib.getVocab(g.key);
-        return update(g, {alphabet});
-    }
-
 }
 
 function collectVocab(
@@ -582,7 +564,6 @@ function collectVocabPreTape(
     vocabLib: VocabLibrary,
     env: ResolveVocabEnv
 ): void {
-    console.log(`pretape input = ${g.inputTape}, output = ${g.outputTape}`)
     vocabLib.pushTape(g.inputTape);
     const [key, _] = vocabLib.getKey(g.inputTape);
     g.key = key;

@@ -753,6 +753,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'aa', t2: 'bb'},
             {t1: 'aaa', t2: 'bb'},
         ],
+        allowDuplicateOutputs: true,
     });
 
     testGrammar({
@@ -845,6 +846,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t2: 'b'},
             {t2: 'bb'},
         ],
+        allowDuplicateOutputs: true,
     });
 
     testGrammar({

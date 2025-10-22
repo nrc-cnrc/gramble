@@ -58,7 +58,7 @@ function getVocabCursor(
     env: SymbolEnv
 ): Set<string>|undefined {
     if (g.tapeName == tapeName) {
-        return g.alphabet;
+        return g.vocab;
     }
     return getVocab(g.child, tapeName, stack, env);
 }
@@ -70,7 +70,7 @@ function getVocabPreTape(
     env: SymbolEnv
 ): Set<string>|undefined {
     if (g.inputTape == tapeName) {
-        return g.alphabet;
+        return g.vocab;
     }
     return getVocab(g.child, tapeName, stack, env);
 }

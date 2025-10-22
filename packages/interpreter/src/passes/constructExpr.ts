@@ -164,12 +164,7 @@ function constructExprCursor(
     g: CursorGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
-    if (g.vocab.tag !== Vocab.Tag.Lit) {
-        throw new Error(`Constructing cursor ${g.tapeName} with unresolved vocab: ${Vocab.toStr(g.vocab)}`);
-    }
-    const atomic = g.vocab.atomicity === Vocab.Atomicity.Atomic || 
-                    g.vocab.atomicity === Vocab.Atomicity.Concatenated;
-    return constructCursor(env, g.tapeName, childExpr, g.vocab.tokens, atomic);
+    return constructCursor(env, g.tapeName, childExpr, g.vocab, g.atomic);
 }
 
 function constructExprGreedyCursor(
@@ -177,12 +172,7 @@ function constructExprGreedyCursor(
     g: GreedyCursorGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
-    if (g.vocab.tag !== Vocab.Tag.Lit) {
-        throw new Error(`Constructing greedy cursor ${g.tapeName} with unresolved vocab: ${Vocab.toStr(g.vocab)}`);
-    }
-    const atomic = g.vocab.atomicity === Vocab.Atomicity.Atomic || 
-                    g.vocab.atomicity === Vocab.Atomicity.Concatenated;
-    return constructGreedyCursor(env, g.tapeName, childExpr, g.vocab.tokens, atomic);
+    return constructGreedyCursor(env, g.tapeName, childExpr, g.vocab, g.atomic);
 }
 
 function constructExprPreTape(
