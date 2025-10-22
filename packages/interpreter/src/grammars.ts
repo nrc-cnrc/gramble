@@ -354,12 +354,12 @@ export class CursorGrammar extends UnaryGrammar {
     public readonly tag = "cursor";
 
     public key: string = "";
-    public alphabet: Set<string> = new Set();
 
     constructor(
         public tapeName: string,
         child: Grammar,
-        public vocab: Vocab = Vocabs.Ref(tapeName),
+        public vocab: Set<string> = new Set(),
+        public atomic: boolean = true
     ) {
         super(child);
     }
@@ -369,12 +369,12 @@ export class GreedyCursorGrammar extends UnaryGrammar {
     public readonly tag = "greedyCursor";
 
     public key: string = "";
-    public alphabet: Set<string> = new Set();
 
     constructor(
         public tapeName: string,
         child: Grammar,
-        public vocab: Vocab = Vocabs.Ref(tapeName)
+        public vocab: Set<string> = new Set(),
+        public atomic: boolean = true
     ) {
         super(child);
     }
@@ -384,7 +384,8 @@ export class PreTapeGrammar extends UnaryGrammar {
     public readonly tag = "pretape";
 
     public key: string = "";
-    public alphabet: Set<string> = new Set();
+    public vocab: Set<string> = new Set();
+    public atomic: boolean = true;
     
     constructor(
         public inputTape: string,

@@ -518,10 +518,6 @@ function getTapesCursor(
             `Cursor for ${g.tapeName}, but no such tape in its scope.`)
     }
     
-    let vocab = g.vocab;
-    if (vocab.tag !== Vocabs.Tag.Lit) {
-        vocab = g.child.tapes.vocabMap[g.tapeName];
-    }
     const tapes = Tapes.Cursor(g.child.tapes, g.tapeName) // this handles deleting for us
-    return update(g, {tapes, vocab});
+    return update(g, {tapes});
 }

@@ -7,7 +7,8 @@ import {
     Null, Rename, Rep,
     ReplaceBlock, Replace, Seq, 
     Short, SingleTape, Starts, Uni,
-    Cursor
+    Cursor,
+    Lit
 } from "../../interpreter/src/grammarConvenience.js";
 
 import { Grammar, ReplaceGrammar } from "../../interpreter/src/grammars.js";
@@ -20,8 +21,9 @@ import {
     t1, t2, t3,
     prepareInterpreter, 
 } from "../testUtil.js";
-import { CounterStack } from "@gramble/interpreter/src/utils/counter.js";
-import { SymbolEnv } from "@gramble/interpreter/src/passes.js";
+import { CounterStack } from "../../interpreter/src/utils/counter.js";
+import { SymbolEnv } from "../../interpreter/src/passes.js";
+import { INPUT_TAPE, OUTPUT_TAPE } from "../../interpreter/src/utils/constants.js";
 
 type GrammarIDTest = {
     desc: string,
@@ -72,6 +74,9 @@ export function testGrammarTapes({
         }
     });
 }
+
+const I = (s: string) => Lit(INPUT_TAPE, s);
+const O = (s: string) => Lit(OUTPUT_TAPE, s);
 
 function NamedReplace(
     name: string, 
@@ -1469,5 +1474,41 @@ describe(`Pass ${testSuiteName(module)}`, function() {
         }
     });
 
+    testGrammarTapes({
+        desc: "21c",
+        grammar: Seq(I("hllo"), Replace("e", "")),
+        tapes: {
+            "$i": ["h","e","l","o"],
+            "$o": ["h","e","l","o"],
+        },
+    });
+    
+    testGrammarTapes({
+        desc: "21d",
+        grammar: Seq(O("hllo"), Replace("e", "")),
+        tapes: {
+            "$i": ["h","e","l","o"],
+            "$o": ["h","e","l","o"],
+        },
+    });
+
+    
+    testGrammarTapes({
+        desc: "21e",
+        grammar: Seq(I("hello"), Match(Dot(INPUT_TAPE), INPUT_TAPE, OUTPUT_TAPE)),
+        tapes: {
+            "$i": ["h","e","l","o"],
+            "$o": ["h","e","l","o"],
+        },
+    });
+
+    testGrammarTapes({
+        desc: "21f",
+        grammar: Seq(O("hello"), Match(Dot(INPUT_TAPE), INPUT_TAPE, OUTPUT_TAPE)),
+        tapes: {
+            "$i": ["h","e","l","o"],
+            "$o": ["h","e","l","o"],
+        },
+    });
     
 });

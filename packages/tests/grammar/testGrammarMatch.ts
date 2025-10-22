@@ -1099,6 +1099,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'h', t2: 'eeh'},
             {t1: 'e', t2: 'eee'},
         ],
+        allowDuplicateOutputs: true,
     });
 
     testGrammar({
