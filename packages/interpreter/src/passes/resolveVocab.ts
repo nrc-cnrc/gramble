@@ -5,7 +5,6 @@ import {
     CursorGrammar,
     LiteralGrammar,
     SequenceGrammar,
-    AlternationGrammar,
     JoinGrammar,
     SelectionGrammar,
     DotGrammar,
@@ -15,17 +14,20 @@ import {
     RenameGrammar,
     HideGrammar,
     MatchGrammar,
+    ReplaceGrammar,
+    PreTapeGrammar,
+    ShortGrammar,
 } from "../grammars.js";
-import { Dict, exhaustive, getCaseInsensitive, union, update } from "../utils/func.js";
+import { Dict, getCaseInsensitive, union, update } from "../utils/func.js";
 import { Msg } from "../utils/msgs.js";
-import { Env, Options } from "../utils/options.js";
+import { Options } from "../utils/options.js";
 import { VocabDict } from "../vocab.js";
 import * as Tapes from "../tapes.js";
 import * as Vocabs from "../vocab.js";
 import { children } from "../components.js";
-import { toStr } from "./toStr.js";
 import { tokenizeUnicode } from "../utils/strings.js";
 import { CounterStack } from "../utils/counter.js";
+import { INPUT_TAPE, OUTPUT_TAPE } from "../utils/constants.js";
 
 type VocabMode = "atomic" | "concat" | "join" | "tokenized";
 
@@ -331,7 +333,7 @@ export class InjectVocab extends AutoPass<Grammar> {
         switch (g.tag) {
             case "cursor": 
             case "greedyCursor": return this.transformCursor(g, env);
-            
+            case "pretape": return this.transformPreTape(g, env);
             default: return g;
         }
     }
@@ -355,6 +357,14 @@ export class InjectVocab extends AutoPass<Grammar> {
 
         return update(g, {vocab, alphabet});
     }
+    
+    public transformPreTape(
+        g: PreTapeGrammar, 
+        env: ResolveVocabEnv
+    ): Grammar {
+        const alphabet = env.vocabLib.getVocab(g.key);
+        return update(g, {alphabet});
+    }
 
 }
 
@@ -369,34 +379,21 @@ function collectVocab(
                         return;
 
         case "lit":     
-                        return collectVocabLit(g, vocabLib, env); 
-        case "dot":
-                        return collectVocabDot(g, vocabLib, env);
+                        return collectVocabLit(g, vocabLib, env);
 
         case "selection":
                         return collectVocabSelection(g, vocabLib, env);
         case "cursor":
         case "greedyCursor":
                         return collectVocabCursor(g, vocabLib, env);
-
+        case "pretape":
+                        return collectVocabPreTape(g, vocabLib, env);
         case "seq":     return collectVocabSequence(g, vocabLib, env);
         case "repeat":  return collectVocabRepeat(g, vocabLib, env);
 
-
-        /*
         case "join": 
         case "filter":
                         return collectVocabJoin(g, vocabLib, env);
-        
-                        
-        
-        case "starts":
-        case "ends":
-        case "contains":
-        case "short":
-                        return collectVocabTokenized(g, vocabLib, env);
-        */
-
         case "embed":
                         return collectVocabEmbed(g, vocabLib, env);
         case "rename":
@@ -405,12 +402,19 @@ function collectVocab(
                         return collectVocabHide(g, vocabLib, env);
         case "match":
                         return collectVocabMatch(g, vocabLib, env);
+        case "replace":
+                        return collectVocabReplace(g, vocabLib, env);
         case "alt":    
         case "count":
-        case "not":
         case "priority":
         case "correspond":
                         return collectVocabDefault(g, vocabLib, env); 
+        
+        case "dot":
+        case "short":
+        case "not":
+                        return collectVocabTokenized(g, vocabLib, env);
+
         default: 
             throw `No collection function for ${g.tag}`;
     }
@@ -435,13 +439,28 @@ function collectVocabDefault(
     }
 }
 
-function collectVocabDot(
-    g: DotGrammar, 
+/**
+ * A generic vocab-collection function for grammars who
+ * tokenize all their tapes.  (In practice, all the grammars
+ * participating in this should be single-taped anyway, but we
+ * don't enforce that here, just loop through it.)
+ * @param g 
+ * @param vocabLib 
+ * @param env 
+ */
+function collectVocabTokenized(
+    g: Grammar, 
     vocabLib: VocabLibrary,
     env: ResolveVocabEnv
 ): void {
-    vocabLib.tokenize(g.tapeName);
+    for (const tapeName of g.tapeNames) {
+        vocabLib.tokenize(tapeName);
+    }
+    for (const child of children(g)) {
+        collectVocab(child, vocabLib, env);
+    }
 } 
+
 
 function collectVocabSequence(    
     g: SequenceGrammar, 
@@ -462,8 +481,43 @@ function collectVocabSequence(
         for (const tapeName of child.tapeNames) {
             if (!(tapeName in modes)) {
                 modes[tapeName] = "atomic";
+                continue;
             }
             modes[tapeName] = "concat";
+        }
+    }
+
+    vocabLib.pushModes(modes);
+
+    for (const child of children(g)) {
+        collectVocab(child, vocabLib, env);
+    }
+
+    vocabLib.popModes();
+}
+
+function collectVocabJoin(    
+    g: JoinGrammar|FilterGrammar, 
+    vocabLib: VocabLibrary,
+    env: ResolveVocabEnv
+): void {
+    
+    // we have to determine if we're truly a concat for
+    // the purposes of this tape, which means having at least
+    // two children with that tape.  this is a dict
+    // from tape names to either "atomic" (only 1 child has the
+    // tape) or "concat" (at least two do).  This dict is then
+    // used by VocabLibrary to decide what mode to use in this
+    // scope.  (Note: it's not necessary "atomic" or "concat", these
+    // modes may combine with others.)
+    const modes: Dict<VocabMode> = {};
+    for (const child of children(g)) {
+        for (const tapeName of child.tapeNames) {
+            if (!(tapeName in modes)) {
+                modes[tapeName] = "atomic";
+                continue;
+            }
+            modes[tapeName] = "join";
         }
     }
 
@@ -497,42 +551,6 @@ function collectVocabRepeat(
     vocabLib.popModes();
 }
 
-
-/*
-
-function collectVocabJoin(    
-    g: JoinGrammar | FilterGrammar, 
-    vocabLib: VocabLibrary,
-    env: ResolveVocabEnv
-): void {
-    // first determine if we're really a join w.r.t. this tape
-    const child1HasTape = new Set(g.child1.tapeNames).has(tapeName);
-    const child2HasTape = new Set(g.child2.tapeNames).has(tapeName);
-    const hasTape = child1HasTape && child2HasTape;
-
-    // then up the tokenization level if necessary
-    let newVocabMode = vocabMode;
-    if (hasTape && vocabMode === "atomic") newVocabMode = "join";
-
-    // then collect the children
-    vocabSoFar = collectVocab(g.child1, tapeName, newVocabMode, vocabSoFar, env);
-    vocabSoFar = collectVocab(g.child2, tapeName, newVocabMode, vocabSoFar, env);
-    return vocabSoFar;
-}
-
-function collectVocabTokenized(    
-    g: Grammar, 
-    vocabLib: VocabLibrary,
-    env: ResolveVocabEnv
-): void {
-    // we force tokenization on all children
-    for (const child of children(g)) {
-        vocabSoFar = collectVocab(child, tapeName, "tokenized", vocabSoFar, env);
-    }
-    return vocabSoFar;
-}
-*/
-
 function collectVocabSelection(
     g: SelectionGrammar, 
     vocabLib: VocabLibrary,
@@ -555,6 +573,20 @@ function collectVocabCursor(
     vocabLib.pushTape(g.tapeName);
     const [key, _] = vocabLib.getKey(g.tapeName);
     g.key = key;
+    collectVocab(g.child, vocabLib, env);
+    vocabLib.popTape();
+}
+
+function collectVocabPreTape(
+    g: PreTapeGrammar,
+    vocabLib: VocabLibrary,
+    env: ResolveVocabEnv
+): void {
+    console.log(`pretape input = ${g.inputTape}, output = ${g.outputTape}`)
+    vocabLib.pushTape(g.inputTape);
+    const [key, _] = vocabLib.getKey(g.inputTape);
+    g.key = key;
+    vocabLib.mergeTapes(g.inputTape, g.outputTape);
     collectVocab(g.child, vocabLib, env);
     vocabLib.popTape();
 }
@@ -611,4 +643,16 @@ function collectVocabMatch(
     }
     vocabLib.mergeTapes(g.inputTape, g.outputTape);
     collectVocab(g.child, vocabLib, env);
+}
+
+function collectVocabReplace(
+    g: ReplaceGrammar,
+    vocabLib: VocabLibrary,
+    env: ResolveVocabEnv
+): void {
+    vocabLib.mergeTapes(INPUT_TAPE, OUTPUT_TAPE);
+    collectVocab(g.inputChild, vocabLib, env);
+    collectVocab(g.outputChild, vocabLib, env);
+    collectVocab(g.preChild, vocabLib, env);
+    collectVocab(g.postChild, vocabLib, env);
 }

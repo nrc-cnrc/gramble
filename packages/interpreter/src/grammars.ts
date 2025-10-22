@@ -383,6 +383,9 @@ export class GreedyCursorGrammar extends UnaryGrammar {
 export class PreTapeGrammar extends UnaryGrammar {
     public readonly tag = "pretape";
 
+    public key: string = "";
+    public alphabet: Set<string> = new Set();
+    
     constructor(
         public inputTape: string,
         public outputTape: string,

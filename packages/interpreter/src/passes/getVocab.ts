@@ -1,5 +1,12 @@
 import { children } from "../components.js";
-import { CursorGrammar, EmbedGrammar, Grammar, GreedyCursorGrammar, SelectionGrammar } from "../grammars.js";
+import { 
+    CursorGrammar, 
+    EmbedGrammar, 
+    Grammar, 
+    GreedyCursorGrammar, 
+    PreTapeGrammar, 
+    SelectionGrammar 
+} from "../grammars.js";
 import { getCaseInsensitive } from "../utils/func.js";
 import { CounterStack } from "../utils/counter.js";
 import { SymbolEnv } from "../passes.js";
@@ -17,6 +24,8 @@ export function getVocab(
         case "cursor":
         case "greedyCursor":
             return getVocabCursor(g, tapeName, stack, env);
+        case "pretape":
+            return getVocabPreTape(g, tapeName, stack, env);
         case "selection":
             return getVocabSelection(g, tapeName, stack, env);
         case "embed":
@@ -42,7 +51,6 @@ function getVocabDefault(
     return undefined;
 }
 
-
 function getVocabCursor(
     g: CursorGrammar|GreedyCursorGrammar,
     tapeName: string,
@@ -50,6 +58,18 @@ function getVocabCursor(
     env: SymbolEnv
 ): Set<string>|undefined {
     if (g.tapeName == tapeName) {
+        return g.alphabet;
+    }
+    return getVocab(g.child, tapeName, stack, env);
+}
+
+function getVocabPreTape(
+    g: PreTapeGrammar,
+    tapeName: string,
+    stack: CounterStack,
+    env: SymbolEnv
+): Set<string>|undefined {
+    if (g.inputTape == tapeName) {
         return g.alphabet;
     }
     return getVocab(g.child, tapeName, stack, env);
