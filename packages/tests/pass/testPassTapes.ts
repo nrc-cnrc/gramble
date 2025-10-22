@@ -6,7 +6,8 @@ import {
     Hide, Join, Match, Not,
     Null, Rename, Rep,
     ReplaceBlock, Replace, Seq, 
-    Short, SingleTape, Starts, Uni
+    Short, SingleTape, Starts, Uni,
+    Cursor
 } from "../../interpreter/src/grammarConvenience.js";
 
 import { Grammar, ReplaceGrammar } from "../../interpreter/src/grammars.js";
@@ -604,7 +605,6 @@ describe(`Pass ${testSuiteName(module)}`, function() {
         }
     });
 
-    /*
     testGrammarTapes({
         desc: "12a",
         grammar: Join(t1("hello"), t2("world")),
@@ -632,7 +632,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
             "t2": ["world"]
         }
     });
-    
+
     testGrammarTapes({
         desc: "12c",
         grammar: Join(Seq(t1("hello"), t3("kitty")), 
@@ -676,7 +676,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
             "t3": ["k","i","t","y"],
         }
     });
-
+    
     testGrammarTapes({
         desc: "13a",
         grammar: Collection({
@@ -940,8 +940,6 @@ describe(`Pass ${testSuiteName(module)}`, function() {
         grammar: SingleTape("t1", Epsilon()),
         tapes: {},
     });
-
-
     
     testGrammarTapes({
         desc: "20a",
@@ -1198,7 +1196,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
     });
     
     testGrammarTapes({
-        desc: "25a-atom=embed",
+        desc: "25a-atom-embed",
         atomicity: true,
         grammar: Collection({ 
             "a": ReplaceBlock("t1", Embed("b"), 
@@ -1372,7 +1370,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
     });
 
     testGrammarTapes({
-        desc: "33. Short vocabs are always strings",
+        desc: "33. Short vocabs are always tokenized",
         grammar: Short(Uni(t1("h"), t1("hh"))),
         tapes: {
             "t1": ["h"]
@@ -1380,7 +1378,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
     });
 
     testGrammarTapes({
-        desc: "33-atom. Short vocabs are always strings",
+        desc: "33-atom. Short vocabs are always tokenized",
         atomicity: true,
         grammar: Short(Uni(t1("h"), t1("hh"))),
         tapes: {
@@ -1389,7 +1387,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
     });
 
     testGrammarTapes({
-        desc: "34. Negations are always strings and wildcard",
+        desc: "34. Negations are always tokenized",
         grammar: Not(t1("hello")),
         tapes: {
             "t1": ["h","e","l","o"]
@@ -1397,19 +1395,29 @@ describe(`Pass ${testSuiteName(module)}`, function() {
     });
 
     testGrammarTapes({
-        desc: "34-atom. Negations are always strings and wildcard",
+        desc: "34-atom. Negations are always tokenized",
         atomicity: true,
         grammar: Not(t1("hello")),
         tapes: {
             "t1": ["h","e","l","o"]
         }
     });
-
+    
     testGrammarTapes({
-        desc: "35. Not",
-        grammar: Not(t1("hello")),
+        desc: "35a. Nested cursors",
+        grammar: Cursor("t1", Cursor("t2", Seq(t1("hello"), t2("world")))),
         tapes: {
-            "t1": ["h","e","l","l","o"],
+            "t1": ["h","e","l","o"],
+            "t2": ["w","o","r","l","d"]
+        }
+    });
+    
+    testGrammarTapes({
+        desc: "35b. Nested cursors with same name",
+        grammar: Cursor("t1", Seq(t1("hello"), Cursor("t1", t1("world")))),
+        tapes: {
+            // note that our testing function only grabs the outermost t1 vocab
+            "t1": ["h","e","l","o"],
         }
     });
 
@@ -1452,5 +1460,14 @@ describe(`Pass ${testSuiteName(module)}`, function() {
         }
     });
 
-    */
+    testGrammarTapes({
+        desc: "38. Joining to a wildcard match outside the scope of a cursor",
+        grammar: Join(t1("hi"), Cursor("t2", (Match(Dot("t1"), "t1", "t2")))),
+        tapes: {
+            "t1": ["h","i"],
+            "t2": ["h","i"]
+        }
+    });
+
+    
 });
