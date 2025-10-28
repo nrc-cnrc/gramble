@@ -5,7 +5,6 @@ import {
     update 
 } from "./utils/func.js";
 
-
 export type TapeDict = Dict<TapeSet>;
 
 export function renameTape(
@@ -138,6 +137,11 @@ export function Rename(
     toTape: string
 ): TapeSet {
     if (child.tag === Tag.Lit) {
+        // NB: In recursive contexts, recursively embedded instances
+        // of a symbol are empty Lit(), so they may not contain the
+        // fromTape.  But we still need to know about the toTape downstream
+        // regardless.  So we can't just rename fromTape to toTape
+        // inside the set, we need to delete and then add.
         const newTapes = new Set(child.tapeNames);
         newTapes.delete(fromTape)
         newTapes.add(toTape);
