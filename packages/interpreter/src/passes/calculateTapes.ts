@@ -43,9 +43,7 @@ import { toStr } from "./toStr.js";
 
 import { TapeSet, TapeDict } from "../tapes.js";
 import * as Tapes from "../tapes.js";
-import { VocabDict } from "../vocab.js";
-import * as Vocabs from "../vocab.js";
-import { children } from "../components.js";
+import { PassEnv, children } from "../components.js";
 import { Env, Options } from "../utils/options.js";
 
 

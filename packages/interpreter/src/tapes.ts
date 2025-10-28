@@ -1,6 +1,10 @@
-import { Dict, exhaustive, mapDict, union, update } from "./utils/func.js";
-import * as Vocabs from "./vocab.js";
-import { VocabDict } from "./vocab.js";
+import { 
+    Dict, 
+    exhaustive, 
+    union, 
+    update 
+} from "./utils/func.js";
+
 
 export type TapeDict = Dict<TapeSet>;
 
@@ -134,8 +138,10 @@ export function Rename(
     toTape: string
 ): TapeSet {
     if (child.tag === Tag.Lit) {
-        const newTapes = [...child.tapeNames].map(t => renameTape(t, fromTape, toTape));
-        return Lit(new Set(newTapes));
+        const newTapes = new Set(child.tapeNames);
+        newTapes.delete(fromTape)
+        newTapes.add(toTape);
+        return Lit(newTapes);
     }
     return { tag: Tag.Rename, child, fromTape, toTape }
 }

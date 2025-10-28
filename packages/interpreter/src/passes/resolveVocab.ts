@@ -7,7 +7,6 @@ import {
     SequenceGrammar,
     JoinGrammar,
     SelectionGrammar,
-    DotGrammar,
     FilterGrammar,
     RepeatGrammar,
     EmbedGrammar,
@@ -16,14 +15,11 @@ import {
     MatchGrammar,
     ReplaceGrammar,
     PreTapeGrammar,
-    ShortGrammar,
 } from "../grammars.js";
 import { Dict, getCaseInsensitive, union, update } from "../utils/func.js";
 import { Msg } from "../utils/msgs.js";
 import { Options } from "../utils/options.js";
-import { VocabDict } from "../vocab.js";
 import * as Tapes from "../tapes.js";
-import * as Vocabs from "../vocab.js";
 import { children } from "../components.js";
 import { tokenizeUnicode } from "../utils/strings.js";
 import { CounterStack } from "../utils/counter.js";
