@@ -281,7 +281,6 @@ export class ResolveVocabEnv extends SymbolEnv {
 
     constructor(
         opt: Partial<Options>,
-        public vocabs: VocabDict = {},
         public vocabLib: VocabLibrary = new VocabLibrary(opt),
         public stack: CounterStack = new CounterStack()
     ) { 
@@ -313,7 +312,6 @@ export class ResolveVocab extends Pass<Grammar, Grammar> {
 
         const vocabLib = new VocabLibrary(env.opt)
         const newEnv = new ResolveVocabEnv(env.opt, 
-                                g.tapes.vocabMap,
                                 vocabLib);
         
         collectVocab(g, vocabLib, newEnv);
