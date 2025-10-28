@@ -26,8 +26,6 @@ import {
 } from "../exprs.js";
 import { INPUT_TAPE } from "../utils/constants.js";
 import { Env } from "../utils/options.js";
-import * as Tapes from "../tapes.js";
-import * as Vocab from "../vocab.js";
 import { PassEnv } from "../components.js";
 
 export function constructExpr(

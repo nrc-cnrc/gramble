@@ -68,9 +68,6 @@ import {
     Options
 } from "./utils/options.js";
 
-import * as Tapes from "./tapes.js";
-import * as Vocabs from "./vocab.js";
-
 /**
  * An interpreter object is responsible for applying the passes in between sheets
  * and expressions, and forwarding queries on to the resulting object.
