@@ -301,7 +301,7 @@ export function testHasVocab(
             } else {
                 // it's a string[]
                 const expectedSet = new Set(expected);
-                it(`${symbol} ${tapeName} vocab should be ${expected}`, function() {
+                it(`${symbol} ${tapeName} vocab should be {${expected}}`, function() {
                     expect(tokens).to.deep.equal(expectedSet);
                 });
             }

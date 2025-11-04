@@ -145,7 +145,7 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
                                 .msgTo(THROWER);
 
         targetGrammar = new ResolveVocab()
-                                .getEnvAndTransform(targetGrammar, env.opt)
+                                .transform(targetGrammar, env)
                                 .msgTo(THROWER);
 
         let expr = constructExpr(env, targetGrammar);

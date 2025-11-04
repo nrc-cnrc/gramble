@@ -273,47 +273,24 @@ class TokenizedVocab extends VocabContainer {
     }
 }
 
-export class ResolveVocabEnv extends SymbolEnv {
-
-    constructor(
-        opt: Partial<Options>,
-        public vocabLib: VocabLibrary = new VocabLibrary(opt),
-        public stack: CounterStack = new CounterStack()
-    ) { 
-        super(opt);
-    }
-    
-    public update(g: Grammar): ResolveVocabEnv {
-        switch (g.tag) {
-            case "selection":
-            case "qualified":
-                return update(this, {symbolNS: g.symbols});
-            default:
-                return this;
-        }
-    }
-}
-
 export class ResolveVocab extends Pass<Grammar, Grammar> {
 
-    public getEnv(opt: Partial<Options>): ResolveVocabEnv {
-        return new ResolveVocabEnv(opt);
+    public getEnv(opt: Partial<Options>): SymbolEnv {
+        return new SymbolEnv(opt);
     }
 
-    public transform(g: Grammar, env: ResolveVocabEnv): Msg<Grammar> {
+    public transform(g: Grammar, env: SymbolEnv): Msg<Grammar> {
 
         if (g.tapes.tag !== Tapes.Tag.Lit) {
             throw new Error("nonliteral tapes at vocab resolution");
         }
 
         const vocabLib = new VocabLibrary(env.opt)
-        const newEnv = new ResolveVocabEnv(env.opt, 
-                                vocabLib);
-        
-        collectVocab(g, vocabLib, newEnv);
+        const stack = new CounterStack(2);
+        collectVocab(g, vocabLib, stack, env);
 
         const childPass = new InjectVocab(vocabLib);
-        return childPass.transform(g, newEnv);
+        return childPass.transform(g, env);
     }
 
 }
@@ -326,7 +303,7 @@ export class InjectVocab extends AutoPass<Grammar> {
         super();
     }
 
-    public postTransform(g: Grammar, env: ResolveVocabEnv): Grammar {
+    public postTransform(g: Grammar, env: SymbolEnv): Grammar {
         switch (g.tag) {
             case "cursor": 
             case "greedyCursor": 
@@ -337,9 +314,9 @@ export class InjectVocab extends AutoPass<Grammar> {
 
     public transformCursor(
         g: CursorGrammar | GreedyCursorGrammar | PreTapeGrammar, 
-        env: ResolveVocabEnv
+        env: SymbolEnv
     ): Grammar {
-        const [vocab, atomic] = env.vocabLib.getVocab(g.key);
+        const [vocab, atomic] = this.vocabLib.getVocab(g.key);
         return update(g, {vocab, atomic});
     }
 }
@@ -347,7 +324,8 @@ export class InjectVocab extends AutoPass<Grammar> {
 function collectVocab(
     g: Grammar,
     vocabLib: VocabLibrary,
-    env: ResolveVocabEnv,
+    stack: CounterStack,
+    env: SymbolEnv,
 ): void {
     switch (g.tag) {
         case "epsilon": 
@@ -355,43 +333,43 @@ function collectVocab(
                         return;
 
         case "lit":     
-                        return collectVocabLit(g, vocabLib, env);
+                        return collectVocabLit(g, vocabLib, stack, env);
 
         case "selection":
-                        return collectVocabSelection(g, vocabLib, env);
+                        return collectVocabSelection(g, vocabLib, stack, env);
         case "cursor":
         case "greedyCursor":
-                        return collectVocabCursor(g, vocabLib, env);
+                        return collectVocabCursor(g, vocabLib, stack, env);
         case "pretape":
-                        return collectVocabPreTape(g, vocabLib, env);
-        case "seq":     return collectVocabSequence(g, vocabLib, env);
-        case "repeat":  return collectVocabRepeat(g, vocabLib, env);
+                        return collectVocabPreTape(g, vocabLib, stack, env);
+        case "seq":     return collectVocabSequence(g, vocabLib, stack, env);
+        case "repeat":  return collectVocabRepeat(g, vocabLib, stack, env);
 
         case "join": 
         case "filter":
-                        return collectVocabJoin(g, vocabLib, env);
+                        return collectVocabJoin(g, vocabLib, stack, env);
         case "embed":
-                        return collectVocabEmbed(g, vocabLib, env);
+                        return collectVocabEmbed(g, vocabLib, stack, env);
         case "rename":
-                        return collectVocabRename(g, vocabLib, env);
+                        return collectVocabRename(g, vocabLib, stack, env);
         case "hide":
-                        return collectVocabHide(g, vocabLib, env);
+                        return collectVocabHide(g, vocabLib, stack, env);
         case "match":
-                        return collectVocabMatch(g, vocabLib, env);
+                        return collectVocabMatch(g, vocabLib, stack, env);
         case "replace":
-                        return collectVocabReplace(g, vocabLib, env);
+                        return collectVocabReplace(g, vocabLib, stack, env);
         case "alt":    
         case "count":
         case "priority":
         case "correspond":
         case "test":
         case "testnot":
-                        return collectVocabDefault(g, vocabLib, env); 
+                        return collectVocabDefault(g, vocabLib, stack, env); 
         
         case "dot":
         case "short":
         case "not":
-                        return collectVocabTokenized(g, vocabLib, env);
+                        return collectVocabTokenized(g, vocabLib, stack, env);
 
         default: 
             throw `No collection function for ${g.tag}`;
@@ -401,7 +379,8 @@ function collectVocab(
 function collectVocabLit(
     g: LiteralGrammar, 
     vocabLib: VocabLibrary,
-    env: ResolveVocabEnv
+    stack: CounterStack,
+    env: SymbolEnv
 ): void {
 
     return vocabLib.add(g.tapeName, g.text);
@@ -410,10 +389,11 @@ function collectVocabLit(
 function collectVocabDefault(    
     g: Grammar, 
     vocabLib: VocabLibrary,
-    env: ResolveVocabEnv
+    stack: CounterStack,
+    env: SymbolEnv
 ): void {
     for (const child of children(g)) {
-        collectVocab(child, vocabLib, env);
+        collectVocab(child, vocabLib, stack, env);
     }
 }
 
@@ -429,13 +409,14 @@ function collectVocabDefault(
 function collectVocabTokenized(
     g: Grammar, 
     vocabLib: VocabLibrary,
-    env: ResolveVocabEnv
+    stack: CounterStack,
+    env: SymbolEnv
 ): void {
     for (const tapeName of g.tapeNames) {
         vocabLib.tokenize(tapeName);
     }
     for (const child of children(g)) {
-        collectVocab(child, vocabLib, env);
+        collectVocab(child, vocabLib, stack, env);
     }
 } 
 
@@ -443,7 +424,8 @@ function collectVocabTokenized(
 function collectVocabSequence(    
     g: SequenceGrammar, 
     vocabLib: VocabLibrary,
-    env: ResolveVocabEnv
+    stack: CounterStack,
+    env: SymbolEnv
 ): void {
     
     // we have to determine if we're truly a concat for
@@ -468,7 +450,7 @@ function collectVocabSequence(
     vocabLib.pushModes(modes);
 
     for (const child of children(g)) {
-        collectVocab(child, vocabLib, env);
+        collectVocab(child, vocabLib, stack, env);
     }
 
     vocabLib.popModes();
@@ -477,7 +459,8 @@ function collectVocabSequence(
 function collectVocabJoin(    
     g: JoinGrammar|FilterGrammar, 
     vocabLib: VocabLibrary,
-    env: ResolveVocabEnv
+    stack: CounterStack,
+    env: SymbolEnv
 ): void {
     
     // we have to determine if we're truly a concat for
@@ -502,7 +485,7 @@ function collectVocabJoin(
     vocabLib.pushModes(modes);
 
     for (const child of children(g)) {
-        collectVocab(child, vocabLib, env);
+        collectVocab(child, vocabLib, stack, env);
     }
 
     vocabLib.popModes();
@@ -511,7 +494,8 @@ function collectVocabJoin(
 function collectVocabRepeat(    
     g: RepeatGrammar, 
     vocabLib: VocabLibrary,
-    env: ResolveVocabEnv
+    stack: CounterStack,
+    env: SymbolEnv
 ): void {
     const nontriv = g.maxReps > 1;
 
@@ -525,14 +509,15 @@ function collectVocabRepeat(
     }
 
     vocabLib.pushModes(modes);
-    collectVocab(g.child, vocabLib, env);
+    collectVocab(g.child, vocabLib, stack, env);
     vocabLib.popModes();
 }
 
 function collectVocabSelection(
     g: SelectionGrammar, 
     vocabLib: VocabLibrary,
-    env: ResolveVocabEnv
+    stack: CounterStack,
+    env: SymbolEnv
 ): void {
     const newEnv = env.update(g);
     const referent = getCaseInsensitive(g.symbols, g.selection);
@@ -540,59 +525,62 @@ function collectVocabSelection(
         // something's wrong, but now is not the time to complain
         return;
     }
-    return collectVocab(referent, vocabLib, newEnv);
+    return collectVocab(referent, vocabLib, stack, newEnv);
 }
 
 function collectVocabCursor(
     g: CursorGrammar | GreedyCursorGrammar, 
     vocabLib: VocabLibrary,
-    env: ResolveVocabEnv
+    stack: CounterStack,
+    env: SymbolEnv
 ): void {
     vocabLib.pushTape(g.tapeName);
     const [key, _] = vocabLib.getKey(g.tapeName);
     g.key = key;
-    collectVocab(g.child, vocabLib, env);
+    collectVocab(g.child, vocabLib, stack, env);
     vocabLib.popTape();
 }
 
 function collectVocabPreTape(
     g: PreTapeGrammar,
     vocabLib: VocabLibrary,
-    env: ResolveVocabEnv
+    stack: CounterStack,
+    env: SymbolEnv
 ): void {
     vocabLib.pushTape(g.inputTape);
     const [key, _] = vocabLib.getKey(g.inputTape);
     g.key = key;
     vocabLib.mergeTapes(g.inputTape, g.outputTape);
-    collectVocab(g.child, vocabLib, env);
+    collectVocab(g.child, vocabLib, stack, env);
     vocabLib.popTape();
 }
 
 function collectVocabEmbed(
     g: EmbedGrammar, 
     vocabLib: VocabLibrary,
-    env: ResolveVocabEnv
+    stack: CounterStack,
+    env: SymbolEnv
 ): void {
-    if (env.stack.get(g.symbol) >= 1)
+    if (stack.get(g.symbol) >= 1)
         return;
 
-    const newStack = env.stack.add(g.symbol);
-    const newEnv = {...env, stack: newStack } as ResolveVocabEnv;
+    const newStack = stack.add(g.symbol);
     const referent = env.symbolNS[g.symbol];
     if (referent === undefined) {
         throw new Error(`undefined referent ${g.symbol}, candidates are [${Object.keys(env.symbolNS)}]`);
     }
 
-    collectVocab(referent, vocabLib, newEnv);
+    collectVocab(referent, vocabLib, newStack, env);
 }
 
 function collectVocabRename(
     g: RenameGrammar, 
     vocabLib: VocabLibrary,
-    env: ResolveVocabEnv
+    stack: CounterStack,
+    env: SymbolEnv
 ): void {
     vocabLib.pushRenameTape(g.toTape, g.fromTape);
-    collectVocab(g.child, vocabLib, env);
+    collectVocab(g.child, vocabLib, stack, env);
     vocabLib.popRenameTape();
 
 }
@@ -600,10 +588,11 @@ function collectVocabRename(
 function collectVocabHide(
     g: HideGrammar, 
     vocabLib: VocabLibrary,
-    env: ResolveVocabEnv
+    stack: CounterStack,
+    env: SymbolEnv
 ): void {
     vocabLib.pushRenameTape(g.toTape, g.tapeName);
-    collectVocab(g.child, vocabLib, env);
+    collectVocab(g.child, vocabLib, stack, env);
     vocabLib.popRenameTape();
 
 }
@@ -611,25 +600,27 @@ function collectVocabHide(
 function collectVocabMatch(
     g: MatchGrammar,
     vocabLib: VocabLibrary,
-    env: ResolveVocabEnv
+    stack: CounterStack,
+    env: SymbolEnv
 ): void {
     const names = new Set(g.tapeNames);
     if (!names.has(g.inputTape) || !names.has(g.outputTape)) {
-        collectVocab(g.child, vocabLib, env);
+        collectVocab(g.child, vocabLib, stack, env);
         return;
     }
     vocabLib.mergeTapes(g.inputTape, g.outputTape);
-    collectVocab(g.child, vocabLib, env);
+    collectVocab(g.child, vocabLib, stack, env);
 }
 
 function collectVocabReplace(
     g: ReplaceGrammar,
     vocabLib: VocabLibrary,
-    env: ResolveVocabEnv
+    stack: CounterStack,
+    env: SymbolEnv
 ): void {
     vocabLib.mergeTapes(INPUT_TAPE, OUTPUT_TAPE);
-    collectVocab(g.inputChild, vocabLib, env);
-    collectVocab(g.outputChild, vocabLib, env);
-    collectVocab(g.preChild, vocabLib, env);
-    collectVocab(g.postChild, vocabLib, env);
+    collectVocab(g.inputChild, vocabLib, stack, env);
+    collectVocab(g.outputChild, vocabLib, stack, env);
+    collectVocab(g.preChild, vocabLib, stack, env);
+    collectVocab(g.postChild, vocabLib, stack, env);
 }
