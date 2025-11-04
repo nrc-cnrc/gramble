@@ -358,21 +358,13 @@ function collectVocab(
                         return collectVocabMatch(g, vocabLib, stack, env);
         case "replace":
                         return collectVocabReplace(g, vocabLib, stack, env);
-        case "alt":    
-        case "count":
-        case "priority":
-        case "correspond":
-        case "test":
-        case "testnot":
-                        return collectVocabDefault(g, vocabLib, stack, env); 
-        
         case "dot":
         case "short":
         case "not":
                         return collectVocabTokenized(g, vocabLib, stack, env);
 
         default: 
-            throw `No collection function for ${g.tag}`;
+                        return collectVocabDefault(g, vocabLib, stack, env); 
     }
 }
 
