@@ -177,8 +177,10 @@ export class ParseSource extends Pass<Source,TST> {
                     new OpMsg().msgTo(msgs, cellPos);
 
                     if (top.tst instanceof TstGrid) {
-                        Err(`Unexpected operator: '${cellTextTrimmed}'`,
-                            `'${cellTextTrimmed}' looks like an operator, ` +
+                        const opStr = cellTextTrimmed.endsWith("=") ? 
+                                        "assignment" : "operator";
+                        Err(`Unexpected ${opStr}: '${cellTextTrimmed}'`,
+                            `'${cellTextTrimmed}' looks like an ${opStr}, ` +
                             " but only a header can follow a header.")
                             .msgTo(msgs, cellPos);
                         continue;

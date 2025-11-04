@@ -1,9 +1,9 @@
 
 verb=, table:, text, gloss
-    ,       , foo, run
+     ,       , foo,  run
 
 suffix=, table:, text, gloss, table:, text, gloss
-    ,       , bar, -1SG,         , baz, -2SG
+       ,       , bar,  -1SG,        , baz, -2SG
 
 word=, table:, embed, embed
-    ,       , verb, suffix,   
+     ,       , verb,  suffix,   

@@ -1,6 +1,8 @@
 import { 
+    AutoTableOp,
     ErrorOp,
     SymbolOp,
+    TableOp,
     childMustBeGrid,
     siblingRequired,
 } from "../ops.js";
@@ -10,7 +12,8 @@ import {
     TstOp, 
     TstEmpty,
     TstGrid,
-    TST
+    TST,
+    TstTable
 } from "../tsts.js";
 import { PassEnv } from "../components.js";
 
@@ -106,62 +109,71 @@ export class CheckStructuralParams extends Pass<TST,TST> {
     }
 
     public handleOp(t: TstOp, env: PassEnv): Msg<TST> {
+        const msgs: Message[] = [];
+        let result: TST = t;
+
+        if (t.op instanceof TableOp || t.op instanceof AutoTableOp) {
+            // Silently drop an extra table op if it's an AutoTableOp, or issue
+            // a wayward table op error if its a TableOp.
+            if (t.child instanceof TstOp && t.child.op instanceof AutoTableOp ) {
+                t.child = t.child.child;
+            } else if (t.child instanceof TstOp && t.child.op instanceof TableOp ) {
+                Err(`Wayward 'table' operator`,
+                    "A 'table' operator cannot appear to the right of another " +
+                    "'table' operator; the second 'table' operator will be ignored.")
+                    .localize(t.child.pos).msgTo(msgs);
+                t.child = t.child.child;
+            }
+        }
 
         // if the op requires a grid to the right, but doesn't have one,
         // issue an error, and return the sibling as the new value.
         if (childMustBeGrid(t.op) == "required"
                 && !(t.child instanceof TstGrid)) {
             if (t.child instanceof TstEmpty) {
-                return t.sibling.err(`'${t.op.tag}' operator requires non-empty grid`,
-                            `This '${t.op.tag}' operator requires a non-empty grid to ` +
-                            "the right, but none was found.")
+                Err(`'${t.op.tag}' operator requires non-empty grid`,
+                    `This '${t.op.tag}' operator requires a non-empty grid to ` +
+                    "the right, but none was found.")
+                    .msgTo(msgs);
+            } else {
+                const content = t.child.cell.text.trim();
+                Err(`'${t.op.tag}' operator requires grid, not '${content}'`,
+                    `This '${t.op.tag}' operator requires a grid to the right, ` +
+                    `but has another operator instead: '${content}'.`)
+                    .msgTo(msgs);
             }
-            return t.sibling.err(`'${t.op.tag}' operator requires grid, ` +
-                        `not '${t.child.cell.text.trim()}'`,
-                        `This '${t.op.tag}' operator requires a grid to the right, ` +
-                        `but has another operator instead: '${t.child.cell.text.trim()}'.`)
+            result = t.sibling;
         }
 
-        const trimmedText = t.cell.text.trim();
-        // if the op must have a sibling, but has neither a sibling
-        // nor a child, issue an error, and return empty.
+        // if the op must have a sibling and doesn't, issue an error, and return empty.
         if (siblingRequired(t.op) == "required" 
-                && t.sibling instanceof TstEmpty
-                && t.child instanceof TstEmpty) {
-            return new TstEmpty().err(`Missing content for '${trimmedText}'.`,
-                            `The '${trimmedText}' operator requires content above it `  +
-                            "and to the right, but both are empty or erroneous.")
-                        .localize(t.sibling.pos);
-        }
-
-        // if the op must have a sibling and doesn't, issue an error,
-        // and return empty
-        if (siblingRequired(t.op) == "required"
                 && t.sibling instanceof TstEmpty) {
-            return new TstEmpty().err(`Missing content for '${trimmedText}'`,
-                            `The '${trimmedText}' operator requires content above it, ` +
-                            "but it's empty or erroneous.")
-                        .localize(t.sibling.pos);
+            const trimmedText = t.cell.text.trim();
+            const details = t.child instanceof TstEmpty ?
+                            "and to the right, but both are" : "but it's";
+            Err(`Missing content for '${trimmedText}'`,
+                `The '${trimmedText}' operator requires content above it ` +
+                `${details} empty or erroneous.`)
+                .localize(t.sibling.pos).msgTo(msgs);
+            result = new TstEmpty();
         }
 
-        // all operators need something in their .child param.  if
-        // it's empty, issue a warning, and return the sibling as the new value.
+        // all operators need something in their .child param.  if it's empty,
+        // issue a warning, and return the sibling as the new value.
         if (t.child instanceof TstEmpty) {
-            env.logDebug("***Warning: This will not contain any content.");
-            return t.sibling.warn("This will not contain any content.")
-                            .localize(t.pos);
+            Warn("This will not contain any content.")
+                .localize(t.pos).msgTo(msgs);
+            result = t.sibling;
         }
 
-        // if there's something in the sibling, but it's forbidden,
-        // warn about it.
+        // if there's something in the sibling, but it's forbidden, warn about it.
         if (siblingRequired(t.op) == "forbidden"
                 && !(t.sibling instanceof TstEmpty)) {
-            throw t.warn("This content does not get assigned to anything " +
-                        "and will be ignored.")
-                    .localize(t.sibling.pos);
+            Warn("This content does not get assigned to anything and will be ignored.")
+                .localize(t.sibling.pos).msgTo(msgs)
         }
 
-        return t.msg([]);
+        return result.msg(msgs);
     }
 
 }

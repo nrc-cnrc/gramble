@@ -68,8 +68,8 @@ export class CreateGrammars extends Pass<TST,Grammar> {
             case "seq":        return this.handleSequence(t, env);
             case "assign":     return this.handleAssignment(t, env);
             case "collection": return this.handleCollection(t, env);
-            default: 
-                throw new Error(`unhandled ${t.constructor.name}`);
+            default:
+                throw new Error(`unhandled '${t.constructor.name}'`);
         }
     }
 

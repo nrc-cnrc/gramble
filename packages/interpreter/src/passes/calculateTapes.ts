@@ -155,7 +155,7 @@ export class CalculateTapes extends AutoPass<Grammar> {
     getTapesSelection(g: SelectionGrammar, env: TapesEnv): Grammar {
         const referent = getCaseInsensitive(g.symbols, g.selection);
         if (referent === undefined) {
-            throw new Error(`Cannot resolve symbol ${g.selection}`);
+            throw new Error(`Cannot resolve symbol ${g.selection}.`);
         }
         return updateTapes(g, referent.tapes);
     }

@@ -1,6 +1,6 @@
 import { PassEnv } from "../components.js";
 import { 
-    TableOp, childMustBeGrid, 
+    AutoTableOp, childMustBeGrid, 
 } from "../ops.js";
 import { AutoPass } from "../passes.js";
 import { 
@@ -33,7 +33,7 @@ export class InsertTables extends AutoPass<TST> {
     public handleCollection(t: TstCollection): TST {
         const newChildren = t.children.map(c => {
             if (c instanceof TstGrid) {
-                return new TstOp(c.cell, new TableOp(), 
+                return new TstOp(c.cell, new AutoTableOp(), 
                                 new TstEmpty(), c);
             }
             return c;
@@ -45,7 +45,7 @@ export class InsertTables extends AutoPass<TST> {
 
         // TstGrid siblings are always interpreted as tables
         if (t.sibling instanceof TstGrid) {
-            t.sibling = new TstOp(t.sibling.cell, new TableOp(),
+            t.sibling = new TstOp(t.sibling.cell, new AutoTableOp(),
                                 new TstEmpty(), t.sibling);
         }
 
@@ -53,7 +53,7 @@ export class InsertTables extends AutoPass<TST> {
         // operator), but there's a grid, that's fine, just insert an implicit
         // table op between the op and its child.
         if (childMustBeGrid(t.op) == "forbidden" && t.child instanceof TstGrid) {
-            t.child = new TstOp(t.child.cell, new TableOp(), 
+            t.child = new TstOp(t.child.cell, new AutoTableOp(), 
                                 new TstEmpty(), t.child);
         }
 

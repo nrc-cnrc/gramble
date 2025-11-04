@@ -217,7 +217,8 @@ describe(`Source ${DIR}`, function() {
         errors: [
             Error(9, 1, "'table' operator requires non-empty grid"),
             Error(11, 1, "Missing content for 'test:'"),
-            Warning(9,0)
+            Warning(9,0),
+            Warning(9,1)
         ]
     });
 
@@ -229,7 +230,8 @@ describe(`Source ${DIR}`, function() {
         errors: [
             Error(9, 1, "'table' operator requires non-empty grid"),
             Error(11, 1, "Missing content for 'testnot:'"),
-            Warning(9,0)
+            Warning(9,0),
+            Warning(9,1)
         ]
     });
 
@@ -264,7 +266,8 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12, 1, "'test' operator requires non-empty grid")
+            Error(12, 1, "'test' operator requires non-empty grid"),
+            Warning(12,1)
         ]
     });
 
@@ -277,7 +280,8 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12, 1, "'testnot' operator requires non-empty grid")
+            Error(12, 1, "'testnot' operator requires non-empty grid"),
+            Warning(12,1)
         ]
     });
 
@@ -468,7 +472,7 @@ describe(`Source ${DIR}`, function() {
             {text: "foobar", gloss: "run"}
         ],
         errors: [
-            Error(3, 3, "Not a plain header: 'optional gloss'"),
+            Error(3, 3, "Not an ordinary header: 'optional gloss'"),
             Warning(4,3)
         ],
     });
@@ -479,7 +483,7 @@ describe(`Source ${DIR}`, function() {
             {text: "foobar", gloss: "run", eng: "run"}
         ],
         errors: [
-            Error(3, 3, "Not a plain header: 'gloss/eng'"),
+            Error(3, 3, "Not an ordinary header: 'gloss/eng'"),
             Warning(4,3)
         ],
     });
@@ -490,7 +494,7 @@ describe(`Source ${DIR}`, function() {
             {text: "foobar", gloss: "run-1SG"}
         ],
         errors: [
-            Error(6, 3, "Not a plain header: 'embed'"),
+            Error(6, 3, "Not an ordinary header: 'embed'"),
             Warning(7,3)
         ],
     });

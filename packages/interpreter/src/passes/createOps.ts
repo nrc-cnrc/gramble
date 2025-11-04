@@ -21,7 +21,8 @@ import { PassEnv } from "../components.js";
         switch(t.op.tag) {
             case "test":       return this.handleTest(t);
             case "testnot":    return this.handleTestNot(t);
-            case "table":      return this.handleOp(t);
+            case "table":      return this.handleTable(t);
+            case "autotable":  return this.handleTable(t);
             case "replace":    return this.handleReplace(t);
             case "or":         return this.handleOr(t);
             case "join":       return this.handleJoin(t);
@@ -32,7 +33,7 @@ import { PassEnv } from "../components.js";
         }
     }
 
-    public handleOp(t: TstOp): TST {
+    public handleTable(t: TstOp): TST {
         return new TstTable(t.cell, t.child as TstParamList);
     }
 

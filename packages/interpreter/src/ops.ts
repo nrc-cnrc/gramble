@@ -14,7 +14,8 @@ import {
 
 export type Requirement = "required" | "forbidden";
 
-export type Op = TableOp
+export type Op = AutoTableOp
+               | TableOp
                | CollectionOp
                | TestOp
                | TestNotOp
@@ -26,6 +27,10 @@ export type Op = TableOp
 
 export class TableOp extends Component { 
     public readonly tag = "table";
+}
+
+export class AutoTableOp extends Component { 
+    public readonly tag = "autotable";
 }
 
 export class CollectionOp extends Component { 
@@ -174,6 +179,7 @@ export function siblingRequired(op: Op): Requirement {
 
         // if something is above one of these, it's an error
         case "table": 
+        case "autotable": 
         case "collection":
         case "symbol": 
         case "error":      return "forbidden";
@@ -192,6 +198,7 @@ export function childMustBeGrid(op: Op): Requirement {
     switch (op.tag) {
         // these have to have a grid child, not another op
         case "table":
+        case "autotable":
         case "test":
         case "testnot": 
         case "replace":    return "required";
@@ -212,6 +219,7 @@ export function allowedParams(op: Op): Set<string> {
         // most ops only allow the __ param
         case "testnot":
         case "table": 
+        case "autotable": 
         case "collection":
         case "or":  
         case "join": 
@@ -232,6 +240,7 @@ export function requiredParams(op: Op): Set<string> {
 
         // most operators only require __
         case "table": 
+        case "autotable": 
         case "collection": 
         case "test":  
         case "testnot":  
@@ -257,6 +266,7 @@ export function paramsMustBePerfect(op: Op): boolean {
         // if a param is imperfect, ignore that column, but don't
         // throw everything else out
         case "table": 
+        case "autotable": 
         case "collection": 
         case "or": 
         case "join": 
@@ -280,6 +290,7 @@ export function paramsMustBeLiteral(op: Op): boolean {
     switch (op.tag) {
         // most ops allow anything
         case "table":   
+        case "autotable":   
         case "collection": 
         case "replace": 
         case "or":  

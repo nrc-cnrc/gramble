@@ -6,8 +6,8 @@ suffix=, text, gloss
        , bar,  -1SG
        , baz,  -2SG
 
-word=, word2=, text
-    ,        , goo
-    ,
-    , or:, embed, embed
-    ,    , verb,  suffix
+word=,       , text
+     ,       , goo
+
+     , or:, embed, embed
+     ,    , verb,  suffix

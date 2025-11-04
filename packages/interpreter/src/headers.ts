@@ -250,8 +250,8 @@ const HP_UNRESERVED = MPUnreserved<Header>(
         } else {
             throw new ErrorHeader().err(
                 `Invalid header: '${s}'`, 
-                `'${s}' looks like it should be a header, ` +
-                "but headers should start with letters or _");
+                `'${s}' looks like it should be a header, but ` +
+                "headers should start with letters or _, and not contain spaces");
         }
     } 
 );

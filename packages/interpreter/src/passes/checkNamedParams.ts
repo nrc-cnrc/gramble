@@ -107,8 +107,9 @@ export class CheckNamedParams extends Pass<TST,TST> {
                                     ? "an ordinary header (e.g. 'text', not 'unique')"
                                     : `a '${param}' header`;
                     const paramName = param == DEFAULT_PARAM ? "ordinary" : `'${param}'`;
-                    Err(`Missing ${paramName} header for '${t.op.tag}'`,
-                        `This '${t.op.tag}' operator requires ${paramDesc}, but ` +
+                    const tag = t.op.tag == "autotable" ? "implied 'table'" : `'${t.op.tag}'`;
+                    Err(`Missing ${paramName} header for ${tag}`,
+                        `The ${tag} operator requires ${paramDesc}, but ` +
                         "the content to the right doesn't have one.")
                         .localize(t.cell.pos).msgTo(msgs);
                 }

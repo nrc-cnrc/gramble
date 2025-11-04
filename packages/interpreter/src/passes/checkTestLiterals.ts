@@ -33,8 +33,8 @@ export class CheckTestLiterals extends AutoPass<TST> {
             const newHeaders: TstHeader[] = []
             for (const header of t.child.headers) {
                 if (!this.isLiteral(header.header)) {
-                    Err(`Not a plain header: '${header.text.trim()}'`,
-                        "Tests can only contain plain headers (field names), i.e., " +
+                    Err(`Not an ordinary header: '${header.text.trim()}'`,
+                        "Tests can only contain ordinary headers (field names), i.e., " +
                         "no /, no embeds, no special headers (except unique), etc.")
                         .localize(header.pos).msgTo(msgs);
                 } else {

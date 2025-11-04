@@ -92,7 +92,7 @@ describe(`Source ${DIR}`, function() {
     });  
 
     testSrc({
-		desc: '4a. Op missing sibling argument',
+		desc: '4a. Or op with missing sibling argument',
         results: [
             {}
         ],
@@ -103,7 +103,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '4b. Bare join op, missing sibling argument',
+		desc: '4b. Bare join op with missing sibling argument',
         symbol: "",
         results: [
             {}
@@ -115,7 +115,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '4c. Op missing child argument',
+		desc: '4c. Or op with missing child argument',
         results: [
             {text: "foobar", gloss: "run-1SG"},
             {text: "moobar", gloss: "jump-1SG"},
@@ -128,7 +128,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '5a. Assignment to the right of a binary op',
+		desc: '5a. Assignment to the right of a binary op (or)',
         results: [
             {text: "moo", gloss: "jump"},
             {text: "moobaz", gloss: "jump-2SG"},
@@ -139,11 +139,12 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(12, 2, "Wayward assignment: 'suffixless'")
-        ]
+        ],
+        // verbose: VERBOSE_DEBUG,
     });
 
     testSrc({
-		desc: '5b. Assignment above a binary op',
+		desc: '5b. Assignment beside another assignment above a binary op (or)',
         results: [
             {text: "moo", gloss: "jump"},
             {text: "moobaz", gloss: "jump-2SG"},
@@ -158,7 +159,7 @@ describe(`Source ${DIR}`, function() {
     });
     
     testSrc({
-		desc: '5c. Assignment inside another assignment',
+		desc: '5c. Assignment beside another assignment',
         results: [
             {text: "moobaz", gloss: "jump-2SG"},
             {text: "moobar", gloss: "jump-1SG"},
@@ -167,7 +168,8 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(9, 1, "Wayward assignment: 'word2'")
-        ]
+        ],
+        // verbose: VERBOSE_DEBUG,
     });
     
     testSrc({
@@ -191,12 +193,22 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '7. Two children on the same line',
+		desc: '7a. Two children (table ops) on the same row',
         results: [
             {text: "foobarbaz", gloss: "run-1SG-2SG"}
         ],
         errors: [
             Error(4, 4, "Unexpected operator: 'table:'")
+        ]
+    });
+
+    testSrc({
+		desc: '7b. Two consecutive table operators',
+        results: [
+            {text: "foobarbaz", gloss: "run-1SG-2SG"}
+        ],
+        errors: [
+            Error(4, 2, "Wayward 'table' operator"),
         ]
     });
     
@@ -218,7 +230,7 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Error(0, 1, "Missing ordinary header for 'table'"),
+            Error(0, 1, "Missing ordinary header for implied 'table'"),
             Error(0, 1, "Invalid header: 'text text'"),
             Warning(1,1)
         ]
@@ -231,19 +243,19 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '8c1. Space in a header after symbol assignment',
+		desc: '8c1. Space in a header after assignment',
         results: [
             {}
         ],
         errors: [
-            Error(0, 1, "Missing ordinary header for 'table'"),
+            Error(0, 1, "Missing ordinary header for implied 'table'"),
             Error(0, 1, "Invalid header: 'text text'"),
             Warning(1,1)
         ]
     });
 
     testSrc({
-		desc: '8c2. Space in a header between symbol assignment & plain header',
+		desc: '8c2. Space in a header between assignment & ordinary header',
         results: [
             {text: "xxx"},
         ],
@@ -254,7 +266,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '8c3. Space in a header after symbol assignment & plain header',
+		desc: '8c3. Space in a header after symbol & ordinary header',
         results: [
             {text: "xxx"},
         ],
@@ -265,19 +277,19 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '8d. Tape name header beginning with number',
+		desc: '8d. Ordinary header beginning with number',
         results: [
             {}
         ],
         errors: [
-            Error(0, 1, "Missing ordinary header for 'table'"),
+            Error(0, 1, "Missing ordinary header for implied 'table'"),
             Error(0, 1, "Invalid header: '9text'"),
             Warning(1,1)
         ]
     });
     
     testSrc({
-		desc: '9. Grammar with weird indentation',
+		desc: '9a. Grammar with weird indentation',
         results: [
             {text: "foobar", gloss: "run-1SG", finite: "true"}
         ],
@@ -287,7 +299,34 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '10. Unique param header in ordinary tables',
+        desc: '9b. Empty cell after assignment + or op (col 1)',
+        results: [
+            {text: "goo"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+        ],
+        errors: [
+            Warning(11, 1), // This operator is in an unexpected column. ...
+        ],
+        // verbose: VERBOSE_DEBUG,
+    });
+
+    testSrc({
+        desc: '9c. Empty cell after assignment + or op (col 0)',
+        results: [
+            {text: "goo"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+        ],
+        // verbose: VERBOSE_DEBUG,
+    });
+
+    testSrc({
+		desc: '10. "unique" header in ordinary table',
         results: [
             {text: "moobaz", gloss: "jump-2SG"},
             {text: "moobar", gloss: "jump-1SG"},
@@ -300,65 +339,271 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-        desc: '12a. Nested Errors: Wayward assignment + "or:" Op',
+        desc: '11a. Wayward assignment',
         results: [
             {text: "goo"},
-            {text: "foobar", gloss: "run-1SG"},
-            {text: "foobaz", gloss: "run-2SG"},
-            {text: "moobar", gloss: "jump-1SG"},
-            {text: "moobaz", gloss: "jump-2SG"},
         ],
         errors: [
-            Error(8, 1, "Wayward assignment: 'word2'."),
-        ],
-    });
-
-    testSrc({
-        desc: '12b. Nested Errors: Wayward assignment with table: + "or:" Op',
-        results: [
-            {text: "goo"},
-            {text: "foobar", gloss: "run-1SG"},
-            {text: "foobaz", gloss: "run-2SG"},
-            {text: "moobar", gloss: "jump-1SG"},
-            {text: "moobaz", gloss: "jump-2SG"},
-        ],
-        errors: [
-            Error(8, 1, "Wayward assignment: 'word2'."),
-        ],
-    });
-
-    testSrc({
-        desc: '12c. Nested Errors: 2 Wayward assignments with table: + "or:" Op',
-        results: [
-            {text: "goo"},
-            {text: "foobar", gloss: "run-1SG"},
-            {text: "foobaz", gloss: "run-2SG"},
-            {text: "moobar", gloss: "jump-1SG"},
-            {text: "moobaz", gloss: "jump-2SG"},
-        ],
-        errors: [
-            Error(8, 1, "Wayward assignment: 'word2'."),
-            Error(8, 2, "Wayward assignment: 'noun'"),
-        ],
-    });
-
-    testSrc({
-        desc: '12d. Nested Errors: Wayward assignment with table: followed by ' +
-              'another wayward assignment + "or:" Op',
-        results: [
-            {},
-        ],
-        errors: [
-            Warning(8,0),   // This symbol will not contain any content.
-            Warning(8,1),   // This symbol will not contain any content.
-            Error(8, 1, "Wayward assignment: 'word2'."),
-            // The message on cell 8,2 is clearly WRONG, so we leave it in a
-            // failing state as a reminder to track down and fix the problem.
-            Error(8, 2, "12d 'table' operator requires grid, not 'text'"),
-            Error(8, 3, "Wayward assignment: 'noun'"),
-            Error(11, 1, "Missing content for 'or:'"),
+            Error(1, 1, "Wayward assignment: 'word2'"),
         ],
         // verbose: VERBOSE_DEBUG,
+    });
+
+    testSrc({
+        desc: '11b. Wayward assignment with table op',
+        results: [
+            {text: "goo"},
+        ],
+        errors: [
+            Error(1, 1, "Wayward assignment: 'word2'"),
+        ],
+    });
+
+    testSrc({
+        desc: '11c. Nested errors: wayward assignment with table op followed by ' +
+              'another wayward assignment',
+        results: [
+            {text: "goo"},
+        ],
+        errors: [
+            Error(1, 1, "Wayward assignment: 'word2'"),
+            Error(1, 3, "Wayward assignment: 'word3'"),
+        ],
+    });
+
+    testSrc({
+        desc: '11d. Nested errors: Wayward assignment with table op followed by ' +
+              'another wayward assignment and table op',
+        results: [
+            {text: "goo"},
+        ],
+        errors: [
+            Error(1, 1, "Wayward assignment: 'word2'"),
+            Error(1, 3, "Wayward assignment: 'word3'"),
+            Error(1, 4, "Wayward 'table' operator"),
+        ],
+    });
+
+    testSrc({
+        desc: '11e. Nested errors: Several wayward assignments and table ops',
+        results: [
+            {text: "goofoomoo"},
+        ],
+        errors: [
+            Error(1, 1, "Wayward assignment: 'word2'"),
+            Error(1, 3, "Wayward assignment: 'word3'"),
+            Error(1, 4, "Wayward 'table' operator"),
+            Error(1, 6, "Unexpected operator: 'table:'"),
+            Error(1, 8, "Unexpected assignment: 'word4='"),
+            Error(1, 9, "Unexpected assignment: 'word5='"),
+        ],
+    });
+
+    testSrc({
+        desc: '11f. Nested errors: Several wayward assignments and table ops, different order',
+        results: [
+            {text: "goofoomoo"},
+        ],
+        errors: [
+            Error(1, 1, "Wayward assignment: 'word2'"),
+            Error(1, 3, "Wayward assignment: 'word3'"),
+            Error(1, 4, "Wayward 'table' operator"),
+            Error(1, 5, "Wayward 'table' operator"),
+            Error(1, 6, "Wayward assignment: 'word4'"),
+            Error(1, 7, "Wayward assignment: 'word5'"),
+            Error(1, 10, "Unexpected operator: 'table:'"),
+        ],
+    });
+
+    testSrc({
+        desc: '12a. Wayward assignment + or op (col 1)',
+        results: [
+            {text: "goo"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+        ],
+        errors: [
+            Error(8, 1, "Wayward assignment: 'word2'."),
+        ],
+        // verbose: VERBOSE_DEBUG,
+    });
+
+    testSrc({
+        desc: '12b. Wayward assignment + or op (col 0)',
+        results: [
+            {text: "goo"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+        ],
+        errors: [
+            Error(8, 1, "Wayward assignment: 'word2'."),
+        ],
+    });
+
+    testSrc({
+        desc: '12c. Wayward assignment with table op + or op',
+        results: [
+            {text: "goo"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+        ],
+        errors: [
+            Error(8, 1, "Wayward assignment: 'word2'."),
+        ],
+    });
+
+    testSrc({
+        desc: '12d. Nested errors: 2 wayward assignments with table op + or op',
+        results: [
+            {text: "goo"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+        ],
+        errors: [
+            Error(8, 1, "Wayward assignment: 'word2'."),
+            Error(8, 2, "Wayward assignment: 'word3'"),
+        ],
+        // verbose: VERBOSE_DEBUG,
+    });
+
+    testSrc({
+        desc: '12e. Nested errors: wayward assignment with table op followed by ' +
+              'another wayward assignment + or op',
+        results: [
+            {text: "goo"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+        ],
+        errors: [
+            Error(8, 1, "Wayward assignment: 'word2'."),
+            Error(8, 3, "Wayward assignment: 'word3'"),
+        ],
+    });
+
+    testSrc({
+        desc: '12f. Nested errors: wayward assignment with table op followed by ' +
+              'another wayward assignment and table op + or op',
+        results: [
+            {text: "goo"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+        ],
+        errors: [
+            Error(8, 1, "Wayward assignment: 'word2'."),
+            Error(8, 3, "Wayward assignment: 'word3'"),
+            Error(8, 4, "Wayward 'table' operator"),
+        ],
+    });
+
+    testSrc({
+        desc: '13a. or op with table op (no errors)',
+        results: [
+            {text: "goo"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+        ],
+    });
+
+    testSrc({
+        desc: '13b. Or op with wayward assignment',
+        results: [
+            {text: "goo"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+        ],
+        errors: [
+            Error(11, 2, "Wayward assignment: 'word2'"),
+        ],
+    });
+
+    testSrc({
+        desc: '13c. Or op with wayward assignment + table op',
+        results: [
+            {text: "goo"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+        ],
+        errors: [
+            Error(11, 2, "Wayward assignment: 'word2'"),
+        ],
+    });
+
+    testSrc({
+        desc: '13d. Or op with table op + wayward assignment',
+        results: [
+            {text: "goo"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+        ],
+        errors: [
+            Error(11, 3, "Wayward assignment: 'word2'"),
+        ],
+    });
+
+    testSrc({
+        desc: '13e. Or op with table op + wayward assignment + table op',
+        results: [
+            {text: "goo"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+        ],
+        errors: [
+            Error(11, 3, "Wayward assignment: 'word2'"),
+            Error(11, 4, "Wayward 'table' operator"),
+        ],
+    });
+
+    testSrc({
+        desc: '13f. Nested errors: or op with 2 wayward assignments separated by table op',
+        results: [
+            {text: "goo"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+        ],
+        errors: [
+            Error(11, 2, "Wayward assignment: 'word2'"),
+            Error(11, 4, "Wayward assignment: 'word3'"),
+        ],
+    });
+
+    testSrc({
+        desc: '13g. Nested errors: or op with 2 wayward assignments + table ops',
+        results: [
+            {text: "goo"},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+        ],
+        errors: [
+            Error(11, 2, "Wayward assignment: 'word2'"),
+            Error(11, 4, "Wayward assignment: 'word3'"),
+            Error(11, 5, "Wayward 'table' operator"),
+        ],
     });
 
 });

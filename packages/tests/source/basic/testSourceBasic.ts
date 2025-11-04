@@ -106,7 +106,8 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Warning(1, 0),  // This symbol will not contain any content.
-            Error(1, 1, "'table' operator requires non-empty grid")
+            Error(1, 1, "'table' operator requires non-empty grid"),
+            Warning(1, 1),  // This will not contain any content.
         ]
     });
 
@@ -128,6 +129,7 @@ describe(`Source ${DIR}`, function() {
             {text:"bar", gloss:"-1SG"},
             {text:"baz", gloss:"-2SG"},
         ],
+        // verbose: VERBOSE_DEBUG,
     });
 
     testSrc({
@@ -208,10 +210,11 @@ describe(`Source ${DIR}`, function() {
     
     testSrc({
 		desc: '11. Nested tables',
-        results: [{}],
+        results: [
+            {text: "foo", gloss: "run"},
+        ],
         errors: [
-            Warning(0, 0),
-            Error(0, 1, "'table' operator requires grid, not 'table:'")
+            Error(0, 2, "Wayward 'table' operator")
         ]
     });
 

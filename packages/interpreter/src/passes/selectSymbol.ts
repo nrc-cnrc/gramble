@@ -39,7 +39,7 @@ export class SelectSymbol extends Pass<Grammar,Grammar> {
 
         const resolution = qualifySymbol(g, this.symbol);
         if (resolution == undefined) {
-            throw g.err("Cannot resolve symbol: ${this.symbol}", 
+            throw g.err(`Cannot resolve symbol: ${this.symbol}`, 
                         `Cannot find symbol ${this.symbol} in grammar, ` +
                         `candidates: ${Object.keys(g.symbols)}.`);
         }
