@@ -384,6 +384,8 @@ function collectVocab(
         case "count":
         case "priority":
         case "correspond":
+        case "test":
+        case "testnot":
                         return collectVocabDefault(g, vocabLib, env); 
         
         case "dot":

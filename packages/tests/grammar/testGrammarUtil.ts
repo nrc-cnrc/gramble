@@ -94,7 +94,7 @@ export function testGrammarAux({
         testHasTapes(grammar, tapes, symbol, stripHidden);
     }
     if (vocab !== undefined) {
-        testHasVocab(grammar, vocab, symbol, stripHidden);
+        testHasVocab(grammar, vocab, symbol, false);
     }
 
     const interpreter = prepareInterpreter(grammar, opt);

@@ -31,6 +31,9 @@ import {
 } from "../interpreter/src/utils/logging.js";
 import { Message } from "../interpreter/src/utils/msgs.js";
 import { Options } from "../interpreter/src/utils/options.js";
+import { getVocab } from "@gramble/interpreter/src/passes/getVocab.js";
+import { CounterStack } from "@gramble/interpreter/src/utils/counter.js";
+import { SymbolEnv } from "@gramble/interpreter/src/passes.js";
 
 
 // Permit global control over verbose output in tests.
@@ -268,54 +271,49 @@ export function testHasTapes(
     });
 }
 
-function CharVocabOf(
-    tapeName: string,
-    grammar: Grammar
-) {
-    return Seq(Dot(tapeName), Rep(grammar, 0, 0));
-}
-
 export function testHasVocab(
     grammar: Grammar | Dict<Grammar>,
     expectedVocab: {[tape: string]: number | string[]},
     symbol: string = "",
-    stripHidden: boolean = true
+    optimizeAtomicity: boolean = false
 ): void {
-    
-    symbol = (symbol.length === 0) ? DEFAULT_SYMBOL : symbol;
-    const opt: Partial<Options> = {optimizeAtomicity: false}
-    const interpreter = prepareInterpreter(grammar, opt);
-    for (const tapeName in expectedVocab) {
+    try {
 
-        if ((interpreter.grammar instanceof QualifiedGrammar)) {
-            let referent = getCaseInsensitive(interpreter.grammar.symbols, symbol);
-            if (referent === undefined) {
-                it(`symbol '${symbol}' not found in QualifiedGrammar (${tapeName} vocab), ` +
-                    `candidates are ${Object.keys(interpreter.grammar.symbols)}`, 
-                    function() {
-                        assert.fail();
-                }); 
-                continue;   
+        const opt = Options({optimizeAtomicity: optimizeAtomicity});
+        const grammarWithVocab = prepareInterpreter(grammar, opt)
+                                    .symbolQueryStaging(symbol);
+
+        for (const tapeName in expectedVocab) {
+
+            const vocab = getVocab(grammarWithVocab, tapeName, 
+                        new CounterStack(), new SymbolEnv(opt));
+            
+            
+            let tokens = vocab !== undefined ? vocab : new Set();
+
+            const expected = expectedVocab[tapeName];
+            
+            if (typeof expected == 'number') {
+                // it's a number
+                it(`${symbol} ${tapeName} vocab should have ${expected} tokens`, function() {
+                    expect(tokens.size).to.equal(expected);
+                });
+            } else {
+                // it's a string[]
+                const expectedSet = new Set(expected);
+                it(`${symbol} ${tapeName} vocab should be ${expected}`, function() {
+                    expect(tokens).to.deep.equal(expectedSet);
+                });
             }
-            const vocabGrammar = CharVocabOf(tapeName, referent);
-            interpreter.grammar.symbols[symbol] = vocabGrammar.tapify(new PassEnv(opt))
         } 
 
-        const expected = expectedVocab[tapeName];
-        const outputs: StringDict[] = generateOutputs(interpreter, symbol, "", stripHidden);
-        if (typeof expected == 'number') {
-            // it's a number
-            it(`${symbol} ${tapeName} vocab should have ${expected} tokens`, function() {
-                expect(outputs.length).to.equal(expected);
-            });
-        } else {
-            // it's a string[]
-            const expectedSet = new Set(expected);
-            const vocabSet = new Set(outputs.map(k => k[tapeName]));
-            it(`${symbol} ${tapeName} vocab should be ${expected}`, function() {
-                expect(vocabSet).to.deep.equal(expectedSet);
-            });
-        }
+    } catch (e) {
+        it("Unexpected Exception", function() {
+            console.log("");
+            console.log(`[${this.test?.fullTitle()}]`);
+            console.log(e);
+            assert.fail(JSON.stringify(e));
+        });
     }
 }
 

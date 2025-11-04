@@ -19,7 +19,8 @@ import { getVocab } from "../../interpreter/src/passes/getVocab.js";
 import {
     testSuiteName, logTestSuite,
     t1, t2, t3,
-    prepareInterpreter, 
+    prepareInterpreter,
+    testHasVocab, 
 } from "../testUtil.js";
 import { CounterStack } from "../../interpreter/src/utils/counter.js";
 import { SymbolEnv } from "../../interpreter/src/passes.js";
@@ -40,38 +41,8 @@ export function testGrammarTapes({
     symbol = "",
     atomicity = false
 }: GrammarIDTest): void {
-
-    describe(`${desc}`, function() {
-        try {
-            const opt = Options({optimizeAtomicity: atomicity});
-            const interpreter = prepareInterpreter(grammar, opt);
-            const grammarWithVocab = interpreter.symbolQueryStaging(symbol);
-
-            for (const [tapeName, expectedVocab] of Object.entries(tapes)) {
-
-                let vocab = getVocab(grammarWithVocab, tapeName, 
-                    new CounterStack(), new SymbolEnv(opt));
-
-                if (vocab === undefined) {
-                    vocab = new Set();
-                }
-
-                const expectedSet = new Set(expectedVocab);
-
-                it(`${symbol} ${tapeName} vocab should be ${expectedVocab}`, function() {
-                    expect(vocab).to.deep.equal(expectedSet);
-                });
-
-            }
-
-        } catch (e) {
-            it("Unexpected Exception", function() {
-                console.log("");
-                console.log(`[${this.test?.fullTitle()}]`);
-                console.log(e);
-                assert.fail(JSON.stringify(e));
-            });
-        }
+    describe(`${desc}`, function() {  
+        testHasVocab(grammar, tapes, symbol, atomicity);
     });
 }
 
