@@ -345,6 +345,10 @@ function getTapesRename(g: RenameGrammar): Grammar {
     }
 
     if (!g.child.tapes.tapeNames.has(g.fromTape)) {
+        throw g.child.err("Renaming missing tape",
+            `The grammar to undergo renaming does not contain the tape ${g.fromTape}. ` +
+            `Available tapes: [${[...g.child.tapeNames]}]`);
+    if (!g.child.tapes.tapeNames.has(g.fromTape)) {
         throw g.child.err(`Renaming missing from header '${g.fromTape}'`,
             `The grammar being renamed does not contain the header '${g.fromTape}'.\n` +
             `Available headers: [${g.child.tapeNames}]`);
