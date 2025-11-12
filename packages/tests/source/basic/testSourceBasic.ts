@@ -1,4 +1,4 @@
-import { VERBOSE_DEBUG } from "../../../interpreter/src/utils/logging.js";
+import { VERBOSE_DEBUG, VERBOSE_EXPR } from "../../../interpreter/src/utils/logging.js";
 import {
     testSource, SourceTest,
     Error, Warning
@@ -121,23 +121,40 @@ describe(`Source ${DIR}`, function() {
             Warning(1, 0),  // This symbol will not contain any content.
             Error(1, 1, "'table' operator requires non-empty grid")
         ],
+        // verbose: VERBOSE_DEBUG,
     });
 
     testSrc({
-		desc: '5c. "table:" op with empty text content & empty comment',
+		desc: '5c. "table:" op with empty text content',
         results: [
             {text:"bar", gloss:"-1SG"},
             {text:"baz", gloss:"-2SG"},
+        ],
+        errors: [
+            Warning(1, 2),  // No content cells found for these headers; assuming empty values.
         ],
         // verbose: VERBOSE_DEBUG,
     });
 
     testSrc({
-		desc: '5d. "table:" op with empty text content & non-empty comment',
+		desc: '5d. "table:" op with empty text content & empty comment content',
         results: [
             {text:"bar", gloss:"-1SG"},
             {text:"baz", gloss:"-2SG"},
         ],
+        errors: [
+            Warning(1, 2),  // No content cells found for these headers; assuming empty values.
+        ],
+        // verbose: VERBOSE_DEBUG,
+    });
+
+    testSrc({
+		desc: '5e. "table:" op with empty text content & non-empty comment content',
+        results: [
+            {text:"bar", gloss:"-1SG"},
+            {text:"baz", gloss:"-2SG"},
+        ],
+        // verbose: VERBOSE_DEBUG,
     });
 
     testSrc({

@@ -238,22 +238,23 @@ describe(`Source ${DIR}`, function() {
     testSrc({
 		desc: '10a. Testing empty table: with headers',
         results: [
+            {}
         ],
         errors: [
-            Error(12, 2, "Ill-formed unit test - no 'text' header"),
-            Error(12, 2, "Ill-formed unit test - no 'gloss' header"),
+            Error(12, 2, "Failed unit test - no matching outputs"),
             Error(13, 2, "Failed unit test - no matching outputs"),
             Error(14, 2, "Failed unit test - no matching outputs"),
+            Warning(9,2),   // No non-empty values for these headers; assuming empty values.
         ]
     });
 
     testSrc({
 		desc: '10b. Negative testing empty table: with headers',
         results: [
+            {}
         ],
         errors: [
-            Error(12, 2, "Ill-formed unit testnot - no 'text' header"),
-            Error(12, 2, "Ill-formed unit testnot - no 'gloss' header"),
+            Warning(9,2),   // No non-empty values for these headers; assuming empty values.
         ]
     });
 

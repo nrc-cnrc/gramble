@@ -9,11 +9,10 @@ import {
 import { Err, Message, Msg, Warn } from "../utils/msgs.js";
 import { Pass } from "../passes.js";
 import { 
-    TstOp, 
+    TST,
     TstEmpty,
     TstGrid,
-    TST,
-    TstTable
+    TstOp,
 } from "../tsts.js";
 import { PassEnv } from "../components.js";
 
@@ -28,15 +27,13 @@ import { PassEnv } from "../components.js";
 
 export class CheckStructuralParams extends Pass<TST,TST> {
 
-    public transformAux(t: TST, env: PassEnv): Msg<TST> {
-        
+    public transformAux(t: TST, env: PassEnv): Msg<TST> {        
         if (!(t instanceof TstOp)) {
             return t.mapChildren(this, env);
         }
         
         const mapped = t.mapChildren(this, env) as Msg<TstOp>;
         return mapped.bind(t => {
-    
             const msgs: Message[] = [];
 
             // no ops allow assignments as siblings or child, so 
@@ -81,8 +78,7 @@ export class CheckStructuralParams extends Pass<TST,TST> {
     // If we throw an error msg from, say, handleOp, then any messages already
     // accumulated are dropped on the floor.
 
-    public handleAssignment(t: TstOp, env: PassEnv): Msg<TST> {
-        
+    public handleAssignment(t: TstOp, env: PassEnv): Msg<TST> {        
         const msgs: Message[] = [];
 
         // siblings of assignments don't get assigned to anything
@@ -99,7 +95,6 @@ export class CheckStructuralParams extends Pass<TST,TST> {
         }
 
         return t.msg(msgs);
-
     }
 
     public handleError(t: TstOp, env: PassEnv): TST {
@@ -128,21 +123,33 @@ export class CheckStructuralParams extends Pass<TST,TST> {
 
         // if the op requires a grid to the right, but doesn't have one,
         // issue an error, and return the sibling as the new value.
-        if (childMustBeGrid(t.op) == "required"
-                && !(t.child instanceof TstGrid)) {
-            if (t.child instanceof TstEmpty) {
-                Err(`'${t.op.tag}' operator requires non-empty grid`,
-                    `This '${t.op.tag}' operator requires a non-empty grid to ` +
-                    "the right, but none was found.")
-                    .msgTo(msgs);
+        if (childMustBeGrid(t.op) == "required") {
+            if (t.child instanceof TstEmpty || t.child instanceof TstGrid) {
+                let emptyGrid = true;
+                if (t.child instanceof TstGrid) {
+                    const headerRow = (t.child as TstGrid).rows[0];
+                    for (const c of headerRow.content) {
+                        if(!c.cell.text.trim().startsWith('%')) {
+                            emptyGrid = false;
+                            break;
+                        }
+                    }
+                }
+                if (emptyGrid) {
+                    Err(`'${t.op.tag}' operator requires non-empty grid`,
+                        `This '${t.op.tag}' operator requires a non-empty grid to ` +
+                        "the right, but none was found.")
+                        .msgTo(msgs);
+                    result = t.sibling;
+                }
             } else {
                 const content = t.child.cell.text.trim();
                 Err(`'${t.op.tag}' operator requires grid, not '${content}'`,
                     `This '${t.op.tag}' operator requires a grid to the right, ` +
                     `but has another operator instead: '${content}'.`)
                     .msgTo(msgs);
+                result = t.sibling;
             }
-            result = t.sibling;
         }
 
         // if the op must have a sibling and doesn't, issue an error, and return empty.

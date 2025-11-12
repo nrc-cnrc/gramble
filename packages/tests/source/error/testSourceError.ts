@@ -237,9 +237,14 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '8c0. No header after symbol assignment',
-        results: [],
-        errors: []
+		desc: '8c0. No header on same row as symbol assignment',
+        // Note: in this example 'foo' (1,1) is a header!
+        results: [
+            {},
+        ],
+        errors: [
+            Warning(1, 1)   // No content cells found for these headers; assuming empty values.
+        ]
     });
 
     testSrc({

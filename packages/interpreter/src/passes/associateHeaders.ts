@@ -1,15 +1,18 @@
 import {
-    TstParamList, 
+    TstContent, 
     TstHeadedGrid, 
     TstHeader, 
-    TstParams, 
     TstHeaderPair,
+    TstParamList, 
+    TstParams, 
+    TstRow,
     TstSequence,
-    TST, 
+    TST,
 } from "../tsts.js";
 import { Pass } from "../passes.js";
 import { ContentMsg, Message, Msg, Warn } from "../utils/msgs.js";
 import { backgroundColor, fontColor, paramName } from "../headers.js";
+import { Cell } from "../utils/cell.js";
 import { DEFAULT_PARAM } from "../utils/constants.js";
 import { PassEnv } from "../components.js";
 
@@ -31,7 +34,19 @@ export class AssociateHeaders extends Pass<TST,TST> {
 
             const newRows: TstParams[] = [];
             const msgs: Message[] = [];
-            for (const row of t.rows) {
+            // If we have headers, but no rows, pretend there is a row
+            // whose content values are empty strings.
+            let rows: TstRow[] = t.rows || [];
+            if (rows.length === 0) {
+                Warn("No content cells found for these headers; assuming empty values.")
+                    .localize(t.headers[0].pos).msgTo(msgs);
+                const row = new TstRow(new Cell(t.headers[0].text, t.headers[0].pos));
+                for (const header of t.headers) {
+                    row.content.push(new TstContent(new Cell("", header.pos)))
+                }
+                rows.push(row);
+            }
+            for (const row of rows) {
                 const newRow = new TstParams(row.cell);
                 for (const content of row.content) {
                     const header = this.findHeader(t.headers, content.pos.col);
