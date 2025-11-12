@@ -68,9 +68,6 @@ import {
     Options
 } from "./utils/options.js";
 
-import * as Tapes from "./tapes.js";
-import * as Vocabs from "./vocab.js";
-
 /**
  * An interpreter object is responsible for applying the passes in between sheets
  * and expressions, and forwarding queries on to the resulting object.
@@ -260,10 +257,10 @@ export class Interpreter {
         return this.workbook.convertToSingleSheet();
     }
     
-    public prepareExpr(
+    public symbolQueryStaging(
         symbol: string = "",
         query: Grammar | StringDict[] | StringDict | string = {}
-    ): Expr {
+    ): Grammar {
 
         // qualify the name and select the symbol
         let targetGrammar: Grammar = new SelectSymbol(symbol)
@@ -293,7 +290,17 @@ export class Interpreter {
         targetGrammar = new ResolveVocab()
                                 .getEnvAndTransform(targetGrammar, this.opt)
                                 .msgTo(THROWER);
-                            
+
+        return targetGrammar;
+
+    }
+
+    public prepareExpr(
+        symbol: string = "",
+        query: Grammar | StringDict[] | StringDict | string = {}
+    ): Expr {
+        const targetGrammar = this.symbolQueryStaging(symbol, query);
+                     
         // turns the Grammars into Exprs
         const env = new PassEnv(this.opt);
         return constructExpr(env, targetGrammar);  
@@ -305,9 +312,9 @@ export class Interpreter {
                                 .getEnvAndTransform(this.grammar, this.opt)
                                 .msgTo(THROWER);
 
-        targetGrammar = new ResolveVocab()
-                                .getEnvAndTransform(targetGrammar, this.opt)
-                                .msgTo(THROWER);
+        //targetGrammar = new ResolveVocab()
+        //                        .getEnvAndTransform(targetGrammar, this.opt)
+        //                        .msgTo(THROWER);
         
         const env = new PassEnv(this.opt);
 

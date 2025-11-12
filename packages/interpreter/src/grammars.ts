@@ -4,14 +4,11 @@ import {
 
 import { TapeSet } from "./tapes.js";
 import * as Tapes from "./tapes.js";
-import { Vocab } from "./vocab.js";
-import * as Vocabs from "./vocab.js";
-
 import { Pass } from "./passes.js";
 import { Dict, ValueSet } from "./utils/func.js";
 
 import { Component, PassEnv } from "./components.js";
-import { DEFAULT_SYMBOL,  HIDDEN_PREFIX, INPUT_TAPE, OUTPUT_TAPE } from "./utils/constants.js";
+import { HIDDEN_PREFIX, INPUT_TAPE, OUTPUT_TAPE } from "./utils/constants.js";
 import { tokenizeUnicode } from "./utils/strings.js";
 import { Pos } from "./utils/cell.js";
 import { CalculateTapes } from "./passes/calculateTapes.js";
@@ -353,10 +350,13 @@ export class NegationGrammar extends UnaryGrammar {
 export class CursorGrammar extends UnaryGrammar {
     public readonly tag = "cursor";
 
+    public key: string = "";
+
     constructor(
         public tapeName: string,
         child: Grammar,
-        public vocab: Vocab = Vocabs.Ref(tapeName)
+        public vocab: Set<string> = new Set(),
+        public atomic: boolean = true
     ) {
         super(child);
     }
@@ -365,10 +365,13 @@ export class CursorGrammar extends UnaryGrammar {
 export class GreedyCursorGrammar extends UnaryGrammar {
     public readonly tag = "greedyCursor";
 
+    public key: string = "";
+
     constructor(
         public tapeName: string,
         child: Grammar,
-        public vocab: Vocab = Vocabs.Ref(tapeName)
+        public vocab: Set<string> = new Set(),
+        public atomic: boolean = true
     ) {
         super(child);
     }
@@ -377,6 +380,10 @@ export class GreedyCursorGrammar extends UnaryGrammar {
 export class PreTapeGrammar extends UnaryGrammar {
     public readonly tag = "pretape";
 
+    public key: string = "";
+    public vocab: Set<string> = new Set();
+    public atomic: boolean = true;
+    
     constructor(
         public inputTape: string,
         public outputTape: string,

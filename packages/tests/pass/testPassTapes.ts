@@ -6,24 +6,25 @@ import {
     Hide, Join, Match, Not,
     Null, Rename, Rep,
     ReplaceBlock, Replace, Seq, 
-    Short, SingleTape, Starts, Uni
+    Short, SingleTape, Starts, Uni,
+    Cursor,
+    Lit
 } from "../../interpreter/src/grammarConvenience.js";
 
 import { Grammar, ReplaceGrammar } from "../../interpreter/src/grammars.js";
-import { CalculateTapes } from "../../interpreter/src/passes/calculateTapes.js";
-import { FlattenCollections } from "../../interpreter/src/passes/flattenCollections.js";
-import { SelectSymbol } from "../../interpreter/src/passes/selectSymbol.js";
 import { Dict } from "../../interpreter/src/utils/func.js";
-import { THROWER } from "../../interpreter/src/utils/msgs.js";
 import { Options } from "../../interpreter/src/utils/options.js";
-import { getFromVocabDict } from "../../interpreter/src/vocab.js";
-import * as Tapes from "../../interpreter/src/tapes.js";
-import * as Vocabs from "../../interpreter/src/vocab.js";
+import { getVocab } from "../../interpreter/src/passes/getVocab.js";
 
 import {
     testSuiteName, logTestSuite,
-    t1, t2, t3, 
+    t1, t2, t3,
+    prepareInterpreter,
+    testHasVocab, 
 } from "../testUtil.js";
+import { CounterStack } from "../../interpreter/src/utils/counter.js";
+import { SymbolEnv } from "../../interpreter/src/passes.js";
+import { INPUT_TAPE, OUTPUT_TAPE } from "../../interpreter/src/utils/constants.js";
 
 type GrammarIDTest = {
     desc: string,
@@ -40,64 +41,13 @@ export function testGrammarTapes({
     symbol = "",
     atomicity = false
 }: GrammarIDTest): void {
-
-    describe(`${desc}`, function() {
-        try {
-            const opt = Options({optimizeAtomicity: atomicity});
-            const pass = new FlattenCollections().compose(new CalculateTapes());
-            grammar = pass.getEnvAndTransform(grammar, opt).msgTo(THROWER);
-            
-            if (symbol) {
-                const selectSymbol = new SelectSymbol(symbol);
-                grammar = selectSymbol.getEnvAndTransform(grammar, opt).msgTo(THROWER); 
-            }
-
-            it(`Tapes are resolved`, function() {
-                expect(grammar.tapes.tag).to.equal(Tapes.Tag.Lit);
-            });
-
-            if (grammar.tapes.tag !== Tapes.Tag.Lit) return;
-
-            const expectedTapes = new Set(Object.keys(tapes));
-            const foundTapes = grammar.tapes.tapeNames;
-
-            it(`Tapes should equal [${[...expectedTapes]}]`, function() {
-                expect(foundTapes).to.deep.equal(expectedTapes);
-            });
-
-            for (const [tapeName, vocabs] of Object.entries(tapes)) {
-                const expectedVocab = Vocabs.Atomic(new Set(vocabs));
-                const vocabMap = grammar.tapes.vocabMap;
-
-                const vocab = vocabMap[tapeName];
-                if (vocab === undefined) {
-                    it(`${tapeName} should exist`, function() {
-                        assert.fail();
-                    });
-                    continue;
-                }
-
-                const vocabLit = getFromVocabDict(grammar.tapes.vocabMap, tapeName);
-                if (vocabLit === undefined) {
-                    it(`cannot find referent for ${tapeName}`, function() {
-                        assert.fail();
-                    });
-                    continue;
-                }
-                it(`${tapeName} should have vocab [${[...expectedVocab.tokens]}]`, function() {
-                    expect(vocabLit.tokens).to.deep.equal(expectedVocab.tokens);
-                });
-            }
-        } catch (e) {
-            it("Unexpected Exception", function() {
-                console.log("");
-                console.log(`[${this.test?.fullTitle()}]`);
-                console.log(e);
-                assert.fail(JSON.stringify(e));
-            });
-        }
+    describe(`${desc}`, function() {  
+        testHasVocab(grammar, tapes, symbol, atomicity);
     });
 }
+
+const I = (s: string) => Lit(INPUT_TAPE, s);
+const O = (s: string) => Lit(OUTPUT_TAPE, s);
 
 function NamedReplace(
     name: string, 
@@ -553,8 +503,8 @@ describe(`Pass ${testSuiteName(module)}`, function() {
         atomicity: true,
         grammar: Match(t1("hello"), "t1", "t2"),
         tapes: {
-            "t1": ["hello"],
-            "t2": ["hello"],
+            "t1": ["h","e","l","o"],
+            "t2": ["h","e","l","o"],
         }
     });
 
@@ -566,7 +516,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
             "t3": [],
         }
     });
-    
+
     testGrammarTapes({
         desc: "11c",
         grammar: Match(t1("hello"), "t1", "t2", "t3"),
@@ -599,8 +549,8 @@ describe(`Pass ${testSuiteName(module)}`, function() {
         }),
         symbol: "a",
         tapes: {
-            "t1": ["hello"],
-            "t2": ["hello"],
+            "t1": ["h","e","l","o"],
+            "t2": ["h","e","l","o"],
         }
     });
 
@@ -658,7 +608,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
             "t2": ["world"]
         }
     });
-    
+
     testGrammarTapes({
         desc: "12c",
         grammar: Join(Seq(t1("hello"), t3("kitty")), 
@@ -702,7 +652,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
             "t3": ["k","i","t","y"],
         }
     });
-
+    
     testGrammarTapes({
         desc: "13a",
         grammar: Collection({
@@ -966,8 +916,6 @@ describe(`Pass ${testSuiteName(module)}`, function() {
         grammar: SingleTape("t1", Epsilon()),
         tapes: {},
     });
-
-
     
     testGrammarTapes({
         desc: "20a",
@@ -1224,7 +1172,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
     });
     
     testGrammarTapes({
-        desc: "25a-atom=embed",
+        desc: "25a-atom-embed",
         atomicity: true,
         grammar: Collection({ 
             "a": ReplaceBlock("t1", Embed("b"), 
@@ -1398,7 +1346,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
     });
 
     testGrammarTapes({
-        desc: "33. Short vocabs are always strings",
+        desc: "33. Short vocabs are always tokenized",
         grammar: Short(Uni(t1("h"), t1("hh"))),
         tapes: {
             "t1": ["h"]
@@ -1406,7 +1354,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
     });
 
     testGrammarTapes({
-        desc: "33-atom. Short vocabs are always strings",
+        desc: "33-atom. Short vocabs are always tokenized",
         atomicity: true,
         grammar: Short(Uni(t1("h"), t1("hh"))),
         tapes: {
@@ -1415,7 +1363,7 @@ describe(`Pass ${testSuiteName(module)}`, function() {
     });
 
     testGrammarTapes({
-        desc: "34. Negations are always strings and wildcard",
+        desc: "34. Negations are always tokenized",
         grammar: Not(t1("hello")),
         tapes: {
             "t1": ["h","e","l","o"]
@@ -1423,19 +1371,29 @@ describe(`Pass ${testSuiteName(module)}`, function() {
     });
 
     testGrammarTapes({
-        desc: "34-atom. Negations are always strings and wildcard",
+        desc: "34-atom. Negations are always tokenized",
         atomicity: true,
         grammar: Not(t1("hello")),
         tapes: {
             "t1": ["h","e","l","o"]
         }
     });
-
+    
     testGrammarTapes({
-        desc: "35. Not",
-        grammar: Not(t1("hello")),
+        desc: "35a. Nested cursors",
+        grammar: Cursor("t1", Cursor("t2", Seq(t1("hello"), t2("world")))),
         tapes: {
-            "t1": ["h","e","l","l","o"],
+            "t1": ["h","e","l","o"],
+            "t2": ["w","o","r","l","d"]
+        }
+    });
+    
+    testGrammarTapes({
+        desc: "35b. Nested cursors with same name",
+        grammar: Cursor("t1", Seq(t1("hello"), Cursor("t1", t1("world")))),
+        tapes: {
+            // note that our testing function only grabs the outermost t1 vocab
+            "t1": ["h","e","l","o"],
         }
     });
 
@@ -1477,4 +1435,51 @@ describe(`Pass ${testSuiteName(module)}`, function() {
             "t2": ["h","i"]
         }
     });
+
+    testGrammarTapes({
+        desc: "38. Joining to a wildcard match outside the scope of a cursor",
+        grammar: Join(t1("hi"), Cursor("t2", (Match(Dot("t1"), "t1", "t2")))),
+        tapes: {
+            "t1": ["h","i"],
+            "t2": ["h","i"]
+        }
+    });
+
+    testGrammarTapes({
+        desc: "21c",
+        grammar: Seq(I("hllo"), Replace("e", "")),
+        tapes: {
+            "$i": ["h","e","l","o"],
+            "$o": ["h","e","l","o"],
+        },
+    });
+    
+    testGrammarTapes({
+        desc: "21d",
+        grammar: Seq(O("hllo"), Replace("e", "")),
+        tapes: {
+            "$i": ["h","e","l","o"],
+            "$o": ["h","e","l","o"],
+        },
+    });
+
+    
+    testGrammarTapes({
+        desc: "21e",
+        grammar: Seq(I("hello"), Match(Dot(INPUT_TAPE), INPUT_TAPE, OUTPUT_TAPE)),
+        tapes: {
+            "$i": ["h","e","l","o"],
+            "$o": ["h","e","l","o"],
+        },
+    });
+
+    testGrammarTapes({
+        desc: "21f",
+        grammar: Seq(O("hello"), Match(Dot(INPUT_TAPE), INPUT_TAPE, OUTPUT_TAPE)),
+        tapes: {
+            "$i": ["h","e","l","o"],
+            "$o": ["h","e","l","o"],
+        },
+    });
+    
 });

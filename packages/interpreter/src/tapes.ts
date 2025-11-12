@@ -1,6 +1,9 @@
-import { Dict, exhaustive, mapDict, union, update } from "./utils/func.js";
-import * as Vocabs from "./vocab.js";
-import { VocabDict } from "./vocab.js";
+import { 
+    Dict, 
+    exhaustive, 
+    union, 
+    update 
+} from "./utils/func.js";
 
 export type TapeDict = Dict<TapeSet>;
 
@@ -42,14 +45,12 @@ export type TapeSet = Lit
 export type Lit = { 
     tag: Tag.Lit, 
     tapeNames: Set<string>,
-    vocabMap: VocabDict 
 };
 
 export function Lit(
     tapes: Set<string> = new Set(), 
-    vocabMap: VocabDict = {}
 ): Lit {
-    return { tag: Tag.Lit, tapeNames: tapes, vocabMap }
+    return { tag: Tag.Lit, tapeNames: tapes }
 };
 
 /**
@@ -75,8 +76,7 @@ export function Sum(c1: TapeSet, c2: TapeSet): TapeSet {
         return { tag: Tag.Sum, c1, c2 };
 
     const newTapes = union(c1.tapeNames, c2.tapeNames);
-    const newVocabs = Vocabs.sumKeys(c1.vocabMap, c2.vocabMap);
-    return Lit(newTapes, newVocabs);
+    return Lit(newTapes);
 }
 
 
@@ -92,8 +92,7 @@ export function Product(c1: TapeSet, c2: TapeSet): TapeSet {
         return { tag: Tag.Product, c1, c2 };
 
     const newTapes = union(c1.tapeNames, c2.tapeNames);
-    const newVocabs = Vocabs.multKeys(c1.vocabMap, c2.vocabMap);
-    return Lit(newTapes, newVocabs);
+    return Lit(newTapes);
     
 }
 
@@ -109,8 +108,7 @@ export function Join(c1: TapeSet, c2: TapeSet): TapeSet {
         return { tag: Tag.Join, c1, c2 };
 
     const newTapes = union(c1.tapeNames, c2.tapeNames);
-    const newVocabs = Vocabs.intersectKeys(c1.vocabMap, c2.vocabMap);
-    return Lit(newTapes, newVocabs);
+    return Lit(newTapes);
     
 }
 
@@ -139,15 +137,15 @@ export function Rename(
     toTape: string
 ): TapeSet {
     if (child.tag === Tag.Lit) {
-        const newTapes = [...child.tapeNames].map(t => renameTape(t, fromTape, toTape));
-        const newVocabs = { ... child.vocabMap };
-        let oldVocab = newVocabs[fromTape];
-        if (oldVocab === undefined) {
-            oldVocab = Vocabs.Atomic();
-        }
-        delete newVocabs[fromTape];
-        newVocabs[toTape] = oldVocab;
-        return Lit(new Set(newTapes), newVocabs);
+        // NB: In recursive contexts, recursively embedded instances
+        // of a symbol are empty Lit(), so they may not contain the
+        // fromTape.  But we still need to know about the toTape downstream
+        // regardless.  So we can't just rename fromTape to toTape
+        // inside the set, we need to delete and then add.
+        const newTapes = new Set(child.tapeNames);
+        newTapes.delete(fromTape)
+        newTapes.add(toTape);
+        return Lit(newTapes);
     }
     return { tag: Tag.Rename, child, fromTape, toTape }
 }
@@ -172,14 +170,7 @@ export function Single(
 ): TapeSet {
     if (child.tag === Tag.Lit) {
         const newTapes = [ tapeName ];
-        const childVocabs = Object.values(child.vocabMap)
-
-        // if there are no child tapes, default to an empty atomic.
-        // if there are more than one, it's an error but handled elsewhere,
-        // ignore all but the first
-        const newVocabs = (childVocabs.length > 0) ? childVocabs[0]
-                                                   : Vocabs.Atomic()
-        return Lit(new Set(newTapes), {[tapeName]: newVocabs})
+        return Lit(new Set(newTapes));
     }
 
     return { tag: Tag.Single, child, tapeName }
@@ -200,8 +191,7 @@ export function Match(
     if (child.tag === Tag.Lit) {
         const newTapes = new Set(child.tapeNames);
         newTapes.add(outputTape);
-        const newVocabs = Vocabs.mergeKeys(child.vocabMap, inputTape, outputTape);
-        return Lit(newTapes, newVocabs);
+        return Lit(newTapes);
     }
 
     return { tag: Tag.Match, child, inputTape, outputTape }
@@ -221,9 +211,7 @@ export function Cursor(
         return { tag: Tag.Cursor, child, tapeName };
 
     const newTapes = [...child.tapeNames].filter(t => t !== tapeName);
-    const newVocabs = {...child.vocabMap};
-    delete newVocabs[tapeName];
-    return Lit(new Set(newTapes), newVocabs);
+    return Lit(new Set(newTapes));
 }
 
 /** 
@@ -232,7 +220,7 @@ export function Cursor(
 export function toStr(t: TapeSet): string {
     switch (t.tag) {
         case Tag.Unknown: return "?";
-        case Tag.Lit: return litToStr(t);
+        case Tag.Lit: return `{${[...t.tapeNames]}}`;
         case Tag.Ref: return "$" + t.symbol;
         case Tag.Rename: return `${t.fromTape}>${t.toTape}(${toStr(t.child)})`;
         case Tag.Single: return `S_${t.tapeName}(${toStr(t.child)})`
@@ -243,12 +231,6 @@ export function toStr(t: TapeSet): string {
         case Tag.Cursor: return `C_${t.tapeName}(${toStr(t.child)})`;
         default: exhaustive(t);
     }
-}
-
-function litToStr(t: Lit): string {
-    const entries = Object.entries(t.vocabMap).map(([k,v]) => 
-        `${k}:${Vocabs.toStr(v)}`);
-    return "{" + entries.join(",") + "}"
 }
 
 export function tapeDictToStr(t: TapeDict): string {

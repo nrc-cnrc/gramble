@@ -58,7 +58,7 @@ export class InfinityProtection extends Pass<Grammar,Grammar> {
         
         // if it's not potentially infinite, replace with a greedy cursor
         if (len.max !== Infinity) {
-            return new GreedyCursorGrammar(g.tapeName, g.child, g.vocab)
+            return new GreedyCursorGrammar(g.tapeName, g.child, g.vocab, g.atomic)
                                         .tapify(env);
         }
 

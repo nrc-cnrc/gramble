@@ -41,7 +41,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {},
         ],
     });
-
+    
     testGrammar({
 		desc: '3. Just ε',
         grammar: Epsilon(),
@@ -69,7 +69,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {},
         ],
     });
-
+   
     testGrammar({
 		desc: '6 Null',
         grammar: Null(),
@@ -121,7 +121,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'hello'},
         ],
     });
-    
+
     testGrammar({
 		desc: '11. t1:hello + (ε+ε)',
         grammar: Seq(t1("hello"), Seq(Epsilon(), Epsilon())),
