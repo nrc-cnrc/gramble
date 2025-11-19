@@ -11,7 +11,7 @@ import {
 } from "../tsts.js";
 import { Pass } from "../passes.js";
 import { ContentMsg, Message, Msg, Warn } from "../utils/msgs.js";
-import { backgroundColor, fontColor, paramName } from "../headers.js";
+import { backgroundColor, CommentHeader, fontColor, paramName } from "../headers.js";
 import { Cell } from "../utils/cell.js";
 import { DEFAULT_PARAM } from "../utils/constants.js";
 import { PassEnv } from "../components.js";
@@ -27,25 +27,31 @@ export class AssociateHeaders extends Pass<TST,TST> {
     public transform(t: TST, env: PassEnv): Msg<TST> {
 
         return t.mapChildren(this, env).bind(t => {
-            
             if (!(t instanceof TstHeadedGrid)) {
                 return t;
             }
 
             const newRows: TstParams[] = [];
             const msgs: Message[] = [];
+
             // If we have headers, but no rows, pretend there is a row
             // whose content values are empty strings.
             let rows: TstRow[] = t.rows || [];
             if (rows.length === 0) {
-                Warn("No content cells found for these headers; assuming empty values.")
-                    .localize(t.headers[0].pos).msgTo(msgs);
                 const row = new TstRow(new Cell(t.headers[0].text, t.headers[0].pos));
+                let onlyComments = true;
                 for (const header of t.headers) {
+                    if (!(header.header instanceof CommentHeader))
+                        onlyComments  = false;
                     row.content.push(new TstContent(new Cell("", header.pos)))
                 }
-                rows.push(row);
+                if (!onlyComments) {
+                    Warn("No content cells found for these headers; assuming empty values.")
+                        .localize(t.headers[0].pos).msgTo(msgs);
+                    rows.push(row);
+                }
             }
+
             for (const row of rows) {
                 const newRow = new TstParams(row.cell);
                 for (const content of row.content) {
@@ -86,7 +92,6 @@ export class AssociateHeaders extends Pass<TST,TST> {
             }
 
             return new TstParamList(t.cell, newRows).msg(msgs);
-
         });
     }
 

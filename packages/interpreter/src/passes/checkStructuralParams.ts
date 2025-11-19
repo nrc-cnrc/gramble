@@ -106,6 +106,8 @@ export class CheckStructuralParams extends Pass<TST,TST> {
     public handleOp(t: TstOp, env: PassEnv): Msg<TST> {
         const msgs: Message[] = [];
         let result: TST = t;
+        const implicit = (t.op instanceof AutoTableOp) ? "implicit " : "";
+        const implicitC = (t.op instanceof AutoTableOp) ? "Implicit " : "";
 
         if (t.op instanceof TableOp || t.op instanceof AutoTableOp) {
             // Silently drop an extra table op if it's an AutoTableOp, or issue
@@ -136,17 +138,17 @@ export class CheckStructuralParams extends Pass<TST,TST> {
                     }
                 }
                 if (emptyGrid) {
-                    Err(`'${t.op.tag}' operator requires non-empty grid`,
-                        `This '${t.op.tag}' operator requires a non-empty grid to ` +
-                        "the right, but none was found.")
+                    Err(`${implicitC}'${t.op.tag}' operator requires header(s)`,
+                        `This ${implicit}'${t.op.tag}' operator requires header(s) ` +
+                        "to the right, but none was found.")
                         .msgTo(msgs);
                     result = t.sibling;
                 }
             } else {
                 const content = t.child.cell.text.trim();
-                Err(`'${t.op.tag}' operator requires grid, not '${content}'`,
-                    `This '${t.op.tag}' operator requires a grid to the right, ` +
-                    `but has another operator instead: '${content}'.`)
+                Err(`${implicitC}'${t.op.tag}' operator requires header(s), not '${content}'`,
+                    `This ${implicit}'${t.op.tag}' operator requires header(s) ` +
+                    `to the right, but has another operator instead: '${content}'.`)
                     .msgTo(msgs);
                 result = t.sibling;
             }

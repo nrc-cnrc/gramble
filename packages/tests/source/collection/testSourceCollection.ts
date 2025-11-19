@@ -271,7 +271,7 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Warning(8,0),   // This symbol will not contain any content.
-            Error(8, 1, "'table' operator requires grid, not 'collection:'"),
+            Error(8, 1, "'table' operator requires header(s), not 'collection:'"),
             Error(11, 1, "Missing content for 'or:'"),
         ],
         // verbose: VERBOSE_DEBUG,

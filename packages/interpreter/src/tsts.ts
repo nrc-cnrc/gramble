@@ -301,9 +301,10 @@ export abstract class TstBinary extends TstEnclosure {
         if (this.child instanceof TstEnclosure && 
                 child.pos !== undefined &&
                 this.child.pos.col != child.pos.col) {
-            Warn("This operator is in an unexpected column.  Did you " +
-                `mean for it to be in column ${this.child.pos.col}, ` + 
-                `so that it's under the operator in cell ${this.child.pos}?`)
+            const content = (child as TstCellComponent).cell.text.trim();
+            Warn(`'${content}' is in an unexpected column. ` +
+                `Did you intend it to be in column ${this.child.pos.col}, ` + 
+                `so that it's under cell ${this.child.pos}?`)
                 .localize(child.pos).msgTo(msgs);
         }
 

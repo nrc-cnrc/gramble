@@ -99,33 +99,33 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '5a. Empty "table:" op',
+		desc: '5a. Empty table op',
         results: [
             {text:"bar", gloss:"-1SG"},
             {text:"baz", gloss:"-2SG"},
         ],
         errors: [
             Warning(1, 0),  // This symbol will not contain any content.
-            Error(1, 1, "'table' operator requires non-empty grid"),
+            Error(1, 1, "'table' operator requires header(s)"),
             Warning(1, 1),  // This will not contain any content.
         ]
     });
 
     testSrc({
-		desc: '5b. Empty "table:" op followed by comment header',
+		desc: '5b. Empty table op followed by comment header',
         results: [
             {text:"bar", gloss:"-1SG"},
             {text:"baz", gloss:"-2SG"},
         ],
         errors: [
             Warning(1, 0),  // This symbol will not contain any content.
-            Error(1, 1, "'table' operator requires non-empty grid")
+            Error(1, 1, "'table' operator requires header(s)")
         ],
         // verbose: VERBOSE_DEBUG,
     });
 
     testSrc({
-		desc: '5c. "table:" op with empty text content',
+		desc: '5c. table op with empty text content',
         results: [
             {text:"bar", gloss:"-1SG"},
             {text:"baz", gloss:"-2SG"},
@@ -137,7 +137,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '5d. "table:" op with empty text content & empty comment content',
+		desc: '5d. table op with empty text content & empty comment content',
         results: [
             {text:"bar", gloss:"-1SG"},
             {text:"baz", gloss:"-2SG"},
@@ -149,7 +149,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '5e. "table:" op with empty text content & non-empty comment content',
+		desc: '5e. table op with empty text content & non-empty comment content',
         results: [
             {text:"bar", gloss:"-1SG"},
             {text:"baz", gloss:"-2SG"},
@@ -216,15 +216,26 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '10. Empty assignment',
+		desc: '10a. Empty assignment',
         results: [
             {}
         ],
         errors: [
-            Warning(0, 0)
+            Warning(0, 0),  // This symbol will not contain any content.
         ]
     });
-    
+
+    testSrc({
+		desc: '10b. Empty assignment followed by comment header',
+        results: [
+            {}
+        ],
+        errors: [
+            Warning(0, 0),  // This symbol will not contain any content.
+            Error(0, 2, "Implicit 'autotable' operator requires header(s)"),
+        ]
+    });
+
     testSrc({
 		desc: '11. Nested tables',
         results: [
@@ -240,21 +251,121 @@ describe(`Source ${DIR}`, function() {
         results: [
             {text: "goo1goo2goo3goo4"},
         ],
-        // This test yielded the following error messages before we fixed
-        // ParseSource.handleWorksheet to correctly parse comment headers that
-        // looked like operators or assignments (i.e. ended in ':' or '=').
-        // errors: [
-        //     Warning(0, 0), // This symbol will not contain any content.
-        //     Error(0, 1, "'table' operator requires grid, not 'text'"),
-        //     Error(0, 2, "Invalid operator: '%table:'"),
-        //     Error(3, 3, "Invalid operator: '%table:'"),
-        //     Error(3, 3, "Unexpected operator: '%table:'"),
-        //     Warning(6, 0), // This symbol will not contain any content.
-        //     Error(6, 1, "'table' operator requires grid, not 'text'"),
-        //     Error(6, 2, "Invalid operator: '%noun='"),
-        //     Error(9, 3, "Invalid operator: '%noun='"),
-        //     Error(9, 3, "Unexpected operator: '%noun='"),
-        // ],
+    });
+
+    testSrc({
+		desc: '13a. Line after assignment, empty table op',
+        results: [
+            {text:"bar", gloss:"-1SG"},
+            {text:"baz", gloss:"-2SG"},
+        ],
+        errors: [
+            Warning(1, 0),  // This symbol will not contain any content.
+            Error(2, 1, "'table' operator requires header(s)"),
+            Warning(2, 1),  // This will not contain any content.
+        ]
+    });
+
+    testSrc({
+		desc: '13b. Line after assignment, empty table op followed by comment header',
+        results: [
+            {text:"bar", gloss:"-1SG"},
+            {text:"baz", gloss:"-2SG"},
+        ],
+        errors: [
+            Warning(1, 0),  // This symbol will not contain any content.
+            Error(2, 1, "'table' operator requires header(s)")
+        ],
+    });
+
+    testSrc({
+		desc: '13c. Line after assignment, table op with empty text content',
+        results: [
+            {text:"bar", gloss:"-1SG"},
+            {text:"baz", gloss:"-2SG"},
+        ],
+        errors: [
+            Warning(2, 2),  // No content cells found for these headers; assuming empty values.
+        ],
+    });
+
+    testSrc({
+		desc: '13d. Line after assignment, table op with empty text content ' +
+                '& empty comment content',
+        results: [
+            {text:"bar", gloss:"-1SG"},
+            {text:"baz", gloss:"-2SG"},
+        ],
+        errors: [
+            Warning(2, 2),  // No content cells found for these headers; assuming empty values.
+        ],
+    });
+
+    testSrc({
+		desc: '13e. Line after assignment, table op with empty text content ' +
+                '& non-empty comment content',
+        results: [
+            {text:"bar", gloss:"-1SG"},
+            {text:"baz", gloss:"-2SG"},
+        ],
+    });
+
+    testSrc({
+		desc: '13f. Line after assignment, empty text content ' +
+                '& non-empty comment content',
+        results: [
+            {text:"bar", gloss:"-1SG"},
+            {text:"baz", gloss:"-2SG"},
+        ],
+    });
+
+    testSrc({
+		desc: '13g. Empty lines after assignment, the empty text content ' +
+                '& non-empty comment content',
+        results: [
+            {text:"bar", gloss:"-1SG"},
+            {text:"baz", gloss:"-2SG"},
+        ],
+    });
+
+    testSrc({
+		desc: '14a. Comment on assignment line, with table op with empty text content ' +
+                '& non-empty comment content on the next line',
+        results: [
+            {text:"bar", gloss:"-1SG"},
+            {text:"baz", gloss:"-2SG"},
+        ],
+        errors: [
+            Error(1, 4, "Implicit 'autotable' operator requires header(s)"),
+            Warning(2, 1),  // 'table:' is in an unexpected column. Did you intend ...
+        ],
+        // verbose: VERBOSE_DEBUG,
+    });
+
+    testSrc({
+		desc: '14b. Comment on assignment line, with empty text content ' +
+                '& non-empty comment content on the next line',
+        results: [
+            {text:"bar", gloss:"-1SG"},
+            {text:"baz", gloss:"-2SG"},
+        ],
+        errors: [
+            Warning(2, 1),  // 'text' is in an unexpected column. Did you intend ...
+        ],
+        // verbose: VERBOSE_DEBUG,
+    });
+
+    testSrc({
+		desc: '14c. Comment on assignment line, with commented content on the next lines',
+        results: [
+            {text:"bar", gloss:"-1SG"},
+            {text:"baz", gloss:"-2SG"},
+        ],
+        errors: [
+            Warning(1, 0),  // This symbol will not contain any content.
+            Error(2, 1, "Implicit 'autotable' operator requires header(s)"),
+            Warning(1, 0),  // '%text' is in an unexpected column. Did you intend ...
+        ],
     });
 
 });

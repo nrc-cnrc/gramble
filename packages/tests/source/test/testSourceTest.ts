@@ -215,7 +215,7 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Error(9, 1, "'table' operator requires non-empty grid"),
+            Error(9, 1, "'table' operator requires header(s)"),
             Error(11, 1, "Missing content for 'test:'"),
             Warning(9,0),
             Warning(9,1)
@@ -228,7 +228,7 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Error(9, 1, "'table' operator requires non-empty grid"),
+            Error(9, 1, "'table' operator requires header(s)"),
             Error(11, 1, "Missing content for 'testnot:'"),
             Warning(9,0),
             Warning(9,1)
@@ -267,7 +267,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12, 1, "'test' operator requires non-empty grid"),
+            Error(12, 1, "'test' operator requires header(s)"),
             Warning(12,1)
         ]
     });
@@ -281,7 +281,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12, 1, "'testnot' operator requires non-empty grid"),
+            Error(12, 1, "'testnot' operator requires header(s)"),
             Warning(12,1)
         ]
     });
@@ -295,7 +295,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12, 1, "'test' operator requires grid, not 'table:'")
+            Error(12, 1, "'test' operator requires header(s), not 'table:'")
         ]
     });
 
@@ -308,7 +308,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12, 1, "'testnot' operator requires grid, not 'table:'")
+            Error(12, 1, "'testnot' operator requires header(s), not 'table:'")
         ]
     });
 
@@ -321,7 +321,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12, 1, "'test' operator requires grid, not 'or:'")
+            Error(12, 1, "'test' operator requires header(s), not 'or:'")
         ],
     });
 
@@ -334,7 +334,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12, 1, "'testnot' operator requires grid, not 'or:'")
+            Error(12, 1, "'testnot' operator requires header(s), not 'or:'")
         ]
     });
 

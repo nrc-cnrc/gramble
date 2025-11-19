@@ -361,7 +361,7 @@ describe(`Source ${DIR}`, function() {
             {text: "aba"}
         ],
         errors: [
-            Error(3, 1, "'replace' operator requires non-empty grid"),
+            Error(3, 1, "'replace' operator requires header(s)"),
             Warning(3,1)
         ]
     });
@@ -574,7 +574,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"}
         ],
         errors: [
-            Error(12, 1, "'replace' operator requires grid, not 'table:'")
+            Error(12, 1, "'replace' operator requires header(s), not 'table:'")
         ]
     });
     
@@ -589,7 +589,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"}
         ],
         errors: [
-            Error(12, 1, "'replace' operator requires non-empty grid"),
+            Error(12, 1, "'replace' operator requires header(s)"),
             Warning(12,1),
             Error(12, 2, "Missing content for 'test:'"),
         ]
@@ -606,7 +606,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"}
         ],
         errors: [
-            Error(12, 1, "'replace' operator requires non-empty grid"),
+            Error(12, 1, "'replace' operator requires header(s)"),
             Warning(12,1)
         ]
     });
