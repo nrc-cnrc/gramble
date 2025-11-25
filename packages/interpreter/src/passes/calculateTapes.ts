@@ -25,6 +25,7 @@ import {
     ShortGrammar,
     SingleTapeGrammar,
     StartsGrammar,
+    TestBlockGrammar,
 } from "../grammars.js";
 import { AutoPass } from "../passes.js";
 import { 
@@ -112,16 +113,16 @@ export class CalculateTapes extends AutoPass<Grammar> {
             case "count": 
             case "test":
             case "testnot":
-            case "testblock":
             case "context":
+            case "short":    
+            case "not":      
             case "pretape": return getTapesDefault(g);
             
             case "cursor":  return getTapesCursor(g, env);
             case "greedyCursor":  return getTapesCursor(g, env);
             
-            // union of children's tapes but always String vocab
-            case "short":      return getTapesShort(g);
-            case "not":        return getTapesNot(g);
+            // the tapes of .child but not the tapes of individual tests
+            case "testblock": return getTapesTestBlock(g, env);
 
             // join and filter are special w.r.t. vocabs and wildcards
             case "join":       return getTapesJoin(g);
@@ -224,9 +225,15 @@ function getTapesDefault(g: Grammar): Grammar {
     return updateTapes(g, getChildTapes(g));
 }
 
-function getTapesShort(g: ShortGrammar): Grammar {
-    let tapes = getChildTapes(g);
-    return updateTapes(g, tapes);
+function getTapesTestBlock(
+    g: TestBlockGrammar, 
+    env: TapesEnv
+): Grammar {
+    // since testblocks are semantically transparent, tapes
+    // and vocab that appear in tests don't necessarily appear
+    // as the tapes/vocab of the testblock itself, only the
+    // child blocks.
+    return updateTapes(g, g.child.tapes);
 }
 
 function getTapesReplace(
@@ -244,11 +251,6 @@ function getTapesCorrespond(
     g: CorrespondGrammar, 
     env: TapesEnv
 ): Grammar | Msg<Grammar> {
-    let tapes = getChildTapes(g);
-    return updateTapes(g, tapes);
-}
-
-function getTapesNot(g: NegationGrammar): Grammar {
     let tapes = getChildTapes(g);
     return updateTapes(g, tapes);
 }
