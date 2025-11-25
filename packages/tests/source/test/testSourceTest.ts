@@ -14,6 +14,11 @@ describe(`Source ${DIR}`, function() {
 
     testSrc({
 		desc: '1a. Simple grammar with unit tests',
+        tapes: ["text", "gloss"],
+        vocab: {
+            text: ["f","o","b","a","r"],
+            gloss: ["r","u","n","-","1","S","G"]
+        },
         results: [
             {text: "foobar", gloss: "run-1SG"}
         ]
@@ -21,6 +26,11 @@ describe(`Source ${DIR}`, function() {
 
     testSrc({
 		desc: '1b. Simple grammar with negative unit tests',
+        tapes: ["text", "gloss"],
+        vocab: {
+            text: ["f","o","b","a","r"],
+            gloss: ["r","u","n","-","1","S","G"]
+        },
         results: [
             {text: "foobar", gloss: "run-1SG"}
         ]
@@ -92,6 +102,11 @@ describe(`Source ${DIR}`, function() {
 
     testSrc({
 		desc: '5a. Failing unit tests',
+        tapes: ["text", "gloss"],
+        vocab: {
+            text: ["f","o","b","a","r","m","z"],
+            gloss: ["r","u","n","-","1","S","G","j","m","p","2"]
+        },
         results: [
             {text: "foobar", gloss: "run-1SG"},
             {text: "moobar", gloss: "jump-1SG"},
@@ -109,6 +124,11 @@ describe(`Source ${DIR}`, function() {
 
     testSrc({
 		desc: '5b. Failing negative unit tests',
+        tapes: ["text", "gloss"],
+        vocab: {
+            text: ["f","o","b","a","r","m","z"],
+            gloss: ["r","u","n","-","1","S","G","j","m","p","2"]
+        },
         results: [
             {text: "foobar", gloss: "run-1SG"},
             {text: "moobar", gloss: "jump-1SG"},
@@ -125,6 +145,11 @@ describe(`Source ${DIR}`, function() {
 
     testSrc({
 		desc: '6a. Unit tests with unknown header',
+        tapes: ["text", "gloss"],
+        vocab: {
+            text: ["f","o","b","a","r","m","z"],
+            gloss: ["r","u","n","-","1","S","G","j","m","p","2"]
+        },
         results: [
             {text: "foobar", gloss: "run-1SG"},
             {text: "moobar", gloss: "jump-1SG"},
@@ -145,6 +170,11 @@ describe(`Source ${DIR}`, function() {
 
     testSrc({
 		desc: '6b. Negative unit tests with unknown header',
+        tapes: ["text", "gloss"],
+        vocab: {
+            text: ["f","o","b","a","r","m","z"],
+            gloss: ["r","u","n","-","1","S","G","j","m","p","2"]
+        },
         results: [
             {text: "foobar", gloss: "run-1SG"},
             {text: "moobar", gloss: "jump-1SG"},
@@ -161,6 +191,11 @@ describe(`Source ${DIR}`, function() {
 
     testSrc({
 		desc: '6c. Unit tests with multiple unknown headers',
+        tapes: ["text", "gloss"],
+        vocab: {
+            text: ["f","o","b","a","r","m","z"],
+            gloss: ["r","u","n","-","1","S","G","j","m","p","2"]
+        },
         results: [
             {text: "foobar", gloss: "run-1SG"},
             {text: "moobar", gloss: "jump-1SG"},

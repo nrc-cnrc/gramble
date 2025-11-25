@@ -11,7 +11,7 @@ import { Message } from '../../interpreter/src/utils/msgs.js';
 import { Options } from "../../interpreter/src/utils/options.js";
 import * as Msgs from '../../interpreter/src/utils/msgs.js';
 
-import { testErrors, testGenerate } from '../testUtil.js';
+import { testErrors, testGenerate, testHasTapes, testHasVocab } from '../testUtil.js';
 
 // const mod = typeof __filename === undefined ? module : import.meta
 const module = import.meta
@@ -35,6 +35,8 @@ export interface SourceTestAux extends Options {
     symbol: string
     results: StringDict[],
     errors: Partial<Message>[],
+    tapes: string[],
+    vocab: {[tape: string]: number|string[]},
 }
 
 export function testSourceAux({
@@ -44,6 +46,8 @@ export function testSourceAux({
     symbol = "word",
     results = undefined,
     errors = [],
+    tapes = undefined,
+    vocab = undefined,
     verbose,
     directionLTR,
     optimizeAtomicity,
@@ -73,6 +77,15 @@ export function testSourceAux({
         const error = { ...e, sheet };
         return error;
     });
+    
+    if (tapes !== undefined) {
+        testHasTapes(interpreter, tapes, qualifiedSymbol, true);
+    }
+
+    if (vocab !== undefined) {
+        testHasVocab(interpreter, vocab, qualifiedSymbol, false);
+    }
+
     testErrors(interpreter, expectedErrors);
     if (results !== undefined) {
         testGenerate(interpreter, results, qualifiedSymbol);

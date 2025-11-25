@@ -15,6 +15,7 @@ import {
     MatchGrammar,
     ReplaceGrammar,
     PreTapeGrammar,
+    TestBlockGrammar,
 } from "../grammars.js";
 import { Dict, getCaseInsensitive, union, update } from "../utils/func.js";
 import { Msg } from "../utils/msgs.js";
@@ -358,6 +359,8 @@ function collectVocab(
                         return collectVocabMatch(g, vocabLib, stack, env);
         case "replace":
                         return collectVocabReplace(g, vocabLib, stack, env);
+        case "testblock":
+                        return collectVocabTestBlock(g, vocabLib, stack, env);
         case "dot":
         case "short":
         case "not":
@@ -387,6 +390,15 @@ function collectVocabDefault(
     for (const child of children(g)) {
         collectVocab(child, vocabLib, stack, env);
     }
+}
+
+function collectVocabTestBlock(
+    g: TestBlockGrammar, 
+    vocabLib: VocabLibrary,
+    stack: CounterStack,
+    env: SymbolEnv
+): void {
+    collectVocab(g.child, vocabLib, stack, env);
 }
 
 /**

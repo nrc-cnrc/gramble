@@ -180,11 +180,11 @@ export function prepareInterpreter(
     opt: Partial<Options> = {},
 ): Interpreter {
     try {
-        const interpreter = (grammar instanceof Interpreter) ?
-                            grammar :
-                            Interpreter.fromGrammar(grammar, opt);
-
-        return interpreter;
+        if (grammar instanceof Interpreter) {
+            grammar.opt = Options(opt);
+            return grammar;
+        }
+        return Interpreter.fromGrammar(grammar, opt);
     } catch (e) {
         it("Unexpected Exception from prepareInterpreter", function() {
             console.log("");
@@ -272,7 +272,7 @@ export function testHasTapes(
 }
 
 export function testHasVocab(
-    grammar: Grammar | Dict<Grammar>,
+    grammar: Grammar | Dict<Grammar> | Interpreter,
     expectedVocab: {[tape: string]: number | string[]},
     symbol: string = "",
     optimizeAtomicity: boolean = false

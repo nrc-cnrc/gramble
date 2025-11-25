@@ -116,7 +116,16 @@ export class Interpreter {
 
     get opt(): Options {
         return this.devEnv.opt;
-      }
+    }
+
+    /**
+     * Be cautious re-setting opt away from its original value; 
+     * we really only use this for some testing and it would 
+     * be foolhardy to use it during actual execution.
+     */
+    set opt(newOpt: Options) {
+        this.devEnv.opt = newOpt;
+    }
     
     public static fromCSV(
         csv: string,
