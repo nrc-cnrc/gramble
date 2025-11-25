@@ -11,8 +11,7 @@ word=, table:, embed, embed
     ,        , verb,  suffix 
     ,
     , testnot:, text,    gloss,    pos, % COMMENT
-    ,         , foobeer, run-1SG,     , % should PASS but fails - Ill-formed test
-    ,         , foobeer, run-1SG,     , % should PASS
-    ,         , moobar,  jump-1SG,    , % should FAIL
-    ,         , moobar,  jump-1SG, V  , % should PASS
+    ,         , foobeer, run-1SG,     , % would PASS but doesn't run
+    ,         , moobar,  jump-1SG,    , % would FAIL but doesn't run
+    ,         , moobar,  jump-1SG, V  , % would PASS but doesn't run
     

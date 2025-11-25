@@ -132,11 +132,14 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(13, 2, "Ill-formed unit test - no 'pos' header"),
-            Error(14, 2, "Failed unit test - no matching outputs"),
-            Error(16, 2, "Failed unit test - no matching outputs"),
-            Error(17, 2, "Failed unit test - no matching outputs"),
-            Error(19, 2, "Failed unit test - no matching outputs"),
+            Error(12, 1, "Ill-formed unit test - no 'pos' header"),
+            Warning(13, 2),
+            Warning(14, 2),
+            Warning(15, 2),
+            Warning(16, 2),
+            Warning(17, 2),
+            Warning(18, 2),
+            Warning(19, 2),
         ],
     });
 
@@ -149,9 +152,32 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(13, 2, "Ill-formed unit testnot - no 'pos' header"),
-            Error(15, 2, "Failed unit testnot - has matching outputs"),
+            Error(12, 1, "Ill-formed unit test - no 'pos' header"),
+            Warning(13, 2),
+            Warning(14, 2),
+            Warning(15, 2),
         ]
+    });
+
+    testSrc({
+		desc: '6c. Unit tests with multiple unknown headers',
+        results: [
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG"}
+        ],
+        errors: [
+            Error(12, 1, "Ill-formed unit test - no 'pos' header"),
+            Error(12, 1, "Ill-formed unit test - no 'class' header"),
+            Warning(13, 2),
+            Warning(14, 2),
+            Warning(15, 2),
+            Warning(16, 2),
+            Warning(17, 2),
+            Warning(18, 2),
+            Warning(19, 2),
+        ],
     });
 
     testSrc({
@@ -234,7 +260,7 @@ describe(`Source ${DIR}`, function() {
             Warning(9,1)
         ]
     });
-
+    
     testSrc({
 		desc: '10a. Testing empty table: with headers',
         results: [
@@ -441,9 +467,14 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(14, 2, "Failed unit test - no matching outputs"),  // foobar, verb
-            Error(14, 2, "Failed unit test - output missing 'pos'"),
-            Error(22, 2, "Ill-formed unit test - no 'pos' header"),
+            Error(13, 1, "Ill-formed unit test - no 'pos' header"),
+            Warning(14, 2),
+            Warning(15, 2), 
+            Warning(16, 2),
+            Error(21, 1, "Ill-formed unit test - no 'pos' header"),
+            Warning(22, 2),    
+            Warning(23, 2),
+            Warning(24, 2),
         ],
     });
 
@@ -530,7 +561,6 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ]
     });
-
 });
 
 

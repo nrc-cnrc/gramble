@@ -149,8 +149,7 @@ export function lengthRange(
 
         // ones where the length is just the child's length
         case "short": 
-        case "test": 
-        case "testnot":
+        case "testblock":
         case "pretape":
         case "cursor":
         case "greedyCursor":
@@ -173,7 +172,8 @@ export function lengthRange(
         case "qualified": return lengthQualified(g, tapeName, stack, env);
         case "selection":    return lengthSelection(g, tapeName, stack, env);
 
-        // ones where it's not implemented
+        // grammars that don't exist at this stage, or aren't
+        // visited in this tree
         case "context": 
         case "filter":
         case "starts":
@@ -181,6 +181,8 @@ export function lengthRange(
         case "contains":
         case "collection":
         case "tapename":
+        case "test":
+        case "testnot":
             throw new Error("not implemented");
 
         default: exhaustive(g);

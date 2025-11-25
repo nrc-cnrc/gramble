@@ -12,12 +12,8 @@ import {
 } from "../tsts.js";
 
 /**
- * This pass goes through and make sure that TstOps have 
- * the structural parameters (i.e. .sibling and .child) that they
- * need to be interpreted, and also ensures that these are the
- * right types (e.g., that they're grids when they need to be 
- * grids, types when they need to be types, that they're not
- * assignments, etc.)
+ * This pass inserts implicit "table" ops where structurally
+ * necessary.
  */
 
 export class InsertTables extends AutoPass<TST> {

@@ -31,7 +31,8 @@ import {
     SequenceGrammar, 
     TapeNamesGrammar,
     TestGrammar, 
-    TestNotGrammar, 
+    TestNotGrammar,
+    TestBlockGrammar,
 } from "../grammars.js";
 import { PassEnv } from "../components.js";
 import { parseContent } from "../content.js";
@@ -41,6 +42,7 @@ import { getCaseInsensitive } from "../utils/func.js";
 import { Err, Msg, Message, msgList } from "../utils/msgs.js";
 import { HeaderToGrammar } from "./headerToGrammar.js";
 import { uniqueLiterals } from "./uniqueLiterals.js";
+import { toStr } from "./toStr.js";
 
 /**
  * This is the workhorse of grammar creation, turning the 
@@ -232,33 +234,37 @@ export class CreateGrammars extends Pass<TST,Grammar> {
     }
     
     public handleTest(t: TstTest, env: PassEnv): Msg<Grammar> {
-        let result = this.transform(t.sibling, env);
-
+        let newSibling = this.transform(t.sibling, env);
+        const tests: TestGrammar[] = [];
         const msgs: Message[] = [];
         for (const params of t.child.rows) {
             const testInputs = this.transform(params.getParam(DEFAULT_PARAM), env).msgTo(msgs);
             const unique = this.transform(params.getParam("unique"), env).msgTo(msgs);
             const uniqueLits = uniqueLiterals(unique);
-            result = result.bind(c => new TestGrammar(c, testInputs, uniqueLits))
-                           .bind(c => c.locate(params.pos))       
+            const testGrammar = new TestGrammar(testInputs, uniqueLits)
+                                    .locate(params.pos) as TestGrammar;
+            tests.push(testGrammar);
         }
 
-        return result.bind(c => c.locate(t.cell.pos))
-                     .msg(msgs);
+        return newSibling.bind(c => new TestBlockGrammar(c, tests))
+                         .bind(c => c.locate(t.cell.pos))
+                         .msg(msgs);
     }
     
     public handleNegativeTest(t: TstTestNot, env: PassEnv): Msg<Grammar> {
-        let result = this.transform(t.sibling, env);
-
+        let newSibling = this.transform(t.sibling, env);
+        const tests: TestNotGrammar[] = [];
         const msgs: Message[] = [];
         for (const params of t.child.rows) {
             const testInputs = this.transform(params.getParam(DEFAULT_PARAM), env).msgTo(msgs);
-            result = result.bind(c => new TestNotGrammar(c, testInputs))
-                           .bind(c => c.locate(params.pos))   
+            const testGrammar = new TestNotGrammar(testInputs)
+                                    .locate(params.pos) as TestNotGrammar;
+            tests.push(testGrammar);  
         }
         
-        return result.bind(c => c.locate(t.cell.pos))
-                     .msg(msgs);
+        return newSibling.bind(c => new TestBlockGrammar(c, tests))
+                         .bind(c => c.locate(t.cell.pos))
+                         .msg(msgs);
     }
     
     public handleSequence(t: TstSequence, env: PassEnv): Msg<Grammar> {
