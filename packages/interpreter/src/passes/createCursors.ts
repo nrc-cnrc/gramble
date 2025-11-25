@@ -85,6 +85,7 @@ function getTapePriority(
         case "match":
         case "test":     
         case "testnot": 
+        case "testblock":
         case "short":
         case "match":
         case "correspond":  return getTapePriorityDefault(g, tape, symbolsVisited, env);

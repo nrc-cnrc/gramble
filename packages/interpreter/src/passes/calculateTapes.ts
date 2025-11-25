@@ -112,6 +112,7 @@ export class CalculateTapes extends AutoPass<Grammar> {
             case "count": 
             case "test":
             case "testnot":
+            case "testblock":
             case "context":
             case "pretape": return getTapesDefault(g);
             

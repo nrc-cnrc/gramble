@@ -34,9 +34,9 @@ export function constructExpr(
 ): Expr {
     switch (g.tag) {
 
-        // test and testnot play no role in the Expr tree
-        case "test":
-        case "testnot":         return constructExpr(env, g.child);
+        // testblocks (and their test children) play no role 
+        // in the Expr tree
+        case "testblock":       return constructExpr(env, g.child);
 
         // grammars with no children are pretty trivial, do them
         // in one line

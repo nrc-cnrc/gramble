@@ -69,7 +69,7 @@ export const SOURCE_PASSES =
         "Inserting implicit table ops",
         new InsertTables()
     ).compose(
-        
+
     // make sure ops have the right structural parameters (.sibling,
     // .children) to be interpreted, and that these parameters are 
     // the right kinds of syntactic objects.

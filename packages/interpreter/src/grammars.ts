@@ -53,6 +53,7 @@ export type Grammar = EpsilonGrammar
              | EmbedGrammar
              | TestGrammar
              | TestNotGrammar
+             | TestBlockGrammar
              | ReplaceBlockGrammar
              | ReplaceGrammar
              | CorrespondGrammar
@@ -477,14 +478,24 @@ export class TapeNamesGrammar extends AtomicGrammar {
     }
 }
 
-export abstract class AbstractTestGrammar extends UnaryGrammar {
-
+export class TestBlockGrammar extends UnaryGrammar {
+    public readonly tag = "testblock";
     constructor(
         child: Grammar,
+        public tests: AbstractTestGrammar[],
+    ) {
+        super(child);
+    }
+
+}
+
+export abstract class AbstractTestGrammar extends AbstractGrammar {
+
+    constructor(
         public test: Grammar,
         public uniques: LiteralGrammar[] = []
     ) {
-        super(child);
+        super();
     }
 }
 

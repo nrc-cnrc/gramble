@@ -11,10 +11,10 @@ word=, table:, embed, embed
     ,        , verb,  suffix 
     ,
     , test:, text,    gloss,    pos, % COMMENT
-    ,      , foobar,  run-1SG,     , % should PASS but fails - Ill-formed test
-    ,      , foobar,  run-1SG,  V  , % should FAIL
-    ,      , foobar,  run-1SG,     , % should PASS
-    ,      , moobeer, jump-1SG,    , % should FAIL
-    ,      , foobaz,  roon-2SG,    , % should FAIL
-    ,      , moobaz,  jump-2SG,    , % should PASS
-    ,      , moobaz,  jump-2SG, V  , % should FAIL
+    ,      , foobar,  run-1SG,     , % would PASS but doesn't run
+    ,      , foobar,  run-1SG,  V  , % would FAIL but doesn't run
+    ,      , foobar,  run-1SG,     , % would PASS but doesn't run
+    ,      , moobeer, jump-1SG,    , % would FAIL but doesn't run
+    ,      , foobaz,  roon-2SG,    , % would FAIL but doesn't run
+    ,      , moobaz,  jump-2SG,    , % would PASS but doesn't run
+    ,      , moobaz,  jump-2SG, V  , % would FAIL but doesn't run

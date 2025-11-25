@@ -222,7 +222,7 @@ export class TstHeadedGrid extends TstEnclosure {
     }
     
     public setChild(newChild: TST): MsgVoid {
-        throw new Error("TstHEadedGrids cannot have children");
+        throw new Error("TstHeadedGrids cannot have children");
     }
     
     public providesParam(param: string): boolean {
