@@ -119,6 +119,7 @@ class GoogleSheetsDevEnvironment {
 
     constructor(currentSheetName, opt) {
         this.currentSheetName = currentSheetName;
+        this.noteMsgs = new Map(); // :Map<string, Msg[]>, indexed by row_col
         this.noteStylers = new Map(); // :Map<string, NoteStyler>
         this.bgColorStylers  = new Map(); // :Map<string, BackgroundColorStyler>
         this.fontColorStylers = new Map(); // :Map<string, FontColorStyler>
@@ -130,13 +131,12 @@ class GoogleSheetsDevEnvironment {
     }
 
     message(msg) {
-        
         if (msg.sheet != this.currentSheetName) return;
 
         switch (msg.tag) {
-            case "error":       return this.markNote(msg);
-            case "warning":     return this.markNote(msg);
-            case "success":     return this.markNote(msg);
+            case "error":       return this.collectNoteMsgs(msg);
+            case "warning":     return this.collectNoteMsgs(msg);
+            case "success":     return this.collectNoteMsgs(msg);
             case "comment":     return this.markComment(msg);
             case "header":      return this.markHeader(msg);
             case "content":     return this.markContent(msg);
@@ -161,6 +161,41 @@ class GoogleSheetsDevEnvironment {
         return values;
     }
 
+    collectNoteMsgs(msg) {
+        const msgIdx = `${msg.row}_${msg.col}`;
+        const msgs = this.noteMsgs.get(msgIdx);
+
+        if (msgs == undefined) {
+            const msgs = Array.of(msg);
+            this.noteMsgs.set(msgIdx, msgs);
+            return;
+        }
+
+        if (msg.tag == 'error')
+            msgs.unshift(msg);
+        else if (msg.tag == 'warning')
+            msgs.push(msg);
+        // drop extra msgs with msg.tag == 'success' because there should
+        // only have been one message on success!
+    }
+
+    msgs2msg(msgs) {
+        if (!msgs.length)
+            return undefined;
+
+        const msg = {};
+        msg.tag = msgs[0].tag;
+        msg.row = msgs[0].row;
+        msg.col = msgs[0].col;
+        msg.longMsg = "";
+
+        for (const m of msgs) {
+            msg.longMsg += m.tag.toUpperCase() + ": " + m.longMsg + 
+                            "\n----------------\n";
+        }
+        return msg;
+    }
+
     markNote(msg) {
         const color = NOTE_COLORS.get(msg.tag) || DEFAULT_BG_COLOR;
         let noteStyler = this.noteStylers.get(msg.longMsg);
@@ -172,7 +207,6 @@ class GoogleSheetsDevEnvironment {
     }
 
     markComment(msg) {
-
         let colorStyler = this.fontColorStylers.get(COMMENT_FONT_COLOR);
         if (colorStyler == undefined) {
             colorStyler = new FontColorStyler(COMMENT_FONT_COLOR);
@@ -183,7 +217,6 @@ class GoogleSheetsDevEnvironment {
     }
 
     markHeader(msg) {
-
         let bgColorStyler = this.bgColorStylers.get(msg.color);
         if (bgColorStyler == undefined) {
             bgColorStyler = new BackgroundColorStyler(msg.color);
@@ -195,9 +228,7 @@ class GoogleSheetsDevEnvironment {
         this.centerStyler.addCell(msg);
     }
 
-
     markContent(msg) {
-
         let bgColorStyler = this.bgColorStylers.get(msg.color);
         if (bgColorStyler == undefined) {
             bgColorStyler = new BackgroundColorStyler(msg.color);
@@ -215,19 +246,16 @@ class GoogleSheetsDevEnvironment {
     }
 
     markOp(msg) {
-
         this.boldStyler.addCell(msg);
         this.centerStyler.addCell(msg);
     }
     
-    markSymbol(msg) {
-        
+    markSymbol(msg) {    
         this.boldStyler.addCell(msg);
         this.centerStyler.addCell(msg);
     }
 
     highlight() {
-
         let spreadsheet = SpreadsheetApp.getActive();
         let sheet = spreadsheet.getActiveSheet();
         sheet.clearNotes();
@@ -243,6 +271,10 @@ class GoogleSheetsDevEnvironment {
         this.boldStyler.applyToSheet(sheet);
         this.borderStyler.applyToSheet(sheet);
         this.centerStyler.applyToSheet(sheet);
+
+        for (const msgs of this.noteMsgs.values()) {
+            this.markNote(this.msgs2msg(msgs))
+        }
 
         for (const styler of this.noteStylers.values()) {
             styler.applyToSheet(sheet);
