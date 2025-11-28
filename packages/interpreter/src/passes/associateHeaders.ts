@@ -91,7 +91,7 @@ export class AssociateHeaders extends Pass<TST,TST> {
                 newRows.push(newRow);
             }
 
-            return new TstParamList(t.cell, newRows).msg(msgs);
+            return new TstParamList(t.cell, t.headers, newRows).msg(msgs);
         });
     }
 

@@ -419,6 +419,7 @@ export class TstParamList extends TstCellComponent {
     public readonly tag = "paramlist";
     constructor(
         cell: Cell, 
+        public headers: TstHeader[] = [],
         public rows: TstParams[] = []
     ) {
         super(cell);

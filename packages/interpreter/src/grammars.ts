@@ -482,6 +482,7 @@ export class TestBlockGrammar extends UnaryGrammar {
     public readonly tag = "testblock";
     constructor(
         child: Grammar,
+        public headers: Grammar[],
         public tests: AbstractTestGrammar[],
     ) {
         super(child);
