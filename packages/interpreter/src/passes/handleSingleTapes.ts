@@ -77,19 +77,20 @@ export class HandleSingleTapes extends Pass<Grammar,Grammar> {
 
     private handleEmbed(g: EmbedGrammar, env: PassEnv): Grammar {
         if (this.singleTape === undefined) return g;
-        const wrapped = new SingleTapeGrammar(this.singleTape.tapeName, g);
-        wrapped.pos = this.singleTape.pos;
-        return wrapped;
+        return new SingleTapeGrammar(this.singleTape.tapeName, g)
+                    .locate(this.singleTape.pos);
     }
 
     private handleDot(g: DotGrammar, env: PassEnv): Grammar {
         if (this.singleTape === undefined) return g;
-        return new DotGrammar(this.singleTape.tapeName);
+        return new DotGrammar(this.singleTape.tapeName)
+                    .locate(this.singleTape.pos);
     }
 
     private handleLiteral(g: LiteralGrammar, env: PassEnv): Grammar {
         if (this.singleTape === undefined) return g;
-        return new LiteralGrammar(this.singleTape.tapeName, g.text);
+        return new LiteralGrammar(this.singleTape.tapeName, g.text)
+                    .locate(this.singleTape.pos);
     }
 
     private handleSingleTape(g: SingleTapeGrammar, env: PassEnv): Msg<Grammar> {

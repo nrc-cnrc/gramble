@@ -157,7 +157,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12, 1, "Ill-formed unit test - no 'pos' header"),
+            Error(12, 4, "Ill-formed unit test - no 'pos' header"),
             Warning(13, 2),
             Warning(14, 2),
             Warning(15, 2),
@@ -182,7 +182,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12, 1, "Ill-formed unit test - no 'pos' header"),
+            Error(12, 4, "Ill-formed unit test - no 'pos' header"),
             Warning(13, 2),
             Warning(14, 2),
             Warning(15, 2),
@@ -203,8 +203,8 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12, 1, "Ill-formed unit test - no 'pos' header"),
-            Error(12, 1, "Ill-formed unit test - no 'class' header"),
+            Error(12, 4, "Ill-formed unit test - no 'pos' header"),
+            Error(12, 5, "Ill-formed unit test - no 'class' header"),
             Warning(13, 2),
             Warning(14, 2),
             Warning(15, 2),
@@ -502,11 +502,11 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(13, 1, "Ill-formed unit test - no 'pos' header"),
+            Error(13, 3, "Ill-formed unit test - no 'pos' header"),
             Warning(14, 2),
             Warning(15, 2), 
             Warning(16, 2),
-            Error(21, 1, "Ill-formed unit test - no 'pos' header"),
+            Error(21, 3, "Ill-formed unit test - no 'pos' header"),
             Warning(22, 2),    
             Warning(23, 2),
             Warning(24, 2),
