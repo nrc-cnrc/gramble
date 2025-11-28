@@ -1,4 +1,4 @@
-import { Message, Msg } from "../utils/msgs.js";
+import { Err, Message, Msg, Warn } from "../utils/msgs.js";
 import { 
     Grammar,
     ContainsGrammar,
@@ -228,12 +228,50 @@ function getTapesDefault(g: Grammar): Grammar {
 function getTapesTestBlock(
     g: TestBlockGrammar, 
     env: TapesEnv
-): Grammar {
-    // since testblocks are semantically transparent, tapes
-    // and vocab that appear in tests don't necessarily appear
-    // as the tapes/vocab of the testblock itself, only the
-    // child blocks.
-    return updateTapes(g, g.child.tapes);
+): Grammar|Msg<Grammar> {
+    // testblocks have a nondefault tape interpretation, they
+    // only take the tapes of their child, not the general
+    // children(g).  that's so that tapes/vocab in the tests
+    // don't change the semantic interpretation of the grammar
+
+    if (g.child.tapes.tag !== Tapes.Tag.Lit) {
+        // nothing we can do right now
+        return updateTapes(g, g.child.tapes);
+    }
+
+    const msgs: Message[] = [];
+    for (const header of g.headers) {
+        for (const tape of header.tapeNames) {
+            if (g.child.tapes.tapeNames.has(tape)) {
+                continue;
+            }
+
+            // the programmer is attempting to test a nonexistant
+            // tape, set an error on the header, and warnings on each
+            // test
+            Err(`Ill-formed unit test - no '${tape}' header`, 
+                `This test expects a header called '${tape}', but none exists ` +
+                "in the grammar being tested.")
+                .localize(header.pos)
+                .msgTo(msgs);
+        }
+    }
+
+    if (msgs.length === 0) {
+        // no tape issues found
+        return updateTapes(g, g.child.tapes);
+    }
+
+    // tape issues found!
+    for (const test of g.tests) {
+        Warn(`This test line was not executed due to a missing-header error above.`)
+            .localize(test.pos)
+            .msgTo(msgs);
+    }
+
+    // there are no tests that will execute and thus no need to
+    // be a TestBlock anymore -- just return the child
+    return g.child.msg(msgs);
 }
 
 function getTapesReplace(

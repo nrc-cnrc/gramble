@@ -44,27 +44,7 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
 
     public handleTestBlock(g: TestBlockGrammar, env: SymbolEnv): Msg<Grammar> {
         const msgs: Message[] = [];
-
-        const childTapes = new Set(g.child.tapeNames);
-
         for (const test of g.tests) {
-            const tapeMsgs: Message[] = [];
-            for (const testTape of test.tapeNames) {
-                if (childTapes.has(testTape)) continue;
-                Err(`Ill-formed unit test - no '${testTape}' header`, 
-                    `This test expects a header called '${testTape}', but none exists ` +
-                    "in the grammar being tested. Some tests may not execute.")
-                    .msgTo(tapeMsgs);
-            }
-
-            if (tapeMsgs.length > 0) {
-                msgs.push(...tapeMsgs);
-                Warn(`This test line was not executed due to a missing header error above.`)
-                    .localize(test.pos)
-                    .msgTo(msgs);
-                continue;
-            }
-
             const results = this.executeTest(g.child, test, env);
             const resultMsgs = gradeResults(test, results);
             msgs.push(...resultMsgs);

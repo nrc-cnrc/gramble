@@ -145,6 +145,10 @@ export class Msg<T> {
         return [this.item, this.msgs];
     }
 
+    public ignoreMessages(): T {
+        return this.item;
+    }
+
     public bind<T2>(f: MsgFunc<T,T2>): Msg<T2> {
         try {
             let result = f(this.item);

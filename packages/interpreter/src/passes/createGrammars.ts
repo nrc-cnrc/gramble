@@ -43,6 +43,7 @@ import { Err, Msg, Message, msgList } from "../utils/msgs.js";
 import { HeaderToGrammar } from "./headerToGrammar.js";
 import { uniqueLiterals } from "./uniqueLiterals.js";
 import { toStr } from "./toStr.js";
+import { Cell } from "../utils/cell.js";
 
 /**
  * This is the workhorse of grammar creation, turning the 
@@ -233,8 +234,31 @@ export class CreateGrammars extends Pass<TST,Grammar> {
         return result.locate(t.cell.pos).msg(sibMsgs).msg(newMsgs);
     }
     
+    public handleTestHeaders(
+        t: TstTest|TstTestNot, 
+        env: PassEnv
+    ): Grammar[] {
+        const headers: Grammar[] = [];
+        for (const header of t.child.headers) {
+            // we make an ad-hoc empty grammar for each header,
+            // in order to know what tapes it represents.  (this 
+            // is a bit convoluted in order to not assume everything's a 
+            // correctly-specified literal.  but even if it's 
+            // not correct, now's not the time to complain, we
+            // send an error message elsewhere.
+            const dummyGrammar = parseContent("plaintext", "")
+                           .bind(g => new HeaderToGrammar(g))
+                           .bind(p => p.transform(header.header, env))
+                           .bind(g => g.locate(header.pos))
+                           .ignoreMessages();
+            headers.push(dummyGrammar);
+        }
+        return headers;
+    }
+
     public handleTest(t: TstTest, env: PassEnv): Msg<Grammar> {
         let newSibling = this.transform(t.sibling, env);
+        const headers = this.handleTestHeaders(t, env);
         const tests: TestGrammar[] = [];
         const msgs: Message[] = [];
         for (const params of t.child.rows) {
@@ -246,13 +270,14 @@ export class CreateGrammars extends Pass<TST,Grammar> {
             tests.push(testGrammar);
         }
 
-        return newSibling.bind(c => new TestBlockGrammar(c, tests))
+        return newSibling.bind(c => new TestBlockGrammar(c, headers, tests))
                          .bind(c => c.locate(t.cell.pos))
                          .msg(msgs);
     }
     
     public handleNegativeTest(t: TstTestNot, env: PassEnv): Msg<Grammar> {
         let newSibling = this.transform(t.sibling, env);
+        const headers = this.handleTestHeaders(t, env);
         const tests: TestNotGrammar[] = [];
         const msgs: Message[] = [];
         for (const params of t.child.rows) {
@@ -262,7 +287,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
             tests.push(testGrammar);  
         }
         
-        return newSibling.bind(c => new TestBlockGrammar(c, tests))
+        return newSibling.bind(c => new TestBlockGrammar(c, headers, tests))
                          .bind(c => c.locate(t.cell.pos))
                          .msg(msgs);
     }
