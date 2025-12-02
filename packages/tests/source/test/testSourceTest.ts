@@ -16,14 +16,16 @@ describe(`Source ${DIR}`, function() {
 		desc: '1a. Simple grammar with unit tests',
         tapes: ["text", "gloss"],
         vocab: {
-            text: ["f","o","b","a","r"],
-            gloss: ["r","u","n","-","1","S","G"]
+            text: ["f","o","b","a","r","m","z"],
+            gloss: ["r","u","n","-","1","S","G",
+                        "s","e","2"]
         },
         results: [
-            {text: "foobar", gloss: "run-1SG"}
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobaz", gloss: "see-2SG"}
         ]
     });
-
+    
     testSrc({
 		desc: '1b. Simple grammar with negative unit tests',
         tapes: ["text", "gloss"],

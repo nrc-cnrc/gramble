@@ -483,7 +483,7 @@ export class TestBlockGrammar extends UnaryGrammar {
     constructor(
         child: Grammar,
         public headers: Grammar[],
-        public tests: AbstractTestGrammar[],
+        public tests: (TestGrammar|TestNotGrammar)[],
     ) {
         super(child);
     }
@@ -493,7 +493,7 @@ export class TestBlockGrammar extends UnaryGrammar {
 export abstract class AbstractTestGrammar extends AbstractGrammar {
 
     constructor(
-        public test: Grammar,
+        public child: Grammar,
         public uniques: LiteralGrammar[] = []
     ) {
         super();

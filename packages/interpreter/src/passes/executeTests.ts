@@ -6,7 +6,8 @@ import {
     TestGrammar, 
     AbstractTestGrammar,
     JoinGrammar,
-    TestBlockGrammar
+    TestBlockGrammar,
+    AlternationGrammar
 } from "../grammars.js";
 
 import { generate } from "../generator.js";
@@ -16,7 +17,7 @@ import { CreateCursors } from "./createCursors.js";
 import { InfinityProtection } from "./infinityProtection.js";
 import { Options, Env } from "../utils/options.js";
 import { ResolveVocab } from "./resolveVocab.js";
-import { toStr } from "./toStr.js";
+import { ROW_TAPE } from "../utils/constants.js";
 
 
 export class ExecuteTests extends Pass<Grammar,Grammar> {
@@ -44,8 +45,33 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
 
     public handleTestBlock(g: TestBlockGrammar, env: SymbolEnv): Msg<Grammar> {
         const msgs: Message[] = [];
+
+        // a test block is executed all at once.  each test has a special
+        // literal $r:N where N is the row the test occurs on.  since this
+        // will show up in all results for that row, we can use it to
+        // re-associate tests and results.
+        const allTestResults = this.executeTest(g, env);
+
+        // hash the results into a dict by the value on $r
+        const resultsByRow: Dict<StringDict[]> = {};
+        for (const result of allTestResults) {
+            if (!(ROW_TAPE in result)) {
+                // shouldn't happen but just in case.
+                throw `Cannot find ${ROW_TAPE} in result ${result}`;
+            }
+            const key = result[ROW_TAPE];
+            if (!(key in resultsByRow)) {
+                resultsByRow[key] = [];
+            }
+            resultsByRow[key].push(result);
+        }
+
+        // now, for each test, only grab the results relevant to
+        // the test's row
         for (const test of g.tests) {
-            const results = this.executeTest(g.child, test, env);
+            if (test.pos === undefined) continue;
+            const key = test.pos.row.toString();
+            const results = resultsByRow[key] || [];
             const resultMsgs = gradeResults(test, results);
             msgs.push(...resultMsgs);
         }
@@ -54,12 +80,17 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
     }
     
     public executeTest(
-        g: Grammar,
-        test: AbstractTestGrammar, 
+        g: TestBlockGrammar,
         env: SymbolEnv
     ): StringDict[] {
         // create a filter for each test
-        let targetGrammar: Grammar = new JoinGrammar(g, test.test)
+
+        const tests = g.tests.map(g => g.child);
+
+        let targetGrammar: Grammar = new AlternationGrammar(tests)
+                                        .tapify(env);
+        
+        targetGrammar = new JoinGrammar(targetGrammar, g.child)
                                         .tapify(env);    
         
         targetGrammar = new CreateCursors()
@@ -82,15 +113,15 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
 }
 
 function gradeResults(
-    test: AbstractTestGrammar,
+    test: TestGrammar | TestNotGrammar,
     results: StringDict[]
 ): Message[] {
 
     switch (test.tag) {
         case "test": 
-            return gradeTestResults(test as TestGrammar, results);
+            return gradeTestResults(test, results);
         case "testnot": 
-            return gradeTestNotResults(test as TestNotGrammar, results);
+            return gradeTestNotResults(test, results);
         default: 
             return []; // won't happen, just for typechecking
     }

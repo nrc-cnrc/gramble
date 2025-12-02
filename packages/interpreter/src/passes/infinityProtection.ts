@@ -183,7 +183,7 @@ export function lengthRange(
         case "tapename":
         case "test":
         case "testnot":
-            throw new Error("not implemented");
+            throw new Error(`${g.tag} not implemented`);
 
         default: exhaustive(g);
     }

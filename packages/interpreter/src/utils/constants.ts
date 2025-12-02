@@ -3,6 +3,7 @@ export const INTERNAL_PREFIX = "$";
 export const INPUT_TAPE = INTERNAL_PREFIX + "i";
 export const OUTPUT_TAPE = INTERNAL_PREFIX + "o";
 export const DEFAULT_TAPE = INTERNAL_PREFIX + "T";
+export const ROW_TAPE = INTERNAL_PREFIX + "r";
 
 export const DEFAULT_PARAM: string = INTERNAL_PREFIX + "plain";
 

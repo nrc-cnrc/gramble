@@ -13,7 +13,8 @@ import {
     TstTable,
     TstTest,
     TstTestNot,
-    TST 
+    TST, 
+    AbstractTST
 } from "../tsts.js";
 import { Pass } from "../passes.js";
 import { 
@@ -33,11 +34,13 @@ import {
     TestGrammar, 
     TestNotGrammar,
     TestBlockGrammar,
+    LiteralGrammar,
+    AbstractTestGrammar,
 } from "../grammars.js";
 import { PassEnv } from "../components.js";
 import { parseContent } from "../content.js";
 import { parseClass, TapeHeader } from "../headers.js";
-import { DEFAULT_PARAM } from "../utils/constants.js";
+import { DEFAULT_PARAM, ROW_TAPE } from "../utils/constants.js";
 import { getCaseInsensitive } from "../utils/func.js";
 import { Err, Msg, Message, msgList } from "../utils/msgs.js";
 import { HeaderToGrammar } from "./headerToGrammar.js";
@@ -66,11 +69,14 @@ export class CreateGrammars extends Pass<TST,Grammar> {
             case "or":         return this.handleOr(t, env);
             case "join":       return this.handleJoin(t, env);
             case "replace":    return this.handleReplace(t, env);
-            case "test":       return this.handleTest(t, env);
-            case "testnot":    return this.handleNegativeTest(t, env);
             case "seq":        return this.handleSequence(t, env);
             case "assign":     return this.handleAssignment(t, env);
             case "collection": return this.handleCollection(t, env);
+
+            // tests and testnots use the same handler
+            case "test":       
+            case "testnot":    return this.handleTest(t, env);
+
             default:
                 throw new Error(`unhandled '${t.constructor.name}'`);
         }
@@ -256,37 +262,37 @@ export class CreateGrammars extends Pass<TST,Grammar> {
         return headers;
     }
 
-    public handleTest(t: TstTest, env: PassEnv): Msg<Grammar> {
+    public handleTest(
+        t: TstTest | TstTestNot,
+        env: PassEnv
+    ): Msg<Grammar> {
         let newSibling = this.transform(t.sibling, env);
         const headers = this.handleTestHeaders(t, env);
-        const tests: TestGrammar[] = [];
+        const tests: (TestGrammar|TestNotGrammar)[] = [];
         const msgs: Message[] = [];
         for (const params of t.child.rows) {
-            const testInputs = this.transform(params.getParam(DEFAULT_PARAM), env).msgTo(msgs);
+            const inputs = this.transform(params.getParam(DEFAULT_PARAM), env).msgTo(msgs);
+            const inputsWithRow = new SequenceGrammar([
+                new LiteralGrammar(ROW_TAPE, params.pos.row.toString()),
+                inputs
+            ]);
+
+            if (t.tag == "testnot") {
+                // testnots are a bit simpler
+                const testGrammar = new TestNotGrammar(inputsWithRow)
+                                        .locate(params.pos) as TestNotGrammar;
+                tests.push(testGrammar);  
+                continue;
+            }
+
+            // tests require another param for uniques.
             const unique = this.transform(params.getParam("unique"), env).msgTo(msgs);
             const uniqueLits = uniqueLiterals(unique);
-            const testGrammar = new TestGrammar(testInputs, uniqueLits)
+            const testGrammar = new TestGrammar(inputsWithRow, uniqueLits)
                                     .locate(params.pos) as TestGrammar;
             tests.push(testGrammar);
         }
 
-        return newSibling.bind(c => new TestBlockGrammar(c, headers, tests))
-                         .bind(c => c.locate(t.cell.pos))
-                         .msg(msgs);
-    }
-    
-    public handleNegativeTest(t: TstTestNot, env: PassEnv): Msg<Grammar> {
-        let newSibling = this.transform(t.sibling, env);
-        const headers = this.handleTestHeaders(t, env);
-        const tests: TestNotGrammar[] = [];
-        const msgs: Message[] = [];
-        for (const params of t.child.rows) {
-            const testInputs = this.transform(params.getParam(DEFAULT_PARAM), env).msgTo(msgs);
-            const testGrammar = new TestNotGrammar(testInputs)
-                                    .locate(params.pos) as TestNotGrammar;
-            tests.push(testGrammar);  
-        }
-        
         return newSibling.bind(c => new TestBlockGrammar(c, headers, tests))
                          .bind(c => c.locate(t.cell.pos))
                          .msg(msgs);

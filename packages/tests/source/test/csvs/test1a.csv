@@ -1,5 +1,7 @@
 word=, table:, text, gloss, text, gloss
      ,       , foo,  run,   bar,  -1SG
+     ,       , moo,  see,   baz,  -2SG
      ,
      , test:, text,   gloss
      ,      , foobar, run-1SG
+     ,      , moobaz, see-2SG
