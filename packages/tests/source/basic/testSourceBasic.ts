@@ -232,7 +232,7 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Warning(0, 0),  // This symbol will not contain any content.
-            Error(0, 2, "Implicit 'autotable' operator requires header(s)"),
+            Error(0, 2, "Implicit 'table' operator requires header(s)"),
         ]
     });
 
@@ -336,7 +336,7 @@ describe(`Source ${DIR}`, function() {
             {text:"baz", gloss:"-2SG"},
         ],
         errors: [
-            Error(1, 4, "Implicit 'autotable' operator requires header(s)"),
+            Error(1, 4, "Implicit 'table' operator requires header(s)"),
             Warning(2, 1),  // 'table:' is in an unexpected column. Did you intend ...
         ],
         // verbose: VERBOSE_DEBUG,
@@ -363,7 +363,7 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Warning(1, 0),  // This symbol will not contain any content.
-            Error(2, 1, "Implicit 'autotable' operator requires header(s)"),
+            Error(2, 1, "Implicit 'table' operator requires header(s)"),
             Warning(1, 0),  // '%text' is in an unexpected column. Did you intend ...
         ],
     });

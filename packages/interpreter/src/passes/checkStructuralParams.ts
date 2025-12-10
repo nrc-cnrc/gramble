@@ -1,3 +1,4 @@
+import { PassEnv } from "../components.js";
 import { 
     AutoTableOp,
     ErrorOp,
@@ -6,7 +7,6 @@ import {
     childMustBeGrid,
     siblingRequired,
 } from "../ops.js";
-import { Err, Message, Msg, Warn } from "../utils/msgs.js";
 import { Pass } from "../passes.js";
 import { 
     TST,
@@ -14,7 +14,13 @@ import {
     TstGrid,
     TstOp,
 } from "../tsts.js";
-import { PassEnv } from "../components.js";
+import { 
+    Err,
+    Message,
+    Msg,
+    Warn
+} from "../utils/msgs.js";
+import { capitalize } from "../utils/strings.js";
 
 /**
  * This pass goes through and make sure that TstOps have 
@@ -106,8 +112,6 @@ export class CheckStructuralParams extends Pass<TST,TST> {
     public handleOp(t: TstOp, env: PassEnv): Msg<TST> {
         const msgs: Message[] = [];
         let result: TST = t;
-        const implicit = (t.op instanceof AutoTableOp) ? "implicit " : "";
-        const implicitC = (t.op instanceof AutoTableOp) ? "Implicit " : "";
 
         if (t.op instanceof TableOp || t.op instanceof AutoTableOp) {
             // Silently drop an extra table op if it's an AutoTableOp, or issue
@@ -126,6 +130,8 @@ export class CheckStructuralParams extends Pass<TST,TST> {
         // if the op requires a grid to the right, but doesn't have one,
         // issue an error, and return the sibling as the new value.
         if (childMustBeGrid(t.op) == "required") {
+            const opTag = (t.op instanceof AutoTableOp) ?
+                            "implicit 'table'" : `'${t.op.tag}'`;
             if (t.child instanceof TstEmpty || t.child instanceof TstGrid) {
                 let emptyGrid = true;
                 if (t.child instanceof TstGrid) {
@@ -138,17 +144,17 @@ export class CheckStructuralParams extends Pass<TST,TST> {
                     }
                 }
                 if (emptyGrid) {
-                    Err(`${implicitC}'${t.op.tag}' operator requires header(s)`,
-                        `This ${implicit}'${t.op.tag}' operator requires header(s) ` +
-                        "to the right, but none was found.")
+                    Err(`${capitalize(opTag)} operator requires header(s)`,
+                        `This ${opTag} operator requires header(s) to the right, ` +
+                        "but none was found.")
                         .msgTo(msgs);
                     result = t.sibling;
                 }
             } else {
                 const content = t.child.cell.text.trim();
-                Err(`${implicitC}'${t.op.tag}' operator requires header(s), not '${content}'`,
-                    `This ${implicit}'${t.op.tag}' operator requires header(s) ` +
-                    `to the right, but has another operator instead: '${content}'.`)
+                Err(`${capitalize(opTag)} operator requires header(s), not '${content}'`,
+                    `This ${opTag} operator requires header(s) to the right, ` +
+                    `but has another operator instead: '${content}'.`)
                     .msgTo(msgs);
                 result = t.sibling;
             }
