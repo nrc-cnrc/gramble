@@ -32,7 +32,6 @@ class Styler {
     }
 
     addCell(msg) {
-        //const a1Notation = `${sheet}!${letterFromNumber(col)}${(row+1)}`;
         const a1Notation = getA1Notation("", msg.row, msg.col);
         this.cells.push(a1Notation);
     }
@@ -347,7 +346,7 @@ function makeInterpreter() {
     const sheet = spreadsheet.getActiveSheet();
     const sheetName = sheet.getName();
 
-    const opts = { verbose: gramble.VERBOSE_TIME };
+    const opts = { verbose: gramble.VERBOSE_TIME, posFormat: "A1" };
     const devEnv = new GoogleSheetsDevEnvironment(sheetName, opts);
     const interpreter = gramble.Interpreter.fromSheet(devEnv, sheetName);
     return [interpreter, devEnv];

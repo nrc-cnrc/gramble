@@ -33,7 +33,7 @@ export class ParseSource extends Pass<Source,TST> {
 
     public handleWorkbook(s: Workbook, env: Env<Source>): Msg<TST> {
 
-        const projectCell = new Cell("", new Pos("", -1, -1));
+        const projectCell = new Cell("", new Pos("", -1, -1, env.opt));
         const project = new TstCollection(projectCell);
         const msgs: Message[] = [];
 
@@ -43,7 +43,7 @@ export class ParseSource extends Pass<Source,TST> {
                 msgs.push(Err(`Reserved sheet name: '${sheetName}'`,
                                 `'${sheetName}' is a reserved word; ` +
                                 "you cannot name a sheet this.")
-                            .localize(new Pos(sheetName, 0, 0)))
+                            .localize(new Pos(sheetName, 0, 0, env.opt)))
                 continue;
             }
             const tstSheet = this.transform(sheet, env).msgTo(msgs) as TstAssignment;
@@ -94,7 +94,7 @@ export class ParseSource extends Pass<Source,TST> {
         const msgs: Message[] = [];
 
         // sheets are treated as having an invisible cell containing their names at 0, -1
-        const startCell = new Cell(s.name, new Pos(s.name, 0, 0));
+        const startCell = new Cell(s.name, new Pos(s.name, 0, 0, env.opt));
 
         const root = new TstOp(startCell, new CollectionOp());
 
@@ -135,7 +135,7 @@ export class ParseSource extends Pass<Source,TST> {
                     cellText += " "
                 }
                 
-                const cellPos = new Pos(s.name, rowIndex, colIndex);
+                const cellPos = new Pos(s.name, rowIndex, colIndex, env.opt);
                 const cell = new Cell(cellText, cellPos);
                 let top = stack[stack.length-1];
 

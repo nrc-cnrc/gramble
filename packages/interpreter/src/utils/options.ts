@@ -14,6 +14,7 @@ export interface Options {
     verbose: number,
     optimizeAtomicity: boolean,
     directionLTR: boolean,
+    posFormat: string,
 }
 
 export const DEFAULT_OPTIONS: Options = {
@@ -23,6 +24,7 @@ export const DEFAULT_OPTIONS: Options = {
     verbose: SILENT,
     optimizeAtomicity: true,
     directionLTR: true,
+    posFormat: "0-based",
 }
 
 export function Options(opt: Partial<Options> = {}): Options {
