@@ -76,21 +76,36 @@ const commonGenerateSampleOptions: OptionDefinition[] = [
         type: String,
         defaultValue: "",
         typeLabel: "{underline string}",
-        description: "Query as key:value pairs, joined by commas, " +
-                     "e.g. {underline \"root:kan,subj:1SG\"}",
+        description: "query as key:value pairs, joined by commas, " +
+                     "e.g. \"root:kan,subj:1SG\"",
+    },
+    {
+        name: "strict",
+        alias: "S",
+        type: Boolean,
+        defaultValue: false,
+        description: "strict mode: treat Gramble warnings in the source as errors",
+    },
+    {
+        name: "force",
+        alias: "F",
+        type: Boolean,
+        defaultValue: false,
+        description: "generate/sample even if there are Gramble errors in the source",
     },
     {
         name: "verbose",
         alias: "v",
         type: Boolean,
         defaultValue: false,
-        description: "log error and info messages",
+        description: "log more detailed info messages",
     },            
 ];
 
 const commonGenerateSampleOptions_str = "[--symbol|-s {underline name}] " +
     "[--format|-f {underline csv|json}] [--output|-o {underline file}] " +
-    "[--query|-q {underline string}] [--verbose|-v] {underline source}";
+    "[--query|-q {underline string}] [--strict|-S] [--force|-F] [--verbose|-v] " +
+    "{underline source}";
 
 
 const commands: { [name: string]: Command } = {
@@ -220,12 +235,30 @@ function runGenerateOrSampleCmd(
     let query: StringDict;
     [options, query] = validateGenerateOrSampleOptions(options);
 
+    const command = sample ? "Sampling" : "Generation";
     const outputStream = getOutputStream(options.output);
     const timeVerbose = (options.verbose) ? VERBOSE_TIME|VERBOSE_STATES : SILENT;
     const interpreter = sourceFromFile(options.source, timeVerbose);
 
-    if (options.verbose) {
-        interpreter.devEnv.logErrors();
+    if (options.verbose && options.strict) {
+        console.error("Treating Gramble warnings as errors.");
+    }
+    
+    interpreter.devEnv.logErrors();
+
+    let errors = interpreter.devEnv.getErrors();
+    if (errors.length > 0) {
+        if (!options.strict) {
+            errors = errors.filter(m => m.tag == "error");
+        }
+    }
+
+    if (errors.length > 0) {
+        const plural = errors.length > 1 ? "s" : "";
+        const text = options.force ? "running even though" : "not run because";
+        console.error(`${command} ${text} source has ${errors.length} ` +
+                    `Gramble error${plural}.`);
+        if (!options.force) return;
     }
 
     if (sample) {
@@ -242,7 +275,6 @@ function runGenerateOrSampleCmd(
     const labels = interpreter.getTapeNames(options.symbol);
     const generator = sample ? interpreter.sampleStream(options.symbol, options.num, query)
                              : interpreter.generateStream(options.symbol, query);
-    const command = sample ? "Generation" : "Sampling";
 
     timeIt(() => {
         if (options.format.toLowerCase() == 'csv') {
@@ -250,7 +282,7 @@ function runGenerateOrSampleCmd(
         } else {
             generateToJSON(outputStream, generator, options?.max);
         }
-    }, options.verbose, `${command} commplete`, `Started ${command.toLowerCase()}`);
+    }, options.verbose, `...${command} complete`, `Starting ${command.toLowerCase()}...`);
 };
 
 const sections = [

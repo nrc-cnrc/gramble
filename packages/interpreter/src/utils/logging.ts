@@ -19,13 +19,13 @@ export function logObject(verbose: number = SILENT, obj: any, depth: number | nu
 
 export function logTime(verbose: number, msg: string): void {
     if ((verbose & VERBOSE_TIME) == VERBOSE_TIME) {
-        console.log(msg);
+        console.error(msg);
     }
 }
 
 export function logStates(verbose: number, msg: string): void {
     if ((verbose & VERBOSE_STATES) == VERBOSE_STATES) {
-        console.log(msg);
+        console.error(msg);
     }
 }
 
@@ -36,13 +36,13 @@ export function timeIt<T>(
     startMessage: string = "",
 ): T {
     if (verbose && startMessage.length > 0) {
-        console.log(startMessage);
+        console.error(startMessage);
     }
     const startTime = Date.now();
     const results = func();
     if (verbose) {
         const elapsedTime = msToTime(Date.now() - startTime);
-        console.log(`${message}: ${elapsedTime}`);
+        console.error(`${message}: ${elapsedTime}`);
     }
     return results;
 }

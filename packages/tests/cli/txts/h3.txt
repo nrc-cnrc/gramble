@@ -2,7 +2,8 @@
 Synopsis
 
   gramble generate [--max|-m n] [--symbol|-s name] [--format|-f csv|json]       
-  [--output|-o file] [--query|-q string] [--verbose|-v] source                  
+  [--output|-o file] [--query|-q string] [--strict|-S] [--force|-F]             
+  [--verbose|-v] source                                                         
 
 Options
 
@@ -11,7 +12,11 @@ Options
                           default symbol]                                       
   -f, --format csv|json   write output in CSV or JSON formats [default: csv]    
   -o, --output file       write output to file                                  
-  -q, --query string      Query as key:value pairs, joined by commas, e.g.      
+  -q, --query string      query as key:value pairs, joined by commas, e.g.      
                           "root:kan,subj:1SG"                                   
-  -v, --verbose           log error and info messages                           
+  -S, --strict            strict mode: treat Gramble warnings in the source as  
+                          errors                                                
+  -F, --force             generate/sample even if there are Gramble errors in   
+                          the source                                            
+  -v, --verbose           log more detailed info messages                           
 

@@ -142,10 +142,11 @@ export class Interpreter {
     ): Interpreter {
         // First, load all the sheets
         let startTime = Date.now();
+        logTime(devEnv.opt.verbose, "Loading sheets [...");
         const workbook = new Workbook(mainSheetName);
         addSheet(workbook, mainSheetName, devEnv);
         let elapsedTime = msToTime(Date.now() - startTime);
-        logTime(devEnv.opt.verbose, `Sheets loaded; ${elapsedTime}`);
+        logTime(devEnv.opt.verbose, `...] Loading sheet(s): ${elapsedTime}`);
 
         const result = new Interpreter(devEnv, workbook.grammar);
         result.workbook = workbook;

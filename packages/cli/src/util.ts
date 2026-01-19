@@ -169,5 +169,5 @@ export function generateToJSON(
             if (++count >= max) break;
         }
     }
-    outputStream.write("\n]");
+    outputStream.write("\n]\n");
 }
