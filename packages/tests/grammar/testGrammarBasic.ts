@@ -71,7 +71,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
    
     testGrammar({
-		desc: '6 Null',
+		desc: '6. ∅',
         grammar: Null(),
         tapes: [],
         results: [],     

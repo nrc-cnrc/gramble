@@ -100,7 +100,7 @@ export class Interpreter {
         INDICES.HIDE = 0;
         INDICES.REPLACE = 0;
 
-        const timeVerbose = (this.opt.verbose & VERBOSE_TIME) != 0;
+        //const timeVerbose = (this.opt.verbose & VERBOSE_TIME) != 0;
 
         // Next, we perform a variety of grammar-to-grammar passes in order
         // to get the grammar into an executable state: symbol references fully-qualified,

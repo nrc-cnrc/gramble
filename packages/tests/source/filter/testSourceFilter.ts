@@ -349,7 +349,7 @@ describe(`Source ${DIR}`, function() {
             Error(15, 4, "Embedding multi-field symbol in regex/rule")
         ]
     });
-
+   
     testSrc({
 		desc: '39. equals and starts modifying same embed',
         results: [
