@@ -17,7 +17,7 @@ import { Message, Msg } from "../utils/msgs.js";
  * This pass handles the transformation of replacement rule blocks 
  * into the appropriate sequence of joins/renames/etc.
  */
-export class IdentifyCompilationTargets extends Pass<Grammar,Grammar> {
+export class IdentifyJITTargets extends Pass<Grammar,Grammar> {
 
     public getEnv(opt: Partial<Options>): SymbolEnv {
         return new SymbolEnv(opt);
@@ -54,6 +54,7 @@ export class IdentifyCompilationTargets extends Pass<Grammar,Grammar> {
         const newJoin = newG as JoinGrammar;
 
         const sharedTapes = listIntersection(newJoin.child1.tapeNames, newJoin.child2.tapeNames);
+
         if (sharedTapes.length != 1) {
             // we only want to compile joins with single tapes
             return newJoin.msg(msgs);
@@ -79,7 +80,7 @@ export class IdentifyCompilationTargets extends Pass<Grammar,Grammar> {
         // constraints.  it's not a valid identifier but at this point in compilation that's 
         // fine; the identifier rules are only constraints on programmers.
         const newEmbedName = '$' + toStr(newJoin);
-        
+
         env.symbolNS[newEmbedName] = newJoin;
 
         const newEmbed = new EmbedGrammar(newEmbedName);

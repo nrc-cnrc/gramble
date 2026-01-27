@@ -205,7 +205,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-        desc: '13. Join sym(t1:hi ⋈ t1:hi+t2:bye) ⋈ t2:bye+t3:yo',
+        desc: '13a. Join sym(t1:hi ⋈ t1:hi+t2:bye) ⋈ t2:bye+t3:yo',
         grammar: {
             hi2bye: Join(t1("hi"), Seq(t1("hi"), t2("bye"))),
             b:      Join(Embed("hi2bye"), Seq(t2("bye"), t3("yo"))),
@@ -216,6 +216,20 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: 'hi', t2: 'bye', t3: 'yo'}
         ],
     });
+
+    testGrammar({
+        desc: '13b. Join sym(t1:hi ⋈ t1:hi+t2:bye+t3:yo) ⋈ t2:bye+t3:yo',
+        grammar: {
+            hi2bye: Join(t1("hi"), Seq(t1("hi"), t2("bye"), t3("yo"))),
+            b:      Join(Embed("hi2bye"), Seq(t2("bye"), t3("yo"))),
+        },
+        symbol: "b",
+        vocab: {t1: [..."hi"], t2:[..."bye"], t3:[..."yo"]},
+        results: [
+            {t1: 'hi', t2: 'bye', t3: 'yo'}
+        ],
+    });
+
 
     testGrammar({
         desc: '14. Join t1:hi ⋈ sym(t1:hi+t2:bye ⋈ t2:bye+t3:yo)',
