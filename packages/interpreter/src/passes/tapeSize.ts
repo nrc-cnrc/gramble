@@ -58,6 +58,7 @@ export function getTapeSize(
         case "short": 
         case "test": 
         case "testnot":
+        case "testblock":
         case "pretape":
         case "cursor":
         case "greedyCursor":

@@ -699,6 +699,17 @@ describe(`Source ${DIR}`, function() {
             Error(7, 3, "Filtering non-existent header 'pos'")
         ]
     });
+
+    testSrc({
+		desc: 'E9. Equals with a non-existant symbol',
+        results: [
+            {}
+        ],
+        errors: [
+            Error(7, 2, "Undefined symbol: 'noun'"),
+            Error(7, 3, "Filtering non-existent header 'pos'")
+        ]
+    });
    
     /*
     testSrc({
