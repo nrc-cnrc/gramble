@@ -5,7 +5,6 @@ import {
     Grammar, HideGrammar,
     JoinGrammar, MatchGrammar,
     NegationGrammar, PreTapeGrammar, 
-    PriorityUnionGrammar, 
     RenameGrammar, RepeatGrammar,
     ReplaceGrammar, SequenceGrammar, 
     ShortGrammar,
@@ -20,8 +19,8 @@ import {
     constructDot, constructDotStar, constructEmbed, 
     constructJoin, constructLiteral, 
     constructMatch, constructNegation, constructPreTape, 
-    constructPrecede, constructRename, constructRepeat, 
-    constructSeq, constructShort, constructPriorityUnion, constructReplace,
+    constructRename, constructRepeat, 
+    constructSeq, constructShort, constructReplace,
     constructGreedyCursor
 } from "../exprs.js";
 import { INPUT_TAPE } from "../utils/constants.js";
@@ -51,7 +50,6 @@ export function constructExpr(
         case "alt":             return constructExprAlt(env, g);
         case "short":           return constructExprShort(env, g);
         case "join":            return constructExprJoin(env, g);
-        case "priority":        return constructExprPriUni(env, g);
         case "replace":         return constructExprReplace(env, g);
         case "count":           return constructExprCount(env, g);
         case "rename":          return constructExprRename(env, g);
@@ -101,14 +99,6 @@ function constructExprJoin(
         constructExpr(env, g.child2),
         new Set(g.child1.tapeNames),
         new Set(g.child2.tapeNames));
-}
-
-function constructExprPriUni(
-    env: PassEnv,
-    g: PriorityUnionGrammar
-): Expr {
-    return constructPriorityUnion(env, constructExpr(env, g.child1),
-                                        constructExpr(env, g.child2));
 }
 
 function constructExprReplace(

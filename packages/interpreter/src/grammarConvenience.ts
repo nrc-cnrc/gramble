@@ -1,7 +1,7 @@
 import { 
-    AlternationGrammar, QualifiedGrammar, 
+    AlternationGrammar, 
     ContainsGrammar, CorrespondGrammar, 
-    CountGrammar, GreedyCursorGrammar, 
+    CountGrammar, 
     DotGrammar, EmbedGrammar, 
     EndsGrammar, EpsilonGrammar, 
     FilterGrammar, Grammar, 
@@ -9,7 +9,6 @@ import {
     JoinGrammar, LiteralGrammar, 
     MatchGrammar, NegationGrammar, 
     NullGrammar, PreTapeGrammar, 
-    PriorityUnionGrammar, 
     RenameGrammar, RepeatGrammar, 
     ReplaceBlockGrammar,
     ReplaceGrammar, 
@@ -169,14 +168,6 @@ export function Uni(...children: (Grammar|string)[]): AlternationGrammar {
     children = children.map(c => makeGrammar(c));
     return new AlternationGrammar(children as Grammar[]);
 }
-
-export function PriUni(...children: (Grammar|string)[]): Grammar {
-    const childGrammars = children.map(c => makeGrammar(c));
-    return foldRight(childGrammars, 
-                    (c1, c2) => new PriorityUnionGrammar(c1, c2), 
-                    new NullGrammar());
-}
-
 
 export function Optional(
     child: Grammar | string

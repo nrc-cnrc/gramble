@@ -1,3 +1,4 @@
+import { Component } from "./components.js";
 import { renameTape } from "./tapes.js";
 import { INPUT_TAPE, OUTPUT_TAPE } from "./utils/constants.js";
 import { CounterStack } from "./utils/counter.js";
@@ -312,7 +313,7 @@ function *disjoin(
  *            contents of tape T are epsilon.
  */
 
-export abstract class Expr {
+export abstract class Expr extends Component {
 
     /**
      * Gets an id() for the expression.  At the moment we're only using this
@@ -382,6 +383,8 @@ export abstract class Expr {
  */
 export class EpsilonExpr extends Expr {
 
+    public readonly tag = "EpsilonExpr";
+
     public get id(): string {
         return "ε";
     }
@@ -414,6 +417,8 @@ export class EpsilonExpr extends Expr {
  * This is a special epsilon-like expression used only in queries.
  */
 export class EpsilonTokenExpr extends Expr {
+
+    public readonly tag = "EpsilonTokenExpr";
 
     constructor(
         public tapeName: string
@@ -449,6 +454,8 @@ export class EpsilonTokenExpr extends Expr {
  */
 export class NullExpr extends Expr {
 
+    public readonly tag = "NullExpr";
+
     public get id(): string {
         return "∅";
     }
@@ -473,6 +480,8 @@ export class NullExpr extends Expr {
  */
 class DotExpr extends Expr {
     
+    public readonly tag = "DotExpr";
+
     constructor(
         public tapeName: string
     ) {
@@ -521,6 +530,8 @@ class DotExpr extends Expr {
 
 class DotStarExpr extends Expr {
     
+    public readonly tag = "DotStarExpr";
+
     constructor(
         public tapeName: string
     ) {
@@ -562,6 +573,8 @@ class DotStarExpr extends Expr {
  * have to worry about the details of tokenization, indexing LTR/RTL, etc.
  */
 export class TokenExpr extends Expr {
+
+    public readonly tag = "TokenExpr";
 
     constructor(
         public tapeName: string,
@@ -611,6 +624,8 @@ export class TokenExpr extends Expr {
 }
 
 class LiteralExpr extends Expr {
+
+    public readonly tag = "LiteralExpr";
 
     constructor(
         public tapeName: string,
@@ -743,6 +758,8 @@ export abstract class BinaryExpr extends Expr {
 
 class ConcatExpr extends BinaryExpr {
 
+    public readonly tag = "ConcatExpr";
+
     public get id(): string {
         if (!this.child1.id.startsWith("(")) {
             const child1IDpieces = this.child1.id.split(":");
@@ -836,6 +853,8 @@ class ConcatExpr extends BinaryExpr {
 
 export class UnionExpr extends Expr {
 
+    public readonly tag = "UnionExpr";
+
     constructor(
         public children: Expr[]
     ) { 
@@ -924,6 +943,8 @@ export class UnionExpr extends Expr {
 }
 
 class ReplaceExpr extends Expr {
+
+    public readonly tag = "ReplaceExpr";
 
     public derivExpr: Expr | undefined = undefined;
 
@@ -1080,93 +1101,9 @@ export function constructReplace(
     return new ReplaceExpr(inputChild, outputChild, preChild, postChild, beginsWith, endsWith, optional);
 }
 
-/**
- * A priority union is a union that "prefers" its first child -- only when the
- * first child "fails" can the second "succeed"
- */
-class PriorityUnion extends BinaryExpr {
-
-    constructor(
-        child1: Expr,
-        child2: Expr,
-    ) {
-        super(child1, child2);
-    }
-
-    public delta(
-        tapeName: string,
-        env: DerivEnv
-    ): Expr {
-        const c1delta = this.child1.delta(tapeName, env);
-        if (!(c1delta instanceof NullExpr)) {
-            return c1delta;
-        }
-        return this.child2.delta(tapeName, env);
-    }
-
-    public *deriv(
-        query: Query,
-        env: DerivEnv
-    ): Derivs {
-        const derivs1 = this.child1.deriv(query, env);
-        const derivs2 = this.child2.deriv(query, env);
-        yield *disjoinPriority(env, derivs1, derivs2);
-    }
-
-    public simplify(env: Env): Expr {
-        if (this.child1 instanceof EpsilonExpr) return this.child1;
-        if (this.child1 instanceof OutputExpr) return this.child1;
-        if (this.child1 instanceof NullExpr) return this.child2;
-        if (this.child2 instanceof NullExpr) return this.child1;
-        return this;
-    }
-}
-
-export function constructPriorityUnion(env: Env, c1: Expr, c2: Expr): Expr {
-    return new PriorityUnion(c1, c2).simplify(env);
-}
-
-
-function dictifyDerivs(env: Env, ds: Derivs): Dict<Deriv> {
-    const results: {[c: string]: [TokenExpr|EpsilonExpr, Expr[]]} = {};
-    for (const d of ds) {
-        const cString = d.result.id;
-        if (!(cString in results)) {
-            results[cString] = [d.result, []];
-        }
-        results[cString][1].push(d.next);
-    }
-    const altedResults: Dict<Deriv> = {};
-    for (const [key, [cResult, cNexts]] of Object.entries(results)) {
-        const wrapped = constructAlternation(env, ...cNexts);
-        altedResults[key] = new Deriv(cResult, wrapped);
-    }
-    return altedResults;
-}
-
-function *disjoinPriority(env: Env, derivs1: Derivs, derivs2: Derivs): Derivs {
-    const dict1 = dictifyDerivs(env, derivs1);
-    const dict2 = dictifyDerivs(env, derivs2);
-
-    for (const [key, deriv1] of Object.entries(dict1)) {
-        const deriv2 = dict2[key];
-        if (deriv2 === undefined) {
-            // if there wasn't any deriv w.r.t. this token in child2,
-            // don't bother to construct a priority union
-            yield deriv1;
-            continue;
-        }
-        const priorityUnion = constructPriorityUnion(env, deriv1.next, deriv2.next);
-        yield deriv1.wrap(_ => priorityUnion);
-    }
-
-    for (const [key, deriv2] of Object.entries(dict2)) {
-        if (key in dict1) continue;  // already handle above
-        yield deriv2;
-    }
-}
-
 class JoinExpr extends BinaryExpr {
+
+    public readonly tag = "JoinExpr";
 
     constructor(
         child1: Expr,
@@ -1294,6 +1231,8 @@ class JoinExpr extends BinaryExpr {
  */
  class EmbedExpr extends Expr {
 
+    public readonly tag = "EmbedExpr";
+
     constructor(
         public symbol: string,
         public child: Expr | undefined = undefined
@@ -1403,6 +1342,8 @@ export abstract class UnaryExpr extends Expr {
 
 export class SelectionExpr extends UnaryExpr {
 
+    public readonly tag = "SelectionExpr";
+
     constructor(
         child: Expr,
         public symbols: Dict<Expr>
@@ -1459,6 +1400,8 @@ export function constructSelection(
 }
 
 export class CountExpr extends UnaryExpr {
+
+    public readonly tag = "CountExpr";
 
     constructor(
         child: Expr,
@@ -1540,6 +1483,8 @@ export class CountExpr extends UnaryExpr {
  */
 export class OutputExpr extends UnaryExpr {
 
+    public readonly tag = "OutputExpr";
+
     constructor(
         child: Expr
     ) {
@@ -1576,6 +1521,8 @@ export class OutputExpr extends UnaryExpr {
 }
 
 export class FinishedExpr extends UnaryExpr {
+
+    public readonly tag = "FinishedExpr";
 
     constructor(
         public tapeName: string,
@@ -1641,6 +1588,8 @@ export function constructFinished(
 }
 
 export class CursorExpr extends UnaryExpr {
+
+    public readonly tag = "CursorExpr";
 
     constructor(
         public tapeName: string,
@@ -1742,6 +1691,8 @@ export function constructCursor(
 
 export class GreedyCursorExpr extends UnaryExpr {
 
+    public readonly tag = "GreedyCursorExpr";
+
     constructor(
         public tapeName: string,
         child: Expr,
@@ -1836,6 +1787,8 @@ export function constructGreedyCursor(
 }
 
 export class PreTapeExpr extends UnaryExpr {
+
+    public readonly tag = "PreTapeExpr";
 
     constructor(
         public inputTape: string,
@@ -1957,6 +1910,8 @@ export function constructPreTape(
  */
 class ShortExpr extends UnaryExpr {
 
+    public readonly tag = "ShortExpr";
+
     public get id(): string {
         return `Sh(${this.child.id})`;
     }
@@ -2011,6 +1966,8 @@ export function constructShort(
 }
 
 class StarExpr extends UnaryExpr {
+
+    public readonly tag = "StarExpr";
 
     constructor(
         child: Expr
@@ -2097,6 +2054,8 @@ export function constructRepeat(
  */
 class RenameExpr extends UnaryExpr {
 
+    public readonly tag = "RenameExpr";
+
     constructor(
         child: Expr,
         public fromTape: string,
@@ -2180,6 +2139,8 @@ class RenameExpr extends UnaryExpr {
 
 class NegationExpr extends UnaryExpr {
 
+    public readonly tag = "NegationExpr";
+
     constructor(
         child: Expr,
         public tapes: Set<string>,
@@ -2247,6 +2208,8 @@ class NegationExpr extends UnaryExpr {
 }
 
 export class CorrespondExpr extends UnaryExpr {
+
+    public readonly tag = "CorrespondExpr";
 
     constructor(
         public child: Expr,
@@ -2328,6 +2291,8 @@ export function constructCorrespond(
 
 export class MatchExpr extends UnaryExpr {
 
+    public readonly tag = "MatchExpr";
+    
     constructor(
         child: Expr,
         public inputTape: string,
