@@ -13,7 +13,11 @@ describe(`Source ${DIR}`, function() {
 
     testSrc({
 		desc: '1. Empty grammar',
-        results: undefined
+        results: undefined,
+        symbols: [
+            "All",
+            "bare1.All",
+        ],
     });
 
     testSrc({
@@ -22,7 +26,12 @@ describe(`Source ${DIR}`, function() {
         results: [
             {text: "foo", gloss: "run"},
             {text: "moo", gloss: "jump"}
-        ]
+        ],
+        symbols: [
+            "All",
+            "bare2a.All",
+            "bare2a.Default",
+        ],
     });
 
     testSrc({
@@ -31,21 +40,40 @@ describe(`Source ${DIR}`, function() {
         results: [
             {text: "foo", gloss: "run"},
             {text: "moo", gloss: "jump"}
-        ]
+        ],
+        symbols: [
+            "All",
+            "bare2b.All",
+            "bare2b.Default",
+        ],
     });
 
     testSrc({
 		desc: '3a. Bare grammar with embeds',
         errors: [
             Warning(8,0)
-        ]
+        ],
+        symbols: [
+            "All",
+            "bare3a.All",
+            "bare3a.verb",
+            "bare3a.suffix",
+            "bare3a.$Auto9",
+        ],
     });
     
     testSrc({
 		desc: '3b. Bare grammar with embeds and table op',
         errors: [
             Warning(8,0)
-        ]
+        ],
+        symbols: [
+            "All",
+            "bare3b.All",
+            "bare3b.verb",
+            "bare3b.suffix",
+            "bare3b.$Auto9",
+        ],
     });
     
     testSrc({
@@ -56,7 +84,13 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Warning(4,0)
-        ]
+        ],
+        symbols: [
+            "All",
+            "bare4.All",
+            "bare4.word",
+            "bare4.$Auto5",
+        ],
     });
 
     testSrc({
@@ -64,6 +98,12 @@ describe(`Source ${DIR}`, function() {
         errors: [
             Warning(0,0),
             Warning(4,0)
-        ]
+        ],
+        symbols: [
+            "All",
+            "bare5.All",
+            "bare5.$Auto1",
+            "bare5.$Auto5",
+        ],
     });
 });

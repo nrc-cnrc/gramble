@@ -16,9 +16,17 @@ describe(`Source ${DIR}`, function() {
         results: [
             {text: "fooable", gloss: "run"},
             {text: "mooable", gloss: "jump"},
-        ]
+        ],
+        symbols: [
+            "All",
+            "multi1.All",
+            "multi1.word",
+            "multi1external.word",
+            "multi1external.All",
+        ],
     });
-    
+
+    // test 2 is identical to test 1 ?!?
     testSrc({
 		desc: '2. Multi-sheet project with lowercase sheet reference', 
         results: [
@@ -42,7 +50,14 @@ describe(`Source ${DIR}`, function() {
         results: [
             {text: "fooable", gloss: "run"},
             {text: "mooable", gloss: "jump"},
-        ]
+        ],
+        symbols: [
+            "All",
+            "multi4.All",
+            "multi4.word",
+            "multi4external.Default",
+            "multi4external.All",
+        ],
     });
 
     testSrc({
@@ -52,7 +67,14 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(1, 1, "Undefined symbol: 'multi5external.prefix'")
-        ]
+        ],
+        symbols: [
+            "All",
+            "multi5.All",
+            "multi5.word",
+            "multi5external.word",
+            "multi5external.All",
+        ],
     });
     
     testSrc({
@@ -62,7 +84,12 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(1, 1, "Error parsing cell: 'optional.word'")
-        ]
+        ],
+        symbols: [
+            "All",
+            "multi6.All",
+            "multi6.word",
+        ],
     });
 
     testSrc({
@@ -72,7 +99,12 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(1, 1, "Undefined symbol: 'nonexistantGrammar.word'")
-        ]
+        ],
+        symbols: [
+            "All",
+            "multi7.All",
+            "multi7.word",
+        ],
     });
 
     testSrc({
@@ -82,7 +114,16 @@ describe(`Source ${DIR}`, function() {
             {text: "moobarable", gloss: "jump-1SG"},
             {text: "foobazable", gloss: "run-2SG"},
             {text: "moobazable", gloss: "jump-2SG"}
-        ]
+        ],
+        symbols: [
+            "All",
+            "multi8.All",
+            "multi8.verb",
+            "multi8.word",
+            "multi8external.suffix",
+            "multi8external.word",
+            "multi8external.All",
+        ],
     });
 
     testSrc({
@@ -92,7 +133,17 @@ describe(`Source ${DIR}`, function() {
             {text: "moobarable", gloss: "jump-1SG"},
             {text: "foobazable", gloss: "run-2SG"},
             {text: "moobazable", gloss: "jump-2SG"}
-        ]
+        ],
+        symbols: [
+            "All",
+            "multi9.All",
+            "multi9.word",
+            "multi9external.x.verb",
+            "multi9external.x.suffix",
+            "multi9external.x.word",
+            "multi9external.x.All",
+            "multi9external.All",
+        ],
     });
 
     testSrc({
@@ -100,7 +151,16 @@ describe(`Source ${DIR}`, function() {
         results: [
             {text: "fooable", gloss: "run"},
             {text: "mooable", gloss: "jump"},
-        ]
+        ],
+        symbols: [
+            "All",
+            "multi10.All",
+            "multi10.word",
+            "multi10external.x.verb",
+            "multi10external.x.noun",
+            "multi10external.x.All",
+            "multi10external.All",
+        ],
     });
     
     testSrc({
@@ -109,14 +169,28 @@ describe(`Source ${DIR}`, function() {
         results: [
             {text: "fooable", gloss: "run"},
             {text: "mooable", gloss: "jump"},
-        ]
+        ],
+        symbols: [
+            "All",
+            "multi11.All",
+            "multi11.x.word",
+            "multi11.x.All",
+            "multi1external.word",
+            "multi1external.All",
+        ],
     });
 
     testSrc({
 		desc: '12. Reference to an external document, shadowed by a local assignment',
         results: [
             {text: "zooable"},
-        ]
+        ],
+        symbols: [
+            "All",
+            "multi12.All",
+            "multi12.word",
+            "multi12.multi12external",
+        ],
     });
 
     testSrc({
@@ -124,7 +198,14 @@ describe(`Source ${DIR}`, function() {
         symbol: "x.word",
         results: [
             {text: "zooable"},
-        ]
+        ],
+        symbols: [
+            "All",
+            "multi13.All",
+            "multi13.x.word",
+            "multi13.x.All",
+            "multi13.multi13external",
+        ],
     });
     
     testSrc({
@@ -132,7 +213,14 @@ describe(`Source ${DIR}`, function() {
         symbol: "word",
         results: [
             {text: "zoo"},
-        ]
+        ],
+        symbols: [
+            "All",
+            "multi14.All",
+            "multi14.word",
+            "multi14.multi14external.word",
+            "multi14.multi14external.All",
+        ],
     });
     
     testSrc({
@@ -140,7 +228,14 @@ describe(`Source ${DIR}`, function() {
         symbol: "multi15external.w1",
         results: [
             {text: "zoo"},
-        ]
+        ],
+        symbols: [
+            "All",
+            "multi15.All",
+            "multi15.multi15external.w1",
+            "multi15.multi15external.w2",
+            "multi15.multi15external.All",
+        ],
     });
 
     testSrc({
@@ -148,7 +243,14 @@ describe(`Source ${DIR}`, function() {
         symbol: "result",
         results: [
             {text: "foo"},
-        ]
+        ],
+        symbols: [
+            "All",
+            "multi16.All",
+            "multi16.result",
+            "multi16external.w3",
+            "multi16external.All",
+        ],
     });
     
     testSrc({
@@ -156,7 +258,17 @@ describe(`Source ${DIR}`, function() {
         symbol: "result",
         results: [
             {text: "fooable"},
-        ]
+        ],
+        symbols: [
+            "All",
+            "multi17a.All",
+            "multi17a.PREF_TENSE_PREV",
+            "multi17a.multi17external.w1",
+            "multi17a.multi17external.All",
+            "multi17a.RESULT",
+            "multi17external.w3",
+            "multi17external.All",
+        ],
     });
     
     testSrc({
@@ -164,7 +276,17 @@ describe(`Source ${DIR}`, function() {
         symbol: "result",
         results: [
             {text: "fooable"},
-        ]
+        ],
+        symbols: [
+            "All",
+            "multi17b.All",
+            "multi17b.PREF_TENSE_PREV",
+            "multi17b.multi17external.w1",
+            "multi17b.multi17external.All",
+            "multi17b.RESULT",
+            "multi17external.w3",
+            "multi17external.All",
+        ],
     });
 
     testSrc({
@@ -172,7 +294,17 @@ describe(`Source ${DIR}`, function() {
         symbol: "result",
         results: [
             {text: "fooable"},
-        ]
+        ],
+        symbols: [
+            "All",
+            "multi17c.All",
+            "multi17c.PREF_TENSE_PREV",
+            "multi17c.multi17external.w1",
+            "multi17c.multi17external.All",
+            "multi17c.RESULT",
+            "multi17external.w3",
+            "multi17external.All",
+        ],
     });
     
     testSrc({
@@ -180,7 +312,17 @@ describe(`Source ${DIR}`, function() {
         symbol: "result",
         results: [
             {text: "fooable"},
-        ]
+        ],
+        symbols: [
+            "All",
+            "multi17d.All",
+            "multi17d.PREF_TENSE_PREV",
+            "multi17d.multi17external.w1",
+            "multi17d.multi17external.All",
+            "multi17d.RESULT",
+            "multi17external.w3",
+            "multi17external.All",
+        ],
     });
 
 });

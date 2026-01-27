@@ -18,6 +18,11 @@ describe(`Source ${DIR}`, function() {
             {text: "foo", gloss: "run"},
             {text: "moo", gloss: "jump"}
         ],
+        symbols: [
+            "All",
+            "basic1a.All",
+            "basic1a.word",
+        ],
     });
     
     testSrc({
@@ -25,7 +30,7 @@ describe(`Source ${DIR}`, function() {
         results: [
             {text: "foo", gloss: "run"},
             {text: "moo", gloss: "jump"}
-        ]
+        ],
     });
     
     testSrc({
@@ -33,7 +38,7 @@ describe(`Source ${DIR}`, function() {
         results: [
             {text: "foo", gloss: "run"},
             {text: "moo", gloss: "jump"}
-        ]
+        ],
     });
 
     testSrc({
@@ -41,17 +46,24 @@ describe(`Source ${DIR}`, function() {
         results: [
             {text: "foo", gloss: "run"},
             {text: "moo", gloss: "jump"}
-        ]
+        ],
     });
 
     testSrc({
-		desc: '2b. Embeds',
+		desc: '2a. Embeds',
         results: [
             {text: "foobar", gloss: "run-1SG"},
             {text: "moobar", gloss: "jump-1SG"},
             {text: "foobaz", gloss: "run-2SG"},
             {text: "moobaz", gloss: "jump-2SG"}
-        ]
+        ],
+        symbols: [
+            "All",
+            "basic2a.All",
+            "basic2a.word",
+            "basic2a.Verb",
+            "basic2a.Suffix",
+        ],
     });
 
     testSrc({
@@ -61,7 +73,14 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"},
             {text: "foobaz", gloss: "run-2SG"},
             {text: "moobaz", gloss: "jump-2SG"}
-        ]
+        ],
+        symbols: [
+            "All",
+            "basic2b.All",
+            "basic2b.word",
+            "basic2b.Verb",
+            "basic2b.Suffix",
+        ],
     });
 
     testSrc({
@@ -72,7 +91,14 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"},
             {text: "foobaz", gloss: "run-2SG"},
             {text: "moobaz", gloss: "jump-2SG"}
-        ]
+        ],
+        symbols: [
+            "All",
+            "basic3a.All",
+            "basic3a._Word",
+            "basic3a._Verb",
+            "basic3a.Suf_fix",
+        ],
     });
 
 
@@ -83,7 +109,7 @@ describe(`Source ${DIR}`, function() {
             {_text: "moobar", gloss_: "jump-1SG"},
             {_text: "foobaz", gloss_: "run-2SG"},
             {_text: "moobaz", gloss_: "jump-2SG"}
-        ]
+        ],
     });
 
     testSrc({
@@ -95,7 +121,14 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG", pos:"v"},
             {text: "foo", gloss: "run.3SG", pos:"v"},
             {text: "moo", gloss: "jump.3SG", pos:"v"}
-        ]
+        ],
+        symbols: [
+            "All",
+            "basic4.All",
+            "basic4.word",
+            "basic4.verb",
+            "basic4.suffix",
+        ],
     });
 
     testSrc({
@@ -108,7 +141,14 @@ describe(`Source ${DIR}`, function() {
             Warning(1, 0),  // This symbol will not contain any content.
             Error(1, 1, "'table' operator requires header(s)"),
             Warning(1, 1),  // This will not contain any content.
-        ]
+        ],
+        symbols: [
+            "All",
+            "basic5a.All",
+            "basic5a.word",
+            "basic5a.verb",
+            "basic5a.suffix",
+        ],
     });
 
     testSrc({
@@ -121,7 +161,6 @@ describe(`Source ${DIR}`, function() {
             Warning(1, 0),  // This symbol will not contain any content.
             Error(1, 1, "'table' operator requires header(s)")
         ],
-        // verbose: VERBOSE_DEBUG,
     });
 
     testSrc({
@@ -133,7 +172,6 @@ describe(`Source ${DIR}`, function() {
         errors: [
             Warning(1, 2),  // No content cells found for these headers; assuming empty values.
         ],
-        // verbose: VERBOSE_DEBUG,
     });
 
     testSrc({
@@ -164,7 +202,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moo"},
             {text: "foobar"},
             {text: "moobar"},
-        ]
+        ],
     });
 
     testSrc({
@@ -176,7 +214,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"},
             {text: "foo", gloss: "run"},
             {text: "moo", gloss: "jump"}
-        ]
+        ],
     });
 
     testSrc({
@@ -186,7 +224,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "moo-1SG"},
             {text: "foobaz", gloss: "foo-2SG"},
             {text: "moobaz", gloss: "moo-2SG"}
-        ]
+        ],
     });
     
     testSrc({
@@ -196,7 +234,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "moo-1SG", root: "moo"},
             {text: "foobaz", gloss: "foo-2SG", root: "foo"},
             {text: "moobaz", gloss: "moo-2SG", root: "moo"}
-        ]
+        ],
     });
 
     testSrc({
@@ -222,7 +260,12 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Warning(0, 0),  // This symbol will not contain any content.
-        ]
+        ],
+        symbols: [
+            "All",
+            "basic10a.All",
+            "basic10a.word",
+        ],
     });
 
     testSrc({
@@ -233,7 +276,12 @@ describe(`Source ${DIR}`, function() {
         errors: [
             Warning(0, 0),  // This symbol will not contain any content.
             Error(0, 2, "Implicit 'table' operator requires header(s)"),
-        ]
+        ],
+        symbols: [
+            "All",
+            "basic10b.All",
+            "basic10b.word",
+        ],
     });
 
     testSrc({
@@ -250,6 +298,15 @@ describe(`Source ${DIR}`, function() {
         desc: '12. Commented operators & assignments',
         results: [
             {text: "goo1goo2goo3goo4"},
+        ],
+        symbols: [
+            "All",
+            "basic12.All",
+            "basic12.word",
+            "basic12.part1",
+            "basic12.part2",
+            "basic12.part3",
+            "basic12.part4",
         ],
     });
 
@@ -338,6 +395,13 @@ describe(`Source ${DIR}`, function() {
         errors: [
             Error(1, 4, "Implicit 'table' operator requires header(s)"),
             Warning(2, 1),  // 'table:' is in an unexpected column. Did you intend ...
+        ],
+        symbols: [
+            "All",
+            "basic14a.All",
+            "basic14a.word",
+            "basic14a.verb",
+            "basic14a.suffix",
         ],
         // verbose: VERBOSE_DEBUG,
     });

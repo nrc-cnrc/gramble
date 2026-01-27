@@ -355,6 +355,23 @@ export function testNumErrors(
     });
 }
 
+export function testHasSymbols(
+    interpreter: Interpreter,
+    expectedSymbols: string[]
+): void {
+    const expectedSet = new Set(expectedSymbols.map(s => s.toLowerCase()));
+    it(`should have symbols {${expectedSymbols}}`, function() {
+        try {
+            const symbols = new Set(interpreter.allSymbols().map(s => s.toLowerCase()));
+            expect(symbols).to.deep.equal(expectedSet);
+        } catch (e) {
+            console.log(`[${this.test?.fullTitle()}]`);
+            console.log(`outputs: ${JSON.stringify(interpreter.allSymbols())}`);
+            throw e;
+        }
+    });
+}
+
 export function textFromFile(
     path: string, 
 ): string[] {

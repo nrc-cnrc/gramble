@@ -20,6 +20,14 @@ describe(`Source ${DIR}`, function() {
             {text: "foobaz", gloss: "run-2SG"},
             {text: "moobaz", gloss: "jump-2SG"}
         ],
+        symbols: [
+            "All",
+            "collection1a.All",
+            "collection1a.x.verb",
+            "collection1a.x.All",
+            "collection1a.suffix",
+            "collection1a.word",
+        ],
         // verbose: VERBOSE_DEBUG
     });
     
@@ -30,7 +38,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"},
             {text: "foobaz", gloss: "run-2SG"},
             {text: "moobaz", gloss: "jump-2SG"}
-        ]
+        ],
     });
 
     testSrc({
@@ -39,7 +47,13 @@ describe(`Source ${DIR}`, function() {
         results: [
             {text: "foo", gloss: "run"},
             {text: "moo", gloss: "jump"}
-        ]
+        ],
+        symbols: [
+            "All",
+            "collection2a.All",
+            "collection2a.word.verb",
+            "collection2a.word.All",
+        ],
     });
     
     testSrc({
@@ -48,7 +62,7 @@ describe(`Source ${DIR}`, function() {
         results: [
             {text: "foo", gloss: "run"},
             {text: "moo", gloss: "jump"}
-        ]
+        ],
     });
 
     testSrc({
@@ -58,7 +72,15 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"},
             {text: "foobaz", gloss: "run-2SG"},
             {text: "moobaz", gloss: "jump-2SG"}
-        ]
+        ],
+        symbols: [
+            "All",
+            "collection3.All",
+            "collection3.word",
+            "collection3.x.verb",
+            "collection3.x.suffix",
+            "collection3.x.All",
+        ],
     });
 
     testSrc({
@@ -69,7 +91,13 @@ describe(`Source ${DIR}`, function() {
             {"text":"goo","gloss":"water"},
             {"text":"moo","gloss":"jump"},
             {"text":"foo","gloss":"run"}
-        ]
+        ],
+        symbols: [
+            "All",
+            "collection4.All",
+            "collection4.verb",
+            "collection4.noun",
+        ],
     });
     
     testSrc({
@@ -80,7 +108,14 @@ describe(`Source ${DIR}`, function() {
             {"text":"goo","gloss":"water"},
             {"text":"moo","gloss":"jump"},
             {"text":"foo","gloss":"run"}
-        ]
+        ],
+        symbols: [
+            "All",
+            "collection5.All",
+            "collection5.x.verb",
+            "collection5.x.noun",
+            "collection5.x.All",
+        ],
     });
     
     testSrc({
@@ -90,7 +125,17 @@ describe(`Source ${DIR}`, function() {
             {"text":"goo","gloss":"water"},
             {"text":"moo","gloss":"jump"},
             {"text":"foo","gloss":"run"}
-        ]
+        ],
+        symbols: [
+            "All",
+            "collection6a.All",
+            "collection6a.word",
+            "collection6a.x.verb",
+            "collection6a.x.noun.nclass1",
+            "collection6a.x.noun.nclass2",
+            "collection6a.x.noun.All",
+            "collection6a.x.All",
+        ],
     });
     
     testSrc({
@@ -100,7 +145,17 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(11, 1, "Undefined symbol: 'x.all.all'")
-        ]
+        ],
+        symbols: [
+            "All",
+            "collection6b.All",
+            "collection6b.word",
+            "collection6b.x.verb",
+            "collection6b.x.noun.nclass1",
+            "collection6b.x.noun.nclass2",
+            "collection6b.x.noun.All",
+            "collection6b.x.All",
+        ],
     });
 
     testSrc({
@@ -108,7 +163,14 @@ describe(`Source ${DIR}`, function() {
         results: [
             {"text":"boo","gloss":"fire"},
             {"text":"goo","gloss":"water"}
-        ]
+        ],
+        symbols: [
+            "All",
+            "collection7a.All",
+            "collection7a.word",
+            "collection7a.x.verb",
+            "collection7a.x.all",
+        ],
     });
 
     testSrc({
@@ -125,9 +187,18 @@ describe(`Source ${DIR}`, function() {
         results: [
             {"text":"moo","gloss":"jump"},
             {"text":"foo","gloss":"run"}
-        ]
+        ],
+        symbols: [
+            "All",
+            "collection8a.All",
+            "collection8a.word",
+            "collection8a.x.verb",
+            "collection8a.x.nclass1",
+            "collection8a.x.all",
+        ],
     });
 
+    // test 8b is identical to test 8a ?!?
     testSrc({
 		desc: '8b. Reference to a symbol next to explicit all',
         results: [
@@ -144,7 +215,15 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(9, 2, "Undefined symbol: 'y.verb'")
-        ]
+        ],
+        symbols: [
+            "All",
+            "collection9a.All",
+            "collection9a.word",
+            "collection9a.x.verb",
+            "collection9a.x.All",
+            "collection9a.suffix",
+        ],
     });
 
     testSrc({
@@ -155,7 +234,7 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(9, 2, "Undefined symbol: 'x.noun'")
-        ]
+        ],
     });
     
     testSrc({
@@ -177,7 +256,16 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"},
             {text: "foobaz", gloss: "run-2SG"},
             {text: "moobaz", gloss: "jump-2SG"}
-        ]
+        ],
+        symbols: [
+            "All",
+            "collection10a.All",
+            "collection10a.word",
+            "collection10a.verb",
+            "collection10a.suffix",
+            "collection10a.x.stem",
+            "collection10a.x.All",
+        ],
     });
 
     testSrc({
@@ -187,7 +275,17 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"},
             {text: "foobaz", gloss: "run-2SG"},
             {text: "moobaz", gloss: "jump-2SG"}
-        ]
+        ],
+        symbols: [
+            "All",
+            "collection10b.All",
+            "collection10b.word",
+            "collection10b.x.verb",
+            "collection10b.x.suffix",
+            "collection10b.x.All",
+            "collection10b.y.stem",
+            "collection10b.y.All",
+        ],
     });
 
     testSrc({
@@ -198,7 +296,15 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"},
             {text: "foobaz", gloss: "run-2SG"},
             {text: "moobaz", gloss: "jump-2SG"}
-        ]
+        ],
+        symbols: [
+            "All",
+            "collection10c.All",
+            "collection10c.word.verb",
+            "collection10c.word.suffix",
+            "collection10c.word.x",
+            "collection10c.word.All",
+        ],
     });
 
     testSrc({
@@ -209,7 +315,15 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Warning(0,0)
-        ]
+        ],
+        symbols: [
+            "All",
+            "collection11a.All",
+            "collection11a.$Auto1.verb",
+            "collection11a.$Auto1.All",
+            "collection11a.suffix",
+            "collection11a.word",
+        ],
     });
 
     testSrc({
@@ -220,7 +334,15 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Warning(4,0)
-        ]
+        ],
+        symbols: [
+            "All",
+            "collection11b.All",
+            "collection11b.suffix",
+            "collection11b.$Auto5.verb",
+            "collection11b.$Auto5.All",
+            "collection11b.word",
+        ],
     });
 
     testSrc({
@@ -228,7 +350,15 @@ describe(`Source ${DIR}`, function() {
         results: undefined,
         errors: [
             Warning(8,0)
-        ]
+        ],
+        symbols: [
+            "All",
+            "collection11c.All",
+            "collection11c.verb",
+            "collection11c.suffix",
+            "collection11c.$Auto9.word",
+            "collection11c.$Auto9.All",
+        ],
     });
 
     testSrc({
@@ -242,6 +372,13 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(11, 2, "Wayward collection, operand of 'or'")
+        ],
+        symbols: [
+            "All",
+            "collection12a.All",
+            "collection12a.verb",
+            "collection12a.suffix",
+            "collection12a.word",
         ],
         // verbose: VERBOSE_DEBUG,
     });
@@ -261,6 +398,13 @@ describe(`Source ${DIR}`, function() {
         errors: [
             Error(8, 1, "Wayward collection, operand of 'or'")
         ],
+        symbols: [
+            "All",
+            "collection12b.All",
+            "collection12b.verb",
+            "collection12b.suffix",
+            "collection12b.word",
+        ],
         // verbose: VERBOSE_DEBUG,
     });
 
@@ -273,6 +417,13 @@ describe(`Source ${DIR}`, function() {
             Warning(8,0),   // This symbol will not contain any content.
             Error(8, 1, "'table' operator requires header(s), not 'collection:'"),
             Error(11, 1, "Missing content for 'or:'"),
+        ],
+        symbols: [
+            "All",
+            "collection12c.All",
+            "collection12c.verb",
+            "collection12c.suffix",
+            "collection12c.word",
         ],
         // verbose: VERBOSE_DEBUG,
     });
@@ -289,6 +440,15 @@ describe(`Source ${DIR}`, function() {
             {text: "foobaz", gloss: "run-2SG"},
             {text: "moobaz", gloss: "jump-2SG"}
         ],
+        symbols: [
+            "All",
+            "collection13a.All",
+            "collection13a.word",
+            "importedGrammar.Verb",
+            "importedGrammar.Suffix",
+            "importedGrammar.Word",
+            "importedGrammar.All",
+        ],
     });
 
     testSrc({
@@ -298,6 +458,14 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"},
             {text: "foobaz", gloss: "run-2SG"},
             {text: "moobaz", gloss: "jump-2SG"}
+        ],
+        symbols: [
+            "All",
+            "collection13b.All",
+            "collection13b.word",
+            "importedGrammar2.Verb",
+            "importedGrammar2.Suffix",
+            "importedGrammar2.All",
         ],
     });
 });
