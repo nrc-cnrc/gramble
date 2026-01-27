@@ -457,7 +457,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
         desc: 'E1. Missing symbol',
         grammar: {
             a: t1("hi"), 
-            b: Embed("c")
+            b: Embed("x")
         },
         symbol: "a",
         tapes: ["t1"],

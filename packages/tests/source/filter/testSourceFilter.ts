@@ -711,6 +711,45 @@ describe(`Source ${DIR}`, function() {
         ]
     });
    
+    testSrc({
+		desc: 'E10. Nested equals with an unknown symbol',
+        results: [
+            {}
+        ],
+        errors: [
+            Error(11,2, "Undefined symbol: 'noun'"),
+            Error(11,3, "Filtering non-existent header 'subj'"),
+            Error(11,4, "Filtering non-existent header 'trans'"),
+        ]
+    });
+
+    testSrc({
+		desc: 'E11. Equals with an embed referring to an erroneous table',
+        results: [
+            {"gloss":"jump","trans":"INTR"},
+            {"gloss":"run","trans":"INTR"}
+        ],
+        errors: [
+            Error(1, 2, "Invalid header: 'text blorp'"),
+            Warning(2,2),
+            Warning(3,2),
+            Warning(4,2),
+        ]
+    });
+
+    testSrc({
+		desc: 'E12. Nested equals with a malformed inner filter',
+        results: [
+            {"gloss":"jump[2SG]","subj":"[2SG]","text":"moobaz","trans":"INTR"},
+            {"gloss":"jump[1SG]","subj":"[1SG]","text":"moobar","trans":"INTR"},
+            {"gloss":"run[2SG]","subj":"[2SG]","text":"foobaz","trans":"INTR"},
+            {"gloss":"run[1SG]","subj":"[1SG]","text":"foobar","trans":"INTR"}
+        ],
+        errors: [
+            Error(11,3, "Filtering non-existent header 'blorp'")
+        ]
+    });
+
     /*
     testSrc({
 		desc: 'HighVowel tests 1',

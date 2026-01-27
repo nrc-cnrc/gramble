@@ -1,0 +1,9 @@
+
+verb=, table:, text blorp, gloss, trans
+    ,       , foo, run, INTR,
+    ,       , moo, jump, INTR,
+    ,       , goo, see, TR,
+
+
+word=, table:, embed,  equals trans
+    ,       , verb, INTR

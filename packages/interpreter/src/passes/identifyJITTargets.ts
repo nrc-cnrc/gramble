@@ -50,27 +50,28 @@ export class IdentifyJITTargets extends Pass<Grammar,Grammar> {
     
     public handleJoin(g: JoinGrammar, env: SymbolEnv): Grammar | Msg<Grammar> {
 
-        const [newG, msgs] = g.mapChildren(this, env).destructure();
-        const newJoin = newG as JoinGrammar;
+        const [newG, msgs] = g.mapChildren(this, env).destructure() as [JoinGrammar, Message[]];
 
-        const sharedTapes = listIntersection(newJoin.child1.tapeNames, newJoin.child2.tapeNames);
+        const sharedTapes = listIntersection(newG.child1.tapeNames, newG.child2.tapeNames);
 
+        console.log(`sharedTapes = ${sharedTapes}`);
+        
         if (sharedTapes.length != 1) {
             // we only want to compile joins with single tapes
-            return newJoin.msg(msgs);
+            return newG.msg(msgs);
         }
 
         const sharedTape = sharedTapes[0]
-        const sharedTapeSize = getTapeSize(newJoin, sharedTape, new CounterStack, env);
+        const sharedTapeSize = getTapeSize(newG, sharedTape, new CounterStack, env);
 
         if (sharedTapeSize.cardinality > 1) {
             // we're only interested here in joins that are relatively trivial
-            return newJoin.msg(msgs);
+            return newG.msg(msgs);
         }
 
-        if (newJoin.child1.tag != "embed") {
+        if (newG.child1.tag != "embed") {
             // compiling joined embeds is our priority
-            return newJoin.msg(msgs);
+            return newG.msg(msgs);
         }
 
         // we need a name that uniquely identifies this grammar wherever it occurs.  this
@@ -79,15 +80,16 @@ export class IdentifyJITTargets extends Pass<Grammar,Grammar> {
         // suffices, at least for the simple grammars that will be picked out by the above 
         // constraints.  it's not a valid identifier but at this point in compilation that's 
         // fine; the identifier rules are only constraints on programmers.
-        const newEmbedName = '$' + toStr(newJoin);
-
-        env.symbolNS[newEmbedName] = newJoin;
+        const newEmbedName = '$' + toStr(newG);
+        
+        console.log(`found a JIT candidate: ${newEmbedName}`)
+        env.symbolNS[newEmbedName] = newG;
 
         const newEmbed = new EmbedGrammar(newEmbedName);
-        newEmbed.tapes = newJoin.tapes; // can't use tapify here, 
+        newEmbed.tapes = newG.tapes; // can't use tapify here, 
                         // due to env issues, but we already know the answer
 
-        return newEmbed;
+        return newEmbed.msg(msgs);
     }
 
 }
