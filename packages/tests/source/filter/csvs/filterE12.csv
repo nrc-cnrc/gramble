@@ -1,0 +1,12 @@
+
+verb=, table:, text, gloss, trans
+    ,       , foo, run, INTR,
+    ,       , moo, jump, INTR,
+    ,       , goo, see, TR,
+
+stem=, table:, embed, text, gloss/subj
+    ,       , verb, bar, [1SG]
+    ,       , verb, baz, [2SG]
+
+word=, table:, embed, equals blorp, equals trans
+    ,       , stem, [2SG], INTR
