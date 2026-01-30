@@ -64,21 +64,22 @@ export function getTapeSize(
         case "greedyCursor":
         case "singletape":
         case "correspond":
+        case "jit":
             return getTapeSize(g.child, tapeName, stack, env);
 
         // ones where it's based on the child(ren) but complicated
-        case "embed": return getTapeSizeEmbed(g, tapeName, stack, env);
-        case "seq": return getTapeSizeSeq(g, tapeName, stack, env);
-        case "alt": return getTapeSizeAlt(g, tapeName, stack, env);
-        case "join": return getTapeSizeJoin(g, tapeName, stack, env);
-        case "match": return getTapeSizeMatch(g, tapeName, stack, env);
-        case "count": return getTapeSizeCount(g, tapeName, stack, env);
-        case "rename": return getTapeSizeRename(g, tapeName, stack, env);
-        case "hide": return getTapeSizeHide(g, tapeName, stack, env);
-        case "repeat": return getTapeSizeRepeat(g, tapeName, stack, env);
-        case "not": return getTapeSizeNegation(g, tapeName, stack, env);
-        case "qualified": return getTapeSizeQualified(g, tapeName, stack, env);
-        case "selection":    return getTapeSizeSelection(g, tapeName, stack, env);
+        case "embed":       return getTapeSizeEmbed(g, tapeName, stack, env);
+        case "seq":         return getTapeSizeSeq(g, tapeName, stack, env);
+        case "alt":         return getTapeSizeAlt(g, tapeName, stack, env);
+        case "join":        return getTapeSizeJoin(g, tapeName, stack, env);
+        case "match":       return getTapeSizeMatch(g, tapeName, stack, env);
+        case "count":       return getTapeSizeCount(g, tapeName, stack, env);
+        case "rename":      return getTapeSizeRename(g, tapeName, stack, env);
+        case "hide":        return getTapeSizeHide(g, tapeName, stack, env);
+        case "repeat":      return getTapeSizeRepeat(g, tapeName, stack, env);
+        case "not":         return getTapeSizeNegation(g, tapeName, stack, env);
+        case "qualified":   return getTapeSizeQualified(g, tapeName, stack, env);
+        case "selection":   return getTapeSizeSelection(g, tapeName, stack, env);
 
         // ones where it's not implemented
         case "context": 
