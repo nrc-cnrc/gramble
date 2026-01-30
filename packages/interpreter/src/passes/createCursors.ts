@@ -88,6 +88,7 @@ function getTapePriority(
         case "testblock":
         case "short":
         case "match":
+        case "jit":
         case "correspond":  return getTapePriorityDefault(g, tape, symbolsVisited, env);
 
         // literals & similar start things out, they're priority 1 for their tape

@@ -9,6 +9,7 @@ import {
     ReplaceGrammar, SequenceGrammar, 
     ShortGrammar,
     CursorGrammar,
+    JITGrammar,
 } from "../grammars.js";
 import { Dict } from "../utils/func.js";
 import { 
@@ -21,7 +22,8 @@ import {
     constructMatch, constructNegation, constructPreTape, 
     constructRename, constructRepeat, 
     constructSeq, constructShort, constructReplace,
-    constructGreedyCursor
+    constructGreedyCursor,
+    constructJIT
 } from "../exprs.js";
 import { INPUT_TAPE } from "../utils/constants.js";
 import { Env } from "../utils/options.js";
@@ -62,6 +64,7 @@ export function constructExpr(
         case "match":           return constructExprMatch(env, g);
         case "selection":       return constructExprSelection(env, g);
         case "correspond":      return constructExprCorrespond(env, g);
+        case "jit":             return constructExprJIT(env, g);
         
         default: throw new Error(`unhandled grammar in constructExpr: ${g.tag}`)
     }
@@ -216,6 +219,14 @@ function constructExprCorrespond(
 ): Expr {
     const childExpr = constructExpr(env, g.child);
     return constructCorrespond(env, childExpr, g.inputTape, g.outputTape);
+}
+
+function constructExprJIT(
+    env: PassEnv,
+    g: JITGrammar
+): Expr {
+    const childExpr = constructExpr(env, g.child);
+    return constructJIT(env, childExpr, g.tapeName, g.symbolName);
 }
 
 export function matchNot(

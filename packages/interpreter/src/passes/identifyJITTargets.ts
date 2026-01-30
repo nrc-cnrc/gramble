@@ -3,6 +3,7 @@ import {
     JoinGrammar, 
     EmbedGrammar,
     QualifiedGrammar,
+    JITGrammar,
 } from "../grammars.js";
 
 import { Pass, SymbolEnv } from "../passes.js";
@@ -54,8 +55,6 @@ export class IdentifyJITTargets extends Pass<Grammar,Grammar> {
 
         const sharedTapes = listIntersection(newG.child1.tapeNames, newG.child2.tapeNames);
 
-        console.log(`sharedTapes = ${sharedTapes}`);
-        
         if (sharedTapes.length != 1) {
             // we only want to compile joins with single tapes
             return newG.msg(msgs);
@@ -81,13 +80,17 @@ export class IdentifyJITTargets extends Pass<Grammar,Grammar> {
         // constraints.  it's not a valid identifier but at this point in compilation that's 
         // fine; the identifier rules are only constraints on programmers.
         const newEmbedName = '$' + toStr(newG);
+
+        const jitG = new JITGrammar(newG, sharedTape, newEmbedName);
         
-        console.log(`found a JIT candidate: ${newEmbedName}`)
-        env.symbolNS[newEmbedName] = newG;
+        env.symbolNS[newEmbedName] = jitG;
 
         const newEmbed = new EmbedGrammar(newEmbedName);
-        newEmbed.tapes = newG.tapes; // can't use tapify here, 
-                        // due to env issues, but we already know the answer
+        
+        // we can't use tapify here, because we have the wrong kind of 
+        // env, but it's okay because we already know the answer
+        jitG.tapes = newG.tapes;
+        newEmbed.tapes = newG.tapes;
 
         return newEmbed.msg(msgs);
     }

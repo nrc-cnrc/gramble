@@ -1253,9 +1253,9 @@ class JoinExpr extends BinaryExpr {
             if (child == undefined) {
                 // this is an error, due to the programmer referring to an undefined
                 // symbol, but now is not the time to complain. 
-                child = EPSILON;
+                return EPSILON;
             } 
-            this.child = child;
+            return child;
         }
         return this.child;
     }
@@ -1282,7 +1282,8 @@ class JoinExpr extends BinaryExpr {
             return NULL;
         }
         const newEnv = env.addSymbol(this.symbol);
-        const cNext = this.getChild(env).delta(tapeName, newEnv);
+        const child = this.getChild(env);
+        const cNext = child.delta(tapeName, newEnv);
         return constructEmbed(env, this.symbol, cNext);
     }
 
@@ -1297,7 +1298,6 @@ class JoinExpr extends BinaryExpr {
 
         const newEnv = env.addSymbol(this.symbol);
         let child = this.getChild(env);
-
         for (const d of child.deriv(query, newEnv)) {
             yield d.wrap(c => constructEmbed(env, this.symbol, c));
         }
@@ -1897,6 +1897,83 @@ export function constructPreTape(
 ): Expr {
     return new PreTapeExpr(inputTape, outputTape, child, output).simplify(env);
 }
+
+/**
+ * JITExpr is a wrapper around an expression that pre-executes some queries
+ * and then effectively caches the results.  
+ * 
+ * It uses the algorithmic metaphor of a "zipper" -- you calculate forward a few
+ * steps, in our case using the Brz. equation, and then you "back up" by turning 
+ * the results into an expression themselves.
+ * 
+ * For example, if we had something like JIT(Alt(Lit("t1", "foo"), ), we might go forward
+ * one step on that lit and get an output of "f" on t1 and a next-expr of Lit("t1", "oo").  
+ * Then backing up would be forming the sequence Seq(Lit("t1", "f")), Lit("t1", "oo")).
+ * (Not that that would be useful for such a simple expression, but that's what a zipper is.)
+ * 
+ * Then, we take the resulting expression and store it in a symbol in the symbol table --
+ * specifically, the symbol that originally pointed to this JITExpr.  That way the next time
+ * the symbol is invoked, we don't have to perform that Brz. deriv again.
+ */
+
+class JITExpr extends UnaryExpr {
+
+    public readonly tag = "jitexpr";
+
+    constructor(
+        child: Expr,
+        public tapeName: string,
+        public symbolName: string,
+    ) {
+        super(child);
+    }
+    public get id(): string {
+        return `Jit(${this.child.id})`;
+    }
+
+    public jitCompile(
+        env: DerivEnv 
+    ): Expr {
+        console.log(`JIT executed, tape = ${this.tapeName}, symbol = ${this.symbolName}`);
+        env.symbols[this.symbolName] = this.child;
+        return this.child;
+    }
+
+    public delta(
+        tapeName: string, 
+        env: DerivEnv
+    ): Expr {
+        const jitted = this.jitCompile(env);
+        return jitted.delta(tapeName, env);
+    }
+
+    public *deriv(
+        query: Query,
+        env: DerivEnv
+    ): Derivs {
+        const jitted = this.jitCompile(env);
+        yield* jitted.deriv(query, env);
+    }
+
+    public simplify(env: Env): Expr {
+        if (this.child instanceof EpsilonExpr) return this.child;
+        if (this.child instanceof NullExpr) return this.child;
+        if (this.child instanceof OutputExpr) return this.child;
+        return this;
+    }
+
+
+}
+
+export function constructJIT(
+    env: Env, 
+    child: Expr,
+    tapeName: string,
+    symbolName: string,
+): Expr {
+    return new JITExpr(child, tapeName, symbolName).simplify(env);
+}
+
 
 /**
  * ShortExprs "short-circuit" as soon as any of their children

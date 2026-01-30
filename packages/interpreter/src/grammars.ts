@@ -57,7 +57,8 @@ export type Grammar = EpsilonGrammar
              | ReplaceGrammar
              | CorrespondGrammar
              | RuleContextGrammar
-             | TapeNamesGrammar;
+             | TapeNamesGrammar
+             | JITGrammar;
 /**
  * Grammar components represent the linguistic grammar that the
  * programmer is expressing (in terms of sequences, alternations, joins,
@@ -214,6 +215,19 @@ abstract class BinaryGrammar extends AbstractGrammar {
     ) {
         super();
     }
+}
+
+export class JITGrammar extends UnaryGrammar {
+    public readonly tag = "jit";
+
+    constructor(
+        child: Grammar,
+        public tapeName: string,
+        public symbolName: string,
+    ) {
+        super(child);
+    }
+
 }
 
 export class JoinGrammar extends BinaryGrammar {

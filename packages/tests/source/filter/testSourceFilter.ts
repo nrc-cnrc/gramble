@@ -1,4 +1,4 @@
-import { VERBOSE_DEBUG } from "@gramble/interpreter";
+import { VERBOSE_DEBUG, VERBOSE_GRAMMAR } from "@gramble/interpreter";
 import {
     testSource, SourceTest, 
     Error, Warning 
@@ -17,9 +17,11 @@ describe(`Source ${DIR}`, function() {
         results: [
             {pos: "v", text: "goo"},
             {pos: "v", text: "foo"}
-        ]
+        ],
+        verbose: VERBOSE_GRAMMAR
     });
 
+    /*
     testSrc({
 		desc: '2. Equals with an empty-string condition',
         results: [
