@@ -65,25 +65,29 @@ describe(`${cliTestSuiteName(module)}`, function() {
     testCLI({
         desc: 'h1. test help: gramble help',
         command: "gramble help",
-        results: textFromFile("cli/txts/h1.txt"),
+        results: [],
+        errors: textFromFile("cli/txts/h1.txt"),
     });
 
     testCLI({
         desc: 'h2. test help: gramble help help',
         command: "gramble help help",
-        results: textFromFile("cli/txts/h2.txt"),
+        results: [],
+        errors: textFromFile("cli/txts/h2.txt"),
     });
 
     testCLI({
         desc: 'h3. test help: gramble help generate',
         command: "gramble help generate",
-        results: textFromFile("cli/txts/h3.txt"),
+        results: [],
+        errors: textFromFile("cli/txts/h3.txt"),
     });
 
     testCLI({
         desc: 'h4. test help: gramble help sample',
         command: "gramble help sample",
-        results: textFromFile("cli/txts/h4.txt"),
+        results: [],
+        errors: textFromFile("cli/txts/h4.txt"),
     });
 
     testCLI({

@@ -11,6 +11,8 @@ import {
 import commandLineArgs from "command-line-args";
 import commandLineUsage from "command-line-usage";
 import seedrandom from "seedrandom";
+import { Console } from 'console';
+import * as process from 'process';
 
 import {
     fileExistsOrFail, generateToCSV, generateToJSON,
@@ -18,8 +20,11 @@ import {
     StringDict, usageError, usageWarn,
 } from "./util.js";
 
+/* First - some housekeeping... */
+// Create a new Console instance where stdout is process.stderr
+console = new Console(process.stderr);
 
-/* first - parse the main command */
+/* Second - parse the main command */
 const commandDefinition = [
     {
         name: "command",
@@ -241,7 +246,7 @@ function runGenerateOrSampleCmd(
     const interpreter = sourceFromFile(options.source, timeVerbose);
 
     if (options.verbose && options.strict) {
-        console.error("Treating Gramble warnings as errors.");
+        console.info("Treating Gramble warnings as errors.");
     }
     
     interpreter.devEnv.logErrors();
@@ -317,7 +322,7 @@ export function printUsage(error: boolean = false) {
     }
 }
 
-/* second - parse the command options */
+/* Third - parse the command options */
 if (command.command in commands) {
     try {    
         const cmd = commands[command.command];
