@@ -226,7 +226,8 @@ function constructExprJIT(
     g: JITGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
-    return constructJIT(env, childExpr, g.tapeName, g.symbolName);
+    return constructJIT(env, childExpr, g.tapeName, 
+        g.symbolName, g.vocab, g.atomic);
 }
 
 export function matchNot(

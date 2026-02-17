@@ -44,8 +44,8 @@ export class IdentifyJITTargets extends Pass<Grammar,Grammar> {
 
         // it would actually suffice to return g here, because all the
         // references to the symbol table happen to refer to the selfsame object,
-        // but that feels brittle -- what if things change and they don't?
-        // so I'm constructing a new Qualified just in case.
+        // but that feels brittle -- what if the code changes and they don't refer
+        // to the same object anymore?  so I'm constructing a new Qualified just in case.
         return new QualifiedGrammar(newEnv.symbolNS, g.qualifier).msg(msgs);
     }
     
@@ -65,6 +65,13 @@ export class IdentifyJITTargets extends Pass<Grammar,Grammar> {
 
         if (sharedTapeSize.cardinality > 1) {
             // we're only interested here in joins that are relatively trivial
+            return newG.msg(msgs);
+        }
+
+        if (sharedTapeSize.maxLength === Infinity) {
+            // our code can't compile grammars that allow infinite-length 
+            // strings.  this should be handled by the previous -- what infinite
+            // grammar has a cardinaliy of 1? -- but just to be safe...
             return newG.msg(msgs);
         }
 

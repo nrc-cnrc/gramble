@@ -47,8 +47,6 @@ export type Derivs = Gen<Deriv>;
 
 export type ForwardGen = Gen<[boolean,Expr]>;
 
-export class ExprNamespace extends Namespace<Expr> {}
-
 
 /** 
  * An Env[ironment] encapsulates the execution environment for 
@@ -400,11 +398,6 @@ export class EpsilonExpr extends Expr {
         query: Query,
         env: DerivEnv
     ): Derivs { }
-    
-    /*
-    public addOutput(newOutput: Output): Output {
-        return new OutputExpr(this, newOutput).simplify();
-    } */
 
     public rename(tapeName: string) {
         return this;
@@ -590,11 +583,6 @@ export class TokenExpr extends Expr {
     public getOutputs(env: DerivEnv): StringDict[] {
         return [{ [this.tapeName] : this.text }];
     }
-
-    /*
-    public addOutput(newOutput: Output): Output {
-        return new OutputExpr(this, newOutput).simplify();
-    } */
 
     public expandStrings(env: DerivEnv): Set<string> {
         return new Set([this.text]);
@@ -1514,6 +1502,24 @@ export class OutputExpr extends UnaryExpr {
         return new OutputExpr(concat);
     }
 
+    public back(env: Env): [OutputExpr, Expr] {
+        if (!(this.child instanceof ConcatExpr)) {
+            const newOutput = new OutputExpr(EPSILON);
+            return [newOutput, this.child];
+        }
+
+        if (this.child.child2 instanceof OutputExpr) {
+            const [child2a, child2b] = this.child.child2.back(env);
+            const newChild = constructConcat(env, this.child.child1, child2a.child);
+            const newOutput = new OutputExpr(newChild);
+            return [newOutput, child2b];
+        }
+
+        const newOutput = new OutputExpr(this.child.child1);  
+        return [newOutput, this.child.child2];
+        
+    }
+
     public simplify(env: Env): Expr {
         if (this.child instanceof EpsilonExpr) return this.child;
         return this;
@@ -1538,18 +1544,12 @@ export class FinishedExpr extends UnaryExpr {
 
     public delta(tapeName: string, env: DerivEnv): Expr {
         if (tapeName == this.tapeName) return this; 
-                // a tape name "X" is considered to refer to different 
-                // tapes inside and outside Cursor("X", child)
-
         const cNext = this.child.delta(tapeName, env);
         return constructFinished(env, this.tapeName, cNext, this.output);
     }
 
     public *deriv(query: Query, env: DerivEnv): Derivs {
         if (query.tapeName == this.tapeName) return; 
-                // a tape name "X" is considered to refer to different 
-                // tapes inside and outside Cursor("X", child)
-
         for (const d of this.child.deriv(query, env)) {
             yield d.wrap(c => constructFinished(env, this.tapeName, c, this.output));
         }
@@ -1560,6 +1560,12 @@ export class FinishedExpr extends UnaryExpr {
             const wrapped = constructFinished(env, this.tapeName, cNext, this.output);
             yield [cHandled, wrapped];
         }
+    }
+
+    public back(env: DerivEnv): Expr {
+        const [newOutput, c] = this.output.back(env);
+        const newChild = constructConcat(env, c, this.child);
+        return constructFinished(env, this.tapeName, newChild, newOutput);
     }
     
     public simplify(env: Env): Expr {
@@ -1659,6 +1665,14 @@ export class CursorExpr extends UnaryExpr {
         }
     }
 
+    
+    public back(env: DerivEnv): Expr {
+        const [newOutput, c] = this.output.back(env);
+        const newChild = constructConcat(env, c, this.child);
+        return constructCursor(env, this.tapeName, newChild, 
+            this.vocab, this.atomic, newOutput);
+    }
+
     public simplify(env: Env): Expr {
         if (this.child instanceof OutputExpr) {
             return this.child.addOutput(env, this.output);
@@ -1707,11 +1721,15 @@ export class GreedyCursorExpr extends UnaryExpr {
         return `GCur_${this.tapeName}(${this.child.id})`;
     }
 
+    /*
+     * GreedyCursors are transparent so far as deltas and 
+     * derivs are concerned. (Except when the tapeName is their
+     * tapeName; since a tape name "X" is considered to refer to a 
+     * different tape inside and outside Cursor(X,c), it acts as an
+     * epsilon when queried for X.
+     */
     public delta(tapeName: string, env: DerivEnv): Expr {
         if (tapeName == this.tapeName) return this; 
-                // a tape name "X" is considered to refer to different 
-                // tapes inside and outside Cursor("X", child)
-
         const cNext = this.child.delta(tapeName, env);
         return constructGreedyCursor(env, this.tapeName, cNext, this.vocab, 
                     this.atomic, this.output);
@@ -1719,13 +1737,17 @@ export class GreedyCursorExpr extends UnaryExpr {
 
     public *deriv(query: Query, env: DerivEnv): Derivs {
         if (query.tapeName == this.tapeName) return; 
-                // a tape name "X" is considered to refer to different 
-                // tapes inside and outside Cursor("X", child)
-
         for (const d of this.child.deriv(query, env)) {
             yield d.wrap(c => constructGreedyCursor(env, this.tapeName, c, 
                     this.vocab, this.atomic, this.output));
         }
+    }
+
+    public back(env: DerivEnv): Expr {
+        const [newOutput, c] = this.output.back(env);
+        const newChild = constructConcat(env, c, this.child);
+        return constructGreedyCursor(env, this.tapeName, newChild, 
+            this.vocab, this.atomic, newOutput);
     }
 
     public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
@@ -1837,7 +1859,9 @@ export class PreTapeExpr extends UnaryExpr {
             // querying on that tape -- that is, stop being a PreTapeExpr
             const childDelta = this.child.delta(this.inputTape, env);
             if (!(childDelta instanceof NullExpr)) {
-                yield* childDelta.deriv(query, env);
+                for (const d of childDelta.deriv(query, env)) {
+                    yield d.wrap(c => constructFinished(env, this.inputTape, c, this.output));
+                }
             }
 
             const t1query = constructDot(this.inputTape);
@@ -1881,9 +1905,11 @@ export class PreTapeExpr extends UnaryExpr {
     }
 
     public simplify(env: Env): Expr {
+        if (this.child instanceof OutputExpr) {
+            return this.child.addOutput(env, this.output);
+        }
         if (this.child instanceof EpsilonExpr) return this.output;
         if (this.child instanceof NullExpr) return this.child;
-        if (this.child instanceof OutputExpr) return this.child;
         return this;
     }
 }
@@ -1924,6 +1950,8 @@ class JITExpr extends UnaryExpr {
         child: Expr,
         public tapeName: string,
         public symbolName: string,
+        public vocab: Set<string>,
+        public atomic: boolean,
     ) {
         super(child);
     }
@@ -1934,7 +1962,42 @@ class JITExpr extends UnaryExpr {
     public jitCompile(
         env: DerivEnv 
     ): Expr {
-        console.log(`JIT executed, tape = ${this.tapeName}, symbol = ${this.symbolName}`);
+        
+        console.log(`executing JIT, tape = ${this.tapeName}, symbol = ${this.symbolName}`);
+
+        const wrapped = constructGreedyCursor(env, 
+            this.tapeName, this.child, this.vocab, this.atomic);
+        
+        const compiled = [];
+        for (const [handled, result] of wrapped.forward(env)) {
+            if (!handled) {
+                throw new Error(`JIT of ${this.tapeName} not handled?`);  // shouldn't happen
+            }
+            
+            console.log(`result = ${result.id}`);
+            if (result instanceof GreedyCursorExpr ||
+                    result instanceof CursorExpr ||
+                    result instanceof FinishedExpr) {
+                const zipperBack = result.back(env) as GreedyCursorExpr|FinishedExpr;
+                console.log(`zipperBack = ${zipperBack.child.id}`);
+            } else if (result instanceof OutputExpr) {
+                const [z1, z2] = result.back(env);
+                console.log(`z1 = ${z1.id}`);    
+                if (!(z1.child instanceof EpsilonExpr)) {
+                    // if the left branch of this Output isn't eps here, 
+                    // that's unexpected, raise an expection
+                    throw new Error(`zipped-back output not eps: ${z1.child}`);
+                }
+                console.log(`zipperBack = ${z2.id}`);    
+            } else if (result instanceof NullExpr) {
+                continue;
+            } else {
+                // this can probably happen, I'm just not sure yet the 
+                // range of what result can be
+                throw new Error(`JIT compilation resulted in ${result.tag}`);
+            }
+        }
+
         env.symbols[this.symbolName] = this.child;
         return this.child;
     }
@@ -1962,7 +2025,6 @@ class JITExpr extends UnaryExpr {
         return this;
     }
 
-
 }
 
 export function constructJIT(
@@ -1970,8 +2032,11 @@ export function constructJIT(
     child: Expr,
     tapeName: string,
     symbolName: string,
+    vocab: Set<string>,
+    atomic: boolean
 ): Expr {
-    return new JITExpr(child, tapeName, symbolName).simplify(env);
+    return new JITExpr(child, tapeName, symbolName, vocab, atomic)
+                .simplify(env);
 }
 
 

@@ -220,10 +220,14 @@ abstract class BinaryGrammar extends AbstractGrammar {
 export class JITGrammar extends UnaryGrammar {
     public readonly tag = "jit";
 
+    public key: string = "";
+    
     constructor(
         child: Grammar,
         public tapeName: string,
         public symbolName: string,
+        public vocab: Set<string> = new Set,
+        public atomic: boolean = false
     ) {
         super(child);
     }
