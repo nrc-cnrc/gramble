@@ -18,18 +18,33 @@ describe(`Source ${DIR}`, function() {
             {pos: "v", text: "goo"},
             {pos: "v", text: "foo"}
         ],
-        verbose: VERBOSE_GRAMMAR
     });
 
-    /*
     testSrc({
-		desc: '2. Equals with an empty-string condition',
+		desc: '2. Simple equals with no other tapes',
+        results: [
+            {pos: "v"}
+        ],
+    });
+
+    testSrc({
+		desc: '3a. Equals with an empty-string condition',
         results: [
             {text: "mooba", gloss: "jump"},
             {text: "fooba", gloss: "run"},
         ]
     });
 
+    
+    testSrc({
+		desc: '3b. Equals with an empty-string condition and no other tapes',
+        results: [
+            {},
+        ]
+    });
+
+
+    /*
     testSrc({
 		desc: '4. Equals to the left of a sequence',
         results: [
