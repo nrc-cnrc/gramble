@@ -206,6 +206,9 @@ class VocabLibrary {
 
     public getVocab(key: string): [Set<string>, boolean] {
         const vocab = this.keyToVocab[key];
+        if (vocab === undefined) {
+            return [new Set<string>, true];
+        }
         if (vocab instanceof VocabContainer) {
             return [vocab.vocab, vocab.atomic];
         }
