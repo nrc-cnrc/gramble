@@ -341,20 +341,36 @@ function GrambleUncomment() {
     highlight();
 }
 
-function makeInterpreter() {
+function getSheetName() {
     const spreadsheet = SpreadsheetApp.getActive();
     const sheet = spreadsheet.getActiveSheet();
     const sheetName = sheet.getName();
 
+    return sheetName;
+}
+
+function makeInterpreter() {
+    const sheetName = getSheetName();
+
     const opts = { verbose: gramble.VERBOSE_TIME, posFormat: "A1" };
     const devEnv = new GoogleSheetsDevEnvironment(sheetName, opts);
-    const interpreter = gramble.Interpreter.fromSheet(devEnv, sheetName);
-    return [interpreter, devEnv];
+    try {
+        const interpreter = gramble.Interpreter.fromSheet(devEnv, sheetName);
+        return [interpreter, devEnv];
+    } catch(err) {
+        const msg = "longMsg" in err ? `ERROR: ${err.longMsg}` : err;
+        throw(msg);
+    }
 }
 
 function runTests() {
     const [interpreter, devEnv] = makeInterpreter();
-    interpreter.runTests();
+    try {
+        interpreter.runTests();
+    } catch(err) {
+        const msg = "longMsg" in err ? `ERROR: ${err.longMsg}` : err;
+        throw(msg);
+    }
     devEnv.highlight();
 } 
 
@@ -563,7 +579,6 @@ function scrollToCell(sheetName, row, col) {
     const range = sheet.getRange(getA1Notation("", row, col));
     sheet.setActiveRange(range);
 }
-
 function getAllCells() {
     highlight();
     try {

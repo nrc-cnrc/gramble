@@ -32,7 +32,6 @@
             let CURRENT_INPUTS = {};
 
             class SidebarDevEnvironment {
-
                 errors = {};
 
                 constructor(cellsBySheet, opt) {
@@ -109,7 +108,6 @@
 
             let reloadGrammarLock = false;
             async function reloadGrammar() {
-                
                 if (reloadGrammarLock) {
                     return;
                 }
@@ -132,9 +130,25 @@
                 loadingP.style.display = "block";
 
                 // ask for the latest data from GSuite
+                let responseFromGSuite;
+                try {
+                    responseFromGSuite = await scriptRunPromise().getAllCells();
+                } catch (err) {
+                    const msg = "longMsg" in err ? err.longMsg : err;
+                    console.error(msg);
+                    const errMsg = {"shortMsg": msg, 
+                                    "longMsg": msg,
+                                    "sheet": "",
+                                    "row": 0,
+                                    "col": 0,
+                                    "tag": "error", };
+                    createErrorButtons([errMsg]);
+                    loadingP.style.display = "none";
+                    controlTable.style.visibility = "visible";
+                    reloadGrammarLock = false;
+                    return;
+                }
 
-                let responseFromGSuite = await scriptRunPromise().getAllCells();
-                
                 if (!responseFromGSuite["success"]) {
                     throw new Error("Failed to communicate with Google Sheets backend: " +
                         `${responseFromGSuite["message"]}`);
@@ -151,7 +165,7 @@
                 }
 
                 previousSheetName = currentSheetName;
-                
+
                 const opt = {verbose: gramble.VERBOSE_TIME | gramble.VERBOSE_GRAMMAR};
                 devEnv = new SidebarDevEnvironment(cellsBySheet, opt);
                 project = gramble.Interpreter.fromSheet(devEnv, currentSheetName);
@@ -178,7 +192,6 @@
             }
 
             function runTests() {
-
                 if (project == undefined) {
                     throw new Error("Trying to reload symbols without a project");
                 }
@@ -188,7 +201,6 @@
             }
 
             function createErrorButtons(errors) {
-
                 const errorArea = document.getElementById("errorArea");
                 
                 for (const msg of Object.values(errors)) {
@@ -196,7 +208,7 @@
                     const button = document.createElement('button');
                     button.classList.add('errorButton');
                     let cellName = getA1Notation("", msg.row, msg.col);
-                    if (msg.sheet != currentSheetName) {
+                    if (msg.sheet && msg.sheet != currentSheetName) {
                         cellName = `${msg.sheet}!${cellName}`; 
                     }
                     button.innerHTML = `${cellName}: ${msg.shortMsg}`;
@@ -211,7 +223,6 @@
 
             
             function reloadSymbols() {
-
                 if (project == undefined) {
                     throw new Error("Trying to reload symbols without a project");
                 }
@@ -222,7 +233,6 @@
                 let options = project.allSymbols();
 
                 for (const option of options) {
-
                     // there's always a symbol called "", but it's always a dup of
                     // another symbol, and it's confusing to see it in the interface
                     if (option == "") {
@@ -245,12 +255,10 @@
                     if (option.toLowerCase() == previousSymbol.toLowerCase()) {
                         el.selected = true;
                     }
-
                 } 
             }
 
             function reloadInputFields() {
-
                 const select = document.getElementById("selectSymbol"); 
                 const currentSymbol = select.value;
                 
@@ -290,7 +298,6 @@
             }
             
             function reloadResults() {
-
                 let resultsTable  = document.getElementById("resultsTable"); 
                 resultsTable.innerHTML = "";
 
@@ -328,10 +335,7 @@
             }
 
             function displayRecord(record, table) {
-
-                
                 for (const tapeName of CURRENT_TAPES) {
-                    
                     if (!record.hasOwnProperty(tapeName)) {
                         continue;
                     }
@@ -390,7 +394,6 @@
             }
 
             function getCurrentSymbol() {
-
                 // determine what symbol to generate from
                 const symbolSelect = document.getElementById("selectSymbol"); 
                 let symbol = symbolSelect.value;
@@ -421,7 +424,6 @@
             }
 
             function downloadResults() {
-
                 const symbol = getCurrentSymbol();
 
                 // determine what tape names are relevant to this symbol
@@ -468,9 +470,7 @@
             }
 
             async function generateToNewSheet() {
-                
                 const symbol = getCurrentSymbol();
-
                 const inputs = getCurrentInputs();
 
                 let results = gramble.timeIt(() => 
@@ -492,9 +492,7 @@
             }
             
             async function sampleToNewSheet() {
-                
                 const symbol = getCurrentSymbol();
-
                 const inputs = getCurrentInputs();
 
                 let results = gramble.timeIt(() =>
@@ -515,32 +513,37 @@
                 await scriptRunPromise().makeNewSheet(symbol, sheetName, resultsTable);
             }
 
-            window.onload = async function() {
+            function setUpButtons() {
+                const selector = document.getElementById("selectSymbol")
+                selector.onchange = function(ev) {
+                    previousSymbol = selector.value;
+                    removeElementsByClass("tapeInputTr");
+                    reloadInputFields();                     
+                    let resultsTable  = document.getElementById("resultsTable"); 
+                    resultsTable.innerHTML = "";
+                };
                 
+                document.getElementById("sampleButton").onclick = async function(ev) {
+                    await reloadResults();
+                }
+            }
+
+            window.onload = async function() {
+                document.getElementById("reloadButton").onclick = async function(ev) {
+                    try {
+                        await reloadGrammar();
+                        setUpButtons();
+                    } catch(err) {
+                        alert(err);
+                    }
+                }
+
                 try {
                     await reloadGrammar();
-
-                    document.getElementById("reloadButton").onclick = async function(ev) {
-                        await reloadGrammar();
-                    }
-
-                    const selector = document.getElementById("selectSymbol")
-                    selector.onchange = function(ev) {
-                        previousSymbol = selector.value;
-                        removeElementsByClass("tapeInputTr");
-                        reloadInputFields();                     
-                        let resultsTable  = document.getElementById("resultsTable"); 
-                        resultsTable.innerHTML = "";
-                    };
-                    
-                    document.getElementById("sampleButton").onclick = async function(ev) {
-                        await reloadResults();
-                    }
-
+                    setUpButtons();
                 } catch(err) {
                     alert(err);
                 }
-
             };
         </script>
 

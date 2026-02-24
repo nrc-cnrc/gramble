@@ -58,6 +58,7 @@ import {
     VERBOSE_TIME,
 } from "./utils/logging.js";
 import {
+    Err,
     Message,
     MissingSymbolError,
     msg,
@@ -348,6 +349,12 @@ function addSheet(
     sheetName: string,
     devEnv: DevEnvironment,
 ): void {
+    if (sheetName.includes('.')) {
+        Err("Invalid sheet name: '${sheetName}'.",
+            `The sheet name '${sheetName}' contains a '.', which ` +
+                        "is invalid for Gramble sheets; please rename it.")
+            .msgTo(THROWER);
+    }
 
     if (project.hasSheet(sheetName)) {
         // already loaded it, don't have to do anything
