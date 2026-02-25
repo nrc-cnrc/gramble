@@ -54,7 +54,7 @@ export class Worksheet {
         const results: string[][] = [[ this.name+" =", "collection:" ]];
 
         for (const row of this.cells) {
-            if (row.length > 0 && row[0].startsWith("%%")) {
+            if (row.length > 0 && row[0].trimStart().startsWith("%%")) {
                 results.push(row);
                 continue;
             }
