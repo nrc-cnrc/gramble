@@ -1,0 +1,14 @@
+
+word=, table:, text, gloss, transClass,
+    ,       , foo, sleep, I,
+    ,       , moo, jump, I,
+    ,       , goo, love, T,
+    ,       , zoo, chase, T,
+    ,
+    , join:, table:, transClass, transitivity, class
+    ,      ,       , I, intransitive, T
+    ,      ,       , T, transitive, F
+    ,
+    ,      , join: , class,
+    ,      ,       , T
+    ,

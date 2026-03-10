@@ -1964,8 +1964,6 @@ class JITExpr extends UnaryExpr {
         env: DerivEnv 
     ): Expr {
         
-        console.log(`executing JIT, tape = ${this.tapeName}, symbol = ${this.symbolName}`);
-
         const wrapped = constructGreedyCursor(env, 
             this.tapeName, this.child, this.vocab, this.atomic);
         
@@ -2009,10 +2007,7 @@ class JITExpr extends UnaryExpr {
         tapeName: string, 
         env: DerivEnv
     ): Expr {
-        console.log(`compiling first on ${this.tapeName}`);
         const jitted = this.jitCompile(env);
-        console.log(`result is ${jitted.id}`)
-        console.log(`compiled, now deltaing on ${tapeName}`);
         return jitted.delta(tapeName, env);
     }
 
@@ -2020,10 +2015,7 @@ class JITExpr extends UnaryExpr {
         query: Query,
         env: DerivEnv
     ): Derivs {
-        console.log(`compiling first on ${this.tapeName}`);
         const jitted = this.jitCompile(env);
-        console.log(`result is ${jitted.id}`)
-        console.log(`compiled, now deriving on ${query.tapeName}`);
         yield* jitted.deriv(query, env);
     }
 

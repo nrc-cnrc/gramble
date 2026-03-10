@@ -1,0 +1,17 @@
+
+word=, table:, text, gloss, transClass, statClass
+    ,       , foo, sleep, I, S
+    ,       , moo, jump, I, A
+    ,       , goo, love, T, S
+    ,       , zoo, chase, T, A
+    ,
+    , join:, transClass, transitivity
+    ,      , I, intransitive
+    ,      , T, transitive
+    ,
+    , or:  , text, gloss, statClass
+    ,      , boo, rain, S
+
+    , join:, statClass, class
+    ,      , S, stative
+    ,      , A, active

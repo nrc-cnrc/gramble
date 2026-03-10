@@ -61,17 +61,17 @@ export class IdentifyJITTargets extends Pass<Grammar,Grammar> {
         }
 
         const sharedTape = sharedTapes[0]
-        const sharedTapeSize = getTapeSize(newG, sharedTape, new CounterStack, env);
-
-        if (sharedTapeSize.cardinality > 1) {
-            // we're only interested here in joins that are relatively trivial
+        const sharedTapeSize = getTapeSize(newG, sharedTape, new CounterStack(), env);
+        const rightChildSize = getTapeSize(newG.child1, sharedTape, new CounterStack(), env);
+        
+        if (rightChildSize.cardinality === Infinity) {
+            // we don't want to precompile anything with a dot, replace, etc.
             return newG.msg(msgs);
         }
 
         if (sharedTapeSize.maxLength === Infinity) {
             // our code can't compile grammars that allow infinite-length 
-            // strings.  this should be handled by the previous -- what infinite
-            // grammar has a cardinaliy of 1? -- but just to be safe...
+            // strings.
             return newG.msg(msgs);
         }
 
@@ -86,7 +86,7 @@ export class IdentifyJITTargets extends Pass<Grammar,Grammar> {
         // suffices, at least for the simple grammars that will be picked out by the above 
         // constraints.  it's not a valid identifier but at this point in compilation that's 
         // fine; the identifier rules are only constraints on programmers.
-        const newEmbedName = '$' + toStr(newG);
+        const newEmbedName = '$JIT' + toStr(newG);
 
         const jitG = new JITGrammar(newG, sharedTape, newEmbedName);
         
