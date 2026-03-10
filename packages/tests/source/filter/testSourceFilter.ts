@@ -1,4 +1,7 @@
-import { VERBOSE_DEBUG, VERBOSE_GRAMMAR } from "@gramble/interpreter";
+import { 
+    VERBOSE_EXPR
+} from "../../../interpreter/src/utils/logging.js";
+
 import {
     testSource, SourceTest, 
     Error, Warning 
@@ -13,10 +16,28 @@ function testSrc(params: Partial<SourceTest>): void {
 describe(`Source ${DIR}`, function() {
 
     testSrc({
-		desc: '1. Simple equals',
+		desc: '1a. Simple equals',
         results: [
             {pos: "v", text: "goo"},
             {pos: "v", text: "foo"}
+        ],
+    });
+
+    testSrc({
+		desc: '1b. Simple equals with a multi-char filter, atomic',
+        optimizeAtomicity: true,
+        results: [
+            {pos: "verb", text: "goo"},
+            {pos: "verb", text: "foo"}
+        ],
+    });
+    
+    testSrc({
+		desc: '1c. Simple equals with a multi-char filter, tokenized',
+        optimizeAtomicity: false,
+        results: [
+            {pos: "verb", text: "goo"},
+            {pos: "verb", text: "foo"}
         ],
     });
 
@@ -43,16 +64,15 @@ describe(`Source ${DIR}`, function() {
         ]
     });
 
-
-    /*
     testSrc({
 		desc: '4. Equals to the left of a sequence',
         results: [
             {text: "foobaz", gloss: "run[2SG]", subj: "[2SG]"},
             {text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]"}
-        ]
+        ],
     });
     
+    /*
     testSrc({
 		desc: '5. Equals containing escaped parens',
         results: [
@@ -666,7 +686,6 @@ describe(`Source ${DIR}`, function() {
         errors: [
             Error(7, 3, "Filtering non-existent header 'pos'")
         ],
-        verbose: VERBOSE_DEBUG
     });
 
     testSrc({
