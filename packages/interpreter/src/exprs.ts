@@ -1752,8 +1752,6 @@ export class GreedyCursorExpr extends UnaryExpr {
     }
 
     public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
-        console.log(`gcur_${this.tapeName} is atomic = ${this.atomic}`);
-        console.log(`vocab is ${[...this.vocab]}`);
         const newEnv = env.setVocab(this.vocab, this.atomic);
         const deltaToken = new TokenExpr(this.tapeName, '');
         const deltaNext = this.child.delta(this.tapeName, newEnv);
@@ -2003,7 +2001,6 @@ class JITExpr extends UnaryExpr {
         }
 
         const newAlt = constructAlternation(env, ...compiledExprs);
-        console.log(`compiled alt = ${newAlt.id}`);
         env.symbols[this.symbolName] = newAlt;
         return newAlt;
     }
@@ -2012,7 +2009,10 @@ class JITExpr extends UnaryExpr {
         tapeName: string, 
         env: DerivEnv
     ): Expr {
+        console.log(`compiling first on ${this.tapeName}`);
         const jitted = this.jitCompile(env);
+        console.log(`result is ${jitted.id}`)
+        console.log(`compiled, now deltaing on ${tapeName}`);
         return jitted.delta(tapeName, env);
     }
 
@@ -2020,7 +2020,10 @@ class JITExpr extends UnaryExpr {
         query: Query,
         env: DerivEnv
     ): Derivs {
+        console.log(`compiling first on ${this.tapeName}`);
         const jitted = this.jitCompile(env);
+        console.log(`result is ${jitted.id}`)
+        console.log(`compiled, now deriving on ${query.tapeName}`);
         yield* jitted.deriv(query, env);
     }
 

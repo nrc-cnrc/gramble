@@ -1,0 +1,9 @@
+
+root=, table:, text, trans, pos
+    ,       , foo, INTR, V
+    ,       , moo, INTR, V
+    ,       , goo, TR, V
+    ,       , zoo,   , N
+
+word=, table:, embed, equals pos, equals trans
+    ,       , root, V, INTR

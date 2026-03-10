@@ -72,7 +72,6 @@ describe(`Source ${DIR}`, function() {
         ],
     });
     
-    /*
     testSrc({
 		desc: '5. Equals containing escaped parens',
         results: [
@@ -82,7 +81,23 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '6. Nested equals',
+		desc: '6a. Nested equals',
+        results: [
+            {text: "foo", pos: "V", trans: "INTR"},
+            {text: "moo", pos: "V", trans: "INTR"}
+        ]
+    });
+
+    testSrc({
+		desc: '6b. Nested equals, filtering an indirect embed',
+        results: [
+            {text: "foobaz", gloss: "run[2SG]", subj: "[2SG]", trans: "INTR"},
+            {text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]", trans: "INTR"}
+        ]
+    });
+
+    testSrc({
+		desc: '6c. Nested symbols, each with an equals filter',
         results: [
             {text: "foobaz", gloss: "run[2SG]", subj: "[2SG]", trans: "INTR"},
             {text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]", trans: "INTR"}
@@ -374,7 +389,7 @@ describe(`Source ${DIR}`, function() {
             {text: "ungoo", gloss: "[1SG]climb"}   
         ]
     });
-    
+
     testSrc({
 		desc: '38. starts embed with a hidden join',
         results: [
@@ -387,6 +402,7 @@ describe(`Source ${DIR}`, function() {
         ]
     });
    
+    /*
     testSrc({
 		desc: '39. equals and starts modifying same embed',
         results: [
