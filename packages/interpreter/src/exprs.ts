@@ -1238,9 +1238,11 @@ class JoinExpr extends BinaryExpr {
     public getChild(env: DerivEnv): Expr {
         if (this.child == undefined) {
             let child = env.getSymbol(this.symbol);
+            console.log(`child for ${this.symbol} is ${child.id}`)
             if (child == undefined) {
                 // this is an error, due to the programmer referring to an undefined
-                // symbol, but now is not the time to complain. 
+                // symbol, but we should have caught it earlier.  
+                // in any case, now is not the time to complain. 
                 return EPSILON;
             } 
             return child;
@@ -1968,27 +1970,28 @@ class JITExpr extends UnaryExpr {
         const wrapped = constructGreedyCursor(env, 
             this.tapeName, this.child, this.vocab, this.atomic);
         
-        const compiled = [];
+        const compiledExprs = [];
         for (const [handled, result] of wrapped.forward(env)) {
+            // we go through all the results of forward, then
+            // "unzip" them and put the resulting expressions into 
+            // the compiledExprs list.
             if (!handled) {
                 throw new Error(`JIT of ${this.tapeName} not handled?`);  // shouldn't happen
             }
             
-            console.log(`result = ${result.id}`);
             if (result instanceof GreedyCursorExpr ||
                     result instanceof CursorExpr ||
                     result instanceof FinishedExpr) {
                 const zipperBack = result.back(env) as GreedyCursorExpr|FinishedExpr;
-                console.log(`zipperBack = ${zipperBack.child.id}`);
+                compiledExprs.push(zipperBack.child);
             } else if (result instanceof OutputExpr) {
                 const [z1, z2] = result.back(env);
-                console.log(`z1 = ${z1.id}`);    
                 if (!(z1.child instanceof EpsilonExpr)) {
                     // if the left branch of this Output isn't eps here, 
                     // that's unexpected, raise an expection
                     throw new Error(`zipped-back output not eps: ${z1.child}`);
                 }
-                console.log(`zipperBack = ${z2.id}`);    
+                compiledExprs.push(z2); 
             } else if (result instanceof NullExpr) {
                 continue;
             } else {
@@ -1998,8 +2001,10 @@ class JITExpr extends UnaryExpr {
             }
         }
 
-        env.symbols[this.symbolName] = this.child;
-        return this.child;
+        const newAlt = constructAlternation(env, ...compiledExprs);
+        console.log(`compiled alt = ${newAlt.id}`);
+        env.symbols[this.symbolName] = newAlt;
+        return newAlt;
     }
 
     public delta(
