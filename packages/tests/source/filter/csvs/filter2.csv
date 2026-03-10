@@ -1,7 +1,7 @@
 
-verb=, table:, pos
+root=, table:, pos
     ,       , v
     ,       , n
 
 word=, table:, embed, equals pos
-    ,       , verb, v
+    ,       , root, v

@@ -1238,7 +1238,6 @@ class JoinExpr extends BinaryExpr {
     public getChild(env: DerivEnv): Expr {
         if (this.child == undefined) {
             let child = env.getSymbol(this.symbol);
-            console.log(`child for ${this.symbol} is ${child.id}`)
             if (child == undefined) {
                 // this is an error, due to the programmer referring to an undefined
                 // symbol, but we should have caught it earlier.  
@@ -1753,6 +1752,8 @@ export class GreedyCursorExpr extends UnaryExpr {
     }
 
     public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
+        console.log(`gcur_${this.tapeName} is atomic = ${this.atomic}`);
+        console.log(`vocab is ${[...this.vocab]}`);
         const newEnv = env.setVocab(this.vocab, this.atomic);
         const deltaToken = new TokenExpr(this.tapeName, '');
         const deltaNext = this.child.delta(this.tapeName, newEnv);

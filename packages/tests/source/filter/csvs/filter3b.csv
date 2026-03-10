@@ -1,7 +1,6 @@
 
 root=, table:, subj
     ,       , [1SG]
-    ,       ,  ()
 
 stem=, table:, optional embed
      ,       , root
