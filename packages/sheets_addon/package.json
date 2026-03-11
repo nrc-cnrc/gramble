@@ -37,7 +37,7 @@
     "@rollup/plugin-commonjs": "^28.0.1",
     "@rollup/plugin-node-resolve": "^15.3.0",
     "browserify": "^17.0.1",
-    "rollup": "^4.27.3"
+    "rollup": "^4.59.0"
   },
   "dependencies": {
     "@gramble/interpreter": "^1.0.0"
