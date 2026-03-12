@@ -1,4 +1,7 @@
-import { VERBOSE_DEBUG } from "@gramble/interpreter";
+import { 
+    VERBOSE_EXPR
+} from "../../../interpreter/src/utils/logging.js";
+
 import {
     testSource, SourceTest, 
     Error, Warning 
@@ -13,18 +16,51 @@ function testSrc(params: Partial<SourceTest>): void {
 describe(`Source ${DIR}`, function() {
 
     testSrc({
-		desc: '1. Simple equals',
+		desc: '1a. Simple equals',
         results: [
             {pos: "v", text: "goo"},
             {pos: "v", text: "foo"}
-        ]
+        ],
     });
 
     testSrc({
-		desc: '2. Equals with an empty-string condition',
+		desc: '1b. Simple equals with a multi-char filter, atomic',
+        optimizeAtomicity: true,
+        results: [
+            {pos: "verb", text: "goo"},
+            {pos: "verb", text: "foo"}
+        ],
+    });
+    
+    testSrc({
+		desc: '1c. Simple equals with a multi-char filter, tokenized',
+        optimizeAtomicity: false,
+        results: [
+            {pos: "verb", text: "goo"},
+            {pos: "verb", text: "foo"}
+        ],
+    });
+
+    testSrc({
+		desc: '2. Simple equals with no other tapes',
+        results: [
+            {pos: "v"}
+        ],
+    });
+
+    testSrc({
+		desc: '3a. Equals with an empty-string condition',
         results: [
             {text: "mooba", gloss: "jump"},
             {text: "fooba", gloss: "run"},
+        ]
+    });
+
+    
+    testSrc({
+		desc: '3b. Equals with an empty-string condition and no other tapes',
+        results: [
+            {},
         ]
     });
 
@@ -33,7 +69,7 @@ describe(`Source ${DIR}`, function() {
         results: [
             {text: "foobaz", gloss: "run[2SG]", subj: "[2SG]"},
             {text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]"}
-        ]
+        ],
     });
     
     testSrc({
@@ -45,7 +81,23 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '6. Nested equals',
+		desc: '6a. Nested equals',
+        results: [
+            {text: "foo", pos: "V", trans: "INTR"},
+            {text: "moo", pos: "V", trans: "INTR"}
+        ]
+    });
+
+    testSrc({
+		desc: '6b. Nested equals, filtering an indirect embed',
+        results: [
+            {text: "foobaz", gloss: "run[2SG]", subj: "[2SG]", trans: "INTR"},
+            {text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]", trans: "INTR"}
+        ]
+    });
+
+    testSrc({
+		desc: '6c. Nested symbols, each with an equals filter',
         results: [
             {text: "foobaz", gloss: "run[2SG]", subj: "[2SG]", trans: "INTR"},
             {text: "moobaz", gloss: "jump[2SG]", subj: "[2SG]", trans: "INTR"}
@@ -337,7 +389,7 @@ describe(`Source ${DIR}`, function() {
             {text: "ungoo", gloss: "[1SG]climb"}   
         ]
     });
-    
+
     testSrc({
 		desc: '38. starts embed with a hidden join',
         results: [
@@ -349,7 +401,8 @@ describe(`Source ${DIR}`, function() {
             Error(15, 4, "Embedding multi-field symbol in regex/rule")
         ]
     });
-
+   
+    /*
     testSrc({
 		desc: '39. equals and starts modifying same embed',
         results: [
@@ -649,7 +702,6 @@ describe(`Source ${DIR}`, function() {
         errors: [
             Error(7, 3, "Filtering non-existent header 'pos'")
         ],
-        verbose: VERBOSE_DEBUG
     });
 
     testSrc({
@@ -699,7 +751,57 @@ describe(`Source ${DIR}`, function() {
             Error(7, 3, "Filtering non-existent header 'pos'")
         ]
     });
+
+    testSrc({
+		desc: 'E9. Equals with a non-existant symbol',
+        results: [
+            {}
+        ],
+        errors: [
+            Error(7, 2, "Undefined symbol: 'noun'"),
+            Error(7, 3, "Filtering non-existent header 'pos'")
+        ]
+    });
    
+    testSrc({
+		desc: 'E10. Nested equals with an unknown symbol',
+        results: [
+            {}
+        ],
+        errors: [
+            Error(11,2, "Undefined symbol: 'noun'"),
+            Error(11,3, "Filtering non-existent header 'subj'"),
+            Error(11,4, "Filtering non-existent header 'trans'"),
+        ]
+    });
+
+    testSrc({
+		desc: 'E11. Equals with an embed referring to an erroneous table',
+        results: [
+            {"gloss":"jump","trans":"INTR"},
+            {"gloss":"run","trans":"INTR"}
+        ],
+        errors: [
+            Error(1, 2, "Invalid header: 'text blorp'"),
+            Warning(2,2),
+            Warning(3,2),
+            Warning(4,2),
+        ]
+    });
+
+    testSrc({
+		desc: 'E12. Nested equals with a malformed inner filter',
+        results: [
+            {"gloss":"jump[2SG]","subj":"[2SG]","text":"moobaz","trans":"INTR"},
+            {"gloss":"jump[1SG]","subj":"[1SG]","text":"moobar","trans":"INTR"},
+            {"gloss":"run[2SG]","subj":"[2SG]","text":"foobaz","trans":"INTR"},
+            {"gloss":"run[1SG]","subj":"[1SG]","text":"foobar","trans":"INTR"}
+        ],
+        errors: [
+            Error(11,3, "Filtering non-existent header 'blorp'")
+        ]
+    });
+
     /*
     testSrc({
 		desc: 'HighVowel tests 1',

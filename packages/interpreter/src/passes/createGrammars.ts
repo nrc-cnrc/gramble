@@ -14,7 +14,8 @@ import {
     TstTest,
     TstTestNot,
     TST, 
-    AbstractTST
+    AbstractTST,
+    TstAutoEmbed
 } from "../tsts.js";
 import { Pass } from "../passes.js";
 import { 
@@ -36,6 +37,7 @@ import {
     TestBlockGrammar,
     LiteralGrammar,
     AbstractTestGrammar,
+    EmbedGrammar,
 } from "../grammars.js";
 import { PassEnv } from "../components.js";
 import { parseContent } from "../content.js";
@@ -61,6 +63,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
 
         switch(t.tag) {
             case "headerpair": return this.handleHeaderPair(t, env);
+            case "autoembed":  return this.handleAutoEmbed(t, env);
             case "rename":     return this.handleRename(t, env);
             case "hide":       return this.handleHide(t, env);
             case "filter":     return this.handleFilter(t, env);
@@ -80,6 +83,10 @@ export class CreateGrammars extends Pass<TST,Grammar> {
             default:
                 throw new Error(`unhandled '${t.constructor.name}'`);
         }
+    }
+
+    handleAutoEmbed(t: TstAutoEmbed, env: PassEnv): Grammar {
+        return new EmbedGrammar(t.symbol);
     }
 
     public handleHeaderPair(t: TstHeaderPair, env: PassEnv): Msg<Grammar> {

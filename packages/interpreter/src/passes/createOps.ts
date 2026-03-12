@@ -12,7 +12,7 @@ import {
 } from "../tsts.js";
 import { PassEnv } from "../components.js";
 
- export class CreateOps extends AutoPass<TST> {
+export class CreateOps extends AutoPass<TST> {
 
     public postTransform(t: TST, env: PassEnv): TST {
 

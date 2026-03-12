@@ -1,6 +1,7 @@
 
 import {
-    Seq, Uni, Join, Epsilon, CharSet
+    Seq, Uni, Join, Epsilon, CharSet,
+    Null
 } from "../../interpreter/src/grammarConvenience.js";
 
 import {
@@ -32,7 +33,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-		desc: '2. Join t1:hello+t1:world ⨝ t1:helloworld',
+		desc: '2a. Join t1:hello+t1:world ⨝ t1:helloworld',
         grammar: Join(Seq(t1("hello"), t1("world")), t1("helloworld")),
         results: [
             {t1: 'helloworld'},
@@ -40,7 +41,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-		desc: '3. Join t1:helloworld ⨝ t1:hello+t1:world',
+		desc: '2b. Join t1:helloworld ⨝ t1:hello+t1:world',
         grammar: Join(t1("helloworld"), Seq(t1("hello"), t1("world"))),
         results: [
             {t1: 'helloworld'},
@@ -48,7 +49,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-		desc: '4. Join t1:hello ⨝ t2:foo',
+		desc: '3. Join t1:hello ⨝ t2:foo',
         grammar: Join(t1("hello"), t2("foo")),
         tapes: ["t1", "t2"],
         results: [
@@ -57,7 +58,7 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-		desc: '5. Join ε ⨝ ε',
+		desc: '4. Join ε ⨝ ε',
         grammar: Join(Epsilon(), Epsilon()),
         results: [
             {},
@@ -65,7 +66,19 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-		desc: '6. Join t1:hello ⨝ ε',
+		desc: '5a. Join t1:hello ⨝ ∅',
+        grammar: Join(t1("hello"), Null()),
+        results: [],
+    });
+
+    testGrammar({
+		desc: '5b. Join ∅ ⨝ t1:hello',
+        grammar: Join(Null(), t1("hello")),
+        results: [],
+    });
+
+    testGrammar({
+		desc: '6a. Join t1:hello ⨝ ε',
         grammar: Join(t1("hello"), Epsilon()),
         results: [
             {t1: 'hello'},
@@ -73,11 +86,23 @@ describe(`${grammarTestSuiteName(module)}`, function() {
     });
 
     testGrammar({
-		desc: '7. Join ε ⨝ t1:hello',
-        grammar: Join(t1("hello"), Epsilon()),
+		desc: '6b. Join ε ⨝ t1:hello',
+        grammar: Join(Epsilon(), t1("hello")),
         results: [
             {t1: 'hello'},
         ],
+    });
+
+    testGrammar({
+		desc: '7a. Join t1:hello ⨝ t1:""',
+        grammar: Join(t1("hello"), t1("")),
+        results: [],
+    });
+
+    testGrammar({
+		desc: '7b. Join t1:"" ⨝ t1:hello',
+        grammar: Join(t1(""), t1("hello")),
+        results: [],
     });
 
     testGrammar({
@@ -531,5 +556,5 @@ describe(`${grammarTestSuiteName(module)}`, function() {
             {t1: "i"}, 
         ],
     });
-    
+   
 });

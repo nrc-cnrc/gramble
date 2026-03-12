@@ -37,7 +37,10 @@ export class AssociateHeaders extends Pass<TST,TST> {
             // If we have headers, but no rows, pretend there is a row
             // whose content values are empty strings.
             let rows: TstRow[] = t.rows || [];
-            if (rows.length === 0) {
+            if (t.headers.length === 0) {
+                Warn("No valid header cells found")
+                    .localize(t.cell.pos).msgTo(msgs);
+            } else if (rows.length === 0) {
                 const row = new TstRow(new Cell(t.headers[0].text, t.headers[0].pos));
                 let onlyComments = true;
                 for (const header of t.headers) {

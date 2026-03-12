@@ -106,4 +106,19 @@ describe(`Source ${DIR}`, function() {
             "bare5.$Auto5",
         ],
     });
+
+    testSrc({
+		desc: '6. Bare grammar with just an invalid header',
+        errors: [
+            Error(0, 0, "Invalid header: 'X%%'"),
+            Error(0, 0, "Missing ordinary header for implied 'table'"),
+            Warning(0,0),
+        ],
+        symbols: [
+            "All",
+            "bare6.All",
+            "bare6.Default",
+        ],
+    });
+
 });

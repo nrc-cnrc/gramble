@@ -18,10 +18,10 @@ import { INDICES } from "./utils/options.js";
 export type StringPair = [string, string];
 export class StringPairSet extends ValueSet<StringPair> { }
 
-export type LengthRange = {
-    null: boolean,
-    min: number,
-    max: number
+export type TapeSize = {
+    cardinality: number,
+    minLength: number,
+    maxLength: number
 }
 
 export type Grammar = EpsilonGrammar
@@ -37,7 +37,6 @@ export type Grammar = EpsilonGrammar
              | EndsGrammar
              | ContainsGrammar
              | FilterGrammar
-             | PriorityUnionGrammar
              | SingleTapeGrammar
              | RenameGrammar
              | RepeatGrammar
@@ -58,7 +57,8 @@ export type Grammar = EpsilonGrammar
              | ReplaceGrammar
              | CorrespondGrammar
              | RuleContextGrammar
-             | TapeNamesGrammar;
+             | TapeNamesGrammar
+             | JITGrammar;
 /**
  * Grammar components represent the linguistic grammar that the
  * programmer is expressing (in terms of sequences, alternations, joins,
@@ -217,16 +217,29 @@ abstract class BinaryGrammar extends AbstractGrammar {
     }
 }
 
+export class JITGrammar extends UnaryGrammar {
+    public readonly tag = "jit";
+
+    public key: string = "";
+    
+    constructor(
+        child: Grammar,
+        public tapeName: string,
+        public symbolName: string,
+        public vocab: Set<string> = new Set,
+        public atomic: boolean = false
+    ) {
+        super(child);
+    }
+
+}
+
 export class JoinGrammar extends BinaryGrammar {
     public readonly tag = "join";
 }
 
 export class FilterGrammar extends BinaryGrammar {
     public readonly tag = "filter";
-}
-
-export class PriorityUnionGrammar extends BinaryGrammar {
-    public readonly tag = "priority";
 }
 
 export class ReplaceGrammar extends AbstractGrammar {

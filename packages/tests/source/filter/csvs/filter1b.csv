@@ -1,0 +1,8 @@
+
+root=, table:, text, pos
+    ,       , foo, verb
+    ,       , moo, noun
+    ,       , goo, verb
+
+word=, table:, embed, equals pos
+    ,       , root, verb

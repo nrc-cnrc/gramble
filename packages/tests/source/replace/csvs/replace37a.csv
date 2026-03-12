@@ -1,0 +1,8 @@
+Root =, text, gloss,
+      , kan,  walk,
+
+Stem =, embed, text, person/gloss
+      , Root,      , [3subj]
+
+replace text:, from, to, context
+             , t,    d,  (r|n)_

@@ -58,6 +58,7 @@ import {
     VERBOSE_TIME,
 } from "./utils/logging.js";
 import {
+    Err,
     Message,
     MissingSymbolError,
     msg,
@@ -100,7 +101,7 @@ export class Interpreter {
         INDICES.HIDE = 0;
         INDICES.REPLACE = 0;
 
-        const timeVerbose = (this.opt.verbose & VERBOSE_TIME) != 0;
+        //const timeVerbose = (this.opt.verbose & VERBOSE_TIME) != 0;
 
         // Next, we perform a variety of grammar-to-grammar passes in order
         // to get the grammar into an executable state: symbol references fully-qualified,
@@ -348,6 +349,12 @@ function addSheet(
     sheetName: string,
     devEnv: DevEnvironment,
 ): void {
+    if (sheetName.includes('.')) {
+        Err("Invalid sheet name: '${sheetName}'.",
+            `The sheet name '${sheetName}' contains a '.', which ` +
+                        "is invalid for Gramble sheets; please rename it.")
+            .msgTo(THROWER);
+    }
 
     if (project.hasSheet(sheetName)) {
         // already loaded it, don't have to do anything

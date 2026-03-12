@@ -783,4 +783,20 @@ describe(`Source ${DIR}`, function() {
             {text: "aXc"}
         ]
     });
+
+    testSrc({
+		desc: '37a. Test vocab collection with an irrelevant replacement rule',
+        symbol: "Root",
+        results: [
+            { text: "kan", gloss: "walk" },
+        ],
+    });
+
+    testSrc({
+		desc: '37b. Test vocab collection with a relevant replacement rule',
+        symbol: "Stem",
+        results: [
+            { text: "kan", person: "[3subj]", gloss: "walk[3subj]" },
+        ],
+    });
 });
