@@ -1,6 +1,6 @@
 import { Pass } from "../passes.js";
 import { 
-    AlternationGrammar, ContainsGrammar, 
+    AlternationGrammar, ContainsGrammar,
     EndsGrammar, 
     EpsilonGrammar,
     Grammar, LiteralGrammar, 
@@ -17,7 +17,7 @@ import {
     SlashHeader, StartsHeader, 
     UniqueHeader, TapeHeader, 
     UnaryHeader, FromHeader, 
-    ToHeader, RuleContextHeader 
+    ToHeader, RuleContextHeader
 } from "../headers.js";
 import { INPUT_TAPE, OUTPUT_TAPE } from "../utils/constants.js";
 import { exhaustive } from "../utils/func.js";

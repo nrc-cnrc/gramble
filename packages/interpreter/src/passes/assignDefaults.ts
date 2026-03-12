@@ -10,7 +10,7 @@ import { ALL_SYMBOL } from "../utils/constants.js";
 import { getCaseInsensitive } from "../utils/func.js";
 
 /**
- * Goes through collections and, if a symbol Default isn't present,
+ * Goes through collections and, if a symbol All isn't present,
  * assigns that to an alternation of the symbols under the collection.
  */
 export class AssignDefaults extends AutoPass<Grammar> {

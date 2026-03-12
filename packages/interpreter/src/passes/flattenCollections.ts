@@ -23,8 +23,9 @@ import { mapValues } from "../utils/func.js";
  * (2) Replaces unqualified symbol references (like "VERB") to 
  * fully-qualified names (like "MainSheet.VERB")
  * 
- * (3) Leaves the CollectionGrammar at the root with a "qualifier",
- * which is a condensed representation of the original project structure
+ * (3) Leaves the flattened CollectionGrammar (now called a 
+ * QualifiedGrammar) at the root with a "qualifier", which is 
+ * a condensed representation of the original project structure
  * necessary for resolving user queries.  (Even though we've qualified 
  * all the names in the original grammar, the client could potentially
  * use a variant, like "x.y" to refer to "x.y.Default".  When we didn't

@@ -20,6 +20,8 @@ import { CalculateTapes } from "./calculateTapes.js";
 import { TimerPass } from "../passes.js";
 import { Grammar } from "../grammars.js";
 import { TST } from "../tsts.js";
+import { IdentifyJITTargets } from "./identifyJITTargets.js";
+import { RestructureJoinOps } from "./restructureJoinOps.js";
 
 /**
  * There are four main sequences of Passes.  
@@ -59,13 +61,11 @@ export const SOURCE_PASSES =
     new TimerPass<TST,TST>(
         "Creating collections",
         new CreateCollections()
-    )
-    
-    .compose(
+    ).compose(
         
     // in syntactic positions when there's an implicit table semantics,
     // insert a TstTable as appropriate
-    new TimerPass(
+    new TimerPass<TST,TST>(
         "Inserting implicit table ops",
         new InsertTables()
     ).compose(
@@ -111,6 +111,11 @@ export const SOURCE_PASSES =
         new CreateOps()
     ).compose(
 
+    new TimerPass<TST,TST>(
+        "Restructuring join ops",
+        new RestructureJoinOps()
+    ).compose(
+
     // check whether collections are in appropriate structural
     // positions
     new TimerPass<TST,TST>(
@@ -136,7 +141,7 @@ export const SOURCE_PASSES =
     new TimerPass(
         "Combining literals",
         new CombineLiterals()
-    )))))))))))));
+    ))))))))))))));
 
 export const SYMBOL_PASSES =
 
@@ -184,4 +189,9 @@ export const TAPE_PASSES =
     new TimerPass(
         "Creating replacement rule blocks", 
         new ConstructReplaceBlocks()
-    ))));
+    ).compose(
+
+    new TimerPass(
+        "Identifying compilation targets",
+        new IdentifyJITTargets()
+    )))));

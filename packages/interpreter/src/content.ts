@@ -127,9 +127,9 @@ const TAPENAME_UNRESERVED = MPUnreserved<Grammar>(
             return new TapeNamesGrammar([s])
         } else {
             throw new TapeNamesGrammar([]).err(
-                            `Invalid header name: '${s}'`, 
-                            `'${s}' looks like it should be a header name, ` +
-                            "but it doesn't follow the rules for one."
+                `Invalid header name: '${s}'`, 
+                `'${s}' looks like it should be a header name, ` +
+                "but it doesn't follow the rules for one."
             );
         }
     } 

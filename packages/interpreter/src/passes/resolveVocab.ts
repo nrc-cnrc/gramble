@@ -16,6 +16,7 @@ import {
     ReplaceGrammar,
     PreTapeGrammar,
     TestBlockGrammar,
+    JITGrammar,
 } from "../grammars.js";
 import { Dict, getCaseInsensitive, union, update } from "../utils/func.js";
 import { Msg } from "../utils/msgs.js";
@@ -311,13 +312,15 @@ export class InjectVocab extends AutoPass<Grammar> {
         switch (g.tag) {
             case "cursor": 
             case "greedyCursor": 
-            case "pretape": return this.transformCursor(g, env);
+            case "pretape": 
+            case "jit":
+                return this.transformCursor(g, env);
             default: return g;
         }
     }
 
     public transformCursor(
-        g: CursorGrammar | GreedyCursorGrammar | PreTapeGrammar, 
+        g: CursorGrammar | GreedyCursorGrammar | PreTapeGrammar | JITGrammar, 
         env: SymbolEnv
     ): Grammar {
         const [vocab, atomic] = this.vocabLib.getVocab(g.key);
@@ -344,6 +347,8 @@ function collectVocab(
         case "cursor":
         case "greedyCursor":
                         return collectVocabCursor(g, vocabLib, stack, env);
+        case "jit":
+                        return collectVocabJIT(g, vocabLib, stack, env);
         case "pretape":
                         return collectVocabPreTape(g, vocabLib, stack, env);
         case "seq":     return collectVocabSequence(g, vocabLib, stack, env);
@@ -546,6 +551,18 @@ function collectVocabCursor(
     g.key = key;
     collectVocab(g.child, vocabLib, stack, env);
     vocabLib.popTape();
+}
+
+function collectVocabJIT(
+    g: JITGrammar, 
+    vocabLib: VocabLibrary,
+    stack: CounterStack,
+    env: SymbolEnv
+): void {
+    // unlike Cursors, JIT doesn't create a new tape name
+    const [key, _] = vocabLib.getKey(g.tapeName);
+    g.key = key;
+    collectVocab(g.child, vocabLib, stack, env);
 }
 
 function collectVocabPreTape(

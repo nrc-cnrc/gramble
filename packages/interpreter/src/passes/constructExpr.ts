@@ -5,11 +5,11 @@ import {
     Grammar, HideGrammar,
     JoinGrammar, MatchGrammar,
     NegationGrammar, PreTapeGrammar, 
-    PriorityUnionGrammar, 
     RenameGrammar, RepeatGrammar,
     ReplaceGrammar, SequenceGrammar, 
     ShortGrammar,
     CursorGrammar,
+    JITGrammar,
 } from "../grammars.js";
 import { Dict } from "../utils/func.js";
 import { 
@@ -20,9 +20,10 @@ import {
     constructDot, constructDotStar, constructEmbed, 
     constructJoin, constructLiteral, 
     constructMatch, constructNegation, constructPreTape, 
-    constructPrecede, constructRename, constructRepeat, 
-    constructSeq, constructShort, constructPriorityUnion, constructReplace,
-    constructGreedyCursor
+    constructRename, constructRepeat, 
+    constructSeq, constructShort, constructReplace,
+    constructGreedyCursor,
+    constructJIT
 } from "../exprs.js";
 import { INPUT_TAPE } from "../utils/constants.js";
 import { Env } from "../utils/options.js";
@@ -51,7 +52,6 @@ export function constructExpr(
         case "alt":             return constructExprAlt(env, g);
         case "short":           return constructExprShort(env, g);
         case "join":            return constructExprJoin(env, g);
-        case "priority":        return constructExprPriUni(env, g);
         case "replace":         return constructExprReplace(env, g);
         case "count":           return constructExprCount(env, g);
         case "rename":          return constructExprRename(env, g);
@@ -64,6 +64,7 @@ export function constructExpr(
         case "match":           return constructExprMatch(env, g);
         case "selection":       return constructExprSelection(env, g);
         case "correspond":      return constructExprCorrespond(env, g);
+        case "jit":             return constructExprJIT(env, g);
         
         default: throw new Error(`unhandled grammar in constructExpr: ${g.tag}`)
     }
@@ -101,14 +102,6 @@ function constructExprJoin(
         constructExpr(env, g.child2),
         new Set(g.child1.tapeNames),
         new Set(g.child2.tapeNames));
-}
-
-function constructExprPriUni(
-    env: PassEnv,
-    g: PriorityUnionGrammar
-): Expr {
-    return constructPriorityUnion(env, constructExpr(env, g.child1),
-                                        constructExpr(env, g.child2));
 }
 
 function constructExprReplace(
@@ -226,6 +219,15 @@ function constructExprCorrespond(
 ): Expr {
     const childExpr = constructExpr(env, g.child);
     return constructCorrespond(env, childExpr, g.inputTape, g.outputTape);
+}
+
+function constructExprJIT(
+    env: PassEnv,
+    g: JITGrammar
+): Expr {
+    const childExpr = constructExpr(env, g.child);
+    return constructJIT(env, childExpr, g.tapeName, 
+        g.symbolName, g.vocab, g.atomic);
 }
 
 export function matchNot(

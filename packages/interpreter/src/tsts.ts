@@ -21,6 +21,7 @@ import { Env } from "./utils/options.js";
 
 export type TST = TstHeader
          | TstContent
+         | TstAutoEmbed
          | TstGrid
          | TstRow
          | TstHeadedGrid
@@ -96,8 +97,16 @@ export class TstContent extends TstCellComponent {
 
 }
 
+export class TstAutoEmbed extends TstCellComponent {
+    public readonly tag = "autoembed";
 
-
+    constructor(
+        public symbol: string,
+        cell: Cell,
+    ) {
+        super(cell);
+    }
+}
 
 /**
  * An enclosure represents a single-cell unit containing a operator or symbol

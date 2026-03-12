@@ -1,0 +1,9 @@
+
+root=, table:, subj
+    ,       , [1SG]
+
+stem=, table:, optional embed
+     ,       , root
+     
+word=, table:, embed, equals subj
+    ,       , stem, 

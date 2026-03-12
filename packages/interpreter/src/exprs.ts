@@ -1,3 +1,4 @@
+import { Component } from "./components.js";
 import { renameTape } from "./tapes.js";
 import { INPUT_TAPE, OUTPUT_TAPE } from "./utils/constants.js";
 import { CounterStack } from "./utils/counter.js";
@@ -45,8 +46,6 @@ export class Deriv {
 export type Derivs = Gen<Deriv>;
 
 export type ForwardGen = Gen<[boolean,Expr]>;
-
-export class ExprNamespace extends Namespace<Expr> {}
 
 
 /** 
@@ -312,7 +311,7 @@ function *disjoin(
  *            contents of tape T are epsilon.
  */
 
-export abstract class Expr {
+export abstract class Expr extends Component {
 
     /**
      * Gets an id() for the expression.  At the moment we're only using this
@@ -382,6 +381,8 @@ export abstract class Expr {
  */
 export class EpsilonExpr extends Expr {
 
+    public readonly tag = "EpsilonExpr";
+
     public get id(): string {
         return "ε";
     }
@@ -397,11 +398,6 @@ export class EpsilonExpr extends Expr {
         query: Query,
         env: DerivEnv
     ): Derivs { }
-    
-    /*
-    public addOutput(newOutput: Output): Output {
-        return new OutputExpr(this, newOutput).simplify();
-    } */
 
     public rename(tapeName: string) {
         return this;
@@ -414,6 +410,8 @@ export class EpsilonExpr extends Expr {
  * This is a special epsilon-like expression used only in queries.
  */
 export class EpsilonTokenExpr extends Expr {
+
+    public readonly tag = "EpsilonTokenExpr";
 
     constructor(
         public tapeName: string
@@ -449,6 +447,8 @@ export class EpsilonTokenExpr extends Expr {
  */
 export class NullExpr extends Expr {
 
+    public readonly tag = "NullExpr";
+
     public get id(): string {
         return "∅";
     }
@@ -473,6 +473,8 @@ export class NullExpr extends Expr {
  */
 class DotExpr extends Expr {
     
+    public readonly tag = "DotExpr";
+
     constructor(
         public tapeName: string
     ) {
@@ -521,6 +523,8 @@ class DotExpr extends Expr {
 
 class DotStarExpr extends Expr {
     
+    public readonly tag = "DotStarExpr";
+
     constructor(
         public tapeName: string
     ) {
@@ -563,6 +567,8 @@ class DotStarExpr extends Expr {
  */
 export class TokenExpr extends Expr {
 
+    public readonly tag = "TokenExpr";
+
     constructor(
         public tapeName: string,
         public text: string
@@ -577,11 +583,6 @@ export class TokenExpr extends Expr {
     public getOutputs(env: DerivEnv): StringDict[] {
         return [{ [this.tapeName] : this.text }];
     }
-
-    /*
-    public addOutput(newOutput: Output): Output {
-        return new OutputExpr(this, newOutput).simplify();
-    } */
 
     public expandStrings(env: DerivEnv): Set<string> {
         return new Set([this.text]);
@@ -611,6 +612,8 @@ export class TokenExpr extends Expr {
 }
 
 class LiteralExpr extends Expr {
+
+    public readonly tag = "LiteralExpr";
 
     constructor(
         public tapeName: string,
@@ -743,6 +746,8 @@ export abstract class BinaryExpr extends Expr {
 
 class ConcatExpr extends BinaryExpr {
 
+    public readonly tag = "ConcatExpr";
+
     public get id(): string {
         if (!this.child1.id.startsWith("(")) {
             const child1IDpieces = this.child1.id.split(":");
@@ -836,6 +841,8 @@ class ConcatExpr extends BinaryExpr {
 
 export class UnionExpr extends Expr {
 
+    public readonly tag = "UnionExpr";
+
     constructor(
         public children: Expr[]
     ) { 
@@ -924,6 +931,8 @@ export class UnionExpr extends Expr {
 }
 
 class ReplaceExpr extends Expr {
+
+    public readonly tag = "ReplaceExpr";
 
     public derivExpr: Expr | undefined = undefined;
 
@@ -1080,93 +1089,9 @@ export function constructReplace(
     return new ReplaceExpr(inputChild, outputChild, preChild, postChild, beginsWith, endsWith, optional);
 }
 
-/**
- * A priority union is a union that "prefers" its first child -- only when the
- * first child "fails" can the second "succeed"
- */
-class PriorityUnion extends BinaryExpr {
-
-    constructor(
-        child1: Expr,
-        child2: Expr,
-    ) {
-        super(child1, child2);
-    }
-
-    public delta(
-        tapeName: string,
-        env: DerivEnv
-    ): Expr {
-        const c1delta = this.child1.delta(tapeName, env);
-        if (!(c1delta instanceof NullExpr)) {
-            return c1delta;
-        }
-        return this.child2.delta(tapeName, env);
-    }
-
-    public *deriv(
-        query: Query,
-        env: DerivEnv
-    ): Derivs {
-        const derivs1 = this.child1.deriv(query, env);
-        const derivs2 = this.child2.deriv(query, env);
-        yield *disjoinPriority(env, derivs1, derivs2);
-    }
-
-    public simplify(env: Env): Expr {
-        if (this.child1 instanceof EpsilonExpr) return this.child1;
-        if (this.child1 instanceof OutputExpr) return this.child1;
-        if (this.child1 instanceof NullExpr) return this.child2;
-        if (this.child2 instanceof NullExpr) return this.child1;
-        return this;
-    }
-}
-
-export function constructPriorityUnion(env: Env, c1: Expr, c2: Expr): Expr {
-    return new PriorityUnion(c1, c2).simplify(env);
-}
-
-
-function dictifyDerivs(env: Env, ds: Derivs): Dict<Deriv> {
-    const results: {[c: string]: [TokenExpr|EpsilonExpr, Expr[]]} = {};
-    for (const d of ds) {
-        const cString = d.result.id;
-        if (!(cString in results)) {
-            results[cString] = [d.result, []];
-        }
-        results[cString][1].push(d.next);
-    }
-    const altedResults: Dict<Deriv> = {};
-    for (const [key, [cResult, cNexts]] of Object.entries(results)) {
-        const wrapped = constructAlternation(env, ...cNexts);
-        altedResults[key] = new Deriv(cResult, wrapped);
-    }
-    return altedResults;
-}
-
-function *disjoinPriority(env: Env, derivs1: Derivs, derivs2: Derivs): Derivs {
-    const dict1 = dictifyDerivs(env, derivs1);
-    const dict2 = dictifyDerivs(env, derivs2);
-
-    for (const [key, deriv1] of Object.entries(dict1)) {
-        const deriv2 = dict2[key];
-        if (deriv2 === undefined) {
-            // if there wasn't any deriv w.r.t. this token in child2,
-            // don't bother to construct a priority union
-            yield deriv1;
-            continue;
-        }
-        const priorityUnion = constructPriorityUnion(env, deriv1.next, deriv2.next);
-        yield deriv1.wrap(_ => priorityUnion);
-    }
-
-    for (const [key, deriv2] of Object.entries(dict2)) {
-        if (key in dict1) continue;  // already handle above
-        yield deriv2;
-    }
-}
-
 class JoinExpr extends BinaryExpr {
+
+    public readonly tag = "JoinExpr";
 
     constructor(
         child1: Expr,
@@ -1294,6 +1219,8 @@ class JoinExpr extends BinaryExpr {
  */
  class EmbedExpr extends Expr {
 
+    public readonly tag = "EmbedExpr";
+
     constructor(
         public symbol: string,
         public child: Expr | undefined = undefined
@@ -1313,10 +1240,11 @@ class JoinExpr extends BinaryExpr {
             let child = env.getSymbol(this.symbol);
             if (child == undefined) {
                 // this is an error, due to the programmer referring to an undefined
-                // symbol, but now is not the time to complain. 
-                child = EPSILON;
+                // symbol, but we should have caught it earlier.  
+                // in any case, now is not the time to complain. 
+                return EPSILON;
             } 
-            this.child = child;
+            return child;
         }
         return this.child;
     }
@@ -1343,7 +1271,8 @@ class JoinExpr extends BinaryExpr {
             return NULL;
         }
         const newEnv = env.addSymbol(this.symbol);
-        const cNext = this.getChild(env).delta(tapeName, newEnv);
+        const child = this.getChild(env);
+        const cNext = child.delta(tapeName, newEnv);
         return constructEmbed(env, this.symbol, cNext);
     }
 
@@ -1358,7 +1287,6 @@ class JoinExpr extends BinaryExpr {
 
         const newEnv = env.addSymbol(this.symbol);
         let child = this.getChild(env);
-
         for (const d of child.deriv(query, newEnv)) {
             yield d.wrap(c => constructEmbed(env, this.symbol, c));
         }
@@ -1402,6 +1330,8 @@ export abstract class UnaryExpr extends Expr {
 }
 
 export class SelectionExpr extends UnaryExpr {
+
+    public readonly tag = "SelectionExpr";
 
     constructor(
         child: Expr,
@@ -1459,6 +1389,8 @@ export function constructSelection(
 }
 
 export class CountExpr extends UnaryExpr {
+
+    public readonly tag = "CountExpr";
 
     constructor(
         child: Expr,
@@ -1540,6 +1472,8 @@ export class CountExpr extends UnaryExpr {
  */
 export class OutputExpr extends UnaryExpr {
 
+    public readonly tag = "OutputExpr";
+
     constructor(
         child: Expr
     ) {
@@ -1569,6 +1503,24 @@ export class OutputExpr extends UnaryExpr {
         return new OutputExpr(concat);
     }
 
+    public back(env: Env): [OutputExpr, Expr] {
+        if (!(this.child instanceof ConcatExpr)) {
+            const newOutput = new OutputExpr(EPSILON);
+            return [newOutput, this.child];
+        }
+
+        if (this.child.child2 instanceof OutputExpr) {
+            const [child2a, child2b] = this.child.child2.back(env);
+            const newChild = constructConcat(env, this.child.child1, child2a.child);
+            const newOutput = new OutputExpr(newChild);
+            return [newOutput, child2b];
+        }
+
+        const newOutput = new OutputExpr(this.child.child1);  
+        return [newOutput, this.child.child2];
+        
+    }
+
     public simplify(env: Env): Expr {
         if (this.child instanceof EpsilonExpr) return this.child;
         return this;
@@ -1576,6 +1528,8 @@ export class OutputExpr extends UnaryExpr {
 }
 
 export class FinishedExpr extends UnaryExpr {
+
+    public readonly tag = "FinishedExpr";
 
     constructor(
         public tapeName: string,
@@ -1591,18 +1545,12 @@ export class FinishedExpr extends UnaryExpr {
 
     public delta(tapeName: string, env: DerivEnv): Expr {
         if (tapeName == this.tapeName) return this; 
-                // a tape name "X" is considered to refer to different 
-                // tapes inside and outside Cursor("X", child)
-
         const cNext = this.child.delta(tapeName, env);
         return constructFinished(env, this.tapeName, cNext, this.output);
     }
 
     public *deriv(query: Query, env: DerivEnv): Derivs {
         if (query.tapeName == this.tapeName) return; 
-                // a tape name "X" is considered to refer to different 
-                // tapes inside and outside Cursor("X", child)
-
         for (const d of this.child.deriv(query, env)) {
             yield d.wrap(c => constructFinished(env, this.tapeName, c, this.output));
         }
@@ -1613,6 +1561,12 @@ export class FinishedExpr extends UnaryExpr {
             const wrapped = constructFinished(env, this.tapeName, cNext, this.output);
             yield [cHandled, wrapped];
         }
+    }
+
+    public back(env: DerivEnv): Expr {
+        const [newOutput, c] = this.output.back(env);
+        const newChild = constructConcat(env, c, this.child);
+        return constructFinished(env, this.tapeName, newChild, newOutput);
     }
     
     public simplify(env: Env): Expr {
@@ -1641,6 +1595,8 @@ export function constructFinished(
 }
 
 export class CursorExpr extends UnaryExpr {
+
+    public readonly tag = "CursorExpr";
 
     constructor(
         public tapeName: string,
@@ -1710,6 +1666,14 @@ export class CursorExpr extends UnaryExpr {
         }
     }
 
+    
+    public back(env: DerivEnv): Expr {
+        const [newOutput, c] = this.output.back(env);
+        const newChild = constructConcat(env, c, this.child);
+        return constructCursor(env, this.tapeName, newChild, 
+            this.vocab, this.atomic, newOutput);
+    }
+
     public simplify(env: Env): Expr {
         if (this.child instanceof OutputExpr) {
             return this.child.addOutput(env, this.output);
@@ -1742,6 +1706,8 @@ export function constructCursor(
 
 export class GreedyCursorExpr extends UnaryExpr {
 
+    public readonly tag = "GreedyCursorExpr";
+
     constructor(
         public tapeName: string,
         child: Expr,
@@ -1756,11 +1722,15 @@ export class GreedyCursorExpr extends UnaryExpr {
         return `GCur_${this.tapeName}(${this.child.id})`;
     }
 
+    /*
+     * GreedyCursors are transparent so far as deltas and 
+     * derivs are concerned. (Except when the tapeName is their
+     * tapeName; since a tape name "X" is considered to refer to a 
+     * different tape inside and outside Cursor(X,c), it acts as an
+     * epsilon when queried for X.
+     */
     public delta(tapeName: string, env: DerivEnv): Expr {
         if (tapeName == this.tapeName) return this; 
-                // a tape name "X" is considered to refer to different 
-                // tapes inside and outside Cursor("X", child)
-
         const cNext = this.child.delta(tapeName, env);
         return constructGreedyCursor(env, this.tapeName, cNext, this.vocab, 
                     this.atomic, this.output);
@@ -1768,13 +1738,17 @@ export class GreedyCursorExpr extends UnaryExpr {
 
     public *deriv(query: Query, env: DerivEnv): Derivs {
         if (query.tapeName == this.tapeName) return; 
-                // a tape name "X" is considered to refer to different 
-                // tapes inside and outside Cursor("X", child)
-
         for (const d of this.child.deriv(query, env)) {
             yield d.wrap(c => constructGreedyCursor(env, this.tapeName, c, 
                     this.vocab, this.atomic, this.output));
         }
+    }
+
+    public back(env: DerivEnv): Expr {
+        const [newOutput, c] = this.output.back(env);
+        const newChild = constructConcat(env, c, this.child);
+        return constructGreedyCursor(env, this.tapeName, newChild, 
+            this.vocab, this.atomic, newOutput);
     }
 
     public *forward(env: DerivEnv): Gen<[boolean, Expr]> {
@@ -1837,6 +1811,8 @@ export function constructGreedyCursor(
 
 export class PreTapeExpr extends UnaryExpr {
 
+    public readonly tag = "PreTapeExpr";
+
     constructor(
         public inputTape: string,
         public outputTape: string,
@@ -1884,7 +1860,9 @@ export class PreTapeExpr extends UnaryExpr {
             // querying on that tape -- that is, stop being a PreTapeExpr
             const childDelta = this.child.delta(this.inputTape, env);
             if (!(childDelta instanceof NullExpr)) {
-                yield* childDelta.deriv(query, env);
+                for (const d of childDelta.deriv(query, env)) {
+                    yield d.wrap(c => constructFinished(env, this.inputTape, c, this.output));
+                }
             }
 
             const t1query = constructDot(this.inputTape);
@@ -1928,9 +1906,11 @@ export class PreTapeExpr extends UnaryExpr {
     }
 
     public simplify(env: Env): Expr {
+        if (this.child instanceof OutputExpr) {
+            return this.child.addOutput(env, this.output);
+        }
         if (this.child instanceof EpsilonExpr) return this.output;
         if (this.child instanceof NullExpr) return this.child;
-        if (this.child instanceof OutputExpr) return this.child;
         return this;
     }
 }
@@ -1946,6 +1926,122 @@ export function constructPreTape(
 }
 
 /**
+ * JITExpr is a wrapper around an expression that pre-executes some queries
+ * and then effectively caches the results.  
+ * 
+ * It uses the algorithmic metaphor of a "zipper" -- you calculate forward a few
+ * steps, in our case using the Brz. equation, and then you "back up" by turning 
+ * the results into an expression themselves.
+ * 
+ * For example, if we had something like JIT(Alt(Lit("t1", "foo"), ), we might go forward
+ * one step on that lit and get an output of "f" on t1 and a next-expr of Lit("t1", "oo").  
+ * Then backing up would be forming the sequence Seq(Lit("t1", "f")), Lit("t1", "oo")).
+ * (Not that that would be useful for such a simple expression, but that's what a zipper is.)
+ * 
+ * Then, we take the resulting expression and store it in a symbol in the symbol table --
+ * specifically, the symbol that originally pointed to this JITExpr.  That way the next time
+ * the symbol is invoked, we don't have to perform that Brz. deriv again.
+ */
+
+class JITExpr extends UnaryExpr {
+
+    public readonly tag = "jitexpr";
+
+    constructor(
+        child: Expr,
+        public tapeName: string,
+        public symbolName: string,
+        public vocab: Set<string>,
+        public atomic: boolean,
+    ) {
+        super(child);
+    }
+    public get id(): string {
+        return `Jit(${this.child.id})`;
+    }
+
+    public jitCompile(
+        env: DerivEnv 
+    ): Expr {
+        
+        const wrapped = constructGreedyCursor(env, 
+            this.tapeName, this.child, this.vocab, this.atomic);
+        
+        const compiledExprs = [];
+        for (const [handled, result] of wrapped.forward(env)) {
+            // we go through all the results of forward, then
+            // "unzip" them and put the resulting expressions into 
+            // the compiledExprs list.
+            if (!handled) {
+                throw new Error(`JIT of ${this.tapeName} not handled?`);  // shouldn't happen
+            }
+            
+            if (result instanceof GreedyCursorExpr ||
+                    result instanceof CursorExpr ||
+                    result instanceof FinishedExpr) {
+                const zipperBack = result.back(env) as GreedyCursorExpr|FinishedExpr;
+                compiledExprs.push(zipperBack.child);
+            } else if (result instanceof OutputExpr) {
+                const [z1, z2] = result.back(env);
+                if (!(z1.child instanceof EpsilonExpr)) {
+                    // if the left branch of this Output isn't eps here, 
+                    // that's unexpected, raise an expection
+                    throw new Error(`zipped-back output not eps: ${z1.child}`);
+                }
+                compiledExprs.push(z2); 
+            } else if (result instanceof NullExpr) {
+                continue;
+            } else {
+                // this can probably happen, I'm just not sure yet the 
+                // range of what result can be
+                throw new Error(`JIT compilation resulted in ${result.tag}`);
+            }
+        }
+
+        const newAlt = constructAlternation(env, ...compiledExprs);
+        env.symbols[this.symbolName] = newAlt;
+        return newAlt;
+    }
+
+    public delta(
+        tapeName: string, 
+        env: DerivEnv
+    ): Expr {
+        const jitted = this.jitCompile(env);
+        return jitted.delta(tapeName, env);
+    }
+
+    public *deriv(
+        query: Query,
+        env: DerivEnv
+    ): Derivs {
+        const jitted = this.jitCompile(env);
+        yield* jitted.deriv(query, env);
+    }
+
+    public simplify(env: Env): Expr {
+        if (this.child instanceof EpsilonExpr) return this.child;
+        if (this.child instanceof NullExpr) return this.child;
+        if (this.child instanceof OutputExpr) return this.child;
+        return this;
+    }
+
+}
+
+export function constructJIT(
+    env: Env, 
+    child: Expr,
+    tapeName: string,
+    symbolName: string,
+    vocab: Set<string>,
+    atomic: boolean
+): Expr {
+    return new JITExpr(child, tapeName, symbolName, vocab, atomic)
+                .simplify(env);
+}
+
+
+/**
  * ShortExprs "short-circuit" as soon as any of their children
  * are nullable -- that is, it has no derivatives if it has any
  * delta.
@@ -1956,6 +2052,8 @@ export function constructPreTape(
  * (h|hi|hello|goo|goodbye|golf) would be (h|goo|golf).
  */
 class ShortExpr extends UnaryExpr {
+
+    public readonly tag = "ShortExpr";
 
     public get id(): string {
         return `Sh(${this.child.id})`;
@@ -2011,6 +2109,8 @@ export function constructShort(
 }
 
 class StarExpr extends UnaryExpr {
+
+    public readonly tag = "StarExpr";
 
     constructor(
         child: Expr
@@ -2097,6 +2197,8 @@ export function constructRepeat(
  */
 class RenameExpr extends UnaryExpr {
 
+    public readonly tag = "RenameExpr";
+
     constructor(
         child: Expr,
         public fromTape: string,
@@ -2180,6 +2282,8 @@ class RenameExpr extends UnaryExpr {
 
 class NegationExpr extends UnaryExpr {
 
+    public readonly tag = "NegationExpr";
+
     constructor(
         child: Expr,
         public tapes: Set<string>,
@@ -2247,6 +2351,8 @@ class NegationExpr extends UnaryExpr {
 }
 
 export class CorrespondExpr extends UnaryExpr {
+
+    public readonly tag = "CorrespondExpr";
 
     constructor(
         public child: Expr,
@@ -2328,6 +2434,8 @@ export function constructCorrespond(
 
 export class MatchExpr extends UnaryExpr {
 
+    public readonly tag = "MatchExpr";
+    
     constructor(
         child: Expr,
         public inputTape: string,

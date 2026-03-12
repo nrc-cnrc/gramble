@@ -1,3 +1,5 @@
+import { VERBOSE_GRAMMAR, } from "../../../interpreter/src/utils/logging.js";
+
 import {
     testSource, SourceTest, 
     Error, Warning 
@@ -37,7 +39,6 @@ describe(`Source ${DIR}`, function() {
         ]
     });
     
-    
     testSrc({
 		desc: '2c. Grammar with embeds and a relevant join, under assignment',
         results: [
@@ -62,5 +63,42 @@ describe(`Source ${DIR}`, function() {
             {text: "foobaz", gloss: "run[2SG]", lang: "foobese"},
             {text: "moobaz", gloss: "jump[2SG]", lang: "foobese"}
         ]
+    });
+
+    testSrc({
+		desc: '4a. Nested joins',
+        results: [
+            {text: "foo", gloss: "sleep", statClass: "S", 
+                class: "stative", transClass: "I", transitivity: "intransitive" },
+            {text: "moo", gloss: "jump", statClass: "A", 
+                class: "active", transClass: "I", transitivity: "intransitive" },
+            {text: "goo", gloss: "love", statClass: "S", 
+                class: "stative", transClass: "T", transitivity: "transitive" },
+            {text: "zoo", gloss: "chase", statClass: "A", 
+                class: "active", transClass: "T", transitivity: "transitive" },
+        ],
+    });
+
+    testSrc({
+		desc: '4b. Nested joins, with an or: in between',
+        results: [
+            {text: "foo", gloss: "sleep", statClass: "S", 
+                class: "stative", transClass: "I", transitivity: "intransitive" },
+            {text: "moo", gloss: "jump", statClass: "A", 
+                class: "active", transClass: "I", transitivity: "intransitive" },
+            {text: "goo", gloss: "love", statClass: "S", 
+                class: "stative", transClass: "T", transitivity: "transitive" },
+            {text: "zoo", gloss: "chase", statClass: "A", 
+                class: "active", transClass: "T", transitivity: "transitive" },
+            {text: "boo", gloss: "rain", statClass: "S", class: "stative" }
+        ],
+    });
+
+    testSrc({
+		desc: '5. A join with a table, which itself has a join',
+        results: [
+            {text: "foo", gloss: "sleep", transClass: "I", transitivity: "intransitive", class: "T" },
+            {text: "moo", gloss: "jump", transClass: "I", transitivity: "intransitive", class: "T" },
+        ],
     });
 });

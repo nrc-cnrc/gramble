@@ -1,4 +1,4 @@
-import { Grammar } from "../grammars.js";
+import { Grammar, QualifiedGrammar, SelectionGrammar } from "../grammars.js";
 
 export function getAllSymbols(
     g: Grammar
@@ -6,8 +6,15 @@ export function getAllSymbols(
     switch (g.tag) {
         case "qualified": 
         case "selection":
-            return Object.keys(g.symbols);
+            return getAllSymbolsQualified(g);
         default: 
             throw new Error(`Cannot get symbols from a ${g.tag}`);
     }
+}
+
+function getAllSymbolsQualified(
+    g: QualifiedGrammar | SelectionGrammar
+): string[] {
+    return Object.keys(g.symbols)
+                 .filter(s => !s.startsWith("$"));
 }
