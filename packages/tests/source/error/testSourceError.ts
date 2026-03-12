@@ -232,7 +232,8 @@ describe(`Source ${DIR}`, function() {
         errors: [
             Error(0, 1, "Missing ordinary header for implied 'table'"),
             Error(0, 1, "Invalid header: 'text text'"),
-            Warning(1,1)
+            Warning(0,1),
+            Warning(1,1),
         ]
     });
 
@@ -255,7 +256,8 @@ describe(`Source ${DIR}`, function() {
         errors: [
             Error(0, 1, "Missing ordinary header for implied 'table'"),
             Error(0, 1, "Invalid header: 'text text'"),
-            Warning(1,1)
+            Warning(0,1),
+            Warning(1,1),
         ]
     });
 
@@ -289,7 +291,8 @@ describe(`Source ${DIR}`, function() {
         errors: [
             Error(0, 1, "Missing ordinary header for implied 'table'"),
             Error(0, 1, "Invalid header: '9text'"),
-            Warning(1,1)
+            Warning(0,1),
+            Warning(1,1),
         ]
     });
     
