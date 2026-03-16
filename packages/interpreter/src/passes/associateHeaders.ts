@@ -38,7 +38,7 @@ export class AssociateHeaders extends Pass<TST,TST> {
             // whose content values are empty strings.
             let rows: TstRow[] = t.rows || [];
             if (t.headers.length === 0) {
-                Warn("No valid header cells found")
+                Warn("No valid header cells found", "No valid header cells found")
                     .localize(t.cell.pos).msgTo(msgs);
             } else if (rows.length === 0) {
                 const row = new TstRow(new Cell(t.headers[0].text, t.headers[0].pos));
@@ -61,8 +61,9 @@ export class AssociateHeaders extends Pass<TST,TST> {
                     const header = this.findHeader(t.headers, content.pos.col);
                     if (header == undefined) {
                         if (content.text.trim().length != 0) {
-                            Warn("Cannot associate this cell with " +
-                                    "any valid header above; ignoring.")
+                            Warn("No valid header above",
+                                "Cannot associate this cell with any valid header " +
+                                "above; ignoring.")
                                 .localize(content.pos).msgTo(msgs);
                         }
                         continue;

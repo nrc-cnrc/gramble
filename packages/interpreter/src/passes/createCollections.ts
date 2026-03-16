@@ -130,9 +130,9 @@ export class CreateCollections extends Pass<TST,TST> {
             // it's not an assignment and there are multiple children.
             // assign this to a dummy variable
             const newName = `${AUTO_SYMBOL}${c.pos.row+1}`;
-            Warn("When there are multiple items in a " +
-                "sheet/collection, each of them should be named. " +
-                `We've temporarily named this ${newName}.`)
+            Warn(`Assigning temporary symbol name: '${newName}'`,
+                "When there are multiple items in a sheet/collection, each " +
+                `needs a symbol name. We've temporarily named this '${newName}.'`)
                 .localize(c.pos).msgTo(msgs);
             const op = new SymbolOp(newName);
             return new TstOp(c.cell, op, new TstEmpty(), c);

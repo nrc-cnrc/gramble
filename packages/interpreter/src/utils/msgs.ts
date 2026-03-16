@@ -123,8 +123,12 @@ export function Err(shortMsg: string, longMsg: string): Message {
     return new Error(shortMsg, longMsg);
 }
 
-export function Warn(longMsg: string): Message {
-    return new Warning("warning", longMsg);
+export function Warn(shortMsg: string, longMsg: string | undefined = undefined): Message {
+    if (longMsg === undefined) {
+        longMsg = shortMsg;
+        shortMsg = "warning";
+    }
+    return new Warning(shortMsg, longMsg);
 }
 
 export function Succeed(longMsg: string): Message {

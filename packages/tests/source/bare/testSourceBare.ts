@@ -51,7 +51,7 @@ describe(`Source ${DIR}`, function() {
     testSrc({
 		desc: '3a. Bare grammar with embeds',
         errors: [
-            Warning(8,0)
+            Warning(8, 0, "Assigning temporary symbol name: '$Auto9'")
         ],
         symbols: [
             "All",
@@ -65,7 +65,7 @@ describe(`Source ${DIR}`, function() {
     testSrc({
 		desc: '3b. Bare grammar with embeds and table op',
         errors: [
-            Warning(8,0)
+            Warning(8, 0, "Assigning temporary symbol name: '$Auto9'")
         ],
         symbols: [
             "All",
@@ -75,7 +75,7 @@ describe(`Source ${DIR}`, function() {
             "bare3b.$Auto9",
         ],
     });
-    
+
     testSrc({
 		desc: '4. Generating from symbol before bare grammar',
         results: [
@@ -83,7 +83,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moo", gloss: "jump"},
         ],
         errors: [
-            Warning(4,0)
+            Warning(4, 0, "Assigning temporary symbol name: '$Auto5'"),
         ],
         symbols: [
             "All",
@@ -96,8 +96,8 @@ describe(`Source ${DIR}`, function() {
     testSrc({
 		desc: '5. Content obliteration by bare table',
         errors: [
-            Warning(0,0),
-            Warning(4,0)
+            Warning(0, 0, "Assigning temporary symbol name: '$Auto1'"),
+            Warning(4, 0, "Assigning temporary symbol name: '$Auto5'")
         ],
         symbols: [
             "All",
@@ -112,7 +112,7 @@ describe(`Source ${DIR}`, function() {
         errors: [
             Error(0, 0, "Invalid header: 'X%%'"),
             Error(0, 0, "Missing ordinary header for implied 'table'"),
-            Warning(0,0),
+            Warning(0, 0, "No valid header cells found"),
         ],
         symbols: [
             "All",

@@ -311,7 +311,8 @@ export abstract class TstBinary extends TstEnclosure {
                 child.pos !== undefined &&
                 this.child.pos.col != child.pos.col) {
             const content = (child as TstCellComponent).cell.text.trim();
-            Warn(`'${content}' is in an unexpected column. ` +
+            Warn(`'${content}' is in an unexpected column`,
+                `'${content}' is in an unexpected column. ` +
                 `Did you intend it to be in column ${this.child.pos.colF}, ` + 
                 `so that it's under cell ${this.child.pos}?`)
                 .localize(child.pos).msgTo(msgs);
