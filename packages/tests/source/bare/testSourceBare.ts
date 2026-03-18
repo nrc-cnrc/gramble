@@ -49,6 +49,20 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
+		desc: '2c. Bare grammar shifted by one column',
+        symbol: "",
+        results: [
+            {text: "foo", gloss: "run"},
+            {text: "moo", gloss: "jump"}
+        ],
+        symbols: [
+            "All",
+            "bare2c.All",
+            "bare2c.Default",
+        ],
+    });
+
+    testSrc({
 		desc: '3a. Bare grammar with embeds',
         errors: [
             Warning(8, 0, "Assigning temporary symbol name: '$Auto9'")
@@ -77,7 +91,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '4. Generating from symbol before bare grammar',
+		desc: '4a. Generating from symbol before bare grammar',
         results: [
             {text: "foo", gloss: "run"},
             {text: "moo", gloss: "jump"},
@@ -87,9 +101,100 @@ describe(`Source ${DIR}`, function() {
         ],
         symbols: [
             "All",
-            "bare4.All",
-            "bare4.word",
-            "bare4.$Auto5",
+            "bare4a.All",
+            "bare4a.word",
+            "bare4a.$Auto5",
+        ],
+    });
+
+    testSrc({
+		desc: '4b. Generating from bare grammar before a symbol assignment',
+        symbol: "",
+        results: [
+            {text: "bar", gloss: "-1SG"},
+            {text: "baz", gloss: "-2SG"},
+            {text: "word=", gloss: "table:"},
+            {},
+        ],
+        errors: [
+            Warning(4, 2, "No valid header above"),
+            Warning(4, 3, "No valid header above"),
+            Warning(5, 2, "No valid header above"),
+            Warning(5, 3, "No valid header above"),
+            Warning(6, 2, "No valid header above"),
+            Warning(6, 3, "No valid header above"),
+        ],
+        symbols: [
+            "All",
+            "bare4b.All",
+            "bare4b.Default",
+        ],
+    });
+
+    testSrc({
+		desc: '4c. Generating from bare grammar between 2 symbols',
+        symbol: "$Auto5",
+        results: [
+            {text: "bar", gloss: "-1SG"},
+            {text: "baz", gloss: "-2SG"},
+            {text: "word=", gloss: "table:"},
+            {},
+        ],
+        errors: [
+            Warning(4, 0, "Assigning temporary symbol name: '$Auto5'"),
+            Warning(8, 2, "No valid header above"),
+            Warning(8, 3, "No valid header above"),
+            Warning(9, 2, "No valid header above"),
+            Warning(9, 3, "No valid header above"),
+            Warning(10, 2, "No valid header above"),
+            Warning(10, 3, "No valid header above"),
+        ],
+        symbols: [
+            "All",
+            "bare4c.All",
+            "bare4c.suffix",
+            "bare4c.$Auto5",
+        ],
+    });
+
+    testSrc({
+		desc: '4d. Generating from symbol before bare grammar between 2 symbols',
+        results: [
+            {text: "foo", gloss: "run"},
+            {text: "moo", gloss: "jump"},
+        ],
+        errors: [
+            Warning(4, 0, "Assigning temporary symbol name: '$Auto5'"),
+            Warning(8, 2, "No valid header above"),
+            Warning(8, 3, "No valid header above"),
+            Warning(9, 2, "No valid header above"),
+            Warning(9, 3, "No valid header above"),
+            Warning(10, 2, "No valid header above"),
+            Warning(10, 3, "No valid header above"),
+        ],
+        symbols: [
+            "All",
+            "bare4d.All",
+            "bare4d.word",
+            "bare4d.$Auto5",
+        ],
+    });
+
+    testSrc({
+		desc: '4e. Generating from symbol after bare grammar shifted by 1 column',
+        results: [
+            {text: "foo", gloss: "run"},
+            {text: "moo", gloss: "jump"},
+        ],
+        errors: [
+            Warning(0, 1, "Assigning temporary symbol name: '$Auto1'"),
+            Warning(4, 0, "'word=' is in an unexpected column"),
+        ],
+        symbols: [
+            "All",
+            "bare4e.All",
+            "bare4e.word",
+            "bare4e.$Auto1",
         ],
     });
 
