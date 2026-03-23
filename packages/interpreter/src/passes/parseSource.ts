@@ -1,19 +1,20 @@
+import { CollectionOp, parseOp, SymbolOp } from "../ops.js";
 import { Pass } from "../passes.js";
-import { OpMsg, CommentMsg, Err, Message, Msg } from "../utils/msgs.js";
+import { Worksheet, Workbook, Source } from "../sources.js";
 import { 
     TstAssignment,
-    TstEnclosure, 
     TstCollection, 
-    TstOp, 
+    TstEnclosure, 
+    TstErrorEnclosure,
     TstGrid,
-    TST
+    TstOp, 
+    TST,
 } from "../tsts.js";
-import { Worksheet, Workbook, Source } from "../sources.js";
 import { Cell, Pos } from "../utils/cell.js";
-import { CollectionOp, parseOp } from "../ops.js";
-import { RESERVED_WORDS } from "../utils/reserved.js";
 import { exhaustive } from "../utils/func.js";
+import { CommentMsg, Err, Message, Msg, OpMsg, Warn } from "../utils/msgs.js";
 import { Env } from "../utils/options.js";
+import { RESERVED_WORDS } from "../utils/reserved.js";
 
 /**
  * This takes grids of cells (Worksheets) and collections of them
@@ -105,6 +106,9 @@ export class ParseSource extends Pass<Source,TST> {
                                 // encountered, because we need to pad rows until
                                 // then.  otherwise we can miss empty string content 
                                 // at the end of a line
+
+        let worksheetHasSymbols = false;    // bare symbols are not permitted in
+                                            // the presence of symbol assignments
     
         // Now iterate through the cells, left-to-right top-to-bottom
         for (let rowIndex = 0; rowIndex < s.cells.length; rowIndex++) {
@@ -157,13 +161,31 @@ export class ParseSource extends Pass<Source,TST> {
                 // next check if this is "content" -- that is, something to the lower left
                 // of the topmost op.  NB: This is the only kind of operation we'll do on 
                 // empty cells, so that, if appropriate, we can mark them for syntax highlighting.
-                if (top.tst instanceof TstGrid && colIndex > top.col && rowIndex > top.row) {
-                    top.tst.addContent(cell).localize(cellPos).msgTo(msgs);
-                    continue;
+                if (colIndex > top.col && rowIndex > top.row) {
+                    if (top.tst instanceof TstGrid) {
+                        top.tst.addContent(cell).localize(cellPos).msgTo(msgs);
+                        continue;
+                    }
+                    // if (top.tst instanceof TstErrorEnclosure && colIndex < colWidth) {
+                    //     Warn(`Unexpected bare header/content: '${cellTextTrimmed}'.`,
+                    //         `'${cellTextTrimmed}' looks like a bare header/content, ` +
+                    //         "but that is not permitted here.")
+                    //         .localize(cellPos).msgTo(msgs);
+                    //     continue;
+                    // }
                 }
     
                 // all of the following steps require there to be some explicit content
                 if (cellIsEmpty) {
+                    continue;
+                }
+
+                // bare content to the right of, or right of and below, bare content
+                if (top.tst instanceof TstErrorEnclosure) {
+                    Warn(`Unexpected bare header/content: '${cellTextTrimmed}'`,
+                        `'${cellTextTrimmed}' looks like a bare header/content, ` +
+                        "but that is not permitted here.")
+                        .localize(cellPos).msgTo(msgs);
                     continue;
                 }
     
@@ -171,11 +193,6 @@ export class ParseSource extends Pass<Source,TST> {
                 if (!cellTextTrimmed.startsWith("%") 
                         && (cellTextTrimmed.endsWith(":") 
                             || cellTextTrimmed.endsWith("="))) {
-                    // it's an operation, which starts a new enclosures
-                    const op = parseOp(cellText).localize(cellPos).msgTo(msgs);
-                    const newEnclosure = new TstOp(cell, op);
-                    new OpMsg().msgTo(msgs, cellPos);
-
                     if (top.tst instanceof TstGrid) {
                         const opStr = cellTextTrimmed.endsWith("=") ? 
                                         "assignment" : "operator";
@@ -185,16 +202,34 @@ export class ParseSource extends Pass<Source,TST> {
                             .msgTo(msgs, cellPos);
                         continue;
                     }
-              
+
+                    // it's an operation, which starts a new enclosures
+                    const op = parseOp(cellText).localize(cellPos).msgTo(msgs);
+                    const newEnclosure = new TstOp(cell, op);
+                    new OpMsg().msgTo(msgs, cellPos);
+                    if (op instanceof SymbolOp) {
+                        worksheetHasSymbols = true;
+                    }
                     top.tst.setChild(newEnclosure).msgTo(msgs);
 
                     const newTop = { tst: newEnclosure, row: rowIndex, col: colIndex };
                     stack.push(newTop);
                     continue;
                 } 
-    
-                // it's a plain or comment header, but we don't yet distinguish that
-                // from content
+
+                if (worksheetHasSymbols && top.col === -1) {
+                    // Found bare content after there are symbol assignments.
+                    Err(`Unexpected bare header/content: '${cellTextTrimmed}'`,
+                        `'${cellTextTrimmed}' looks like a bare header/content, ` +
+                        "but that is not permitted after an assignment.")
+                        .msgTo(msgs, cellPos);
+                    const errTST = new TstErrorEnclosure(cell);
+                    const errTop = { tst: errTST, row: rowIndex, col: colIndex };
+                    stack.push(errTop);
+                    continue;
+                }
+
+                // it's a header, but we don't yet distinguish that from content
 
                 // if the top isn't a TstGrid, make it so
                 if (!(top.tst instanceof TstGrid)) {
@@ -205,8 +240,7 @@ export class ParseSource extends Pass<Source,TST> {
                 }
 
                 (top.tst as TstGrid).addContent(cell)
-                                       .localize(cellPos)
-                                       .msgTo(msgs);
+                                    .localize(cellPos).msgTo(msgs);
 
             }
         }

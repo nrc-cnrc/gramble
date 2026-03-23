@@ -145,7 +145,8 @@ export class TstAutoEmbed extends TstCellComponent {
  * the union of the grammar represented by 2 and the grammar represented by the B table.
  */
 
-export type Enclosure = TstGrid 
+export type Enclosure = TstErrorEnclosure
+                      | TstGrid 
                       | TstHeadedGrid
                       | TstOp
                       | TstOr
@@ -166,6 +167,25 @@ export abstract class TstEnclosure extends TstCellComponent {
 
     public abstract setChild(child: TST): MsgVoid;
 
+}
+
+/**
+ * A TstErrorEnclosure is a rectangular region in place of a grid that exists
+ * in error, such as a bare grammar following a symbol assignment.
+ */
+ export class TstErrorEnclosure extends TstEnclosure {
+    public readonly tag = "errorEnclosure";
+
+    constructor(
+        cell: Cell, 
+        public sibling: TST = new TstEmpty(),
+    ) {
+        super(cell, sibling)
+    }
+    
+    public setChild(newChild: TST): MsgVoid {
+        throw new Error("TstErrorEnclosures don't have children");
+    }
 }
 
 /**

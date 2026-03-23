@@ -1,1 +1,7 @@
-X%%
+table:, text
+      , foo
+      , goo
+
+text
+bar
+baz
