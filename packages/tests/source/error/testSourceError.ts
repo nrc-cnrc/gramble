@@ -26,12 +26,15 @@ describe(`Source ${DIR}`, function() {
     testSrc({
 		desc: '1b. Assignment to a reserved word',
         results: [
-            {gloss: "-1SG",text: "bar"},
-            {gloss: "-2SG",text: "baz"}
+            {},
         ],
         errors: [
-            Error(1, 0, "Invalid operator: 'optional='"),
-            Warning(1,0)
+            Error(1, 0, "Invalid symbol assignment: 'optional='"),
+            Warning(1, 0, "Assigning temporary symbol name: '$Auto2'"),
+            Error(5, 0, "Invalid symbol assignment: 'test='"),
+            Warning(5, 0, "Assigning temporary symbol name: '$Auto6'"),
+            Error(10, 2, "Error parsing cell: 'optional'"),
+            Error(10, 3, "Error parsing cell: 'test'"),
         ]
     });
 
@@ -50,7 +53,7 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Error(0, 0, "Invalid symbol name: '123verb'"),
+            Error(0, 0, "Invalid symbol name: '123verb'."),
             Warning(0,0),
             Error(5, 2, "Invalid symbol name: '123verb'")
         ]
@@ -63,8 +66,8 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Error(0, 0, "Invalid operator: 'verb vorb='"),
-            Warning(0,0),
+            Error(0, 0, "Invalid symbol assignment: 'verb vorb='"),
+            Warning(0, 0, "Assigning temporary symbol name: '$Auto1'"),
             Error(5, 2, "Error parsing cell: 'verb vorb'")
         ]
     });

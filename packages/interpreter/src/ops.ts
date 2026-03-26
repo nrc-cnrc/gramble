@@ -110,9 +110,11 @@ const OP_UNRESERVED = MPUnreserved<Op>(
             return new SymbolOp(s)
         } else {
             throw new ErrorOp().err(
-                `Invalid symbol name: '${s}'`, 
+                `Invalid symbol name: '${s}'.`, 
                 `'${s}' looks like it should be a symbol name, ` +
-                "but it contains an invalid symbol."
+                "but it contains an invalid character. " +
+                "A symbol name should start with a letter or _, and " +
+                "should not contain spaces or certain punctuation characters."
             );
         }
     } 
@@ -162,6 +164,12 @@ export function parseOp(text: string): Msg<Op> {
     const results = miniParse(env, OP_EXPR, trimmedText);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
+        if (trimmedText.endsWith("=")) {
+            return new ErrorOp().err(`Invalid symbol assignment: '${trimmedText}'`,
+                                    `'${trimmedText}' looks like a symbol assignment, ` +
+                                    "but it cannot be parsed as one. Note that " +
+                                    "reserved words cannot be symbol names.");
+        }
         return new ErrorOp().err(`Invalid operator: '${trimmedText}'`,
                                 `'${trimmedText}' looks like an operator, ` +
                                 "but it cannot be parsed as one.");

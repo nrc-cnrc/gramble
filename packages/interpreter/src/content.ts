@@ -129,7 +129,9 @@ const TAPENAME_UNRESERVED = MPUnreserved<Grammar>(
             throw new TapeNamesGrammar([]).err(
                 `Invalid header name: '${s}'`, 
                 `'${s}' looks like it should be a header name, ` +
-                "but it doesn't follow the rules for one."
+                "but it doesn't follow the rules for one. " +
+                "An ordinary header name must not be a reserved word, " +
+                "should start with a letter or _, and should not contain spaces."
             );
         }
     } 

@@ -250,8 +250,11 @@ const HP_UNRESERVED = MPUnreserved<Header>(
         } else {
             throw new ErrorHeader().err(
                 `Invalid header: '${s}'`, 
-                `'${s}' looks like it should be a header, but ` +
-                "headers should start with letters or _, and not contain spaces");
+                `'${s}' looks like it should be a header, ` +
+                "but it doesn't follow the rules for one. " +
+                "An ordinary header name must not be a reserved word, " +
+                "should start with a letter or _, and should not contain spaces."
+            );
         }
     } 
 );
@@ -358,14 +361,17 @@ const HP_CONTAINS = MPSequence<Header>(
 const HP_EXPR: MPParser<Header> = MPAlt(HP_COMMENT, HP_NON_COMMENT_EXPR);
 
 export function parseHeaderCell(text: string): Msg<Header> {
-
     const env = new MiniParseEnv(RESERVED_SYMBOLS, ALL_RESERVED);
     const results = miniParse(env, HP_EXPR, text);
     if (results.length == 0) {
         // if there are no results, the programmer made a syntax error
         const trimmedText = text.trim();
-        return new ErrorHeader().err(`Invalid header: '${trimmedText}'`,
-                                    `Cannot parse '${trimmedText}' as a header.`);
+        return new ErrorHeader().err(
+                `Invalid header: '${trimmedText}'`,
+                `Cannot parse '${trimmedText}' as a header. ` +
+                "An ordinary header name must not be a reserved word, " +
+                "should start with a letter or _, and should not contain spaces."
+        );
     }
     if (results.length > 1) {
         // if this happens, it's an error on our part
