@@ -16,9 +16,8 @@ describe(`Source ${DIR}`, function() {
 		desc: '1a. Simple grammar with unit tests',
         tapes: ["text", "gloss"],
         vocab: {
-            text: ["f","o","b","a","r","m","z"],
-            gloss: ["r","u","n","-","1","S","G",
-                        "s","e","2"]
+            text: [..."fobarmz"],
+            gloss: [..."run-1SGse2"]
         },
         results: [
             {text: "foobar", gloss: "run-1SG"},
@@ -30,8 +29,8 @@ describe(`Source ${DIR}`, function() {
 		desc: '1b. Simple grammar with negative unit tests',
         tapes: ["text", "gloss"],
         vocab: {
-            text: ["f","o","b","a","r"],
-            gloss: ["r","u","n","-","1","S","G"]
+            text: [..."fobar"],
+            gloss: [..."run-1SG"]
         },
         results: [
             {text: "foobar", gloss: "run-1SG"}
@@ -106,8 +105,8 @@ describe(`Source ${DIR}`, function() {
 		desc: '5a. Failing unit tests',
         tapes: ["text", "gloss"],
         vocab: {
-            text: ["f","o","b","a","r","m","z"],
-            gloss: ["r","u","n","-","1","S","G","j","m","p","2"]
+            text: [..."fobarmz"],
+            gloss: [..."run-1SGjmp2"]
         },
         results: [
             {text: "foobar", gloss: "run-1SG"},
@@ -128,8 +127,8 @@ describe(`Source ${DIR}`, function() {
 		desc: '5b. Failing negative unit tests',
         tapes: ["text", "gloss"],
         vocab: {
-            text: ["f","o","b","a","r","m","z"],
-            gloss: ["r","u","n","-","1","S","G","j","m","p","2"]
+            text: [..."fobarmz"],
+            gloss: [..."run-1SGjmp2"]
         },
         results: [
             {text: "foobar", gloss: "run-1SG"},
@@ -149,8 +148,8 @@ describe(`Source ${DIR}`, function() {
 		desc: '6a. Unit tests with unknown header',
         tapes: ["text", "gloss"],
         vocab: {
-            text: ["f","o","b","a","r","m","z"],
-            gloss: ["r","u","n","-","1","S","G","j","m","p","2"]
+            text: [..."fobarmz"],
+            gloss: [..."run-1SGjmp2"]
         },
         results: [
             {text: "foobar", gloss: "run-1SG"},
@@ -160,13 +159,13 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(12, 4, "Ill-formed unit test - no 'pos' header"),
-            Warning(13, 2),
-            Warning(14, 2),
-            Warning(15, 2),
-            Warning(16, 2),
-            Warning(17, 2),
-            Warning(18, 2),
-            Warning(19, 2),
+            Warning(13, 2, "Test line not run"),
+            Warning(14, 2, "Test line not run"),
+            Warning(15, 2, "Test line not run"),
+            Warning(16, 2, "Test line not run"),
+            Warning(17, 2, "Test line not run"),
+            Warning(18, 2, "Test line not run"),
+            Warning(19, 2, "Test line not run"),
         ],
     });
 
@@ -174,8 +173,8 @@ describe(`Source ${DIR}`, function() {
 		desc: '6b. Negative unit tests with unknown header',
         tapes: ["text", "gloss"],
         vocab: {
-            text: ["f","o","b","a","r","m","z"],
-            gloss: ["r","u","n","-","1","S","G","j","m","p","2"]
+            text: [..."fobarmz"],
+            gloss: [..."run-1SGjmp2"]
         },
         results: [
             {text: "foobar", gloss: "run-1SG"},
@@ -185,9 +184,9 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(12, 4, "Ill-formed unit test - no 'pos' header"),
-            Warning(13, 2),
-            Warning(14, 2),
-            Warning(15, 2),
+            Warning(13, 2, "Test line not run"),
+            Warning(14, 2, "Test line not run"),
+            Warning(15, 2, "Test line not run"),
         ]
     });
 
@@ -195,8 +194,8 @@ describe(`Source ${DIR}`, function() {
 		desc: '6c. Unit tests with multiple unknown headers',
         tapes: ["text", "gloss"],
         vocab: {
-            text: ["f","o","b","a","r","m","z"],
-            gloss: ["r","u","n","-","1","S","G","j","m","p","2"]
+            text: [..."fobarmz"],
+            gloss: [..."run-1SGjmp2"]
         },
         results: [
             {text: "foobar", gloss: "run-1SG"},
@@ -207,13 +206,13 @@ describe(`Source ${DIR}`, function() {
         errors: [
             Error(12, 4, "Ill-formed unit test - no 'pos' header"),
             Error(12, 5, "Ill-formed unit test - no 'class' header"),
-            Warning(13, 2),
-            Warning(14, 2),
-            Warning(15, 2),
-            Warning(16, 2),
-            Warning(17, 2),
-            Warning(18, 2),
-            Warning(19, 2),
+            Warning(13, 2, "Test line not run"),
+            Warning(14, 2, "Test line not run"),
+            Warning(15, 2, "Test line not run"),
+            Warning(16, 2, "Test line not run"),
+            Warning(17, 2, "Test line not run"),
+            Warning(18, 2, "Test line not run"),
+            Warning(19, 2, "Test line not run"),
         ],
     });
 
@@ -256,8 +255,8 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Error(9, 1, "Missing content for 'test:'"),
-            Warning(9,0)
+            Warning(9, 0, "No content for symbol 'word'"),
+            Error(9, 1, "Missing content for 'test' operator"),
         ]
     });
     
@@ -267,8 +266,8 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Error(9, 1, "Missing content for 'testnot:'"),
-            Warning(9,0)
+            Warning(9, 0, "No content for symbol 'word'"),
+            Error(9, 1, "Missing content for 'testnot' operator"),
         ],
     });
 
@@ -278,10 +277,10 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
+            Warning(9, 0, "No content for symbol 'word'"),
             Error(9, 1, "'table' operator requires header(s)"),
-            Error(11, 1, "Missing content for 'test:'"),
-            Warning(9,0),
-            Warning(9,1)
+            Warning(9, 1, "No content for 'table' operator"),
+            Error(11, 1, "Missing content for 'test' operator"),
         ]
     });
 
@@ -291,10 +290,10 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
+            Warning(9, 0, "No content for symbol 'word'"),
             Error(9, 1, "'table' operator requires header(s)"),
-            Error(11, 1, "Missing content for 'testnot:'"),
-            Warning(9,0),
-            Warning(9,1)
+            Warning(9, 1, "No content for 'table' operator"),
+            Error(11, 1, "Missing content for 'testnot' operator"),
         ]
     });
     
@@ -307,7 +306,7 @@ describe(`Source ${DIR}`, function() {
             Error(12, 2, "Failed unit test - no matching outputs"),
             Error(13, 2, "Failed unit test - no matching outputs"),
             Error(14, 2, "Failed unit test - no matching outputs"),
-            Warning(9,2),   // No non-empty values for these headers; assuming empty values.
+            Warning(9, 2, "No content for header(s)"),
         ]
     });
 
@@ -317,7 +316,7 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Warning(9,2),   // No non-empty values for these headers; assuming empty values.
+            Warning(9, 2, "No content for header(s)"),
         ]
     });
 
@@ -331,7 +330,7 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(12, 1, "'test' operator requires header(s)"),
-            Warning(12,1)
+            Warning(12, 1, "No content for 'test' operator")
         ]
     });
 
@@ -345,7 +344,7 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(12, 1, "'testnot' operator requires header(s)"),
-            Warning(12,1)
+            Warning(12, 1, "No content for 'testnot' operator")
         ]
     });
 
@@ -446,8 +445,8 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2PL"},
         ],
         errors: [
+            Warning(13, 1, "'testnot' operator has erroneous operands"),
             Error(13, 3, "Invalid 'unique' header: 'unique gloss'"),
-            Warning(13,1),
         ]
     });
 
@@ -505,13 +504,13 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(13, 3, "Ill-formed unit test - no 'pos' header"),
-            Warning(14, 2),
-            Warning(15, 2), 
-            Warning(16, 2),
+            Warning(14, 2, "Test line not run"),
+            Warning(15, 2, "Test line not run"), 
+            Warning(16, 2, "Test line not run"),
             Error(21, 3, "Ill-formed unit test - no 'pos' header"),
-            Warning(22, 2),    
-            Warning(23, 2),
-            Warning(24, 2),
+            Warning(22, 2, "Test line not run"),    
+            Warning(23, 2, "Test line not run"),
+            Warning(24, 2, "Test line not run"),
         ],
     });
 
@@ -542,7 +541,7 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(3, 3, "Not an ordinary header: 'optional gloss'"),
-            Warning(4,3)
+            Warning(4, 3, "No valid header above")
         ],
     });
     
@@ -553,7 +552,7 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(3, 3, "Not an ordinary header: 'gloss/eng'"),
-            Warning(4,3)
+            Warning(4, 3, "No valid header above")
         ],
     });
 
@@ -564,7 +563,7 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(6, 3, "Not an ordinary header: 'embed'"),
-            Warning(7,3)
+            Warning(7, 3, "No valid header above")
         ],
     });
 

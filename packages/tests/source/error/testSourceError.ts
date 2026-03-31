@@ -19,7 +19,7 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(4, 4, "Invalid header: 'table'"),
-            Warning(5,4)
+            Warning(5, 4, "No valid header above")
         ]
     });
 
@@ -54,7 +54,7 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(0, 0, "Invalid symbol name: '123verb'."),
-            Warning(0,0),
+            Warning(0, 0, "Assigning temporary symbol name: '$Auto1'"),
             Error(5, 2, "Invalid symbol name: '123verb'")
         ]
     });
@@ -100,8 +100,8 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Warning(9,0),
-            Error(9, 1, "Missing content for 'or:'") // "This operator requires content above it, but it's empty or erroneous."
+            Warning(9, 0, "No content for symbol 'word'"),
+            Error(9, 1, "Missing content for 'or' operator"),
         ]
     });
 
@@ -112,8 +112,8 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Error(0, 0, "Missing content for 'join:'"), // "This operator requires content above it, but it's empty or erroneous."
-            Warning(0,0)
+            Error(0, 0, "Missing content for 'join' operator"),
+            Warning(0, 0, "No content for symbol 'Default'"),
         ]
     });
 
@@ -126,7 +126,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Warning(12,1)
+            Warning(12, 1, "No content for 'or' operator")
         ]
     });
 
@@ -179,8 +179,8 @@ describe(`Source ${DIR}`, function() {
 		desc: '6a. Content obliteration by table',
         results: undefined,
         errors: [
-            Warning(0,0),
-            Warning(4,0)
+            Warning(0, 0, "Assigning temporary symbol name: '$Auto1'"),
+            Warning(4, 0, "Assigning temporary symbol name: '$Auto5'")
         ]
     });
 
@@ -191,7 +191,7 @@ describe(`Source ${DIR}`, function() {
             {text: "bar"}
         ],
         errors: [
-            Warning(0,0)
+            Warning(0, 0, "Assigning temporary symbol name: '$Auto1'")
         ]
     });
 
@@ -223,7 +223,7 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(8, 3, "Invalid header: 'blarg embed'"),
-            Warning(9,3)
+            Warning(9, 3, "No valid header above")
         ]
     });
     
@@ -235,8 +235,8 @@ describe(`Source ${DIR}`, function() {
         errors: [
             Error(0, 1, "Missing ordinary header for implied 'table'"),
             Error(0, 1, "Invalid header: 'text text'"),
-            Warning(0,1),
-            Warning(1,1),
+            Warning(0, 1, "No valid header cells found"),
+            Warning(1, 1, "No valid header above"),
         ]
     });
 
@@ -247,7 +247,7 @@ describe(`Source ${DIR}`, function() {
             {},
         ],
         errors: [
-            Warning(1, 1)   // No content cells found for these headers; assuming empty values.
+            Warning(1, 1, "No content for header(s)")
         ]
     });
 
@@ -259,8 +259,8 @@ describe(`Source ${DIR}`, function() {
         errors: [
             Error(0, 1, "Missing ordinary header for implied 'table'"),
             Error(0, 1, "Invalid header: 'text text'"),
-            Warning(0,1),
-            Warning(1,1),
+            Warning(0, 1, "No valid header cells found"),
+            Warning(1, 1, "No valid header above"),
         ]
     });
 
@@ -271,7 +271,7 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(0, 1, "Invalid header: 'text text'"),
-            Warning(1,1)
+            Warning(1, 1, "No valid header above")
         ]
     });
 
@@ -282,7 +282,7 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(0, 2, "Invalid header: 'text text'"),
-            Warning(1,2)
+            Warning(1, 2, "No valid header above")
         ]
     });
 
@@ -294,8 +294,8 @@ describe(`Source ${DIR}`, function() {
         errors: [
             Error(0, 1, "Missing ordinary header for implied 'table'"),
             Error(0, 1, "Invalid header: '9text'"),
-            Warning(0,1),
-            Warning(1,1),
+            Warning(0, 1, "No valid header cells found"),
+            Warning(1, 1, "No valid header above"),
         ]
     });
     
@@ -305,7 +305,7 @@ describe(`Source ${DIR}`, function() {
             {text: "foobar", gloss: "run-1SG", finite: "true"}
         ],
         errors: [
-            Warning(10,1)
+            Warning(10, 1, "'join:' in an unexpected column")
         ]
     });
 
@@ -319,7 +319,7 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"},
         ],
         errors: [
-            Warning(11, 1), // This operator is in an unexpected column. ...
+            Warning(11, 1, "'or:' in an unexpected column"),
         ],
         // verbose: VERBOSE_DEBUG,
     });

@@ -86,7 +86,8 @@ export class CheckNamedParams extends Pass<TST,TST> {
         // if there are any problems with params and we require
         // perfection, warn and return the sibling
         if (paramsMustBePerfect(t.op) && childMsgs.length > 0) {
-            Warn(`This '${t.op.tag}' operator has erroneous operands and will not execute.`)
+            Warn(`'${t.op.tag}' operator has erroneous operands`,
+                `This '${t.op.tag}' operator has erroneous operands and will not execute.`)
                 .localize(t.cell.pos).msgTo(opMsgs);
             return sib.msg(sibMsgs).msg(childMsgs).msg(opMsgs);
         }

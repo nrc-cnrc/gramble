@@ -314,7 +314,7 @@ describe(`Source ${DIR}`, function() {
             {text: "baz", gloss: "-2SG"}
         ],
         errors: [
-            Warning(0,0)
+            Warning(0, 0, "Assigning temporary symbol name: '$Auto1'")
         ],
         symbols: [
             "All",
@@ -333,7 +333,7 @@ describe(`Source ${DIR}`, function() {
             {text: "baz", gloss: "-2SG"}
         ],
         errors: [
-            Warning(4,0)
+            Warning(4, 0, "Assigning temporary symbol name: '$Auto5'")
         ],
         symbols: [
             "All",
@@ -349,7 +349,7 @@ describe(`Source ${DIR}`, function() {
 		desc: '11c. Unnamed collection as last child',
         results: undefined,
         errors: [
-            Warning(8,0)
+            Warning(8, 0, "Assigning temporary symbol name: '$Auto9'")
         ],
         symbols: [
             "All",
@@ -414,9 +414,9 @@ describe(`Source ${DIR}`, function() {
             {},
         ],
         errors: [
-            Warning(8,0),   // This symbol will not contain any content.
+            Warning(8, 0, "No content for symbol 'word'"),
             Error(8, 1, "'table' operator requires header(s), not 'collection:'"),
-            Error(11, 1, "Missing content for 'or:'"),
+            Error(11, 1, "Missing content for 'or' operator"),
         ],
         symbols: [
             "All",

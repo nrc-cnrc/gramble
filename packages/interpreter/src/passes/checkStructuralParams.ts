@@ -97,7 +97,10 @@ export class CheckStructuralParams extends Pass<TST,TST> {
         // assignment needs something in its .child param.  if
         // it's empty, issue a warning.
         if (t.child instanceof TstEmpty) {
-            return t.warn("This symbol will not contain any content.").msg(msgs);
+            const symbol = (t.op as SymbolOp).text.trim();
+            return t.warn(`No content for symbol '${symbol}'`,
+                        `This symbol '${symbol}' will not contain any content.`)
+                        .msg(msgs);
         }
 
         return t.msg(msgs);
@@ -112,6 +115,9 @@ export class CheckStructuralParams extends Pass<TST,TST> {
     public handleOp(t: TstOp, env: PassEnv): Msg<TST> {
         const msgs: Message[] = [];
         let result: TST = t;
+
+        const opTag = (t.op instanceof AutoTableOp) ?
+                "implicit 'table'" : `'${t.op.tag}'`;
 
         if (t.op instanceof TableOp || t.op instanceof AutoTableOp) {
             // Silently drop an extra table op if it's an AutoTableOp, or issue
@@ -130,27 +136,14 @@ export class CheckStructuralParams extends Pass<TST,TST> {
         // if the op requires a grid to the right, but doesn't have one,
         // issue an error, and return the sibling as the new value.
         if (childMustBeGrid(t.op) == "required") {
-            const opTag = (t.op instanceof AutoTableOp) ?
-                            "implicit 'table'" : `'${t.op.tag}'`;
-            if (t.child instanceof TstEmpty || t.child instanceof TstGrid) {
-                let emptyGrid = true;
-                if (t.child instanceof TstGrid) {
-                    const headerRow = (t.child as TstGrid).rows[0];
-                    for (const c of headerRow.content) {
-                        if(!c.cell.text.trim().startsWith('%')) {
-                            emptyGrid = false;
-                            break;
-                        }
-                    }
-                }
-                if (emptyGrid) {
-                    Err(`${capitalize(opTag)} operator requires header(s)`,
-                        `This ${opTag} operator requires header(s) to the right, ` +
-                        "but none was found.")
-                        .msgTo(msgs);
-                    result = t.sibling;
-                }
-            } else {
+            if (t.child instanceof TstEmpty ||
+                    (t.child instanceof TstGrid && t.child.isEmpty())) {
+                Err(`${capitalize(opTag)} operator requires header(s)`,
+                    `This ${opTag} operator requires header(s) to the right, ` +
+                    "but none was found.")
+                    .msgTo(msgs);
+                result = t.sibling;
+            } else if (!(t.child instanceof TstGrid)) {
                 const content = t.child.cell.text.trim();
                 Err(`${capitalize(opTag)} operator requires header(s), not '${content}'`,
                     `This ${opTag} operator requires header(s) to the right, ` +
@@ -163,11 +156,10 @@ export class CheckStructuralParams extends Pass<TST,TST> {
         // if the op must have a sibling and doesn't, issue an error, and return empty.
         if (siblingRequired(t.op) == "required" 
                 && t.sibling instanceof TstEmpty) {
-            const trimmedText = t.cell.text.trim();
             const details = t.child instanceof TstEmpty ?
                             "and to the right, but both are" : "but it's";
-            Err(`Missing content for '${trimmedText}'`,
-                `The '${trimmedText}' operator requires content above it ` +
+            Err(`Missing content for ${opTag} operator`,
+                `This ${opTag} operator requires content above it ` +
                 `${details} empty or erroneous.`)
                 .localize(t.sibling.pos).msgTo(msgs);
             result = new TstEmpty();
@@ -175,8 +167,10 @@ export class CheckStructuralParams extends Pass<TST,TST> {
 
         // all operators need something in their .child param.  if it's empty,
         // issue a warning, and return the sibling as the new value.
-        if (t.child instanceof TstEmpty) {
-            Warn("This will not contain any content.")
+        if (t.child instanceof TstEmpty ||
+                (t.child instanceof TstGrid && t.child.isEmpty())) {
+            Warn(`No content for ${opTag} operator`,
+                `This ${opTag} operator will not contain any content.`)
                 .localize(t.pos).msgTo(msgs);
             result = t.sibling;
         }
@@ -184,7 +178,8 @@ export class CheckStructuralParams extends Pass<TST,TST> {
         // if there's something in the sibling, but it's forbidden, warn about it.
         if (siblingRequired(t.op) == "forbidden"
                 && !(t.sibling instanceof TstEmpty)) {
-            Warn("This content does not get assigned to anything and will be ignored.")
+            Warn("Ignoring unassigned content",
+                "This content does not get assigned to anything and will be ignored.")
                 .localize(t.sibling.pos).msgTo(msgs)
         }
 

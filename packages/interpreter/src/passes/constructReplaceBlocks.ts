@@ -43,7 +43,8 @@ export class ConstructReplaceBlocks extends AutoPass<Grammar> {
         const validRules = g.rules.filter(isReplace);
 
         if (validRules.length == 0) {
-            throw g.child.warn("This replace has no valid rules");
+            throw g.child.warn("'replace' without valid rules", 
+                            "This 'replace' has no valid rules.");
         }
 
         g.rules = validRules;

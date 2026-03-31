@@ -138,9 +138,9 @@ describe(`Source ${DIR}`, function() {
             {text:"baz", gloss:"-2SG"},
         ],
         errors: [
-            Warning(1, 0),  // This symbol will not contain any content.
+            Warning(1, 0, "No content for symbol 'verb'"),
             Error(1, 1, "'table' operator requires header(s)"),
-            Warning(1, 1),  // This will not contain any content.
+            Warning(1, 1, "No content for 'table' operator"),
         ],
         symbols: [
             "All",
@@ -158,8 +158,9 @@ describe(`Source ${DIR}`, function() {
             {text:"baz", gloss:"-2SG"},
         ],
         errors: [
-            Warning(1, 0),  // This symbol will not contain any content.
-            Error(1, 1, "'table' operator requires header(s)")
+            Warning(1, 0, "No content for symbol 'verb'"),
+            Error(1, 1, "'table' operator requires header(s)"),
+            Warning(1, 1, "No content for 'table' operator"),
         ],
     });
 
@@ -170,7 +171,7 @@ describe(`Source ${DIR}`, function() {
             {text:"baz", gloss:"-2SG"},
         ],
         errors: [
-            Warning(1, 2),  // No content cells found for these headers; assuming empty values.
+            Warning(1, 2, "No content for header(s)"),
         ],
     });
 
@@ -181,7 +182,7 @@ describe(`Source ${DIR}`, function() {
             {text:"baz", gloss:"-2SG"},
         ],
         errors: [
-            Warning(1, 2),  // No content cells found for these headers; assuming empty values.
+            Warning(1, 2, "No content for header(s)"),
         ],
         // verbose: VERBOSE_DEBUG,
     });
@@ -259,7 +260,7 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Warning(0, 0),  // This symbol will not contain any content.
+            Warning(0, 0, "No content for symbol 'word'"),
         ],
         symbols: [
             "All",
@@ -274,8 +275,9 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Warning(0, 0),  // This symbol will not contain any content.
+            Warning(0, 0, "No content for symbol 'word'"),
             Error(0, 2, "Implicit 'table' operator requires header(s)"),
+            Warning(0, 2, "No content for implicit 'table' operator"),
         ],
         symbols: [
             "All",
@@ -317,9 +319,9 @@ describe(`Source ${DIR}`, function() {
             {text:"baz", gloss:"-2SG"},
         ],
         errors: [
-            Warning(1, 0),  // This symbol will not contain any content.
+            Warning(1, 0, "No content for symbol 'verb'"),
             Error(2, 1, "'table' operator requires header(s)"),
-            Warning(2, 1),  // This will not contain any content.
+            Warning(2, 1, "No content for 'table' operator"),
         ]
     });
 
@@ -330,8 +332,9 @@ describe(`Source ${DIR}`, function() {
             {text:"baz", gloss:"-2SG"},
         ],
         errors: [
-            Warning(1, 0),  // This symbol will not contain any content.
-            Error(2, 1, "'table' operator requires header(s)")
+            Warning(1, 0, "No content for symbol 'verb'"),
+            Error(2, 1, "'table' operator requires header(s)"),
+            Warning(2, 1, "No content for 'table' operator"),
         ],
     });
 
@@ -342,7 +345,7 @@ describe(`Source ${DIR}`, function() {
             {text:"baz", gloss:"-2SG"},
         ],
         errors: [
-            Warning(2, 2),  // No content cells found for these headers; assuming empty values.
+            Warning(2, 2, "No content for header(s)"),
         ],
     });
 
@@ -354,7 +357,7 @@ describe(`Source ${DIR}`, function() {
             {text:"baz", gloss:"-2SG"},
         ],
         errors: [
-            Warning(2, 2),  // No content cells found for these headers; assuming empty values.
+            Warning(2, 2, "No content for header(s)"),
         ],
     });
 
@@ -394,7 +397,8 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(1, 4, "Implicit 'table' operator requires header(s)"),
-            Warning(2, 1),  // 'table:' is in an unexpected column. Did you intend ...
+            Warning(1, 4, "No content for implicit 'table' operator"),
+            Warning(2, 1, "'table:' in an unexpected column"),
         ],
         symbols: [
             "All",
@@ -414,7 +418,7 @@ describe(`Source ${DIR}`, function() {
             {text:"baz", gloss:"-2SG"},
         ],
         errors: [
-            Warning(2, 1),  // 'text' is in an unexpected column. Did you intend ...
+            Warning(2, 1, "'text' in an unexpected column"),
         ],
         // verbose: VERBOSE_DEBUG,
     });
@@ -426,9 +430,10 @@ describe(`Source ${DIR}`, function() {
             {text:"baz", gloss:"-2SG"},
         ],
         errors: [
-            Warning(1, 0),  // This symbol will not contain any content.
+            Warning(1, 0, "No content for symbol 'verb'"),
             Error(2, 1, "Implicit 'table' operator requires header(s)"),
-            Warning(1, 0),  // '%text' is in an unexpected column. Did you intend ...
+            Warning(2, 1, "No content for implicit 'table' operator"),
+            Warning(2, 1, "'%text' in an unexpected column"),
         ],
     });
 

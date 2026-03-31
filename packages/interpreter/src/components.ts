@@ -36,8 +36,8 @@ export abstract class Component {
         return this.msg(e);
     }
     
-    public warn(longMsg: string): Msg<this> {
-        const e = Warn(longMsg);
+    public warn(shortOrLongMsg: string, longMsg: string | undefined = undefined): Msg<this> {
+        const e = Warn(shortOrLongMsg, longMsg);
         return this.msg(e);
     }
 

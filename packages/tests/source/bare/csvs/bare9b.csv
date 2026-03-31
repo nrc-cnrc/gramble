@@ -1,0 +1,8 @@
+table:, %comment
+
+suffix=, table:, text, gloss
+       ,       , bar, -1SG
+       ,       , baz, -2SG
+
+word=, table:, embed,  embed
+     ,       , $Auto1, suffix 

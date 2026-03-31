@@ -263,7 +263,8 @@ function getTapesTestBlock(
 
     // tape issues found!
     for (const test of g.tests) {
-        Warn(`This test line was not executed due to a missing-header error above.`)
+        Warn("Test line not run",
+            `This test line was not run due to a missing-header error above.`)
             .localize(test.pos)
             .msgTo(msgs);
     }
@@ -461,7 +462,8 @@ function getTapesReplaceBlock(g: ReplaceBlockGrammar): Grammar {
     g.rules = g.rules.filter(isReplace);
 
     if (g.rules.length == 0) {
-        throw g.child.warn("This replace has no valid rules");
+        throw g.child.warn("'replace' has no valid rules",
+                        "This 'replace' has no valid rules.");
     }
 
     let current = g.child.tapes;

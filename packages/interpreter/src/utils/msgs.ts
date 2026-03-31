@@ -123,9 +123,10 @@ export function Err(shortMsg: string, longMsg: string): Message {
     return new Error(shortMsg, longMsg);
 }
 
-export function Warn(shortMsg: string, longMsg: string | undefined = undefined): Message {
+export function Warn(shortOrLongMsg: string, longMsg: string | undefined = undefined): Message {
+    let shortMsg: string = shortOrLongMsg;
     if (longMsg === undefined) {
-        longMsg = shortMsg;
+        longMsg = shortOrLongMsg;
         shortMsg = "warning";
     }
     return new Warning(shortMsg, longMsg);

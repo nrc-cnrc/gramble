@@ -190,7 +190,7 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Warning(0, 1, "Assigning temporary symbol name: '$Auto1'"),
-            Warning(4, 0, "'word=' is in an unexpected column"),
+            Warning(4, 0, "'word=' in an unexpected column"),
         ],
         symbols: [
             "All",
@@ -278,7 +278,7 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Warning(0, 1, "Assigning temporary symbol name: '$Auto1'"),
-            Warning(4, 0, "'word=' is in an unexpected column"),
+            Warning(4, 0, "'word=' in an unexpected column"),
         ],
         symbols: [
             "All",
@@ -370,6 +370,216 @@ describe(`Source ${DIR}`, function() {
             "bare8b.word",
         ],
         // verbose: VERBOSE_DEBUG,
+    });
+
+    testSrc({
+        desc: '9a. Bare empty table op',
+        results: [
+            {text:"bar", gloss:"-1SG"},
+            {text:"baz", gloss:"-2SG"},
+        ],
+        errors: [
+            Error(0, 0, "'table' operator requires header(s)"),
+            Warning(0, 0, "Assigning temporary symbol name: '$Auto1'"),
+            Warning(0, 0, "No content for symbol '$Auto1'"),
+            Warning(0, 0, "No content for 'table' operator"),
+            Error(7, 2, "Invalid symbol name: '$Auto1'"),
+        ],
+        symbols: [
+            "All",
+            "bare9a.All",
+            "bare9a.$Auto1",
+            "bare9a.suffix",
+            "bare9a.word",
+        ],
+    });
+
+    testSrc({
+        desc: '9b. Bare empty table op followed by comment header',
+        results: [
+            {text:"bar", gloss:"-1SG"},
+            {text:"baz", gloss:"-2SG"},
+        ],
+        errors: [
+            Error(0, 0, "'table' operator requires header(s)"),
+            Warning(0, 0, "Assigning temporary symbol name: '$Auto1'"),
+            Warning(0, 0, "No content for symbol '$Auto1'"),
+            Warning(0, 0, "No content for 'table' operator"),
+            Error(7, 2, "Invalid symbol name: '$Auto1'"),
+        ],
+        symbols: [
+            "All",
+            "bare9b.All",
+            "bare9b.$Auto1",
+            "bare9b.suffix",
+            "bare9b.word",
+        ],
+    });
+
+    testSrc({
+        desc: '9c. Bare table op with empty text content',
+        results: [
+            {text:"bar", gloss:"-1SG"},
+            {text:"baz", gloss:"-2SG"},
+        ],
+        errors: [
+            Warning(0, 0, "Assigning temporary symbol name: '$Auto1'"),
+            Warning(0, 1, "No content for header(s)"),
+            Error(8, 2, "Invalid symbol name: '$Auto1'"),
+        ],
+        symbols: [
+            "All",
+            "bare9c.All",
+            "bare9c.$Auto1",
+            "bare9c.suffix",
+            "bare9c.word",
+        ],
+    });
+
+    testSrc({
+        desc: '9d. Bare table op with empty text content & empty comment content',
+        results: [
+            {text:"bar", gloss:"-1SG"},
+            {text:"baz", gloss:"-2SG"},
+        ],
+        errors: [
+            Warning(0, 0, "Assigning temporary symbol name: '$Auto1'"),
+            Warning(0, 1, "No content for header(s)"),
+            Error(8, 2, "Invalid symbol name: '$Auto1'"),
+        ],
+        symbols: [
+            "All",
+            "bare9d.All",
+            "bare9d.$Auto1",
+            "bare9d.suffix",
+            "bare9d.word",
+        ],
+    });
+
+    testSrc({
+        desc: '9e. Bare table op with empty text content & non-empty comment content',
+        results: [
+            {text:"bar", gloss:"-1SG"},
+            {text:"baz", gloss:"-2SG"},
+        ],
+        errors: [
+            Warning(0, 0, "Assigning temporary symbol name: '$Auto1'"),
+            Error(8, 2, "Invalid symbol name: '$Auto1'"),
+        ],
+        symbols: [
+            "All",
+            "bare9e.All",
+            "bare9e.$Auto1",
+            "bare9e.suffix",
+            "bare9e.word",
+        ],
+    });
+
+    testSrc({
+        desc: '10a. Bare empty table op between 2 symbol assignments',
+        results: [
+            {text:"bar", gloss:"-1SG"},
+            {text:"baz", gloss:"-2SG"},
+        ],
+        errors: [
+            Error(4, 0, "'table' operator requires header(s)"),
+            Warning(4, 0, "Assigning temporary symbol name: '$Auto5'"),
+            Warning(4, 0, "No content for symbol '$Auto5'"),
+            Warning(4, 0, "No content for 'table' operator"),
+            Error(7, 2, "Invalid symbol name: '$Auto5'"),
+        ],
+        symbols: [
+            "All",
+            "bare10a.All",
+            "bare10a.suffix",
+            "bare10a.$Auto5",
+            "bare10a.word",
+        ],
+    });
+
+    testSrc({
+        desc: '10b. Bare empty table op followed by comment header, ' +
+              'between 2 symbol assignments',
+        results: [
+            {text:"bar", gloss:"-1SG"},
+            {text:"baz", gloss:"-2SG"},
+        ],
+        errors: [
+            Error(4, 0, "'table' operator requires header(s)"),
+            Warning(4, 0, "Assigning temporary symbol name: '$Auto5'"),
+            Warning(4, 0, "No content for symbol '$Auto5'"),
+            Warning(4, 0, "No content for 'table' operator"),
+            Error(7, 2, "Invalid symbol name: '$Auto5'"),
+        ],
+        symbols: [
+            "All",
+            "bare10b.All",
+            "bare10b.suffix",
+            "bare10b.$Auto5",
+            "bare10b.word",
+        ],
+    });
+
+    testSrc({
+        desc: '10c. Bare table op with empty text content, ' +
+              'between 2 symbol assignments',
+        results: [
+            {text:"bar", gloss:"-1SG"},
+            {text:"baz", gloss:"-2SG"},
+        ],
+        errors: [
+            Warning(4, 0, "Assigning temporary symbol name: '$Auto5'"),
+            Warning(4, 1, "No content for header(s)"),
+            Error(8, 2, "Invalid symbol name: '$Auto5'"),
+        ],
+        symbols: [
+            "All",
+            "bare10c.All",
+            "bare10c.suffix",
+            "bare10c.$Auto5",
+            "bare10c.word",
+        ],
+    });
+
+    testSrc({
+        desc: '10d. Bare table op with empty text content & empty comment content, ' +
+              'between 2 symbol assignments',
+        results: [
+            {text:"bar", gloss:"-1SG"},
+            {text:"baz", gloss:"-2SG"},
+        ],
+        errors: [
+            Warning(4, 0, "Assigning temporary symbol name: '$Auto5'"),
+            Warning(4, 1, "No content for header(s)"),
+            Error(8, 2, "Invalid symbol name: '$Auto5'"),
+        ],
+        symbols: [
+            "All",
+            "bare10d.All",
+            "bare10d.suffix",
+            "bare10d.$Auto5",
+            "bare10d.word",
+        ],
+    });
+
+    testSrc({
+        desc: '10e. Bare table op with empty text content & non-empty comment content, ' +
+              'between 2 symbol assignments',
+        results: [
+            {text:"bar", gloss:"-1SG"},
+            {text:"baz", gloss:"-2SG"},
+        ],
+        errors: [
+            Warning(4, 0, "Assigning temporary symbol name: '$Auto5'"),
+            Error(8, 2, "Invalid symbol name: '$Auto5'"),
+        ],
+        symbols: [
+            "All",
+            "bare10e.All",
+            "bare10e.suffix",
+            "bare10e.$Auto5",
+            "bare10e.word",
+        ],
     });
 
 });

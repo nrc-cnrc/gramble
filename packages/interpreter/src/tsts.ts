@@ -219,6 +219,19 @@ export abstract class TstEnclosure extends TstCellComponent {
         const lastRow = this.rows[this.rows.length-1];
         return lastRow.addContent(cell).msg(msgs);
     }
+
+    public isEmpty(): boolean {
+        if (this.rows.length === 0)
+            return true;
+        const headerRow = this.rows[0];
+
+        for (const header of headerRow.content) {
+            if(!header.cell.text.trim().startsWith('%')) {
+                return false;
+            }
+        }
+        return true;
+    }
 }
 
 export class TstRow extends TstCellComponent {
@@ -331,7 +344,7 @@ export abstract class TstBinary extends TstEnclosure {
                 child.pos !== undefined &&
                 this.child.pos.col != child.pos.col) {
             const content = (child as TstCellComponent).cell.text.trim();
-            Warn(`'${content}' is in an unexpected column`,
+            Warn(`'${content}' in an unexpected column`,
                 `'${content}' is in an unexpected column. ` +
                 `Did you intend it to be in column ${this.child.pos.colF}, ` + 
                 `so that it's under cell ${this.child.pos}?`)

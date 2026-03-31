@@ -49,7 +49,8 @@ export class AssociateHeaders extends Pass<TST,TST> {
                     row.content.push(new TstContent(new Cell("", header.pos)))
                 }
                 if (!onlyComments) {
-                    Warn("No content cells found for these headers; assuming empty values.")
+                    Warn("No content for header(s)",
+                        "No content cells found for these header(s); assuming empty values.")
                         .localize(t.headers[0].pos).msgTo(msgs);
                     rows.push(row);
                 }

@@ -311,8 +311,8 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"}
         ],
         errors: [
+            Warning(12, 1, "'replace' operator has erroneous operands"),
             Error(12, 4, "Invalid ordinary header: 'surface'"),
-            Warning(12,1)
         ]
     });
 
@@ -327,8 +327,8 @@ describe(`Source ${DIR}`, function() {
             {text: "moobar", gloss: "jump-1SG"}
         ],
         errors: [
+            Warning(12, 1, "'replace' operator has erroneous operands"),
             Error(12, 4, "Invalid 'unique' header: 'unique text'"),
-            Warning(12,1)
         ]
     });
 
@@ -338,8 +338,8 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Error(0, 1, "Missing content for 'replace text:'"),
-            Warning(0,0)
+            Warning(0, 0, "No content for symbol 'word'"),
+            Error(0, 1, "Missing content for 'replace' operator"),
         ],
     });
     
@@ -350,8 +350,8 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Error(0, 0, "Missing content for 'replace text:'"),
-            Warning(0,0)
+            Error(0, 0, "Missing content for 'replace' operator"),
+            Warning(0, 0, "No content for symbol 'Default'"),
         ],
     });
 
@@ -362,7 +362,7 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(3, 1, "'replace' operator requires header(s)"),
-            Warning(3,1)
+            Warning(3, 1, "No content for 'replace' operator")
         ]
     });
 
@@ -533,9 +533,9 @@ describe(`Source ${DIR}`, function() {
             {text: "aba"}
         ],
         errors: [
-            Error(10, 2, "Embedding multi-field symbol in regex/rule"),
             Error(9, 1, "Non-single-header rule"),
-            Warning(9,1)
+            Warning(9, 1, "'replace' without valid rules"),
+            Error(10, 2, "Embedding multi-field symbol in regex/rule"),
         ],
     });
 
@@ -579,7 +579,7 @@ describe(`Source ${DIR}`, function() {
     });
     
     testSrc({
-		desc: '25b. Replace with a test: op nested underneath',
+		desc: '25b. Replace with a test: operator nested underneath',
         results: [
             {text: "foo", gloss: "run.3SG"},
             {text: "foobaz", gloss: "run-2SG"},
@@ -590,8 +590,8 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(12, 1, "'replace' operator requires header(s)"),
-            Warning(12,1),
-            Error(12, 2, "Missing content for 'test:'"),
+            Warning(12, 1, "No content for 'replace' operator"),
+            Error(12, 2, "Missing content for 'test' operator"),
         ]
     });
     
@@ -607,7 +607,7 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(12, 1, "'replace' operator requires header(s)"),
-            Warning(12,1)
+            Warning(12, 1, "No content for 'replace' operator")
         ]
     });
 
