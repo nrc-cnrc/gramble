@@ -49,7 +49,7 @@ if [[ ! -f $TARGET_DIR/gramble.js ]]; then
     echo "Error compiling gramble.js" >&2
     exit 1
 fi
-cat <(echo '<script>') $TARGET_DIR/gramble.js <(echo '</script>') >> $TARGET_DIR/grambleWrapped.html
+cat <(echo '<script>') $TARGET_DIR/gramble.js <(echo '</script>') > $TARGET_DIR/grambleWrapped.html
 
 # copy the project files to the target dir
 ORIG_DIR=$PWD
