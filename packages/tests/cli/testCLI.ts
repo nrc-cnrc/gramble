@@ -539,10 +539,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
                 '-s basic5a.word',
         results: [],
         errors: [
-            "basic5a:1:0: WARNING: This symbol will not contain any content.",
+            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
             "basic5a:1:1: ERROR: This 'table' operator requires header(s) " +
                 "to the right, but none was found.",
-            "basic5a:1:1: WARNING: This will not contain any content.",
+            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
             "Generation not run because source has 1 Gramble error.",
         ],
     });
@@ -553,10 +553,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
                 '-s basic5a.word --strict',
         results: [],
         errors: [
-            "basic5a:1:0: WARNING: This symbol will not contain any content.",
+            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
             "basic5a:1:1: ERROR: This 'table' operator requires header(s) " +
                 "to the right, but none was found.",
-            "basic5a:1:1: WARNING: This will not contain any content.",
+            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
             "Generation not run because source has 3 Gramble errors.",
         ],
     });
@@ -571,10 +571,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '"-2SG","baz"',
         ],
         errors: [
-            "basic5a:1:0: WARNING: This symbol will not contain any content.",
+            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
             "basic5a:1:1: ERROR: This 'table' operator requires header(s) " +
                 "to the right, but none was found.",
-            "basic5a:1:1: WARNING: This will not contain any content.",
+            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
             "Generation running even though source has 1 Gramble error.",
         ],
     });
@@ -589,7 +589,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '"-2SG","baz"',
         ],
         errors: [
-            "basic5c:1:2: WARNING: No content cells found for these headers; " +
+            "basic5c:1:2: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
         ],
     });
@@ -600,7 +600,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
                 '-s basic5c.word -S',
         results: [],
         errors: [
-            "basic5c:1:2: WARNING: No content cells found for these headers; " +
+            "basic5c:1:2: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
             "Generation not run because source has 1 Gramble error.",
         ],
@@ -616,7 +616,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '"-2SG","baz"',
         ],
         errors: [
-            "basic5c:1:2: WARNING: No content cells found for these headers; " +
+            "basic5c:1:2: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
         ],
     });
@@ -631,7 +631,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '"-2SG","baz"',
         ],
         errors: [
-            "basic5c:1:2: WARNING: No content cells found for these headers; " +
+            "basic5c:1:2: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
             "Generation running even though source has 1 Gramble error.",
         ],
@@ -971,10 +971,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
                 '-s basic5a.word --seed ',
         results: [],
         errors: [
-            "basic5a:1:0: WARNING: This symbol will not contain any content.",
+            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
             "basic5a:1:1: ERROR: This 'table' operator requires header(s) " +
                 "to the right, but none was found.",
-            "basic5a:1:1: WARNING: This will not contain any content.",
+            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
             "Sampling not run because source has 1 Gramble error.",
         ],
     });
@@ -985,10 +985,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
                 '-s basic5a.word --seed --strict',
         results: [],
         errors: [
-            "basic5a:1:0: WARNING: This symbol will not contain any content.",
+            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
             "basic5a:1:1: ERROR: This 'table' operator requires header(s) " +
                 "to the right, but none was found.",
-            "basic5a:1:1: WARNING: This will not contain any content.",
+            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
             "Sampling not run because source has 3 Gramble errors.",
         ],
     });
@@ -1006,10 +1006,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '"-1SG","bar"',
         ],
         errors: [
-            "basic5a:1:0: WARNING: This symbol will not contain any content.",
+            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
             "basic5a:1:1: ERROR: This 'table' operator requires header(s) " +
                 "to the right, but none was found.",
-            "basic5a:1:1: WARNING: This will not contain any content.",
+            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
             "Sampling running even though source has 1 Gramble error.",
         ],
     });
@@ -1027,7 +1027,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '"-1SG","bar"',
         ],
         errors: [
-            "basic5c:1:2: WARNING: No content cells found for these headers; " +
+            "basic5c:1:2: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
         ],
     });
@@ -1038,7 +1038,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
                 '-s basic5c.word --seed -S',
         results: [],
         errors: [
-            "basic5c:1:2: WARNING: No content cells found for these headers; " +
+            "basic5c:1:2: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
             "Sampling not run because source has 1 Gramble error.",
         ],
@@ -1057,7 +1057,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '"-1SG","bar"',
         ],
         errors: [
-            "basic5c:1:2: WARNING: No content cells found for these headers; " +
+            "basic5c:1:2: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
         ],
     });
@@ -1075,7 +1075,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '"-1SG","bar"',
         ],
         errors: [
-            "basic5c:1:2: WARNING: No content cells found for these headers; " +
+            "basic5c:1:2: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
             "Sampling running even though source has 1 Gramble error.",
         ],
