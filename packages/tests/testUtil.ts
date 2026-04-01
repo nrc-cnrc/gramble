@@ -31,9 +31,9 @@ import {
 } from "../interpreter/src/utils/logging.js";
 import { Message } from "../interpreter/src/utils/msgs.js";
 import { Options } from "../interpreter/src/utils/options.js";
-import { getVocab } from "@gramble/interpreter/src/passes/getVocab.js";
-import { CounterStack } from "@gramble/interpreter/src/utils/counter.js";
-import { SymbolEnv } from "@gramble/interpreter/src/passes.js";
+import { getVocab } from "../interpreter/src/passes/getVocab.js";
+import { CounterStack } from "../interpreter/src/utils/counter.js";
+import { SymbolEnv } from "../interpreter/src/passes.js";
 
 
 // Permit global control over verbose output in tests.

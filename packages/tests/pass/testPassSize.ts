@@ -5,18 +5,18 @@ import {
     Match, Not, Null, Rename,
     Rep, Replace, ReplaceBlock,
     Seq, Uni,
-} from '@gramble/interpreter/src/grammarConvenience.js';
+} from '../../interpreter/src/grammarConvenience.js';
 
-import { Grammar } from '@gramble/interpreter/src/grammars.js';
-import { SymbolEnv } from '@gramble/interpreter/src/passes.js';
-import { CounterStack } from '@gramble/interpreter/src/utils/counter.js';
+import { Grammar } from '../../interpreter/src/grammars.js';
+import { SymbolEnv } from '../../interpreter/src/passes.js';
+import { CounterStack } from '../../interpreter/src/utils/counter.js';
 
 import {
     testSuiteName, logTestSuite,
     VERBOSE_TEST_L2,
     t1, t2
 } from "../testUtil.js";
-import { getTapeSize } from '@gramble/interpreter/src/passes/tapeSize.js';
+import { getTapeSize } from '../../interpreter/src/passes/tapeSize.js';
 
 // File level control over verbose output
 const VERBOSE = VERBOSE_TEST_L2;
