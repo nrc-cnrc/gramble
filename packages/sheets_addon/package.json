@@ -33,11 +33,11 @@
     "url": "https://github.com/nrc-cnrc/gramble/issues"
   },
   "devDependencies": {
-    "@google/clasp": "^3.2.0",
-    "@rollup/plugin-commonjs": "^28.0.1",
-    "@rollup/plugin-node-resolve": "^15.3.0",
+    "@google/clasp": "^3.3.0",
+    "@rollup/plugin-commonjs": "^29.0.2",
+    "@rollup/plugin-node-resolve": "^16.0.3",
     "browserify": "^17.0.1",
-    "rollup": "^4.59.0"
+    "rollup": "^4.60.1"
   },
   "dependencies": {
     "@gramble/interpreter": "^1.0.0"

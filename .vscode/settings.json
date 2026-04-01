@@ -13,5 +13,6 @@
     },
     "mochaExplorer.nodeArgv": [
         "--loader=ts-node/esm"
-    ]
+    ],
+    "mochaExplorer.mochaPath": "packages/tests/node_modules/mocha"
 }
