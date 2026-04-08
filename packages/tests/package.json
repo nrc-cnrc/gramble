@@ -30,7 +30,7 @@
   },
   "mocha": {
     "extensions": ["ts"],
-    "import": "./esmloader.js"
+    "import": "tsx"
   },
   "scripts": {
     "build": "tsc --build --verbose",
@@ -112,10 +112,10 @@
     "@types/mocha": "^10.0.10",
     "@types/seedrandom": "^3.0.8",
     "chai": "^6.2.2",
-    "mocha": "11.6.0",
-    "ts-node": "^10.9.2",
+    "mocha": "^11.7.5",
+    "tsx": "^4.21.0",
     "typescript": "^6.0.2"
-  },
+},
   "dependencies": {
     "@gramble/interpreter": "^1.0.0",
     "seedrandom": "^3.0.5"

@@ -12,7 +12,7 @@
         }
     },
     "mochaExplorer.nodeArgv": [
-        "--loader=ts-node/esm"
+        "--import=tsx"
     ],
-    "mochaExplorer.mochaPath": "packages/tests/node_modules/mocha"
+    "mochaExplorer.mochaPath": null,
 }
