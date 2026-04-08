@@ -3,9 +3,8 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
-    "baseUrl": "./",
     "paths": {
-        "*": [ "src/@types/*"]
+        "*": [ "./src/@types/*"]
     },
     "sourceMap": true,
     "declaration": true,
