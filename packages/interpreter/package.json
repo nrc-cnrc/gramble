@@ -40,7 +40,7 @@
     "url": "https://github.com/nrc-cnrc/gramble/issues"
   },
   "devDependencies": {
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.3"
   },
   "dependencies": {
     "unicode-properties": "^1.4.1"
