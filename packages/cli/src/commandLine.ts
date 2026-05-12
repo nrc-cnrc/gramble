@@ -1,40 +1,14 @@
 #!/usr/bin/env ts-node-script
 
-import { 
-    timeIt,
-    SILENT, 
-    VERBOSE_STATES,
-    VERBOSE_TIME,
-    Message,
-} from "@gramble/interpreter";
+import { Message } from "@gramble/interpreter";
 
 import commandLineArgs from "command-line-args";
 import commandLineUsage from "command-line-usage";
-import seedrandom from "seedrandom";
-import { Console } from 'console';
-import * as process from 'process';
+import { Console } from "console";
+import process from "process";
 
-import {
-    fileExistsOrFail, generateToCSV, generateToJSON,
-    getOutputStream, parseQuery, programName, sourceFromFile,
-    StringDict, usageError, usageWarn,
-} from "./util.js";
-
-/* First - some housekeeping... */
-// Create a new Console instance where stdout is process.stderr
-console = new Console(process.stderr);
-
-/* Second - parse the main command */
-const commandDefinition = [
-    {
-        name: "command",
-        defaultOption: true
-    }
-];
-const command = commandLineArgs(commandDefinition, {
-    stopAtFirstUnknown: true,
-});
-const argv = command._unknown || [];
+import { runGenerateOrSampleCmd, runListCmd } from "./runCmd.js";
+import { programName, usageError } from "./util.js";
 
 type OptionDefinition = commandLineArgs.OptionDefinition & commandLineUsage.OptionDefinition;
 interface Command {
@@ -48,7 +22,7 @@ const commonGenerateSampleOptions: OptionDefinition[] = [
         name: "source",
         type: String,
         defaultOption: true,
-        description: "test hiding source in options list",
+        description: "Gramble source file in CSV format",
     },
     {
         name: "symbol",
@@ -123,36 +97,8 @@ const commands: { [name: string]: Command } = {
             }
         ],
 
-        run(options) {
-            const command = commands[options.command];
-            if (command) {
-                let command = commands[options.command];
-                let optionList = command.options;
-                let synopses;
-                if (typeof command.synopsis == "string") {
-                    synopses = [command.synopsis];
-                } else {
-                    synopses = command.synopsis;
-                }
-
-                let hide = optionList.filter((n) => n.defaultOption).map((o) => o.name);
-                let sections = [
-                    {
-                        header: "Synopsis",
-                        content: synopses.map((line) => `${programName} ${line}`),
-                    },
-                    { header: "Options", optionList, hide },
-                ];
-                console.log(commandLineUsage(sections));
-            } else {
-                if (options.command) {
-                    usageError(
-                        `Unknown command: ${options.command}`,
-                        usage()
-                    );             
-                }
-                printUsage();
-            }
+        run(options: commandLineArgs.CommandLineOptions) {
+            runHelpCmd(options);
         },
     },
 
@@ -202,95 +148,47 @@ const commands: { [name: string]: Command } = {
             runGenerateOrSampleCmd(options, true);
         },
     },
+
+    list: {
+        synopsis: `list [--symbols|-s] [--errors|-e] [--all|-a] {underline source}`,
+        options: [
+            {
+                name: "source",
+                type: String,
+                defaultOption: true,
+                description: "Gramble source file in CSV format",
+            },
+            {
+                name: "symbols",
+                alias: "s",
+                type: Boolean,
+                defaultValue: false,
+                description: "list all symbols",
+            },            
+            {
+                name: "errors",
+                alias: "e",
+                type: Boolean,
+                defaultValue: false,
+                description: "list all compilation errors and warnings",
+            },            
+            {
+                name: "all",
+                alias: "a",
+                type: Boolean,
+                defaultValue: false,
+                description: "list all: equivalent of '--symbols --errors'. [Default]",
+            },            
+        ],
+
+        run(options: commandLineArgs.CommandLineOptions) {
+            runListCmd(options);
+        },
+    },
+
 };
 
-function validateGenerateOrSampleOptions(
-    options: commandLineArgs.CommandLineOptions
-): [commandLineArgs.CommandLineOptions, StringDict] {
-
-    fileExistsOrFail(options.source);
-
-    if (options.symbol == null || options.symbol.trim().length == 0) {
-        options.symbol = 'all';
-    }
-
-    if (options.max === null || Number.isNaN(options.max)) {
-        usageWarn('Missing or invalid count for --max|-m option; using default: Infinity');
-        options.max = Infinity;
-    }
-
-    if (options.num === null || Number.isNaN(options.num)) {
-        usageWarn('Missing or invalid count for --num|-n option; using default: 5');
-        options.num = 5;
-    }
-
-    if (options.query === null) {
-        usageWarn('Missing query string for --query|-q option');
-        options.query = "";
-    }
-    let query: StringDict = parseQuery(options.query);
-
-    return [options, query];
-}
-
-function runGenerateOrSampleCmd(
-    options: commandLineArgs.CommandLineOptions,
-    sample: boolean = false
-) {
-    let query: StringDict;
-    [options, query] = validateGenerateOrSampleOptions(options);
-
-    const command = sample ? "Sampling" : "Generation";
-    const outputStream = getOutputStream(options.output);
-    const timeVerbose = (options.verbose) ? VERBOSE_TIME|VERBOSE_STATES : SILENT;
-    const interpreter = sourceFromFile(options.source, timeVerbose);
-
-    if (options.verbose && options.strict) {
-        console.info("Treating Gramble warnings as errors.");
-    }
-    
-    interpreter.devEnv.logErrors();
-
-    let errors = interpreter.devEnv.getErrors();
-    if (errors.length > 0) {
-        if (!options.strict) {
-            errors = errors.filter(m => m.tag == "error");
-        }
-    }
-
-    if (errors.length > 0) {
-        const plural = errors.length > 1 ? "s" : "";
-        const text = options.force ? "running even though" : "not run because";
-        console.error(`${command} ${text} source has ${errors.length} ` +
-                    `Gramble error${plural}.`);
-        if (!options.force) return;
-    }
-
-    if (sample) {
-        if (options.seed !== undefined) {
-            if (options.seed === null || options.seed.trim().length == 0) {
-                options.seed = 'Seed-2024';
-            }
-            // Monkey patch Math.random with a seeded PRNG, making Math.random calls
-            // deterministic.
-            seedrandom(options.seed, { global: true });
-        }
-    }
-
-    const labels = interpreter.getTapeNames(options.symbol);
-    const generator = sample ? interpreter.sampleStream(options.symbol, options.num, query)
-                             : interpreter.generateStream(options.symbol, query);
-
-    timeIt(() => {
-        if (options.format.toLowerCase() == 'csv') {
-            generateToCSV(outputStream, generator, labels, options?.max);
-        } else {
-            generateToJSON(outputStream, generator, options?.max);
-        }
-    }, options.verbose, `...${command} complete`, `Starting ${command.toLowerCase()}...`);
-};
-
-const sections = [
+const overviewSections = [
     {
         header: programName,
         content: "the grammar table generator/sampler",
@@ -306,30 +204,80 @@ const sections = [
             { name: "sample", summary: "sample outputs from the grammar" },
             { name: "help", summary: "display this message and exit" },
             { name: "help {underline command}", summary: "get help on a specific command" },
+            { name: "list", summary: "list info about a grammar" },
+
         ],
     },
 ];
 
-function usage(): string {
+function usage(sections: commandLineUsage.Section[]  = overviewSections): string {
     return commandLineUsage(sections);
 }
 
-export function printUsage(error: boolean = false) {
-    if (error) {
-        console.error(usage());
-    } else {
-        console.log(usage());
-    }
+export function printUsage(
+    sections: commandLineUsage.Section[] | undefined = undefined, 
+    error: boolean = false
+) {
+    const logger = error ? console.error : console.log;
+    logger(sections ? usage(sections) : usage());
 }
+
+function runHelpCmd(
+    options: commandLineArgs.CommandLineOptions,
+) {
+    const command = commands[options.command];
+    if (! command) {
+        if (options.command) {
+            usageError(`Unknown command: ${options.command}`, usage());             
+        }
+        printUsage();
+        return;
+    }
+
+    const optionList = command.options;
+    const synopses = (typeof command.synopsis == "string") ? 
+                    [command.synopsis] : command.synopsis
+    const sections = [
+        {
+            header: "Synopsis",
+            content: synopses.map((line) => `${programName} ${line}`),
+        },
+        {
+            header: "Options",
+            optionList,
+            hide: optionList.filter((n) => n.defaultOption).map((o) => o.name),
+        },
+    ];
+    printUsage(sections);
+}
+
+
+/* First - some housekeeping... */
+// Create a new Console instance where stdout is process.stderr
+console = new Console(process.stderr);
+
+/* Second - parse the main command */
+const commandDefinition: commandLineArgs.OptionDefinition[] = [
+    {
+        name: "command",
+        defaultOption: true,
+    }
+];
+const commandOptions: commandLineArgs.ParseOptions = {
+    stopAtFirstUnknown: true,
+}
+const command = commandLineArgs(commandDefinition, commandOptions);
+const argv = command._unknown || [];
 
 /* Third - parse the command options */
 if (command.command in commands) {
     try {    
-        const cmd = commands[command.command];
+        const cmd: Command = commands[command.command];
         const options = commandLineArgs(cmd.options, { argv });
         cmd.run(options);
     } catch (e) {
-        const msg = e instanceof Error ? e.message : e instanceof Message ? e.longMsg : "";
+        const msg = e instanceof Error ?
+                    e.message : e instanceof Message ? e.longMsg : "";
         usageError(
             `Error in ${command.command} command:`,
             msg ? msg : e,

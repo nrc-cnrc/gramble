@@ -35,6 +35,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
             "h3.txt",
             "h4.txt",
             "h5-err.txt",
+            "h7.txt",
         ],
     });
 
@@ -108,6 +109,13 @@ describe(`${cliTestSuiteName(module)}`, function() {
         ],
     });
 
+    testCLI({
+        desc: 'h7. test list: gramble help list',
+        command: "gramble help list",
+        results: [],
+        errors: textFromFile("cli/txts/h7.txt"),
+    });
+
     // testing gramble generate
 
     testCLI({
@@ -136,7 +144,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
         command: `gramble generate ${GRAMBLE_EXAMPLES}/none.csv`,
         results: [],
         errors: [
-            `gramble: Error: Cannot find file ${GRAMBLE_EXAMPLES}/none.csv`,
+            `gramble: Error: Cannot find file '${GRAMBLE_EXAMPLES}/none.csv'`,
         ],
     });
 
@@ -704,7 +712,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
         command: `gramble sample ${GRAMBLE_EXAMPLES}/none.csv --seed -n 40`,
         results: [],
         errors: [
-            `gramble: Error: Cannot find file ${GRAMBLE_EXAMPLES}/none.csv`,
+            `gramble: Error: Cannot find file '${GRAMBLE_EXAMPLES}/none.csv'`,
         ],
     });
 
@@ -1078,6 +1086,136 @@ describe(`${cliTestSuiteName(module)}`, function() {
             "basic5c:1:2: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
             "Sampling running even though source has 1 Gramble error.",
+        ],
+    });
+
+    testCLI({
+        desc: 'l1. test list: gramble list source/basic/csvs/basic5a.csv',
+        command: `gramble list ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5a.csv`,
+        results: [],
+        errors: [
+            "Available symbols:",
+            "[\"basic5a.verb\",\"basic5a.suffix\",\"basic5a.word\",\"basic5a.All\",\"All\"]",
+            "",
+            "Compilation errors/warnings:",
+            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
+            "basic5a:1:1: ERROR: This 'table' operator requires header(s) to the right, " +
+                "but none was found.",
+            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
+        ],
+    });
+
+    testCLI({
+        desc: 'l2. test list: gramble list source/basic/csvs/basic5a.csv -a',
+        command: `gramble list ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5a.csv -a`,
+        results: [],
+        errors: [
+            "Available symbols:",
+            "[\"basic5a.verb\",\"basic5a.suffix\",\"basic5a.word\",\"basic5a.All\",\"All\"]",
+            "",
+            "Compilation errors/warnings:",
+            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
+            "basic5a:1:1: ERROR: This 'table' operator requires header(s) to the right, " +
+                "but none was found.",
+            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
+        ],
+    });
+
+    testCLI({
+        desc: 'l3. test list: gramble list source/basic/csvs/basic5a.csv -s',
+        command: `gramble list ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5a.csv -s`,
+        results: [],
+        errors: [
+            "Available symbols:",
+            "[\"basic5a.verb\",\"basic5a.suffix\",\"basic5a.word\",\"basic5a.All\",\"All\"]",
+        ],
+    });
+
+    testCLI({
+        desc: 'l4. test list: gramble list source/basic/csvs/basic5a.csv -e',
+        command: `gramble list ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5a.csv -e`,
+        results: [],
+        errors: [
+            "Compilation errors/warnings:",
+            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
+            "basic5a:1:1: ERROR: This 'table' operator requires header(s) to the right, " +
+                "but none was found.",
+            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
+        ],
+    });
+
+    testCLI({
+        desc: 'l5. test list: gramble list source/basic/csvs/basic5a.csv -e -s',
+        command: `gramble list ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5a.csv -e -s`,
+        results: [],
+        errors: [
+            "Available symbols:",
+            "[\"basic5a.verb\",\"basic5a.suffix\",\"basic5a.word\",\"basic5a.All\",\"All\"]",
+            "",
+            "Compilation errors/warnings:",
+            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
+            "basic5a:1:1: ERROR: This 'table' operator requires header(s) to the right, " +
+                "but none was found.",
+            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
+        ],
+    });
+
+    testCLI({
+        desc: 'l6. test list: gramble list source/basic/csvs/basic5a.csv -a -e',
+        command: `gramble list ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5a.csv -a -e`,
+        results: [],
+        errors: [
+            "Available symbols:",
+            "[\"basic5a.verb\",\"basic5a.suffix\",\"basic5a.word\",\"basic5a.All\",\"All\"]",
+            "",
+            "Compilation errors/warnings:",
+            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
+            "basic5a:1:1: ERROR: This 'table' operator requires header(s) to the right, " +
+                "but none was found.",
+            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
+        ],
+    });
+
+    testCLI({
+        desc: 'l7. test list: gramble list source/basic/csvs/basic5a.csv -a -s',
+        command: `gramble list ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5a.csv -a -s`,
+        results: [],
+        errors: [
+            "Available symbols:",
+            "[\"basic5a.verb\",\"basic5a.suffix\",\"basic5a.word\",\"basic5a.All\",\"All\"]",
+            "",
+            "Compilation errors/warnings:",
+            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
+            "basic5a:1:1: ERROR: This 'table' operator requires header(s) to the right, " +
+                "but none was found.",
+            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
+        ],
+    });
+
+    testCLI({
+        desc: 'l8. test list: gramble list source/basic/csvs/basic5a.csv -aes',
+        command: `gramble list ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5a.csv -aes`,
+        results: [],
+        errors: [
+            "Available symbols:",
+            "[\"basic5a.verb\",\"basic5a.suffix\",\"basic5a.word\",\"basic5a.All\",\"All\"]",
+            "",
+            "Compilation errors/warnings:",
+            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
+            "basic5a:1:1: ERROR: This 'table' operator requires header(s) to the right, " +
+                "but none was found.",
+            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
+        ],
+    });
+
+    testCLI({
+        desc: 'l9. test list: gramble list source/basic/csvs/basic5a.csv -BAD',
+        command: `gramble list ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5a.csv -BAD`,
+        results: [],
+        errors: [
+            "gramble: Error: Error in list command:",
+            "Unknown option: -B",
+            "For usage info, try: gramble help list",
         ],
     });
 

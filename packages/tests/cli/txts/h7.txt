@@ -1,0 +1,11 @@
+
+Synopsis
+
+  gramble list [--symbols|-s] [--errors|-e] [--all|-a] source 
+
+Options
+
+  -s, --symbols    list all symbols                                        
+  -e, --errors     list all compilation errors and warnings                
+  -a, --all        list all: equivalent of '--symbols --errors'. [Default] 
+

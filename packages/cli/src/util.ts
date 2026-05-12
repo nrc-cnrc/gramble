@@ -110,7 +110,7 @@ export function fileExistsOrFail(filename: string) {
         usageError(`Must specify a filename`);
     }
     if (!existsSync(filename)) {
-        usageError(`Cannot find file ${filename}`);
+        usageError(`Cannot find file '${filename}'`);
     }
 }
 

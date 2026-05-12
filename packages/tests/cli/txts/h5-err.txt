@@ -14,4 +14,5 @@ Commands
   sample         sample outputs from the grammar   
   help           display this message and exit     
   help command   get help on a specific command    
+  list           list info about a grammar         
 
