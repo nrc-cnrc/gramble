@@ -13,7 +13,7 @@ import {
 import { generate } from "./generator.js";
 import { 
     CollectionGrammar,
-    Grammar, 
+    Grammar,
 } from "./grammars.js";
 import {
     backgroundColor,
@@ -52,8 +52,11 @@ import {
     StringDict,
 } from "./utils/func.js";
 import {
+    logDebug,
+    logObject,
     logTime,
     msToTime,
+    VERBOSE_DEBUG,
     VERBOSE_GRAMMAR,
     VERBOSE_TIME,
 } from "./utils/logging.js";
@@ -317,15 +320,10 @@ export class Interpreter {
         return constructExpr(env, targetGrammar);  
     }
 
-    public runTests(): void {
-
-        let targetGrammar = new SelectSymbol(ALL_SYMBOL)
+    public runTests(symbol: string = ALL_SYMBOL): void {
+        let targetGrammar = new SelectSymbol(symbol)
                                 .getEnvAndTransform(this.grammar, this.opt)
                                 .msgTo(THROWER);
-
-        //targetGrammar = new ResolveVocab()
-        //                        .getEnvAndTransform(targetGrammar, this.opt)
-        //                        .msgTo(THROWER);
         
         const env = new PassEnv(this.opt);
 
@@ -334,8 +332,8 @@ export class Interpreter {
                       ? expr.symbols
                       : {};
         const pass = new ExecuteTests(symbols);
-        
-        pass.getEnvAndTransform(this.grammar, this.opt)
+
+        pass.getEnvAndTransform(targetGrammar, this.opt)
             .msgTo(m => this.devEnv.message(m));
     }
 }

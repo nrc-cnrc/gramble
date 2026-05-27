@@ -167,7 +167,8 @@ function getTapePriorityEmbed(
     symbolsVisited.add([g.symbol, tape]);
     const referent = env.symbolNS[g.symbol];
     if (referent === undefined) {
-        throw new Error(`undefined referent ${g.symbol}, candidates are [${Object.keys(env.symbolNS)}]`);
+        throw new Error(`Undefined referent '${g.symbol}' in getTapePriorityEmbed; ` +
+                        `candidates are [${Object.keys(env.symbolNS)}]`);
     }
     return getTapePriority(referent, tape, symbolsVisited, env);
 }

@@ -1,0 +1,43 @@
+Root2 =, text,  gloss,
+       , 2ikar, 2-climb
+       , 2obo,  2-play.the.oboe
+
+test:, text,  gloss
+     , 2ikar, 2-climb
+     , ikar,  2-climb
+
+Root2z =, text,   gloss
+        , 2Zkan,  2-walk
+        , 2Zpala, 2-jump
+
+Stem2 =, embed, text, person/gloss
+       , Root2, ta,   [2-1subj]
+       , Root2, sa,   [2-2subj]
+       , Root2, ,     [2-3subj]
+
+replace text:, from, to, context
+             , t,    d,  (r|n)_
+             , ,      ,
+
+test:, text, gloss
+     , 2ikarda, 2-climb[2-1subj]
+     , 2ikarta, 2-climb[2-1subj]
+
+Stem2z =, embed,  text, person/gloss
+        , Root2z, ta,   [2-1subj]
+        , Root2z, sa,   [2-2subj]
+        , Root2z, ,     [2-3subj]
+
+replace text:, from, to, context
+             , t,    d,  (r|n)_
+
+test:, text,    gloss
+     , Zikarda, 2-climb[2-1subj]
+     , Zikarta, 2-climb[2-1subj]
+     , 2Zkanda, 2-walk[2-1subj]
+     , 2Zkanta, 2-walk[2-1subj]
+
+Stem2-3 =, embed,        text, person/gloss
+         , Sheet3.Root3, ta,  [2-1subj]
+         , Sheet3.Root3, sa,  [2-2subj]
+         , Sheet3.Root3, ,    [2-3subj]

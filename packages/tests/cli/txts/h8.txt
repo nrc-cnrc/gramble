@@ -1,0 +1,9 @@
+Synopsis
+
+  gramble test [--symbol|-s name] source 
+
+Options
+
+  -s, --symbol name   symbol to run tests for [default: 'all', the default      
+                      symbol]                                                   
+  -d, --debug         turn on VERBOSE_DEBUG                                     

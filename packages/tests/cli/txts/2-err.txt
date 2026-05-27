@@ -15,4 +15,4 @@ Commands
   help           display this message and exit     
   help command   get help on a specific command    
   list           list info about a grammar         
-
+  test           run unit tests for a grammar

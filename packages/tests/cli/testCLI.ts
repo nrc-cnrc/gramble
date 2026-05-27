@@ -1,5 +1,7 @@
 import {
-    SILENT
+    logDebug,
+    SILENT,
+    VERBOSE_DEBUG
 } from "../../interpreter/src/utils/logging.js";
 
 import {
@@ -16,7 +18,6 @@ const VERBOSE = VERBOSE_TEST_L2;
 
 const GRAMBLE_HOME = "../..";
 const GRAMBLE_EXAMPLES = GRAMBLE_HOME + "/examples";
-const GRAMBLE_SRC_TESTS = GRAMBLE_HOME + "/packages/tests/source";
 
 const module = import.meta;
 
@@ -36,6 +37,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
             "h4.txt",
             "h5-err.txt",
             "h7.txt",
+            "h8.txt",
         ],
     });
 
@@ -110,10 +112,17 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 'h7. test list: gramble help list',
+        desc: 'h7. test help: gramble help list',
         command: "gramble help list",
         results: [],
         errors: textFromFile("cli/txts/h7.txt"),
+    });
+
+    testCLI({
+        desc: 'h8. test help: gramble help test',
+        command: "gramble help test",
+        results: [],
+        errors: textFromFile("cli/txts/h8.txt"),
     });
 
     // testing gramble generate
@@ -543,35 +552,34 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     testCLI({
         desc: 'g9a. test generate: gramble generate source/basic/csvs/basic5a.csv',
-        command: `gramble generate ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5a.csv ` +
-                '-s basic5a.word',
+        command: `gramble generate source/basic/csvs/basic5a.csv -s basic5a.word`,
         results: [],
         errors: [
-            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:1:1: ERROR: This 'table' operator requires header(s) " +
+            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "basic5a:2:2: ERROR: This 'table' operator requires header(s) " +
                 "to the right, but none was found.",
-            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
+            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
             "Generation not run because source has 1 Gramble error.",
         ],
     });
 
     testCLI({
         desc: 'g9b. test generate: gramble generate source/basic/csvs/basic5a.csv --strict',
-        command: `gramble generate ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5a.csv ` +
+        command: `gramble generate source/basic/csvs/basic5a.csv ` +
                 '-s basic5a.word --strict',
         results: [],
         errors: [
-            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:1:1: ERROR: This 'table' operator requires header(s) " +
+            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "basic5a:2:2: ERROR: This 'table' operator requires header(s) " +
                 "to the right, but none was found.",
-            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
+            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
             "Generation not run because source has 3 Gramble errors.",
         ],
     });
 
     testCLI({
         desc: 'g9c. test generate: gramble generate source/basic/csvs/basic5a.csv --force',
-        command: `gramble generate ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5a.csv ` +
+        command: `gramble generate source/basic/csvs/basic5a.csv ` +
                 '-s basic5a.word --force',
         results: [
             'gloss,text',
@@ -579,17 +587,17 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '"-2SG","baz"',
         ],
         errors: [
-            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:1:1: ERROR: This 'table' operator requires header(s) " +
+            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "basic5a:2:2: ERROR: This 'table' operator requires header(s) " +
                 "to the right, but none was found.",
-            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
+            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
             "Generation running even though source has 1 Gramble error.",
         ],
     });
 
     testCLI({
         desc: 'g9d. test generate: gramble generate source/basic/csvs/basic5c.csv',
-        command: `gramble generate ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5c.csv ` +
+        command: `gramble generate source/basic/csvs/basic5c.csv ` +
                 '-s basic5c.word',
         results: [
             'gloss,text',
@@ -597,18 +605,18 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '"-2SG","baz"',
         ],
         errors: [
-            "basic5c:1:2: WARNING: No content cells found for these header(s); " +
+            "basic5c:2:3: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
         ],
     });
 
     testCLI({
         desc: 'g9e. test generate: gramble generate source/basic/csvs/basic5c.csv -S',
-        command: `gramble generate ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5c.csv ` +
+        command: `gramble generate source/basic/csvs/basic5c.csv ` +
                 '-s basic5c.word -S',
         results: [],
         errors: [
-            "basic5c:1:2: WARNING: No content cells found for these header(s); " +
+            "basic5c:2:3: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
             "Generation not run because source has 1 Gramble error.",
         ],
@@ -616,7 +624,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     testCLI({
         desc: 'g9f. test generate: gramble generate source/basic/csvs/basic5c.csv -F',
-        command: `gramble generate ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5c.csv ` +
+        command: `gramble generate source/basic/csvs/basic5c.csv ` +
                 '-s basic5c.word -F',
         results: [
             'gloss,text',
@@ -624,14 +632,14 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '"-2SG","baz"',
         ],
         errors: [
-            "basic5c:1:2: WARNING: No content cells found for these header(s); " +
+            "basic5c:2:3: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
         ],
     });
 
     testCLI({
         desc: 'g9g. test generate: gramble generate source/basic/csvs/basic5c.csv -SF',
-        command: `gramble generate ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5c.csv ` +
+        command: `gramble generate source/basic/csvs/basic5c.csv ` +
                 '-s basic5c.word -SF',
         results: [
             'gloss,text',
@@ -639,7 +647,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '"-2SG","baz"',
         ],
         errors: [
-            "basic5c:1:2: WARNING: No content cells found for these header(s); " +
+            "basic5c:2:3: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
             "Generation running even though source has 1 Gramble error.",
         ],
@@ -975,36 +983,36 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     testCLI({
         desc: 's10a. test sample: gramble sample source/basic/csvs/basic5a.csv',
-        command: `gramble sample ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5a.csv ` +
-                '-s basic5a.word --seed ',
+        command: `gramble sample source/basic/csvs/basic5a.csv -s basic5a.word ` +
+                '--seed',
         results: [],
         errors: [
-            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:1:1: ERROR: This 'table' operator requires header(s) " +
+            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "basic5a:2:2: ERROR: This 'table' operator requires header(s) " +
                 "to the right, but none was found.",
-            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
+            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
             "Sampling not run because source has 1 Gramble error.",
         ],
     });
 
     testCLI({
         desc: 's10b. test sample: gramble sample source/basic/csvs/basic5a.csv --strict',
-        command: `gramble sample ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5a.csv ` +
-                '-s basic5a.word --seed --strict',
+        command: `gramble sample source/basic/csvs/basic5a.csv -s basic5a.word ` +
+                '--seed --strict',
         results: [],
         errors: [
-            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:1:1: ERROR: This 'table' operator requires header(s) " +
+            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "basic5a:2:2: ERROR: This 'table' operator requires header(s) " +
                 "to the right, but none was found.",
-            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
+            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
             "Sampling not run because source has 3 Gramble errors.",
         ],
     });
 
     testCLI({
         desc: 's10c. test sample: gramble sample source/basic/csvs/basic5a.csv --force',
-        command: `gramble sample ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5a.csv ` +
-                '-s basic5a.word --seed --force',
+        command: `gramble sample source/basic/csvs/basic5a.csv -s basic5a.word ` +
+                '--seed --force',
         results: [
             'gloss,text',
             '"-2SG","baz"',
@@ -1014,18 +1022,18 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '"-1SG","bar"',
         ],
         errors: [
-            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:1:1: ERROR: This 'table' operator requires header(s) " +
+            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "basic5a:2:2: ERROR: This 'table' operator requires header(s) " +
                 "to the right, but none was found.",
-            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
+            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
             "Sampling running even though source has 1 Gramble error.",
         ],
     });
 
     testCLI({
         desc: 's10d. test sample: gramble sample source/basic/csvs/basic5c.csv',
-        command: `gramble sample ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5c.csv ` +
-                '-s basic5c.word --seed ',
+        command: `gramble sample source/basic/csvs/basic5c.csv -s basic5c.word ` +
+                '--seed',
         results: [
             'gloss,text',
             '"-2SG","baz"',
@@ -1035,18 +1043,18 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '"-1SG","bar"',
         ],
         errors: [
-            "basic5c:1:2: WARNING: No content cells found for these header(s); " +
+            "basic5c:2:3: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
         ],
     });
 
     testCLI({
         desc: 's10e. test sample: gramble sample source/basic/csvs/basic5c.csv -S',
-        command: `gramble sample ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5c.csv ` +
-                '-s basic5c.word --seed -S',
+        command: `gramble sample source/basic/csvs/basic5c.csv -s basic5c.word ` +
+                '--seed -S',
         results: [],
         errors: [
-            "basic5c:1:2: WARNING: No content cells found for these header(s); " +
+            "basic5c:2:3: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
             "Sampling not run because source has 1 Gramble error.",
         ],
@@ -1054,8 +1062,8 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     testCLI({
         desc: 's10f. test sample: gramble sample source/basic/csvs/basic5c.csv -F',
-        command: `gramble sample ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5c.csv ` +
-                '-s basic5c.word --seed -F',
+        command: `gramble sample source/basic/csvs/basic5c.csv -s basic5c.word ` +
+                '--seed -F',
         results: [
             'gloss,text',
             '"-2SG","baz"',
@@ -1065,15 +1073,15 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '"-1SG","bar"',
         ],
         errors: [
-            "basic5c:1:2: WARNING: No content cells found for these header(s); " +
+            "basic5c:2:3: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
         ],
     });
 
     testCLI({
         desc: 's10g. test sample: gramble sample source/basic/csvs/basic5c.csv -SF',
-        command: `gramble sample ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5c.csv ` +
-                '-s basic5c.word --seed -SF',
+        command: `gramble sample source/basic/csvs/basic5c.csv -s basic5c.word ` +
+                '--seed -SF',
         results: [
             'gloss,text',
             '"-2SG","baz"',
@@ -1083,7 +1091,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '"-1SG","bar"',
         ],
         errors: [
-            "basic5c:1:2: WARNING: No content cells found for these header(s); " +
+            "basic5c:2:3: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
             "Sampling running even though source has 1 Gramble error.",
         ],
@@ -1091,131 +1099,424 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     testCLI({
         desc: 'l1. test list: gramble list source/basic/csvs/basic5a.csv',
-        command: `gramble list ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5a.csv`,
+        command: `gramble list source/basic/csvs/basic5a.csv`,
         results: [],
         errors: [
             "Available symbols:",
-            "[\"basic5a.verb\",\"basic5a.suffix\",\"basic5a.word\",\"basic5a.All\",\"All\"]",
+            '["basic5a.verb","basic5a.suffix","basic5a.word","basic5a.All","All"]',
             "",
             "Compilation errors/warnings:",
-            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:1:1: ERROR: This 'table' operator requires header(s) to the right, " +
+            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
                 "but none was found.",
-            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
+            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
         ],
     });
 
     testCLI({
         desc: 'l2. test list: gramble list source/basic/csvs/basic5a.csv -a',
-        command: `gramble list ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5a.csv -a`,
+        command: `gramble list source/basic/csvs/basic5a.csv -a`,
         results: [],
         errors: [
             "Available symbols:",
-            "[\"basic5a.verb\",\"basic5a.suffix\",\"basic5a.word\",\"basic5a.All\",\"All\"]",
+            '["basic5a.verb","basic5a.suffix","basic5a.word","basic5a.All","All"]',
             "",
             "Compilation errors/warnings:",
-            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:1:1: ERROR: This 'table' operator requires header(s) to the right, " +
+            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
                 "but none was found.",
-            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
+            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
         ],
     });
 
     testCLI({
         desc: 'l3. test list: gramble list source/basic/csvs/basic5a.csv -s',
-        command: `gramble list ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5a.csv -s`,
+        command: `gramble list source/basic/csvs/basic5a.csv -s`,
         results: [],
         errors: [
             "Available symbols:",
-            "[\"basic5a.verb\",\"basic5a.suffix\",\"basic5a.word\",\"basic5a.All\",\"All\"]",
+            '["basic5a.verb","basic5a.suffix","basic5a.word","basic5a.All","All"]',
         ],
     });
 
     testCLI({
         desc: 'l4. test list: gramble list source/basic/csvs/basic5a.csv -e',
-        command: `gramble list ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5a.csv -e`,
+        command: `gramble list source/basic/csvs/basic5a.csv -e`,
         results: [],
         errors: [
             "Compilation errors/warnings:",
-            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:1:1: ERROR: This 'table' operator requires header(s) to the right, " +
+            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
                 "but none was found.",
-            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
+            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
         ],
     });
 
     testCLI({
         desc: 'l5. test list: gramble list source/basic/csvs/basic5a.csv -e -s',
-        command: `gramble list ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5a.csv -e -s`,
+        command: `gramble list source/basic/csvs/basic5a.csv -e -s`,
         results: [],
         errors: [
             "Available symbols:",
-            "[\"basic5a.verb\",\"basic5a.suffix\",\"basic5a.word\",\"basic5a.All\",\"All\"]",
+            '["basic5a.verb","basic5a.suffix","basic5a.word","basic5a.All","All"]',
             "",
             "Compilation errors/warnings:",
-            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:1:1: ERROR: This 'table' operator requires header(s) to the right, " +
+            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
                 "but none was found.",
-            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
+            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
         ],
     });
 
     testCLI({
         desc: 'l6. test list: gramble list source/basic/csvs/basic5a.csv -a -e',
-        command: `gramble list ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5a.csv -a -e`,
+        command: `gramble list source/basic/csvs/basic5a.csv -a -e`,
         results: [],
         errors: [
             "Available symbols:",
-            "[\"basic5a.verb\",\"basic5a.suffix\",\"basic5a.word\",\"basic5a.All\",\"All\"]",
+            '["basic5a.verb","basic5a.suffix","basic5a.word","basic5a.All","All"]',
             "",
             "Compilation errors/warnings:",
-            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:1:1: ERROR: This 'table' operator requires header(s) to the right, " +
+            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
                 "but none was found.",
-            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
+            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
         ],
     });
 
     testCLI({
         desc: 'l7. test list: gramble list source/basic/csvs/basic5a.csv -a -s',
-        command: `gramble list ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5a.csv -a -s`,
+        command: `gramble list source/basic/csvs/basic5a.csv -a -s`,
         results: [],
         errors: [
             "Available symbols:",
-            "[\"basic5a.verb\",\"basic5a.suffix\",\"basic5a.word\",\"basic5a.All\",\"All\"]",
+            '["basic5a.verb","basic5a.suffix","basic5a.word","basic5a.All","All"]',
             "",
             "Compilation errors/warnings:",
-            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:1:1: ERROR: This 'table' operator requires header(s) to the right, " +
+            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
                 "but none was found.",
-            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
+            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
         ],
     });
 
     testCLI({
         desc: 'l8. test list: gramble list source/basic/csvs/basic5a.csv -aes',
-        command: `gramble list ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5a.csv -aes`,
+        command: `gramble list source/basic/csvs/basic5a.csv -aes`,
         results: [],
         errors: [
             "Available symbols:",
-            "[\"basic5a.verb\",\"basic5a.suffix\",\"basic5a.word\",\"basic5a.All\",\"All\"]",
+            '["basic5a.verb","basic5a.suffix","basic5a.word","basic5a.All","All"]',
             "",
             "Compilation errors/warnings:",
-            "basic5a:1:0: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:1:1: ERROR: This 'table' operator requires header(s) to the right, " +
+            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
                 "but none was found.",
-            "basic5a:1:1: WARNING: This 'table' operator will not contain any content.",
+            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
         ],
     });
 
     testCLI({
         desc: 'l9. test list: gramble list source/basic/csvs/basic5a.csv -BAD',
-        command: `gramble list ${GRAMBLE_SRC_TESTS}/basic/csvs/basic5a.csv -BAD`,
+        command: `gramble list source/basic/csvs/basic5a.csv -BAD`,
         results: [],
         errors: [
             "gramble: Error: Error in list command:",
             "Unknown option: -B",
             "For usage info, try: gramble help list",
+        ],
+    });
+
+    testCLI({
+        desc: 'l10. test list: gramble list cli/csvs/Sheet1.csv -s',
+        command: `gramble list cli/csvs/Sheet1.csv -s`,
+        results: [],
+        errors: [
+            "Available symbols:",
+            '["Sheet1.Root","Sheet1.Stem","Sheet1.StemA","Sheet1.StemB","Sheet1.All",' +
+                '"sheet2.Root2","sheet2.Root2z","sheet2.Stem2","sheet2.Stem2z",' +
+                '"sheet2.Stem2-3","sheet2.All","sheet3.Root3","sheet3.Root3z",' +
+                '"sheet3.All","All"]'
+        ],
+    });
+
+    testCLI({
+        desc: 'l11. test list: gramble list cli/csvs/Sheet2.csv -s',
+        command: `gramble list cli/csvs/Sheet2.csv -s`,
+        results: [],
+        errors: [
+            "Available symbols:",
+            '["Sheet2.Root2","Sheet2.Root2z","Sheet2.Stem2","Sheet2.Stem2z",' +
+                '"Sheet2.Stem2-3","Sheet2.All","sheet3.Root3","sheet3.Root3z",' +
+                '"sheet3.All","All"]',
+        ],
+    });
+
+    testCLI({
+        desc: 'l12. test list: gramble list cli/csvs/Sheet3.csv -s',
+        command: `gramble list cli/csvs/Sheet3.csv -s`,
+        results: [],
+        errors: [
+            "Available symbols:",
+            '["Sheet3.Root3","Sheet3.Root3z","Sheet3.All","All"]',
+        ],
+    });
+
+    testCLI({
+        desc: 't1. test test: gramble test cli/csvs/Sheet1.csv -s all',
+        command: `gramble test cli/csvs/Sheet1.csv -s all`,
+        results: [],
+        errors: [
+            "18 tests reached from symbol 'all'",
+            "8/18 tests succeeded",
+            "10/18 tests failed",
+            "0/18 tests not run",
+            "Test Results:",
+            "Sheet1:19:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "Sheet1:20:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "Sheet1:28:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "Sheet1:29:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "Sheet1:30:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "Sheet1:31:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet2:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet2:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "Sheet1:37:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "Sheet1:38:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "sheet2:23:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet2:24:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "sheet2:35:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "sheet2:36:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "sheet2:37:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet2:38:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "sheet3:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet3:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
+        ],
+    });
+
+    testCLI({
+        desc: 't2. test test: gramble test cli/csvs/Sheet1.csv -s Sheet1.All',
+        command: `gramble test cli/csvs/Sheet1.csv -s Sheet1.All`,
+        results: [],
+        errors: [
+            "12 tests reached from symbol 'Sheet1.All'",
+            "6/12 tests succeeded",
+            "6/12 tests failed",
+            "0/12 tests not run",
+            "Test Results:",
+            "Sheet1:19:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "Sheet1:20:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "Sheet1:28:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "Sheet1:29:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "Sheet1:30:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "Sheet1:31:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet2:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet2:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "Sheet1:37:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "Sheet1:38:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "sheet2:23:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet2:24:2: ERROR: The grammar above has no outputs compatible with this specification.",
+        ],
+    });
+
+    testCLI({
+        desc: 't3. test test: gramble test cli/csvs/Sheet1.csv -s Sheet1.Root',
+        command: `gramble test cli/csvs/Sheet1.csv -s Sheet1.Root`,
+        results: [],
+        errors: [
+            "No tests found for symbol 'Sheet1.Root'",
+        ],
+    });
+
+    testCLI({
+        desc: 't4. test test: gramble test cli/csvs/Sheet1.csv -s Sheet1.Stem',
+        command: `gramble test cli/csvs/Sheet1.csv -s Sheet1.Stem`,
+        results: [],
+        errors: [
+            "2 tests reached from symbol 'Sheet1.Stem'",
+            "1/2 tests succeeded",
+            "1/2 tests failed",
+            "0/2 tests not run",
+            "Test Results:",
+            "Sheet1:19:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "Sheet1:20:2: ERROR: The grammar above has no outputs compatible with this specification.",
+        ],
+    });
+
+    testCLI({
+        desc: 't5. test test: gramble test cli/csvs/Sheet1.csv -s Sheet1.StemA',
+        command: `gramble test cli/csvs/Sheet1.csv -s Sheet1.StemA`,
+        results: [],
+        errors: [
+            "6 tests reached from symbol 'Sheet1.StemA'",
+            "3/6 tests succeeded",
+            "3/6 tests failed",
+            "0/6 tests not run",
+            "Test Results:",
+            "Sheet1:28:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "Sheet1:29:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "Sheet1:30:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "Sheet1:31:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet2:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet2:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
+        ],
+    });
+
+    testCLI({
+        desc: 't6. test test: gramble test cli/csvs/Sheet1.csv -s Sheet1.StemB',
+        command: `gramble test cli/csvs/Sheet1.csv -s Sheet1.StemB`,
+        results: [],
+        errors: [
+            "6 tests reached from symbol 'Sheet1.StemB'",
+            "3/6 tests succeeded",
+            "3/6 tests failed",
+            "0/6 tests not run",
+            "Test Results:",
+            "Sheet1:37:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "Sheet1:38:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "sheet2:23:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet2:24:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "sheet2:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet2:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
+        ],
+    });
+
+    testCLI({
+        desc: 't7. test test: gramble test cli/csvs/Sheet1.csv -s Sheet2.Stem2',
+        command: `gramble test cli/csvs/Sheet1.csv -s Sheet2.Stem2`,
+        results: [],
+        errors: [
+            "4 tests reached from symbol 'Sheet2.Stem2'",
+            "2/4 tests succeeded",
+            "2/4 tests failed",
+            "0/4 tests not run",
+            "Test Results:",
+            "sheet2:23:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet2:24:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "sheet2:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet2:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
+        ],
+    });
+
+    testCLI({
+        desc: 't8. test test: gramble test cli/csvs/Sheet1.csv -s Sheet2.Stem2z',
+        command: `gramble test cli/csvs/Sheet1.csv -s Sheet2.Stem2z`,
+        results: [],
+        errors: [
+            "4 tests reached from symbol 'Sheet2.Stem2z'",
+            "1/4 tests succeeded",
+            "3/4 tests failed",
+            "0/4 tests not run",
+            "Test Results:",
+            "sheet2:35:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "sheet2:36:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "sheet2:37:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet2:38:2: ERROR: The grammar above has no outputs compatible with this specification.",
+        ],
+    });
+
+    testCLI({
+        desc: 't9. test test: gramble test cli/csvs/Sheet1.csv -s Sheet2.Stem2-3',
+        command: `gramble test cli/csvs/Sheet1.csv -s Sheet2.Stem2-3`,
+        results: [],
+        errors: [
+            "2 tests reached from symbol 'Sheet2.Stem2-3'",
+            "1/2 tests succeeded",
+            "1/2 tests failed",
+            "0/2 tests not run",
+            "Test Results:",
+            "sheet3:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet3:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
+        ],
+    });
+
+    testCLI({
+        desc: 't10a. test test: gramble test cli/csvs/Sheet1.csv -s Sheet2.All',
+        command: `gramble test cli/csvs/Sheet1.csv -s Sheet2.All`,
+        results: [],
+        errors: [
+            "10 tests reached from symbol 'Sheet2.All'",
+            "4/10 tests succeeded",
+            "6/10 tests failed",
+            "0/10 tests not run",
+            "Test Results:",
+            "sheet2:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet2:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "sheet2:23:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet2:24:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "sheet2:35:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "sheet2:36:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "sheet2:37:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet2:38:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "sheet3:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet3:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
+        ],
+    });
+
+    testCLI({
+        desc: 't10b. test test: gramble test cli/csvs/Sheet2.csv -s Sheet2.All',
+        command: `gramble test cli/csvs/Sheet2.csv -s Sheet2.All`,
+        results: [],
+        errors: [
+            "10 tests reached from symbol 'Sheet2.All'",
+            "4/10 tests succeeded",
+            "6/10 tests failed",
+            "0/10 tests not run",
+            "Test Results:",
+            "Sheet2:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "Sheet2:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "Sheet2:23:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "Sheet2:24:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "Sheet2:35:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "Sheet2:36:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "Sheet2:37:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "Sheet2:38:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "sheet3:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet3:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
+        ],
+    });
+
+    testCLI({
+        desc: 't11a. test test: gramble test cli/csvs/Sheet1.csv -s Sheet3.All',
+        command: `gramble test cli/csvs/Sheet1.csv -s Sheet3.All`,
+        results: [],
+        errors: [
+            "2 tests reached from symbol 'Sheet3.All'",
+            "1/2 tests succeeded",
+            "1/2 tests failed",
+            "0/2 tests not run",
+            "Test Results:",
+            "sheet3:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet3:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
+        ],
+    });
+
+    testCLI({
+        desc: 't11b. test test: gramble test cli/csvs/Sheet2.csv -s Sheet3.All',
+        command: `gramble test cli/csvs/Sheet2.csv -s Sheet3.All`,
+        results: [],
+        errors: [
+            "2 tests reached from symbol 'Sheet3.All'",
+            "1/2 tests succeeded",
+            "1/2 tests failed",
+            "0/2 tests not run",
+            "Test Results:",
+            "sheet3:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet3:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
+        ],
+    });
+
+    testCLI({
+        desc: 't11c. test test: gramble test cli/csvs/Sheet3.csv -s Sheet3.All',
+        command: `gramble test cli/csvs/Sheet3.csv -s Sheet3.All`,
+        results: [],
+        errors: [
+            "2 tests reached from symbol 'Sheet3.All'",
+            "1/2 tests succeeded",
+            "1/2 tests failed",
+            "0/2 tests not run",
+            "Test Results:",
+            "Sheet3:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "Sheet3:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
         ],
     });
 

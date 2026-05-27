@@ -1,7 +1,7 @@
 import {
     Interpreter,
     SILENT,
-    TextDevEnvironment
+    TestTextDevEnvironment
 } from "@gramble/interpreter";
 
 import { createWriteStream, existsSync } from "fs";
@@ -22,9 +22,10 @@ export function sourceFromFile(
 ): Interpreter {
     const dir = dirname(path);
     const sheetName = basename(path, ".csv");
-    const devEnv = new TextDevEnvironment(dir, {verbose:verbose});
-    const project = Interpreter.fromSheet(devEnv, sheetName);
-    return project;
+    const devEnv = new TestTextDevEnvironment(dir,
+                            { verbose: verbose, posFormat: "1-based" });
+    const interpreter = Interpreter.fromSheet(devEnv, sheetName);
+    return interpreter;
 }
 
 /**

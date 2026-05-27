@@ -1,6 +1,6 @@
 import { DevEnvironment } from "./devEnv.js";
 import { Interpreter } from "./interpreter.js";
-import { TextDevEnvironment } from "./textInterface.js";
+import { TextDevEnvironment, TestTextDevEnvironment } from "./textInterface.js";
 import {
     logDebug, timeIt,
     SILENT, VERBOSE_DEBUG, VERBOSE_EXPR,
@@ -13,6 +13,7 @@ export {
     Interpreter, 
     type DevEnvironment, 
     TextDevEnvironment,
+    TestTextDevEnvironment,
     logDebug,
     timeIt,
     SILENT,

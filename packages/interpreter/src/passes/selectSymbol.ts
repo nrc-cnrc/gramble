@@ -47,7 +47,7 @@ export class SelectSymbol extends Pass<Grammar,Grammar> {
         const referent = g.symbols[resolution[0]];
         if (referent == undefined) {
             // a resolved symbol should always exist
-            throw new Error(`Cannot find symbol ${this.symbol} in grammar, ` +
+            throw new Error(`Cannot find symbol '${this.symbol}' in grammar, ` +
                             `candidates: ${Object.keys(g.symbols)}.`);
         }
 

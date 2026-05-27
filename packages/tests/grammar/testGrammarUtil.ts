@@ -98,7 +98,6 @@ export function testGrammarAux({
     }
 
     const interpreter = prepareInterpreter(grammar, opt);
-    interpreter.runTests();
     testNumErrors(interpreter, numErrors);
 
     if (!skipGeneration && results !== undefined) {

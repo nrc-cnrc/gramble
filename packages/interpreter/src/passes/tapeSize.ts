@@ -101,7 +101,8 @@ function getTapeSizeEmbed(g: EmbedGrammar, tapeName: string, stack: CounterStack
     const newStack = stack.add(g.symbol);
     const referent = env.symbolNS[g.symbol];
     if (referent === undefined) {
-        throw new Error(`undefined referent ${g.symbol}, candidates are [${Object.keys(env.symbolNS)}]`);
+        throw new Error(`Undefined referent '${g.symbol}' in getTapeSizeEmbed, ` +
+                        `candidates are [${Object.keys(env.symbolNS)}]`);
     }
     return getTapeSize(referent, tapeName, newStack, env);
 }

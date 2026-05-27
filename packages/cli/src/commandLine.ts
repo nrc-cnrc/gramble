@@ -7,7 +7,11 @@ import commandLineUsage from "command-line-usage";
 import { Console } from "console";
 import process from "process";
 
-import { runGenerateOrSampleCmd, runListCmd } from "./runCmd.js";
+import {
+    runGenerateOrSampleCmd,
+    runListCmd,
+    runTestCmd,
+} from "./runCmd.js";
 import { programName, usageError } from "./util.js";
 
 type OptionDefinition = commandLineArgs.OptionDefinition & commandLineUsage.OptionDefinition;
@@ -186,6 +190,37 @@ const commands: { [name: string]: Command } = {
         },
     },
 
+    test: {
+        synopsis: `test [--symbol|-s {underline name}] {underline source}`,
+        options: [
+            {
+                name: "source",
+                type: String,
+                defaultOption: true,
+                description: "Gramble source file in CSV format",
+            },
+            {
+                name: "symbol",
+                alias: "s",
+                type: String,
+                defaultValue: "all",
+                typeLabel: "{underline name}",
+                description: "symbol to run tests for " +
+                            "[default: 'all', the default symbol]",
+            },
+            {
+                name: "debug",
+                alias: "d",
+                type: Boolean,
+                defaultValue: false,
+                description: "turn on VERBOSE_DEBUG",
+            },            
+        ],
+
+        run(options: commandLineArgs.CommandLineOptions) {
+            runTestCmd(options);
+        },
+    },
 };
 
 const overviewSections = [
@@ -205,7 +240,7 @@ const overviewSections = [
             { name: "help", summary: "display this message and exit" },
             { name: "help {underline command}", summary: "get help on a specific command" },
             { name: "list", summary: "list info about a grammar" },
-
+            { name: "test", summary: "run unit tests for a grammar" },
         ],
     },
 ];

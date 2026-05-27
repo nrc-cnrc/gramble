@@ -7,7 +7,9 @@ import {
     AbstractTestGrammar,
     JoinGrammar,
     TestBlockGrammar,
-    AlternationGrammar
+    AlternationGrammar,
+    SelectionGrammar,
+    EmbedGrammar
 } from "../grammars.js";
 
 import { generate } from "../generator.js";
@@ -22,6 +24,8 @@ import { ROW_TAPE } from "../utils/constants.js";
 
 export class ExecuteTests extends Pass<Grammar,Grammar> {
 
+    private symbolsVisited: Set<string> = new Set<string>();
+
     constructor(
         public symbolTable: Dict<Expr>
     ) {
@@ -33,15 +37,37 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
     }
 
     public transformAux(g: Grammar, env: SymbolEnv): Msg<Grammar> {
-        const result = g.mapChildren(this, env);
+        let newEnv: SymbolEnv = env;
+        let symbol: string | undefined = undefined;
+        switch (g.tag) {
+            case "selection":
+                newEnv = env.update(g);
+                symbol = g.selection;
+                break;
+            case "embed":
+                if (!this.symbolsVisited.has(g.symbol))
+                    symbol = g.symbol;
+                break;
+        }
+
+        let referent: Grammar = g;
+        if (symbol !== undefined) {
+            this.symbolsVisited.add(symbol);
+            referent = newEnv.symbolNS[symbol];
+            if (referent === undefined) {
+                throw new Error(`Undefined referent '${symbol}' in ExecuteTests; ` +
+                                `candidates are [${Object.keys(newEnv.symbolNS)}]`);
+            }
+        }
+
+        const result = referent.mapChildren(this, newEnv);
         return result.bind(g => {
             switch (g.tag) {
-                case "testblock":    return this.handleTestBlock(g, env);
-                default:        return g;
+                case "testblock":   return this.handleTestBlock(g, newEnv);
+                default:            return g;
             }
         }).localize(g.pos);
     }
-
 
     public handleTestBlock(g: TestBlockGrammar, env: SymbolEnv): Msg<Grammar> {
         const msgs: Message[] = [];

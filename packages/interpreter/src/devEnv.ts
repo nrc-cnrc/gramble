@@ -1,5 +1,6 @@
 import { Dict } from "./utils/func.js";
-import { logDebug } from "./utils/logging.js";
+import { logDebug, logObject } from "./utils/logging.js";
+import { Pos } from "./utils/cell.js";
 import { Message } from "./utils/msgs.js";
 import * as Messages from "./utils/msgs.js";
 import { Options } from "./utils/options.js";
@@ -17,6 +18,7 @@ export interface DevEnvironment {
     opt: Options;
 
     logDebug(...msgs: any[]): void;
+    logObject(obj: any, depth: number | null): void;
 
     getErrors(query?: Partial<Message>): Message[];
     logErrors(query?: Partial<Message>): void;
@@ -31,10 +33,6 @@ export interface DevEnvironment {
     
     highlight(): void;
     alert(msg: string): void;
-}
-
-export function posToStr(sheet: string, row: number, col: number) {
-    return `${sheet}:${row}:${col}`;
 }
 
 export class SimpleDevEnvironment implements DevEnvironment {
@@ -88,7 +86,7 @@ export class SimpleDevEnvironment implements DevEnvironment {
 
     public logErrors(query: Partial<Message> = {}): void {
         for (const msg of this.getErrors(query)) {
-            console.error(`${msg.sheet}:${msg.row}:${msg.col}: ` +
+            console.error(`${new Pos(msg.sheet, msg.row, msg.col, this.opt)}: ` +
                         `${msg.tag.toUpperCase()}: ${msg.longMsg}`);
         }
     }
@@ -107,6 +105,10 @@ export class SimpleDevEnvironment implements DevEnvironment {
 
     public logDebug(...msgs: any[]) {
         logDebug(this.opt.verbose, ...msgs);
+    }
+
+    public logObject(obj: any, depth: number | null = 2): void {
+        logObject(this.opt.verbose, obj, depth);
     }
 
 }

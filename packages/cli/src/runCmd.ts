@@ -1,6 +1,7 @@
 import { 
     timeIt,
-    SILENT, 
+    SILENT,
+    VERBOSE_DEBUG,
     VERBOSE_STATES,
     VERBOSE_TIME,
     Message,
@@ -62,7 +63,8 @@ export function runGenerateOrSampleCmd(
     const command = sample ? "Sampling" : "Generation";
     const outputStream = getOutputStream(options.output);
     const timeVerbose = (options.verbose) ? VERBOSE_TIME|VERBOSE_STATES : SILENT;
-    const interpreter = sourceFromFile(options.source, timeVerbose);
+    const debugVerbose = (options?.debug) ? VERBOSE_DEBUG : SILENT;
+    const interpreter = sourceFromFile(options.source, timeVerbose|debugVerbose);
 
     if (options.verbose && options.strict) {
         console.info("Treating Gramble warnings as errors.");
@@ -140,4 +142,56 @@ export function runListCmd(
             interpreter.devEnv.logErrors();
         }
     }
+};
+
+
+export function runTestCmd(
+    options: commandLineArgs.CommandLineOptions,
+) {
+    fileExistsOrFail(options.source);
+
+    if (options.symbol == null || options.symbol.trim().length == 0) {
+        options.symbol = 'all';
+    }
+
+    const debugVerbose = (options?.debug) ? VERBOSE_DEBUG : SILENT;
+    const interpreter = sourceFromFile(options.source, debugVerbose);
+
+    try {
+        interpreter.runTests(options.symbol);
+    } catch(e) {
+        const msg = e instanceof Error ?
+                    e.message : e instanceof Message ? e.longMsg : "";
+        usageError(
+            `Error in test command:`,
+            msg ? msg : e,
+        );
+    }
+
+    const errorList = interpreter.devEnv.getErrors();
+    if (errorList.length === 0) {
+        console.log(`No tests found for symbol '${options.symbol}'`);
+        return;
+    }
+    const succeeded: number = errorList.filter(m => m.tag == "success").length;
+    const errors = errorList.filter(m => m.tag == "error" &&
+                        m.shortMsg.startsWith("Failed unit test"));
+    let failed: number = 0;
+    let prevId: string | undefined = "";
+    for (const err of errors) {
+        const id = err.pos?.toString();
+        if (id != prevId) {
+            failed += 1;
+            prevId = id;
+        }
+    }
+    const notRun: number = errorList.filter(m => m.tag == "warning" &&
+                                m.shortMsg.startsWith("Test line not run")).length;
+    const total: number = succeeded + failed + notRun;
+    console.log(`${total} tests reached from symbol '${options.symbol}'`)
+    console.log(`${succeeded}/${total} tests succeeded`);
+    console.log(`${failed}/${total} tests failed`);
+    console.log(`${notRun}/${total} tests not run`);
+    console.log("Test Results:")
+    interpreter.devEnv.logErrors();
 };

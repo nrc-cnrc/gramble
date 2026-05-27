@@ -2,6 +2,7 @@ import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 
 import { SimpleDevEnvironment } from "./devEnv.js";
+import * as Messages from "./utils/msgs.js";
 import { Options } from "./utils/options.js";
 import { parseCSV } from "./utils/strings.js";
 
@@ -34,5 +35,25 @@ export class TextDevEnvironment extends SimpleDevEnvironment {
 
     public alert(msg: string): void {
         console.log(msg);
+    }
+}
+
+// TestTextDevEnvironment tracks test Success messages as well as Error and
+// Warning messages.
+export class TestTextDevEnvironment extends TextDevEnvironment {
+
+    constructor(
+        public dirname: string,
+        opt: Partial<Options>
+    ) { 
+        super(dirname, opt);
+    }
+
+    public message(msg: any): void {
+        switch (msg.tag) {
+            case Messages.Tag.Error: return this.markNote(msg);
+            case Messages.Tag.Warning: return this.markNote(msg);
+            case Messages.Tag.Success: return this.markNote(msg);
+        }
     }
 }

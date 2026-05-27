@@ -1,0 +1,38 @@
+
+%% this is a comment
+
+Root =, text, gloss
+      , kan,  walk
+      , pala, jump
+      , ikar, climb
+      , obo,  play.the.oboe
+
+Stem =, embed, text, person/gloss
+      , Root,  ta,  [1subj]
+      , Root,  sa,  [2subj]
+      , Root,  ,    [3subj]
+
+replace text:, from, to, context
+             , t,    d,  (r|n)_
+
+test: , text,   gloss
+      , ikarda, climb[1subj]
+      , ikarta, climb[1subj]
+
+StemA =, embed,        text, person/gloss
+       , Sheet2.Root2, ta,  [1subj]
+       , Root,         sa,  [2subj]
+       , Root,         ,    [3subj]
+
+test:, text,    gloss,
+     , ikarda,  climb[1subj]
+     , ikarsa,  climb[2subj]
+     , 2ikarda, 2-climb[1subj]
+     , 2ikarta, 2-climb[1subj]
+
+StemB =, embed,        text, person/gloss
+       , Sheet2.Stem2, a,   [X]
+
+test:, text,     gloss
+     , 2ikardaa, 2-climb[2-1subj][X]
+     , 2ikartaa, 2-climb[2-1subj][X]

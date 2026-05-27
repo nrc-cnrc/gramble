@@ -1,0 +1,11 @@
+Root3 =, text,  gloss
+       , 3ikar, 3-climb
+       , 3obo,  3-play.the.oboe
+
+test:, text, gloss
+     ,3ikar, 3-climb
+     ,ikar,  3-climb
+
+Root3z =, text,  gloss
+        , 3Zikar, 3-climb
+        , 3Zobo,  3-play.the.oboe
