@@ -1,9 +1,10 @@
 Synopsis
 
-  gramble test [--symbol|-s name] source 
+  gramble test [--symbol|-s name] [--recursive|-r] [--debug|-d] source 
 
 Options
 
   -s, --symbol name   symbol to run tests for [default: 'all', the default      
                       symbol]                                                   
+  -r, --recursive     discover tests recursively                                
   -d, --debug         turn on VERBOSE_DEBUG                                     

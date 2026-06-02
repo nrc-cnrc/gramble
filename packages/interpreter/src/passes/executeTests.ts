@@ -1,33 +1,31 @@
-import { Dict, StringDict, exhaustive, mapDict } from "../utils/func.js";
-import { constructSelection, Expr } from "../exprs.js";
-import { Message, Err, Succeed, THROWER, Msg, Warn } from "../utils/msgs.js";
-import { 
-    Grammar, TestNotGrammar, 
-    TestGrammar, 
-    AbstractTestGrammar,
-    JoinGrammar,
-    TestBlockGrammar,
-    AlternationGrammar,
-    SelectionGrammar,
-    EmbedGrammar
-} from "../grammars.js";
-
-import { generate } from "../generator.js";
-import { Pass, SymbolEnv } from "../passes.js";
 import { constructExpr } from "./constructExpr.js";
 import { CreateCursors } from "./createCursors.js";
 import { InfinityProtection } from "./infinityProtection.js";
-import { Options, Env } from "../utils/options.js";
 import { ResolveVocab } from "./resolveVocab.js";
-import { ROW_TAPE } from "../utils/constants.js";
 
+import { constructSelection, Expr } from "../exprs.js";
+import { generate } from "../generator.js";
+import { 
+    Grammar,
+    AlternationGrammar,
+    JoinGrammar,
+    TestBlockGrammar,
+    TestGrammar, 
+    TestNotGrammar, 
+} from "../grammars.js";
+import { Pass, SymbolEnv } from "../passes.js";
+import { ROW_TAPE } from "../utils/constants.js";
+import { Dict, StringDict } from "../utils/func.js";
+import { Message, Err, Succeed, THROWER, Msg } from "../utils/msgs.js";
+import { Options, Env } from "../utils/options.js";
 
 export class ExecuteTests extends Pass<Grammar,Grammar> {
 
     private symbolsVisited: Set<string> = new Set<string>();
 
     constructor(
-        public symbolTable: Dict<Expr>
+        public symbolTable: Dict<Expr>,
+        public recursive: boolean = true,
     ) {
         super();
     }
@@ -45,7 +43,7 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
                 symbol = g.selection;
                 break;
             case "embed":
-                if (!this.symbolsVisited.has(g.symbol))
+                if (this.recursive && !this.symbolsVisited.has(g.symbol))
                     symbol = g.symbol;
                 break;
         }

@@ -158,7 +158,7 @@ export function runTestCmd(
     const interpreter = sourceFromFile(options.source, debugVerbose);
 
     try {
-        interpreter.runTests(options.symbol);
+        interpreter.runTests(options.symbol, options.recursive);
     } catch(e) {
         const msg = e instanceof Error ?
                     e.message : e instanceof Message ? e.longMsg : "";
@@ -188,7 +188,8 @@ export function runTestCmd(
     const notRun: number = errorList.filter(m => m.tag == "warning" &&
                                 m.shortMsg.startsWith("Test line not run")).length;
     const total: number = succeeded + failed + notRun;
-    console.log(`${total} tests reached from symbol '${options.symbol}'`)
+    const detail:string = options.recursive ? "reached from" : "for";
+    console.log(`${total} tests ${detail} symbol '${options.symbol}'`)
     console.log(`${succeeded}/${total} tests succeeded`);
     console.log(`${failed}/${total} tests failed`);
     console.log(`${notRun}/${total} tests not run`);

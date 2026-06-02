@@ -154,7 +154,7 @@ const commands: { [name: string]: Command } = {
     },
 
     list: {
-        synopsis: `list [--symbols|-s] [--errors|-e] [--all|-a] {underline source}`,
+        synopsis: "list [--symbols|-s] [--errors|-e] [--all|-a] {underline source}",
         options: [
             {
                 name: "source",
@@ -191,7 +191,8 @@ const commands: { [name: string]: Command } = {
     },
 
     test: {
-        synopsis: `test [--symbol|-s {underline name}] {underline source}`,
+        synopsis: "test [--symbol|-s {underline name}] [--recursive|-r] " +
+                  "[--debug|-d] {underline source}",
         options: [
             {
                 name: "source",
@@ -209,12 +210,19 @@ const commands: { [name: string]: Command } = {
                             "[default: 'all', the default symbol]",
             },
             {
+                name: "recursive",
+                alias: "r",
+                type: Boolean,
+                defaultValue: false,
+                description: "discover tests recursively",
+            },
+            {
                 name: "debug",
                 alias: "d",
                 type: Boolean,
                 defaultValue: false,
                 description: "turn on VERBOSE_DEBUG",
-            },            
+            },   
         ],
 
         run(options: commandLineArgs.CommandLineOptions) {

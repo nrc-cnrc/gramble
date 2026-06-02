@@ -320,7 +320,7 @@ export class Interpreter {
         return constructExpr(env, targetGrammar);  
     }
 
-    public runTests(symbol: string = ALL_SYMBOL): void {
+    public runTests(symbol: string = ALL_SYMBOL, recursive: boolean = true): void {
         let targetGrammar = new SelectSymbol(symbol)
                                 .getEnvAndTransform(this.grammar, this.opt)
                                 .msgTo(THROWER);
@@ -331,7 +331,7 @@ export class Interpreter {
         const symbols = expr instanceof SelectionExpr
                       ? expr.symbols
                       : {};
-        const pass = new ExecuteTests(symbols);
+        const pass = new ExecuteTests(symbols, recursive);
 
         pass.getEnvAndTransform(targetGrammar, this.opt)
             .msgTo(m => this.devEnv.message(m));

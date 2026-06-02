@@ -983,7 +983,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     testCLI({
         desc: 's10a. test sample: gramble sample source/basic/csvs/basic5a.csv',
-        command: `gramble sample source/basic/csvs/basic5a.csv -s basic5a.word ` +
+        command: 'gramble sample source/basic/csvs/basic5a.csv -s basic5a.word ' +
                 '--seed',
         results: [],
         errors: [
@@ -997,7 +997,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     testCLI({
         desc: 's10b. test sample: gramble sample source/basic/csvs/basic5a.csv --strict',
-        command: `gramble sample source/basic/csvs/basic5a.csv -s basic5a.word ` +
+        command: 'gramble sample source/basic/csvs/basic5a.csv -s basic5a.word ' +
                 '--seed --strict',
         results: [],
         errors: [
@@ -1011,7 +1011,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     testCLI({
         desc: 's10c. test sample: gramble sample source/basic/csvs/basic5a.csv --force',
-        command: `gramble sample source/basic/csvs/basic5a.csv -s basic5a.word ` +
+        command: 'gramble sample source/basic/csvs/basic5a.csv -s basic5a.word ' +
                 '--seed --force',
         results: [
             'gloss,text',
@@ -1032,7 +1032,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     testCLI({
         desc: 's10d. test sample: gramble sample source/basic/csvs/basic5c.csv',
-        command: `gramble sample source/basic/csvs/basic5c.csv -s basic5c.word ` +
+        command: 'gramble sample source/basic/csvs/basic5c.csv -s basic5c.word ' +
                 '--seed',
         results: [
             'gloss,text',
@@ -1050,7 +1050,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     testCLI({
         desc: 's10e. test sample: gramble sample source/basic/csvs/basic5c.csv -S',
-        command: `gramble sample source/basic/csvs/basic5c.csv -s basic5c.word ` +
+        command: 'gramble sample source/basic/csvs/basic5c.csv -s basic5c.word ' +
                 '--seed -S',
         results: [],
         errors: [
@@ -1062,7 +1062,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     testCLI({
         desc: 's10f. test sample: gramble sample source/basic/csvs/basic5c.csv -F',
-        command: `gramble sample source/basic/csvs/basic5c.csv -s basic5c.word ` +
+        command: 'gramble sample source/basic/csvs/basic5c.csv -s basic5c.word ' +
                 '--seed -F',
         results: [
             'gloss,text',
@@ -1080,7 +1080,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     testCLI({
         desc: 's10g. test sample: gramble sample source/basic/csvs/basic5c.csv -SF',
-        command: `gramble sample source/basic/csvs/basic5c.csv -s basic5c.word ` +
+        command: 'gramble sample source/basic/csvs/basic5c.csv -s basic5c.word ' +
                 '--seed -SF',
         results: [
             'gloss,text',
@@ -1099,7 +1099,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     testCLI({
         desc: 'l1. test list: gramble list source/basic/csvs/basic5a.csv',
-        command: `gramble list source/basic/csvs/basic5a.csv`,
+        command: 'gramble list source/basic/csvs/basic5a.csv',
         results: [],
         errors: [
             "Available symbols:",
@@ -1115,7 +1115,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     testCLI({
         desc: 'l2. test list: gramble list source/basic/csvs/basic5a.csv -a',
-        command: `gramble list source/basic/csvs/basic5a.csv -a`,
+        command: 'gramble list source/basic/csvs/basic5a.csv -a',
         results: [],
         errors: [
             "Available symbols:",
@@ -1131,7 +1131,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     testCLI({
         desc: 'l3. test list: gramble list source/basic/csvs/basic5a.csv -s',
-        command: `gramble list source/basic/csvs/basic5a.csv -s`,
+        command: 'gramble list source/basic/csvs/basic5a.csv -s',
         results: [],
         errors: [
             "Available symbols:",
@@ -1141,7 +1141,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     testCLI({
         desc: 'l4. test list: gramble list source/basic/csvs/basic5a.csv -e',
-        command: `gramble list source/basic/csvs/basic5a.csv -e`,
+        command: 'gramble list source/basic/csvs/basic5a.csv -e',
         results: [],
         errors: [
             "Compilation errors/warnings:",
@@ -1154,7 +1154,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     testCLI({
         desc: 'l5. test list: gramble list source/basic/csvs/basic5a.csv -e -s',
-        command: `gramble list source/basic/csvs/basic5a.csv -e -s`,
+        command: 'gramble list source/basic/csvs/basic5a.csv -e -s',
         results: [],
         errors: [
             "Available symbols:",
@@ -1170,7 +1170,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     testCLI({
         desc: 'l6. test list: gramble list source/basic/csvs/basic5a.csv -a -e',
-        command: `gramble list source/basic/csvs/basic5a.csv -a -e`,
+        command: 'gramble list source/basic/csvs/basic5a.csv -a -e',
         results: [],
         errors: [
             "Available symbols:",
@@ -1186,7 +1186,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     testCLI({
         desc: 'l7. test list: gramble list source/basic/csvs/basic5a.csv -a -s',
-        command: `gramble list source/basic/csvs/basic5a.csv -a -s`,
+        command: 'gramble list source/basic/csvs/basic5a.csv -a -s',
         results: [],
         errors: [
             "Available symbols:",
@@ -1202,7 +1202,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     testCLI({
         desc: 'l8. test list: gramble list source/basic/csvs/basic5a.csv -aes',
-        command: `gramble list source/basic/csvs/basic5a.csv -aes`,
+        command: 'gramble list source/basic/csvs/basic5a.csv -aes',
         results: [],
         errors: [
             "Available symbols:",
@@ -1218,7 +1218,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     testCLI({
         desc: 'l9. test list: gramble list source/basic/csvs/basic5a.csv -BAD',
-        command: `gramble list source/basic/csvs/basic5a.csv -BAD`,
+        command: 'gramble list source/basic/csvs/basic5a.csv -BAD',
         results: [],
         errors: [
             "gramble: Error: Error in list command:",
@@ -1242,7 +1242,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     testCLI({
         desc: 'l11. test list: gramble list cli/csvs/Sheet2.csv -s',
-        command: `gramble list cli/csvs/Sheet2.csv -s`,
+        command: 'gramble list cli/csvs/Sheet2.csv -s',
         results: [],
         errors: [
             "Available symbols:",
@@ -1254,7 +1254,7 @@ describe(`${cliTestSuiteName(module)}`, function() {
 
     testCLI({
         desc: 'l12. test list: gramble list cli/csvs/Sheet3.csv -s',
-        command: `gramble list cli/csvs/Sheet3.csv -s`,
+        command: 'gramble list cli/csvs/Sheet3.csv -s',
         results: [],
         errors: [
             "Available symbols:",
@@ -1263,8 +1263,8 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 't1. test test: gramble test cli/csvs/Sheet1.csv -s all',
-        command: `gramble test cli/csvs/Sheet1.csv -s all`,
+        desc: 't1. test test: gramble test cli/csvs/Sheet1.csv -s all -r',
+        command: 'gramble test cli/csvs/Sheet1.csv -s all -r',
         results: [],
         errors: [
             "18 tests reached from symbol 'all'",
@@ -1294,8 +1294,8 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 't2. test test: gramble test cli/csvs/Sheet1.csv -s Sheet1.All',
-        command: `gramble test cli/csvs/Sheet1.csv -s Sheet1.All`,
+        desc: 't2. test test: gramble test cli/csvs/Sheet1.csv -s Sheet1.All -r',
+        command: 'gramble test cli/csvs/Sheet1.csv -s Sheet1.All -r',
         results: [],
         errors: [
             "12 tests reached from symbol 'Sheet1.All'",
@@ -1319,8 +1319,8 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 't3. test test: gramble test cli/csvs/Sheet1.csv -s Sheet1.Root',
-        command: `gramble test cli/csvs/Sheet1.csv -s Sheet1.Root`,
+        desc: 't3a. test test: gramble test cli/csvs/Sheet1.csv -s Sheet1.Root',
+        command: 'gramble test cli/csvs/Sheet1.csv -s Sheet1.Root',
         results: [],
         errors: [
             "No tests found for symbol 'Sheet1.Root'",
@@ -1328,8 +1328,32 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 't4. test test: gramble test cli/csvs/Sheet1.csv -s Sheet1.Stem',
-        command: `gramble test cli/csvs/Sheet1.csv -s Sheet1.Stem`,
+        desc: 't3b. test test: gramble test cli/csvs/Sheet1.csv -s Sheet1.Root -r',
+        command: 'gramble test cli/csvs/Sheet1.csv -s Sheet1.Root -r',
+        results: [],
+        errors: [
+            "No tests found for symbol 'Sheet1.Root'",
+        ],
+    });
+
+    testCLI({
+        desc: 't4a. test test: gramble test cli/csvs/Sheet1.csv -s Sheet1.Stem',
+        command: 'gramble test cli/csvs/Sheet1.csv -s Sheet1.Stem',
+        results: [],
+        errors: [
+            "2 tests for symbol 'Sheet1.Stem'",
+            "1/2 tests succeeded",
+            "1/2 tests failed",
+            "0/2 tests not run",
+            "Test Results:",
+            "Sheet1:19:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "Sheet1:20:2: ERROR: The grammar above has no outputs compatible with this specification.",
+        ],
+    });
+
+    testCLI({
+        desc: 't4b. test test: gramble test cli/csvs/Sheet1.csv -s Sheet1.Stem -r',
+        command: 'gramble test cli/csvs/Sheet1.csv -s Sheet1.Stem -r',
         results: [],
         errors: [
             "2 tests reached from symbol 'Sheet1.Stem'",
@@ -1343,8 +1367,25 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 't5. test test: gramble test cli/csvs/Sheet1.csv -s Sheet1.StemA',
-        command: `gramble test cli/csvs/Sheet1.csv -s Sheet1.StemA`,
+        desc: 't5a. test test: gramble test cli/csvs/Sheet1.csv -s Sheet1.StemA',
+        command: 'gramble test cli/csvs/Sheet1.csv -s Sheet1.StemA',
+        results: [],
+        errors: [
+            "4 tests for symbol 'Sheet1.StemA'",
+            "2/4 tests succeeded",
+            "2/4 tests failed",
+            "0/4 tests not run",
+            "Test Results:",
+            "Sheet1:28:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "Sheet1:29:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "Sheet1:30:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "Sheet1:31:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+        ],
+    });
+
+    testCLI({
+        desc: 't5b. test test: gramble test cli/csvs/Sheet1.csv -s Sheet1.StemA -r',
+        command: 'gramble test cli/csvs/Sheet1.csv -s Sheet1.StemA -r',
         results: [],
         errors: [
             "6 tests reached from symbol 'Sheet1.StemA'",
@@ -1362,8 +1403,23 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 't6. test test: gramble test cli/csvs/Sheet1.csv -s Sheet1.StemB',
-        command: `gramble test cli/csvs/Sheet1.csv -s Sheet1.StemB`,
+        desc: 't6a. test test: gramble test cli/csvs/Sheet1.csv -s Sheet1.StemB',
+        command: 'gramble test cli/csvs/Sheet1.csv -s Sheet1.StemB',
+        results: [],
+        errors: [
+            "2 tests for symbol 'Sheet1.StemB'",
+            "1/2 tests succeeded",
+            "1/2 tests failed",
+            "0/2 tests not run",
+            "Test Results:",
+            "Sheet1:37:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "Sheet1:38:2: ERROR: The grammar above has no outputs compatible with this specification.",
+        ],
+    });
+
+    testCLI({
+        desc: 't6b. test test: gramble test cli/csvs/Sheet1.csv -s Sheet1.StemB -r',
+        command: 'gramble test cli/csvs/Sheet1.csv -s Sheet1.StemB -r',
         results: [],
         errors: [
             "6 tests reached from symbol 'Sheet1.StemB'",
@@ -1381,8 +1437,23 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 't7. test test: gramble test cli/csvs/Sheet1.csv -s Sheet2.Stem2',
-        command: `gramble test cli/csvs/Sheet1.csv -s Sheet2.Stem2`,
+        desc: 't7a. test test: gramble test cli/csvs/Sheet1.csv -s Sheet2.Stem2',
+        command: 'gramble test cli/csvs/Sheet1.csv -s Sheet2.Stem2',
+        results: [],
+        errors: [
+            "2 tests for symbol 'Sheet2.Stem2'",
+            "1/2 tests succeeded",
+            "1/2 tests failed",
+            "0/2 tests not run",
+            "Test Results:",
+            "sheet2:23:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet2:24:2: ERROR: The grammar above has no outputs compatible with this specification.",
+        ],
+    });
+
+    testCLI({
+        desc: 't7b. test test: gramble test cli/csvs/Sheet1.csv -s Sheet2.Stem2 -r',
+        command: 'gramble test cli/csvs/Sheet1.csv -s Sheet2.Stem2 -r',
         results: [],
         errors: [
             "4 tests reached from symbol 'Sheet2.Stem2'",
@@ -1398,8 +1469,25 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 't8. test test: gramble test cli/csvs/Sheet1.csv -s Sheet2.Stem2z',
-        command: `gramble test cli/csvs/Sheet1.csv -s Sheet2.Stem2z`,
+        desc: 't8a. test test: gramble test cli/csvs/Sheet1.csv -s Sheet2.Stem2z',
+        command: 'gramble test cli/csvs/Sheet1.csv -s Sheet2.Stem2z',
+        results: [],
+        errors: [
+            "4 tests for symbol 'Sheet2.Stem2z'",
+            "1/4 tests succeeded",
+            "3/4 tests failed",
+            "0/4 tests not run",
+            "Test Results:",
+            "sheet2:35:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "sheet2:36:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "sheet2:37:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "sheet2:38:2: ERROR: The grammar above has no outputs compatible with this specification.",
+        ],
+    });
+
+    testCLI({
+        desc: 't8b. test test: gramble test cli/csvs/Sheet1.csv -s Sheet2.Stem2z -r',
+        command: 'gramble test cli/csvs/Sheet1.csv -s Sheet2.Stem2z -r',
         results: [],
         errors: [
             "4 tests reached from symbol 'Sheet2.Stem2z'",
@@ -1415,8 +1503,17 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 't9. test test: gramble test cli/csvs/Sheet1.csv -s Sheet2.Stem2-3',
-        command: `gramble test cli/csvs/Sheet1.csv -s Sheet2.Stem2-3`,
+        desc: 't9a. test test: gramble test cli/csvs/Sheet1.csv -s Sheet2.Stem2-3',
+        command: 'gramble test cli/csvs/Sheet1.csv -s Sheet2.Stem2-3',
+        results: [],
+        errors: [
+            "No tests found for symbol 'Sheet2.Stem2-3'",
+        ],
+    });
+
+    testCLI({
+        desc: 't9b. test test: gramble test cli/csvs/Sheet1.csv -s Sheet2.Stem2-3 -r',
+        command: 'gramble test cli/csvs/Sheet1.csv -s Sheet2.Stem2-3 -r',
         results: [],
         errors: [
             "2 tests reached from symbol 'Sheet2.Stem2-3'",
@@ -1430,8 +1527,8 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 't10a. test test: gramble test cli/csvs/Sheet1.csv -s Sheet2.All',
-        command: `gramble test cli/csvs/Sheet1.csv -s Sheet2.All`,
+        desc: 't10a. test test: gramble test cli/csvs/Sheet1.csv -s Sheet2.All -r',
+        command: 'gramble test cli/csvs/Sheet1.csv -s Sheet2.All -r',
         results: [],
         errors: [
             "10 tests reached from symbol 'Sheet2.All'",
@@ -1453,8 +1550,8 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 't10b. test test: gramble test cli/csvs/Sheet2.csv -s Sheet2.All',
-        command: `gramble test cli/csvs/Sheet2.csv -s Sheet2.All`,
+        desc: 't10b. test test: gramble test cli/csvs/Sheet2.csv -s Sheet2.All -r',
+        command: 'gramble test cli/csvs/Sheet2.csv -s Sheet2.All -r',
         results: [],
         errors: [
             "10 tests reached from symbol 'Sheet2.All'",
@@ -1476,8 +1573,8 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 't11a. test test: gramble test cli/csvs/Sheet1.csv -s Sheet3.All',
-        command: `gramble test cli/csvs/Sheet1.csv -s Sheet3.All`,
+        desc: 't11a. test test: gramble test cli/csvs/Sheet1.csv -s Sheet3.All -r',
+        command: 'gramble test cli/csvs/Sheet1.csv -s Sheet3.All -r',
         results: [],
         errors: [
             "2 tests reached from symbol 'Sheet3.All'",
@@ -1491,8 +1588,8 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 't11b. test test: gramble test cli/csvs/Sheet2.csv -s Sheet3.All',
-        command: `gramble test cli/csvs/Sheet2.csv -s Sheet3.All`,
+        desc: 't11b. test test: gramble test cli/csvs/Sheet2.csv -s Sheet3.All -r',
+        command: 'gramble test cli/csvs/Sheet2.csv -s Sheet3.All -r',
         results: [],
         errors: [
             "2 tests reached from symbol 'Sheet3.All'",
@@ -1506,8 +1603,8 @@ describe(`${cliTestSuiteName(module)}`, function() {
     });
 
     testCLI({
-        desc: 't11c. test test: gramble test cli/csvs/Sheet3.csv -s Sheet3.All',
-        command: `gramble test cli/csvs/Sheet3.csv -s Sheet3.All`,
+        desc: 't11c. test test: gramble test cli/csvs/Sheet3.csv -s Sheet3.All -r',
+        command: 'gramble test cli/csvs/Sheet3.csv -s Sheet3.All -r',
         results: [],
         errors: [
             "2 tests reached from symbol 'Sheet3.All'",

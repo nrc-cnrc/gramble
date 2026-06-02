@@ -363,10 +363,34 @@ function makeInterpreter() {
     }
 }
 
-function runTests() {
+function runAllTests() {
+    runTests(getSheetName()+".All", true)
+} 
+
+function runTestsRecursive() {
+    runTestsSymbol(true);
+} 
+
+function runTestsSymbol(recursive = false) {
+    let spreadsheet = SpreadsheetApp.getActive();
+    let sheet = spreadsheet.getActiveSheet();
+    let cell = sheet.getCurrentCell();
+    if (cell == undefined) {
+        throw("No symbol selected.")
+    }
+    let value = cell.getValue().trim();
+    if (!value.endsWith("=")) {
+        throw("Selected cell doesn't contain a symbol assignment.")
+    }
+    const symbol = getSheetName() + "." + value.slice(0, -1).trim();
+
+    runTests(symbol, recursive)
+}
+
+function runTests(symbol, recursive = false) {
     const [interpreter, devEnv] = makeInterpreter();
     try {
-        interpreter.runTests();
+        interpreter.runTests(symbol, recursive);
     } catch(err) {
         const msg = "longMsg" in err ? `ERROR: ${err.longMsg}` : err;
         throw(msg);
@@ -388,7 +412,7 @@ function showSidebar() {
 }
 
 function showAbout() {
-    var ui = SpreadsheetApp.getUi(); // Same variations.
+    let ui = SpreadsheetApp.getUi(); // Same variations.
     ui.alert(
         'About Gramble',
         "Gramble is a product of the Digital Technologies Research Centre at the National Research Council of Canada.\n\n" +
@@ -647,7 +671,9 @@ function onOpen() {
     
         .addItem('Show sidebar', 'showSidebar')
         .addSeparator()
-        .addItem('Run unit tests', 'runTests')
+        .addItem('Run all unit tests on sheet', 'runAllTests')
+        .addItem('Run unit tests for symbol', 'runTestsSymbol')
+        .addItem('Run unit tests recursively from symbol', 'runTestsRecursive')
         .addSeparator()
         .addItem('Highlight', 'highlight')
         .addItem('Comment', 'GrambleComment')
