@@ -334,7 +334,7 @@ export class Interpreter {
         const pass = new ExecuteTests(symbols, recursive);
 
         pass.getEnvAndTransform(targetGrammar, this.opt)
-            .msgTo(m => this.devEnv.message(m));
+            .msgTo(m => sendMsg(this.devEnv, m));
     }
 }
 
@@ -372,7 +372,7 @@ function addSheet(
     const sheet = new Worksheet(sheetName, cells);
     project.sheets[sheetName] = sheet;
     project.grammar = SOURCE_PASSES.getEnvAndTransform(project, devEnv.opt)
-                                     .msgTo(m => devEnv.message(m));
+                                     .msgTo(m => sendMsg(devEnv, m));
     // check to see if any names didn't get qualified
     const [_, nameMsgs] =  SYMBOL_PASSES.getEnvAndTransform(project.grammar, devEnv.opt)
                                         .destructure();

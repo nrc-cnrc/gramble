@@ -114,11 +114,20 @@ class BackgroundColorStyler extends Styler {
 }
 
 
+// Holds all unique messages for a cell indexed by longMsg.
+class NoteMsgs {
+    constructor() {
+        this.error = new Map();
+        this.warning = new Map();
+        this.success = new Map();
+    }
+}
+
 class GoogleSheetsDevEnvironment {
 
     constructor(currentSheetName, opt) {
         this.currentSheetName = currentSheetName;
-        this.noteMsgs = new Map(); // :Map<string, Msg[]>, indexed by row_col
+        this.noteMsgs = new Map(); // :Map<string, NoteMsgs>, indexed by row_col
         this.noteStylers = new Map(); // :Map<string, NoteStyler>
         this.bgColorStylers  = new Map(); // :Map<string, BackgroundColorStyler>
         this.fontColorStylers = new Map(); // :Map<string, FontColorStyler>
@@ -162,36 +171,33 @@ class GoogleSheetsDevEnvironment {
 
     collectNoteMsgs(msg) {
         const msgIdx = `${msg.row}_${msg.col}`;
-        const msgs = this.noteMsgs.get(msgIdx);
+        let msgs = this.noteMsgs.get(msgIdx);
 
         if (msgs == undefined) {
-            const msgs = Array.of(msg);
+            msgs = new NoteMsgs();
             this.noteMsgs.set(msgIdx, msgs);
-            return;
         }
 
-        if (msg.tag == 'error')
-            msgs.unshift(msg);
-        else if (msg.tag == 'warning')
-            msgs.push(msg);
-        // drop extra msgs with msg.tag == 'success' because there should
-        // only have been one message on success!
+        msgs[msg.tag].set(msg.longMsg, msg);
     }
 
-    msgs2msg(msgs) {
-        if (!msgs.length)
-            return undefined;
+    msgs2msg(msgs) {    // msgs is a NoteMsgs object
+        let msg = undefined;
 
-        const msg = {};
-        msg.tag = msgs[0].tag;
-        msg.row = msgs[0].row;
-        msg.col = msgs[0].col;
-        msg.longMsg = "";
-
-        for (const m of msgs) {
-            msg.longMsg += m.tag.toUpperCase() + ": " + m.longMsg + 
-                            "\n----------------\n";
+        for (const t in msgs) {
+            for (const m of msgs[t].values()) {
+                if (msg === undefined) {
+                    msg = Object.create(null);
+                    msg.tag = m.tag;
+                    msg.row = m.row;
+                    msg.col = m.col;
+                    msg.longMsg = "";
+                }
+                msg.longMsg += m.tag.toUpperCase() + ": " + m.longMsg + 
+                                "\n----------------\n";
+            }
         }
+
         return msg;
     }
 
@@ -282,10 +288,9 @@ class GoogleSheetsDevEnvironment {
 
     logDebug(...msgs) {
         gramble.logDebug(this.opt.verbose, ...msgs)
+        alert(`logDebug: ${JSON.stringify(msgs)}`);
     }
 }
-
-
 
 /*
 function showDialog(htmlString: string, title: string = ""): void {

@@ -1,3 +1,4 @@
+import { VERBOSE_DEBUG } from "../../../interpreter/src/utils/logging.js";
 import {
     testSource, SourceTest, 
     Error, Warning 
@@ -306,7 +307,7 @@ describe(`Source ${DIR}`, function() {
             "multi17external.All",
         ],
     });
-    
+
     testSrc({
 		desc: '17d. Same as 17a but references both uppercase',
         symbol: "result",
@@ -323,6 +324,31 @@ describe(`Source ${DIR}`, function() {
             "multi17external.w3",
             "multi17external.All",
         ],
+    });
+    
+    testSrc({
+		desc: '18. More complex multi-sheet example with multiple errors',
+        symbol: "Stem",
+        results: [
+            {text: "fooable"},
+        ],
+        errors: [
+            Error(3, 0, "Invalid operator: 'testX:'"),
+            Warning(6, 0, "Assigning temporary symbol name: '$Auto7'"),
+            Error(7, 1, "Failed unit test - no matching outputs"),
+        ],
+        symbols: [
+            "All",
+            "multi18.All",
+            "multi18.Stem",
+            "multi18.$Auto7",
+            "multi18-2.Root",
+            "multi18-2.Root2",
+            "multi18-2.All",
+            "multi18-3.Root",
+            "multi18-3.All",
+        ],
+        // verbose: VERBOSE_DEBUG,
     });
 
 });
