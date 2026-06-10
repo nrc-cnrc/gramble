@@ -374,17 +374,31 @@ function runTestsRecursive() {
 function runTestsSymbol(recursive = false) {
     let spreadsheet = SpreadsheetApp.getActive();
     let sheet = spreadsheet.getActiveSheet();
-    let cell = sheet.getCurrentCell();
-    if (cell == undefined) {
+    let selectedCell = sheet.getCurrentCell();
+    if (selectedCell == undefined) {
         throw("No symbol selected.")
     }
-    let value = cell.getValue().trim();
-    if (!value.endsWith("=")) {
+    let value = selectedCell.getValue().trim();
+    if (/^test\s*:$/.test(value)) {
+        const selectedRow = selectedCell.getRow();
+        const selectedCol = selectedCell.getColumn();
+        search: for (let row = selectedRow; row > 0; row--) {
+            for (let col = selectedCol; col > 0; col--) {
+                value = sheet.getRange(row, col).getValue().trim();
+                if (value.endsWith("=")) {
+                    break search;
+                }
+            }
+        }
+        if (!value.endsWith("=")) {
+            throw("No symbol assignment found for selected 'test:' block.")
+        }
+    } else if (!value.endsWith("=")) {
         throw("Selected cell doesn't contain a symbol assignment.")
     }
     const symbol = getSheetName() + "." + value.slice(0, -1).trim();
 
-    runTests(symbol, recursive)
+    runTests(symbol, recursive);
 }
 
 function runTests(symbol, recursive = false) {
