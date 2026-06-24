@@ -1,7 +1,7 @@
 import { VERBOSE_DEBUG } from "../../../interpreter/src/utils/logging.js";
 import {
     testSource, SourceTest, 
-    Error, Warning 
+    Error, TestFailed, Warning 
 } from "../testSourceUtil.js";
 
 const DIR = "multi";
@@ -335,7 +335,7 @@ describe(`Source ${DIR}`, function() {
         errors: [
             Error(3, 0, "Invalid operator: 'testX:'"),
             Warning(6, 0, "Assigning temporary symbol name: '$Auto7'"),
-            Error(7, 1, "Failed unit test - no matching outputs"),
+            TestFailed(7, 1, "Failed unit test - no matching outputs"),
         ],
         symbols: [
             "All",

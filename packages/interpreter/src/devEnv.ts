@@ -67,10 +67,12 @@ export class SimpleDevEnvironment implements DevEnvironment {
     }
 
     public message(msg: any): void {
-        // The simple dev env only cares about errors and warnings
+        // The simple dev env only cares about errors, warnings, and test failures.
         switch (msg.tag) {
             case Messages.Tag.Error: return this.markNote(msg);
             case Messages.Tag.Warning: return this.markNote(msg);
+            case Messages.Tag.TestFailed:   return this.markNote(msg);
+            case Messages.Tag.TestSkipped:  return this.markNote(msg);
         }
     }
 
@@ -85,9 +87,17 @@ export class SimpleDevEnvironment implements DevEnvironment {
     }
 
     public logErrors(query: Partial<Message> = {}): void {
+        const emojis = {
+            error:        "❌ ",
+            warning:      "⚠️ ",
+            test_passed:  "✅ ",
+            test_failed:  "❌ ",
+            test_skipped: "⚠️ ",
+        }
         for (const msg of this.getErrors(query)) {
-            console.error(`${new Pos(msg.sheet, msg.row, msg.col, this.opt)}: ` +
-                        `${msg.tag.toUpperCase()}: ${msg.longMsg}`);
+            const emoji = msg.tag in emojis ? emojis[msg.tag as keyof typeof emojis] : "";
+            console.error(`${emoji}${new Pos(msg.sheet, msg.row, msg.col, this.opt)}: ` +
+                        `${msg.tag.toUpperCase().replace(/_/g, ' ')}: ${msg.longMsg}`);
         }
     }
 

@@ -38,7 +38,7 @@ export class TextDevEnvironment extends SimpleDevEnvironment {
     }
 }
 
-// TestTextDevEnvironment tracks test Success messages as well as Error and
+// TestTextDevEnvironment tracks test execution messages as well as Error and
 // Warning messages.
 export class TestTextDevEnvironment extends TextDevEnvironment {
 
@@ -51,9 +51,11 @@ export class TestTextDevEnvironment extends TextDevEnvironment {
 
     public message(msg: any): void {
         switch (msg.tag) {
-            case Messages.Tag.Error: return this.markNote(msg);
-            case Messages.Tag.Warning: return this.markNote(msg);
-            case Messages.Tag.Success: return this.markNote(msg);
+            case Messages.Tag.Error:        return this.markNote(msg);
+            case Messages.Tag.Warning:      return this.markNote(msg);
+            case Messages.Tag.TestFailed:   return this.markNote(msg);
+            case Messages.Tag.TestPassed:   return this.markNote(msg);
+            case Messages.Tag.TestSkipped:  return this.markNote(msg);
         }
     }
 }

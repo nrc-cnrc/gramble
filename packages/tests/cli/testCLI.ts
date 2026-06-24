@@ -555,10 +555,11 @@ describe(`${cliTestSuiteName(module)}`, function() {
         command: `gramble generate source/basic/csvs/basic5a.csv -s basic5a.word`,
         results: [],
         errors: [
-            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:2:2: ERROR: This 'table' operator requires header(s) " +
+            "Compilation errors/warnings:",
+            "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) " +
                 "to the right, but none was found.",
-            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
             "Generation not run because source has 1 Gramble error.",
         ],
     });
@@ -569,10 +570,11 @@ describe(`${cliTestSuiteName(module)}`, function() {
                 '-s basic5a.word --strict',
         results: [],
         errors: [
-            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:2:2: ERROR: This 'table' operator requires header(s) " +
+            "Compilation errors/warnings:",
+            "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) " +
                 "to the right, but none was found.",
-            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
             "Generation not run because source has 3 Gramble errors.",
         ],
     });
@@ -587,10 +589,11 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '"-2SG","baz"',
         ],
         errors: [
-            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:2:2: ERROR: This 'table' operator requires header(s) " +
+            "Compilation errors/warnings:",
+            "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) " +
                 "to the right, but none was found.",
-            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
             "Generation running even though source has 1 Gramble error.",
         ],
     });
@@ -605,7 +608,8 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '"-2SG","baz"',
         ],
         errors: [
-            "basic5c:2:3: WARNING: No content cells found for these header(s); " +
+            "Compilation errors/warnings:",
+            "⚠️ basic5c:2:3: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
         ],
     });
@@ -616,7 +620,8 @@ describe(`${cliTestSuiteName(module)}`, function() {
                 '-s basic5c.word -S',
         results: [],
         errors: [
-            "basic5c:2:3: WARNING: No content cells found for these header(s); " +
+            "Compilation errors/warnings:",
+            "⚠️ basic5c:2:3: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
             "Generation not run because source has 1 Gramble error.",
         ],
@@ -632,7 +637,8 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '"-2SG","baz"',
         ],
         errors: [
-            "basic5c:2:3: WARNING: No content cells found for these header(s); " +
+            "Compilation errors/warnings:",
+            "⚠️ basic5c:2:3: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
         ],
     });
@@ -647,7 +653,8 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '"-2SG","baz"',
         ],
         errors: [
-            "basic5c:2:3: WARNING: No content cells found for these header(s); " +
+            "Compilation errors/warnings:",
+            "⚠️ basic5c:2:3: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
             "Generation running even though source has 1 Gramble error.",
         ],
@@ -987,10 +994,11 @@ describe(`${cliTestSuiteName(module)}`, function() {
                 '--seed',
         results: [],
         errors: [
-            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:2:2: ERROR: This 'table' operator requires header(s) " +
+            "Compilation errors/warnings:",
+            "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) " +
                 "to the right, but none was found.",
-            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
             "Sampling not run because source has 1 Gramble error.",
         ],
     });
@@ -1001,10 +1009,11 @@ describe(`${cliTestSuiteName(module)}`, function() {
                 '--seed --strict',
         results: [],
         errors: [
-            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:2:2: ERROR: This 'table' operator requires header(s) " +
+            "Compilation errors/warnings:",
+            "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) " +
                 "to the right, but none was found.",
-            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
             "Sampling not run because source has 3 Gramble errors.",
         ],
     });
@@ -1022,10 +1031,11 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '"-1SG","bar"',
         ],
         errors: [
-            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:2:2: ERROR: This 'table' operator requires header(s) " +
+            "Compilation errors/warnings:",
+            "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) " +
                 "to the right, but none was found.",
-            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
             "Sampling running even though source has 1 Gramble error.",
         ],
     });
@@ -1043,7 +1053,8 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '"-1SG","bar"',
         ],
         errors: [
-            "basic5c:2:3: WARNING: No content cells found for these header(s); " +
+            "Compilation errors/warnings:",
+            "⚠️ basic5c:2:3: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
         ],
     });
@@ -1054,7 +1065,8 @@ describe(`${cliTestSuiteName(module)}`, function() {
                 '--seed -S',
         results: [],
         errors: [
-            "basic5c:2:3: WARNING: No content cells found for these header(s); " +
+            "Compilation errors/warnings:",
+            "⚠️ basic5c:2:3: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
             "Sampling not run because source has 1 Gramble error.",
         ],
@@ -1073,7 +1085,8 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '"-1SG","bar"',
         ],
         errors: [
-            "basic5c:2:3: WARNING: No content cells found for these header(s); " +
+            "Compilation errors/warnings:",
+            "⚠️ basic5c:2:3: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
         ],
     });
@@ -1091,7 +1104,8 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '"-1SG","bar"',
         ],
         errors: [
-            "basic5c:2:3: WARNING: No content cells found for these header(s); " +
+            "Compilation errors/warnings:",
+            "⚠️ basic5c:2:3: WARNING: No content cells found for these header(s); " +
                 "assuming empty values.",
             "Sampling running even though source has 1 Gramble error.",
         ],
@@ -1106,10 +1120,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '["basic5a.verb","basic5a.suffix","basic5a.word","basic5a.All","All"]',
             "",
             "Compilation errors/warnings:",
-            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
+            "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
                 "but none was found.",
-            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
         ],
     });
 
@@ -1122,10 +1136,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '["basic5a.verb","basic5a.suffix","basic5a.word","basic5a.All","All"]',
             "",
             "Compilation errors/warnings:",
-            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
+            "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
                 "but none was found.",
-            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
         ],
     });
 
@@ -1145,10 +1159,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
         results: [],
         errors: [
             "Compilation errors/warnings:",
-            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
+            "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
                 "but none was found.",
-            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
         ],
     });
 
@@ -1161,10 +1175,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '["basic5a.verb","basic5a.suffix","basic5a.word","basic5a.All","All"]',
             "",
             "Compilation errors/warnings:",
-            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
+            "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
                 "but none was found.",
-            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
         ],
     });
 
@@ -1177,10 +1191,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '["basic5a.verb","basic5a.suffix","basic5a.word","basic5a.All","All"]',
             "",
             "Compilation errors/warnings:",
-            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
+            "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
                 "but none was found.",
-            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
         ],
     });
 
@@ -1193,10 +1207,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '["basic5a.verb","basic5a.suffix","basic5a.word","basic5a.All","All"]',
             "",
             "Compilation errors/warnings:",
-            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
+            "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
                 "but none was found.",
-            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
         ],
     });
 
@@ -1209,10 +1223,10 @@ describe(`${cliTestSuiteName(module)}`, function() {
             '["basic5a.verb","basic5a.suffix","basic5a.word","basic5a.All","All"]',
             "",
             "Compilation errors/warnings:",
-            "basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
-            "basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
+            "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
+            "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
                 "but none was found.",
-            "basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
         ],
     });
 
@@ -1268,28 +1282,28 @@ describe(`${cliTestSuiteName(module)}`, function() {
         results: [],
         errors: [
             "18 tests reached from symbol 'all'",
-            "8/18 tests succeeded",
-            "10/18 tests failed",
-            "0/18 tests not run",
+            "✅ 8/18 tests passed",
+            "❌ 10/18 tests failed",
+            "⚠️ 0/18 tests not run",
             "Test Results:",
-            "Sheet1:19:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "Sheet1:20:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "Sheet1:28:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "Sheet1:29:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "Sheet1:30:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "Sheet1:31:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet2:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet2:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "Sheet1:37:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "Sheet1:38:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "sheet2:23:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet2:24:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "sheet2:35:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "sheet2:36:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "sheet2:37:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet2:38:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "sheet3:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet3:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "✅ Sheet1:19:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ Sheet1:20:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "❌ Sheet1:28:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ Sheet1:29:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ Sheet1:30:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ Sheet1:31:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "✅ sheet2:6:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ sheet2:7:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ Sheet1:37:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ Sheet1:38:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ sheet2:23:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ sheet2:24:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "❌ sheet2:35:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "❌ sheet2:36:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ sheet2:37:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ sheet2:38:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ sheet3:6:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ sheet3:7:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
         ],
     });
 
@@ -1299,22 +1313,22 @@ describe(`${cliTestSuiteName(module)}`, function() {
         results: [],
         errors: [
             "12 tests reached from symbol 'Sheet1.All'",
-            "6/12 tests succeeded",
-            "6/12 tests failed",
-            "0/12 tests not run",
+            "✅ 6/12 tests passed",
+            "❌ 6/12 tests failed",
+            "⚠️ 0/12 tests not run",
             "Test Results:",
-            "Sheet1:19:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "Sheet1:20:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "Sheet1:28:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "Sheet1:29:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "Sheet1:30:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "Sheet1:31:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet2:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet2:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "Sheet1:37:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "Sheet1:38:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "sheet2:23:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet2:24:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "✅ Sheet1:19:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ Sheet1:20:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "❌ Sheet1:28:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ Sheet1:29:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ Sheet1:30:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ Sheet1:31:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "✅ sheet2:6:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ sheet2:7:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ Sheet1:37:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ Sheet1:38:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ sheet2:23:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ sheet2:24:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
         ],
     });
 
@@ -1342,12 +1356,12 @@ describe(`${cliTestSuiteName(module)}`, function() {
         results: [],
         errors: [
             "2 tests for symbol 'Sheet1.Stem'",
-            "1/2 tests succeeded",
-            "1/2 tests failed",
-            "0/2 tests not run",
+            "✅ 1/2 tests passed",
+            "❌ 1/2 tests failed",
+            "⚠️ 0/2 tests not run",
             "Test Results:",
-            "Sheet1:19:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "Sheet1:20:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "✅ Sheet1:19:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ Sheet1:20:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
         ],
     });
 
@@ -1357,12 +1371,12 @@ describe(`${cliTestSuiteName(module)}`, function() {
         results: [],
         errors: [
             "2 tests reached from symbol 'Sheet1.Stem'",
-            "1/2 tests succeeded",
-            "1/2 tests failed",
-            "0/2 tests not run",
+            "✅ 1/2 tests passed",
+            "❌ 1/2 tests failed",
+            "⚠️ 0/2 tests not run",
             "Test Results:",
-            "Sheet1:19:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "Sheet1:20:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "✅ Sheet1:19:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ Sheet1:20:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
         ],
     });
 
@@ -1372,14 +1386,14 @@ describe(`${cliTestSuiteName(module)}`, function() {
         results: [],
         errors: [
             "4 tests for symbol 'Sheet1.StemA'",
-            "2/4 tests succeeded",
-            "2/4 tests failed",
-            "0/4 tests not run",
+            "✅ 2/4 tests passed",
+            "❌ 2/4 tests failed",
+            "⚠️ 0/4 tests not run",
             "Test Results:",
-            "Sheet1:28:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "Sheet1:29:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "Sheet1:30:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "Sheet1:31:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
+            "❌ Sheet1:28:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ Sheet1:29:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ Sheet1:30:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ Sheet1:31:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
         ],
     });
 
@@ -1389,16 +1403,16 @@ describe(`${cliTestSuiteName(module)}`, function() {
         results: [],
         errors: [
             "6 tests reached from symbol 'Sheet1.StemA'",
-            "3/6 tests succeeded",
-            "3/6 tests failed",
-            "0/6 tests not run",
+            "✅ 3/6 tests passed",
+            "❌ 3/6 tests failed",
+            "⚠️ 0/6 tests not run",
             "Test Results:",
-            "Sheet1:28:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "Sheet1:29:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "Sheet1:30:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "Sheet1:31:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet2:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet2:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "❌ Sheet1:28:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ Sheet1:29:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ Sheet1:30:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ Sheet1:31:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "✅ sheet2:6:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ sheet2:7:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
         ],
     });
 
@@ -1408,12 +1422,12 @@ describe(`${cliTestSuiteName(module)}`, function() {
         results: [],
         errors: [
             "2 tests for symbol 'Sheet1.StemB'",
-            "1/2 tests succeeded",
-            "1/2 tests failed",
-            "0/2 tests not run",
+            "✅ 1/2 tests passed",
+            "❌ 1/2 tests failed",
+            "⚠️ 0/2 tests not run",
             "Test Results:",
-            "Sheet1:37:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "Sheet1:38:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "✅ Sheet1:37:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ Sheet1:38:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
         ],
     });
 
@@ -1423,16 +1437,16 @@ describe(`${cliTestSuiteName(module)}`, function() {
         results: [],
         errors: [
             "6 tests reached from symbol 'Sheet1.StemB'",
-            "3/6 tests succeeded",
-            "3/6 tests failed",
-            "0/6 tests not run",
+            "✅ 3/6 tests passed",
+            "❌ 3/6 tests failed",
+            "⚠️ 0/6 tests not run",
             "Test Results:",
-            "Sheet1:37:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "Sheet1:38:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "sheet2:23:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet2:24:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "sheet2:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet2:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "✅ Sheet1:37:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ Sheet1:38:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ sheet2:23:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ sheet2:24:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ sheet2:6:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ sheet2:7:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
         ],
     });
 
@@ -1442,12 +1456,12 @@ describe(`${cliTestSuiteName(module)}`, function() {
         results: [],
         errors: [
             "2 tests for symbol 'Sheet2.Stem2'",
-            "1/2 tests succeeded",
-            "1/2 tests failed",
-            "0/2 tests not run",
+            "✅ 1/2 tests passed",
+            "❌ 1/2 tests failed",
+            "⚠️ 0/2 tests not run",
             "Test Results:",
-            "sheet2:23:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet2:24:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "✅ sheet2:23:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ sheet2:24:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
         ],
     });
 
@@ -1457,14 +1471,14 @@ describe(`${cliTestSuiteName(module)}`, function() {
         results: [],
         errors: [
             "4 tests reached from symbol 'Sheet2.Stem2'",
-            "2/4 tests succeeded",
-            "2/4 tests failed",
-            "0/4 tests not run",
+            "✅ 2/4 tests passed",
+            "❌ 2/4 tests failed",
+            "⚠️ 0/4 tests not run",
             "Test Results:",
-            "sheet2:23:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet2:24:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "sheet2:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet2:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "✅ sheet2:23:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ sheet2:24:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ sheet2:6:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ sheet2:7:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
         ],
     });
 
@@ -1474,14 +1488,14 @@ describe(`${cliTestSuiteName(module)}`, function() {
         results: [],
         errors: [
             "4 tests for symbol 'Sheet2.Stem2z'",
-            "1/4 tests succeeded",
-            "3/4 tests failed",
-            "0/4 tests not run",
+            "✅ 1/4 tests passed",
+            "❌ 3/4 tests failed",
+            "⚠️ 0/4 tests not run",
             "Test Results:",
-            "sheet2:35:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "sheet2:36:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "sheet2:37:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet2:38:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "❌ sheet2:35:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "❌ sheet2:36:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ sheet2:37:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ sheet2:38:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
         ],
     });
 
@@ -1491,14 +1505,14 @@ describe(`${cliTestSuiteName(module)}`, function() {
         results: [],
         errors: [
             "4 tests reached from symbol 'Sheet2.Stem2z'",
-            "1/4 tests succeeded",
-            "3/4 tests failed",
-            "0/4 tests not run",
+            "✅ 1/4 tests passed",
+            "❌ 3/4 tests failed",
+            "⚠️ 0/4 tests not run",
             "Test Results:",
-            "sheet2:35:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "sheet2:36:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "sheet2:37:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet2:38:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "❌ sheet2:35:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "❌ sheet2:36:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ sheet2:37:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ sheet2:38:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
         ],
     });
 
@@ -1517,12 +1531,12 @@ describe(`${cliTestSuiteName(module)}`, function() {
         results: [],
         errors: [
             "2 tests reached from symbol 'Sheet2.Stem2-3'",
-            "1/2 tests succeeded",
-            "1/2 tests failed",
-            "0/2 tests not run",
+            "✅ 1/2 tests passed",
+            "❌ 1/2 tests failed",
+            "⚠️ 0/2 tests not run",
             "Test Results:",
-            "sheet3:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet3:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "✅ sheet3:6:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ sheet3:7:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
         ],
     });
 
@@ -1532,20 +1546,20 @@ describe(`${cliTestSuiteName(module)}`, function() {
         results: [],
         errors: [
             "10 tests reached from symbol 'Sheet2.All'",
-            "4/10 tests succeeded",
-            "6/10 tests failed",
-            "0/10 tests not run",
+            "✅ 4/10 tests passed",
+            "❌ 6/10 tests failed",
+            "⚠️ 0/10 tests not run",
             "Test Results:",
-            "sheet2:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet2:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "sheet2:23:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet2:24:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "sheet2:35:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "sheet2:36:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "sheet2:37:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet2:38:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "sheet3:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet3:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "✅ sheet2:6:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ sheet2:7:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ sheet2:23:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ sheet2:24:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "❌ sheet2:35:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "❌ sheet2:36:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ sheet2:37:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ sheet2:38:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ sheet3:6:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ sheet3:7:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
         ],
     });
 
@@ -1555,20 +1569,20 @@ describe(`${cliTestSuiteName(module)}`, function() {
         results: [],
         errors: [
             "10 tests reached from symbol 'Sheet2.All'",
-            "4/10 tests succeeded",
-            "6/10 tests failed",
-            "0/10 tests not run",
+            "✅ 4/10 tests passed",
+            "❌ 6/10 tests failed",
+            "⚠️ 0/10 tests not run",
             "Test Results:",
-            "Sheet2:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "Sheet2:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "Sheet2:23:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "Sheet2:24:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "Sheet2:35:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "Sheet2:36:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "Sheet2:37:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "Sheet2:38:2: ERROR: The grammar above has no outputs compatible with this specification.",
-            "sheet3:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet3:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "✅ Sheet2:6:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ Sheet2:7:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ Sheet2:23:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ Sheet2:24:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "❌ Sheet2:35:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "❌ Sheet2:36:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ Sheet2:37:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ Sheet2:38:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
+            "✅ sheet3:6:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ sheet3:7:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
         ],
     });
 
@@ -1578,12 +1592,12 @@ describe(`${cliTestSuiteName(module)}`, function() {
         results: [],
         errors: [
             "2 tests reached from symbol 'Sheet3.All'",
-            "1/2 tests succeeded",
-            "1/2 tests failed",
-            "0/2 tests not run",
+            "✅ 1/2 tests passed",
+            "❌ 1/2 tests failed",
+            "⚠️ 0/2 tests not run",
             "Test Results:",
-            "sheet3:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet3:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "✅ sheet3:6:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ sheet3:7:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
         ],
     });
 
@@ -1593,12 +1607,12 @@ describe(`${cliTestSuiteName(module)}`, function() {
         results: [],
         errors: [
             "2 tests reached from symbol 'Sheet3.All'",
-            "1/2 tests succeeded",
-            "1/2 tests failed",
-            "0/2 tests not run",
+            "✅ 1/2 tests passed",
+            "❌ 1/2 tests failed",
+            "⚠️ 0/2 tests not run",
             "Test Results:",
-            "sheet3:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "sheet3:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "✅ sheet3:6:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ sheet3:7:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
         ],
     });
 
@@ -1608,12 +1622,12 @@ describe(`${cliTestSuiteName(module)}`, function() {
         results: [],
         errors: [
             "2 tests reached from symbol 'Sheet3.All'",
-            "1/2 tests succeeded",
-            "1/2 tests failed",
-            "0/2 tests not run",
+            "✅ 1/2 tests passed",
+            "❌ 1/2 tests failed",
+            "⚠️ 0/2 tests not run",
             "Test Results:",
-            "Sheet3:6:2: SUCCESS: The grammar above correctly has outputs compatible with this specification.",
-            "Sheet3:7:2: ERROR: The grammar above has no outputs compatible with this specification.",
+            "✅ Sheet3:6:2: TEST PASSED: The grammar above correctly has outputs compatible with this specification.",
+            "❌ Sheet3:7:2: TEST FAILED: The grammar above has no outputs compatible with this specification.",
         ],
     });
 

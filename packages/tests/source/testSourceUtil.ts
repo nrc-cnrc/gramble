@@ -24,15 +24,25 @@ const module = import.meta
 
 const TEST_DIR = dirname(module.filename);
 
+function ExpectedMsg(
+    tag: Msgs.Tag,
+    row: number,
+    col: number,
+    shortMsg?: string,
+    sheet?: string
+): Partial<Message> {
+    let msg: Partial<Message> = {sheet, row, col, tag};
+    if (shortMsg !== undefined) msg = {shortMsg, ...msg};
+    return msg;
+}
+
 export function Error(
     row: number,
     col: number,
     shortMsg?: string,
     sheet?: string
 ): Partial<Message> {
-    let err: Partial<Message> = {sheet, row, col, tag: Msgs.Tag.Error};
-    if (shortMsg !== undefined) err = {shortMsg, ...err};
-    return err;
+    return ExpectedMsg(Msgs.Tag.Error, row, col, shortMsg, sheet);
 }
 
 export function Warning(
@@ -41,9 +51,34 @@ export function Warning(
     shortMsg?: string,
     sheet?: string
 ):  Partial<Message> {
-    let warning: Partial<Message> = {sheet, row, col, tag: Msgs.Tag.Warning};
-    if (shortMsg !== undefined) warning = {shortMsg, ...warning};
-    return warning;
+    return ExpectedMsg(Msgs.Tag.Warning, row, col, shortMsg, sheet);
+}
+
+export function TestFailed(
+    row: number,
+    col: number,
+    shortMsg?: string,
+    sheet?: string
+):  Partial<Message> {
+    return ExpectedMsg(Msgs.Tag.TestFailed, row, col, shortMsg, sheet);
+}
+
+export function TestPassed(
+    row: number,
+    col: number,
+    shortMsg?: string,
+    sheet?: string
+):  Partial<Message> {
+    return ExpectedMsg(Msgs.Tag.TestPassed, row, col, shortMsg, sheet);
+}
+
+export function TestSkipped(
+    row: number,
+    col: number,
+    shortMsg?: string,
+    sheet?: string
+):  Partial<Message> {
+    return ExpectedMsg(Msgs.Tag.TestSkipped, row, col, shortMsg, sheet);
 }
 
 export interface SourceTestAux extends Options {

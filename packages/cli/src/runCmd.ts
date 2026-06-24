@@ -70,9 +70,12 @@ export function runGenerateOrSampleCmd(
         console.info("Treating Gramble warnings as errors.");
     }
     
+    let errors = interpreter.devEnv.getErrors();
+    if (errors.length > 0) {
+        console.log("Compilation errors/warnings:")
+    }
     interpreter.devEnv.logErrors();
 
-    let errors = interpreter.devEnv.getErrors();
     if (errors.length > 0) {
         if (!options.strict) {
             errors = errors.filter(m => m.tag == "error");
@@ -173,26 +176,15 @@ export function runTestCmd(
         console.log(`No tests found for symbol '${options.symbol}'`);
         return;
     }
-    const succeeded: number = errorList.filter(m => m.tag == "success").length;
-    const errors = errorList.filter(m => m.tag == "error" &&
-                        m.shortMsg.startsWith("Failed unit test"));
-    let failed: number = 0;
-    let prevId: string | undefined = "";
-    for (const err of errors) {
-        const id = err.pos?.toString();
-        if (id != prevId) {
-            failed += 1;
-            prevId = id;
-        }
-    }
-    const notRun: number = errorList.filter(m => m.tag == "warning" &&
-                                m.shortMsg.startsWith("Test line not run")).length;
-    const total: number = succeeded + failed + notRun;
+    const passed: number = errorList.filter(m => m.tag == "test_passed").length;
+    const failed: number = errorList.filter(m => m.tag == "test_failed").length;
+    const skipped: number = errorList.filter(m => m.tag == "test_skipped").length;
+    const total: number = passed + failed + skipped;
     const detail:string = options.recursive ? "reached from" : "for";
     console.log(`${total} tests ${detail} symbol '${options.symbol}'`)
-    console.log(`${succeeded}/${total} tests succeeded`);
-    console.log(`${failed}/${total} tests failed`);
-    console.log(`${notRun}/${total} tests not run`);
+    console.log(`✅ ${passed}/${total} tests passed`);
+    console.log(`❌ ${failed}/${total} tests failed`);
+    console.log(`⚠️ ${skipped}/${total} tests not run`);
     console.log("Test Results:")
     interpreter.devEnv.logErrors();
 };

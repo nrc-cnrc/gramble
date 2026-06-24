@@ -16,7 +16,7 @@ import {
 import { Pass, SymbolEnv } from "../passes.js";
 import { ROW_TAPE } from "../utils/constants.js";
 import { Dict, StringDict } from "../utils/func.js";
-import { Message, Err, Succeed, THROWER, Msg } from "../utils/msgs.js";
+import { Message, FailTest, PassTest, THROWER, Msg } from "../utils/msgs.js";
 import { Options, Env } from "../utils/options.js";
 
 export class ExecuteTests extends Pass<Grammar,Grammar> {
@@ -175,8 +175,8 @@ function gradeTestResults(
     }
 
     if (!match) {
-        Err("Failed unit test - no matching outputs",
-            "The grammar above has no outputs compatible with this specification.")
+        FailTest("Failed unit test - no matching outputs",
+                "The grammar above has no outputs compatible with this specification.")
             .localize(test.pos)
             .msgTo(msgs);
     }
@@ -188,17 +188,17 @@ function gradeTestResults(
             }
             if (!(unique.tapeName in result)) {
                 const resultStr = Object.entries(result).map(([k,v]) => `${k}:${v}`);
-                Err(`Failed unit test - output missing '${unique.tapeName}'`,
-                    "An output for this line's inputs does not contain a " +
-                    `'${unique.tapeName}' field: [${resultStr}]`)
+                FailTest(`Failed unit test - output missing '${unique.tapeName}'`,
+                        "An output for this line's inputs does not contain a " +
+                        `'${unique.tapeName}' field: [${resultStr}]`)
                     .localize(test.pos)
                     .msgTo(msgs);
                 break uniqueLoop2;
             }
             if (result[unique.tapeName] != unique.text) {
-                Err(`Failed unit test - unexpected '${unique.tapeName}' result`,
-                    "An output for this line's inputs has an unexpected result for the " +
-                    `'${unique.tapeName}' field: ${result[unique.tapeName]}`)
+                FailTest(`Failed unit test - unexpected '${unique.tapeName}' result`,
+                    "An output for this line's inputs has an unexpected result for " +
+                    `the '${unique.tapeName}' field: ${result[unique.tapeName]}`)
                     .localize(test.pos)
                     .msgTo(msgs);
                 break resultLoop2;
@@ -207,7 +207,9 @@ function gradeTestResults(
     }
 
     if (msgs.length == 0) {
-        Succeed("The grammar above correctly has outputs compatible with this specification.")
+        PassTest("Passed unit test",
+                "The grammar above correctly has outputs compatible with " +
+                "this specification.")
             .localize(test.pos)
             .msgTo(msgs);
     }
@@ -221,15 +223,17 @@ function gradeTestNotResults(
 ): Message[] {
     if (results.length > 0) {
         return [
-            Err("Failed unit testnot - has matching outputs",
-            "The grammar above incorrectly has outputs compatible with this specification.")
+            FailTest("Failed unit testnot - has matching outputs",
+                    "The grammar above incorrectly has outputs compatible with " +
+                    "this specification.")
                 .localize(test.pos)
         ];
     } 
     
     return [
-        Succeed(
-            "The grammar above correctly has no outputs compatible with this specification.")
-                .localize(test.pos)
+        PassTest("Passed unit testnot",
+                "The grammar above correctly has no outputs compatible with " +
+                "this specification.")
+            .localize(test.pos)
     ];
 }

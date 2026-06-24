@@ -1,4 +1,5 @@
-import { Err, Message, Msg, Warn } from "../utils/msgs.js";
+import { children } from "../components.js";
+
 import { 
     Grammar,
     ContainsGrammar,
@@ -27,24 +28,25 @@ import {
     StartsGrammar,
     TestBlockGrammar,
 } from "../grammars.js";
+
 import { AutoPass } from "../passes.js";
+import { TapeSet, TapeDict } from "../tapes.js";
+import * as Tapes from "../tapes.js";
+
 import { 
-    dictLen,
+    INPUT_TAPE, 
+    OUTPUT_TAPE 
+} from "../utils/constants.js";
+
+import { 
     foldRight,
     getCaseInsensitive,
     mapDict, 
     mapValues, 
     update, 
 } from "../utils/func.js";
-import { 
-    INPUT_TAPE, 
-    OUTPUT_TAPE 
-} from "../utils/constants.js";
-import { toStr } from "./toStr.js";
 
-import { TapeSet, TapeDict } from "../tapes.js";
-import * as Tapes from "../tapes.js";
-import { PassEnv, children } from "../components.js";
+import { Err, Message, Msg, SkipTest } from "../utils/msgs.js";
 import { Env, Options } from "../utils/options.js";
 
 
@@ -248,8 +250,8 @@ function getTapesTestBlock(
             // the programmer is attempting to test a nonexistant
             // tape, set an error on the header, and warnings on each
             // test
-            Err(`Ill-formed unit test - no '${tape}' header`, 
-                `This test expects a header called '${tape}', but none exists ` +
+            Err(`Ill-formed unit testblock - no '${tape}' header`, 
+                `This testblock expects a header called '${tape}', but none exists ` +
                 "in the grammar being tested.")
                 .localize(header.pos)
                 .msgTo(msgs);
@@ -263,8 +265,8 @@ function getTapesTestBlock(
 
     // tape issues found!
     for (const test of g.tests) {
-        Warn("Test line not run",
-            `This test line was not run due to a missing-header error above.`)
+        SkipTest("Skipped unit test",
+                `This unit test line was not run due to a missing-header error above.`)
             .localize(test.pos)
             .msgTo(msgs);
     }

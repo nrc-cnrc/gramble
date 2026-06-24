@@ -1,7 +1,8 @@
+import { Test } from "mocha";
 import {VERBOSE_DEBUG } from "../../../interpreter/src/utils/logging.js";
 import {
     testSource, SourceTest, 
-    Error, Warning 
+    Error, TestFailed, TestSkipped, Warning 
 } from "../testSourceUtil.js";
 
 const DIR = "test";
@@ -115,11 +116,11 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(14, 2, "Failed unit test - no matching outputs"),
-            Error(16, 2, "Failed unit test - no matching outputs"),
-            Error(17, 2, "Failed unit test - no matching outputs"),
-            Error(19, 2, "Failed unit test - no matching outputs"),
-            Error(21, 2, "Failed unit test - no matching outputs"),
+            TestFailed(14, 2, "Failed unit test - no matching outputs"),
+            TestFailed(16, 2, "Failed unit test - no matching outputs"),
+            TestFailed(17, 2, "Failed unit test - no matching outputs"),
+            TestFailed(19, 2, "Failed unit test - no matching outputs"),
+            TestFailed(21, 2, "Failed unit test - no matching outputs"),
         ],
     });
 
@@ -137,10 +138,10 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(14, 2, "Failed unit testnot - has matching outputs"),
-            Error(16, 2, "Failed unit testnot - has matching outputs"),
-            Error(18, 2, "Failed unit testnot - has matching outputs"),
-            Error(20, 2, "Failed unit testnot - has matching outputs"),
+            TestFailed(14, 2, "Failed unit testnot - has matching outputs"),
+            TestFailed(16, 2, "Failed unit testnot - has matching outputs"),
+            TestFailed(18, 2, "Failed unit testnot - has matching outputs"),
+            TestFailed(20, 2, "Failed unit testnot - has matching outputs"),
         ]
     });
 
@@ -158,14 +159,14 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12, 4, "Ill-formed unit test - no 'pos' header"),
-            Warning(13, 2, "Test line not run"),
-            Warning(14, 2, "Test line not run"),
-            Warning(15, 2, "Test line not run"),
-            Warning(16, 2, "Test line not run"),
-            Warning(17, 2, "Test line not run"),
-            Warning(18, 2, "Test line not run"),
-            Warning(19, 2, "Test line not run"),
+            Error(12, 4, "Ill-formed unit testblock - no 'pos' header"),
+            TestSkipped(13, 2, "Skipped unit test"),
+            TestSkipped(14, 2, "Skipped unit test"),
+            TestSkipped(15, 2, "Skipped unit test"),
+            TestSkipped(16, 2, "Skipped unit test"),
+            TestSkipped(17, 2, "Skipped unit test"),
+            TestSkipped(18, 2, "Skipped unit test"),
+            TestSkipped(19, 2, "Skipped unit test"),
         ],
     });
 
@@ -183,10 +184,10 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12, 4, "Ill-formed unit test - no 'pos' header"),
-            Warning(13, 2, "Test line not run"),
-            Warning(14, 2, "Test line not run"),
-            Warning(15, 2, "Test line not run"),
+            Error(12, 4, "Ill-formed unit testblock - no 'pos' header"),
+            TestSkipped(13, 2, "Skipped unit test"),
+            TestSkipped(14, 2, "Skipped unit test"),
+            TestSkipped(15, 2, "Skipped unit test"),
         ]
     });
 
@@ -204,15 +205,15 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12, 4, "Ill-formed unit test - no 'pos' header"),
-            Error(12, 5, "Ill-formed unit test - no 'class' header"),
-            Warning(13, 2, "Test line not run"),
-            Warning(14, 2, "Test line not run"),
-            Warning(15, 2, "Test line not run"),
-            Warning(16, 2, "Test line not run"),
-            Warning(17, 2, "Test line not run"),
-            Warning(18, 2, "Test line not run"),
-            Warning(19, 2, "Test line not run"),
+            Error(12, 4, "Ill-formed unit testblock - no 'pos' header"),
+            Error(12, 5, "Ill-formed unit testblock - no 'class' header"),
+            TestSkipped(13, 2, "Skipped unit test"),
+            TestSkipped(14, 2, "Skipped unit test"),
+            TestSkipped(15, 2, "Skipped unit test"),
+            TestSkipped(16, 2, "Skipped unit test"),
+            TestSkipped(17, 2, "Skipped unit test"),
+            TestSkipped(18, 2, "Skipped unit test"),
+            TestSkipped(19, 2, "Skipped unit test"),
         ],
     });
 
@@ -227,9 +228,9 @@ describe(`Source ${DIR}`, function() {
             {text: "moobat", gloss: "jump"}
         ],
         errors: [
-            Error(15, 2, "Failed unit test - no matching outputs"),
-            Error(17, 2, "Failed unit test - no matching outputs"),
-            Error(18, 2, "Failed unit test - no matching outputs"),
+            TestFailed(15, 2, "Failed unit test - no matching outputs"),
+            TestFailed(17, 2, "Failed unit test - no matching outputs"),
+            TestFailed(18, 2, "Failed unit test - no matching outputs"),
         ]
     });
     
@@ -244,8 +245,8 @@ describe(`Source ${DIR}`, function() {
             {text: "moobat", gloss: "jump"}
         ],
         errors: [
-            Error(14, 2, "Failed unit testnot - has matching outputs"),
-            Error(16, 2, "Failed unit testnot - has matching outputs"),
+            TestFailed(14, 2, "Failed unit testnot - has matching outputs"),
+            TestFailed(16, 2, "Failed unit testnot - has matching outputs"),
         ]
     });
 
@@ -303,9 +304,9 @@ describe(`Source ${DIR}`, function() {
             {}
         ],
         errors: [
-            Error(12, 2, "Failed unit test - no matching outputs"),
-            Error(13, 2, "Failed unit test - no matching outputs"),
-            Error(14, 2, "Failed unit test - no matching outputs"),
+            TestFailed(12, 2, "Failed unit test - no matching outputs"),
+            TestFailed(13, 2, "Failed unit test - no matching outputs"),
+            TestFailed(14, 2, "Failed unit test - no matching outputs"),
             Warning(9, 2, "No content for header(s)"),
         ]
     });
@@ -417,20 +418,20 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2PL"},
         ],
         errors: [
-            Error(16, 2, "Failed unit test - unexpected 'gloss' result"),  // foobar, run-1SG
-            Error(17, 2, "Failed unit test - unexpected 'gloss' result"),  // foobar, eat-1SG
-            Error(20, 2, "Failed unit test - unexpected 'gloss' result"),  // foobaz, run-2SG
-            Error(21, 2, "Failed unit test - unexpected 'gloss' result"),  // foobaz, run-2PL
-            Error(22, 2, "Failed unit test - unexpected 'gloss' result"),  // foobaz, eat-2SG
-            Error(23, 2, "Failed unit test - unexpected 'gloss' result"),  // goobaz, run-2SG
-            Error(24, 2, "Failed unit test - unexpected 'gloss' result"),  // goobaz, run-2PL
-            Error(25, 2, "Failed unit test - unexpected 'gloss' result"),  // moobaz, jump-2SG
-            Error(26, 2, "Failed unit test - unexpected 'gloss' result"),  // moobaz, jump-2PL
-            Error(27, 2, "Failed unit test - no matching outputs"),        // foobiz, run-3SG
-            Error(28, 2, "Failed unit test - no matching outputs"),        // foobar, run-3SG
-            Error(28, 2, "Failed unit test - unexpected 'gloss' result"),
-            Error(29, 2, "Failed unit test - no matching outputs"),        // foobaz, run-3SG
-            Error(29, 2, "Failed unit test - unexpected 'gloss' result"),
+            TestFailed(16, 2, "Failed unit test - unexpected 'gloss' result"),  // foobar, run-1SG
+            TestFailed(17, 2, "Failed unit test - unexpected 'gloss' result"),  // foobar, eat-1SG
+            TestFailed(20, 2, "Failed unit test - unexpected 'gloss' result"),  // foobaz, run-2SG
+            TestFailed(21, 2, "Failed unit test - unexpected 'gloss' result"),  // foobaz, run-2PL
+            TestFailed(22, 2, "Failed unit test - unexpected 'gloss' result"),  // foobaz, eat-2SG
+            TestFailed(23, 2, "Failed unit test - unexpected 'gloss' result"),  // goobaz, run-2SG
+            TestFailed(24, 2, "Failed unit test - unexpected 'gloss' result"),  // goobaz, run-2PL
+            TestFailed(25, 2, "Failed unit test - unexpected 'gloss' result"),  // moobaz, jump-2SG
+            TestFailed(26, 2, "Failed unit test - unexpected 'gloss' result"),  // moobaz, jump-2PL
+            TestFailed(27, 2, "Failed unit test - no matching outputs"),        // foobiz, run-3SG
+            TestFailed(28, 2, "Failed unit test - no matching outputs"),        // foobar, run-3SG
+            TestFailed(28, 2, "Failed unit test - unexpected 'gloss' result"),
+            TestFailed(29, 2, "Failed unit test - no matching outputs"),        // foobaz, run-3SG
+            TestFailed(29, 2, "Failed unit test - unexpected 'gloss' result"),
         ],
     });
 
@@ -464,28 +465,28 @@ describe(`Source ${DIR}`, function() {
             {root: "jump", subj: "[2PL]", text: "moobaz", gloss: "jump[2PL]"},
         ],
         errors: [
-            Error(18, 2, "Failed unit test - unexpected 'text' result"),  // run, [1SG], foobar, run[1SG]
-            Error(19, 2, "Failed unit test - unexpected 'text' result"),  // run, [1SG], goobar, run[1SG]
-            Error(20, 2, "Failed unit test - unexpected 'text' result"),  // run, [2SG], foobaz, run[2SG]
-            Error(21, 2, "Failed unit test - unexpected 'text' result"),  // run, [2SG], goobaz, run[2SG]
-            Error(22, 2, "Failed unit test - unexpected 'text' result"),  // run, [2PL], foobaz, run[2PL]
-            Error(23, 2, "Failed unit test - unexpected 'text' result"),  // run, [2PL], goobaz, run[2PL]
-            Error(25, 2, "Failed unit test - no matching outputs"),       // jump, [2SG], moobat, jump[2SG]
-            Error(25, 2, "Failed unit test - unexpected 'text' result"),
-            Error(26, 2, "Failed unit test - no matching outputs"),       // jump, [2PL], moobat, jump[2PL]
-            Error(26, 2, "Failed unit test - unexpected 'text' result"),
-            Error(27, 2, "Failed unit test - no matching outputs"),       // run, [2SG], foobat, run[2SG]
-            Error(27, 2, "Failed unit test - unexpected 'text' result"),
-            Error(28, 2, "Failed unit test - no matching outputs"),       // run, [2PL], foobat, run[2PL]
-            Error(28, 2, "Failed unit test - unexpected 'text' result"),
-            Error(30, 2, "Failed unit test - no matching outputs"),       // jump, [2SG], moobaz, run[2SG]
-            Error(30, 2, "Failed unit test - unexpected 'gloss' result"),
-            Error(31, 2, "Failed unit test - no matching outputs"),       // jump, [2SG], moobaz, jump[3SG]
-            Error(31, 2, "Failed unit test - unexpected 'gloss' result"),
-            Error(32, 2, "Failed unit test - no matching outputs"),       // jump, [3SG], moobaz, jump[3SG]
-            Error(33, 2, "Failed unit test - no matching outputs"),       // jump, [2SG], moobat, jump[3SG]
-            Error(33, 2, "Failed unit test - unexpected 'gloss' result"),
-            Error(33, 2, "Failed unit test - unexpected 'text' result"),
+            TestFailed(18, 2, "Failed unit test - unexpected 'text' result"),  // run, [1SG], foobar, run[1SG]
+            TestFailed(19, 2, "Failed unit test - unexpected 'text' result"),  // run, [1SG], goobar, run[1SG]
+            TestFailed(20, 2, "Failed unit test - unexpected 'text' result"),  // run, [2SG], foobaz, run[2SG]
+            TestFailed(21, 2, "Failed unit test - unexpected 'text' result"),  // run, [2SG], goobaz, run[2SG]
+            TestFailed(22, 2, "Failed unit test - unexpected 'text' result"),  // run, [2PL], foobaz, run[2PL]
+            TestFailed(23, 2, "Failed unit test - unexpected 'text' result"),  // run, [2PL], goobaz, run[2PL]
+            TestFailed(25, 2, "Failed unit test - no matching outputs"),       // jump, [2SG], moobat, jump[2SG]
+            TestFailed(25, 2, "Failed unit test - unexpected 'text' result"),
+            TestFailed(26, 2, "Failed unit test - no matching outputs"),       // jump, [2PL], moobat, jump[2PL]
+            TestFailed(26, 2, "Failed unit test - unexpected 'text' result"),
+            TestFailed(27, 2, "Failed unit test - no matching outputs"),       // run, [2SG], foobat, run[2SG]
+            TestFailed(27, 2, "Failed unit test - unexpected 'text' result"),
+            TestFailed(28, 2, "Failed unit test - no matching outputs"),       // run, [2PL], foobat, run[2PL]
+            TestFailed(28, 2, "Failed unit test - unexpected 'text' result"),
+            TestFailed(30, 2, "Failed unit test - no matching outputs"),       // jump, [2SG], moobaz, run[2SG]
+            TestFailed(30, 2, "Failed unit test - unexpected 'gloss' result"),
+            TestFailed(31, 2, "Failed unit test - no matching outputs"),       // jump, [2SG], moobaz, jump[3SG]
+            TestFailed(31, 2, "Failed unit test - unexpected 'gloss' result"),
+            TestFailed(32, 2, "Failed unit test - no matching outputs"),       // jump, [3SG], moobaz, jump[3SG]
+            TestFailed(33, 2, "Failed unit test - no matching outputs"),       // jump, [2SG], moobat, jump[3SG]
+            TestFailed(33, 2, "Failed unit test - unexpected 'gloss' result"),
+            TestFailed(33, 2, "Failed unit test - unexpected 'text' result"),
         ]
     });
 
@@ -503,14 +504,14 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(13, 3, "Ill-formed unit test - no 'pos' header"),
-            Warning(14, 2, "Test line not run"),
-            Warning(15, 2, "Test line not run"), 
-            Warning(16, 2, "Test line not run"),
-            Error(21, 3, "Ill-formed unit test - no 'pos' header"),
-            Warning(22, 2, "Test line not run"),    
-            Warning(23, 2, "Test line not run"),
-            Warning(24, 2, "Test line not run"),
+            Error(13, 3, "Ill-formed unit testblock - no 'pos' header"),
+            TestSkipped(14, 2, "Skipped unit test"),
+            TestSkipped(15, 2, "Skipped unit test"), 
+            TestSkipped(16, 2, "Skipped unit test"),
+            Error(21, 3, "Ill-formed unit testblock - no 'pos' header"),
+            TestSkipped(22, 2, "Skipped unit test"),    
+            TestSkipped(23, 2, "Skipped unit test"),
+            TestSkipped(24, 2, "Skipped unit test"),
         ],
     });
 
@@ -527,10 +528,10 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG", pos: "verb"}
         ],
         errors: [
-            Error(15, 2, "Failed unit test - output missing 'pos'"),    // foobar, verb
-            Error(16, 2, "Failed unit test - unexpected 'pos' result"), // foobar
-            Error(18, 2, "Failed unit test - no matching outputs"),     // moobaz
-            Error(18, 2, "Failed unit test - unexpected 'pos' result"),
+            TestFailed(15, 2, "Failed unit test - output missing 'pos'"),    // foobar, verb
+            TestFailed(16, 2, "Failed unit test - unexpected 'pos' result"), // foobar
+            TestFailed(18, 2, "Failed unit test - no matching outputs"),     // moobaz
+            TestFailed(18, 2, "Failed unit test - unexpected 'pos' result"),
         ],
     });
 

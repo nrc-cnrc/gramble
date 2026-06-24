@@ -5,7 +5,9 @@ import { Pos } from "./cell.js";
 export const enum Tag {
     Error = "error",
     Warning = "warning",
-    Success = "success",
+    TestFailed = "test_failed",
+    TestPassed = "test_passed",
+    TestSkipped = "test_skipped",
     Op = "op",
     Header = "header",
     Comment = "comment",
@@ -75,8 +77,16 @@ export class Warning extends Message {
     public readonly tag = Tag.Warning;
 }
 
-export class Success extends Message {
-    public readonly tag = Tag.Success;
+export class TestFailedMsg extends Message {
+    public readonly tag = Tag.TestFailed;
+}
+
+export class TestPassedMsg extends Message {
+    public readonly tag = Tag.TestPassed;
+}
+
+export class TestSkippedMsg extends Message {
+    public readonly tag = Tag.TestSkipped;
 }
 
 export class MissingSymbolError extends Error {
@@ -132,9 +142,18 @@ export function Warn(shortOrLongMsg: string, longMsg: string | undefined = undef
     return new Warning(shortMsg, longMsg);
 }
 
-export function Succeed(longMsg: string): Message {
-    return new Success("success", longMsg);
+export function FailTest(shortMsg: string, longMsg: string): Message {
+    return new TestFailedMsg(shortMsg, longMsg);
 }
+
+export function PassTest(shortMsg: string, longMsg: string): Message {
+    return new TestPassedMsg(shortMsg, longMsg);
+}
+
+export function SkipTest(shortMsg: string, longMsg: string): Message {
+    return new TestSkippedMsg(shortMsg, longMsg);
+}
+
 
 type MsgCallback = Func<Message, void>;
 export type MsgFunc<T1,T2> = Func<T1,T2|Msg<T2>>;

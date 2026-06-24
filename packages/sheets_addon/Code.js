@@ -3,9 +3,11 @@ function alert(msg) {
 }
 
 const NOTE_COLORS = new Map([
-    ["error", "#FF7777"],
+    ["error", "#FF5555"],
     ["warning", "#FFCC66"],
-    ["success", "#88FF99"]
+    ["test_passed", "#77FF99"],
+    ["test_failed", "#FF7777"],
+    ["test_skipped", "#66AAff"],
 ]);
 
 const DEFAULT_BG_COLOR = "#EEEEEE";
@@ -119,7 +121,9 @@ class NoteMsgs {
     constructor() {
         this.error = new Map();
         this.warning = new Map();
-        this.success = new Map();
+        this.test_passed = new Map();
+        this.test_failed = new Map();
+        this.test_skipped = new Map();
     }
 }
 
@@ -136,19 +140,28 @@ class GoogleSheetsDevEnvironment {
         this.boldStyler = new BoldStyler();
         this.centerStyler = new CenterStyler();
         this.opt = gramble.Options(opt);
+        this.noteMsgsCnts = {
+            error: 0,
+            warning: 0,
+            test_failed: 0,
+            test_passed: 0,
+            test_skipped: 0,
+        }
     }
 
     message(msg) {
         if (msg.sheet != this.currentSheetName) return;
 
         switch (msg.tag) {
-            case "error":       return this.collectNoteMsgs(msg);
-            case "warning":     return this.collectNoteMsgs(msg);
-            case "success":     return this.collectNoteMsgs(msg);
-            case "comment":     return this.markComment(msg);
-            case "header":      return this.markHeader(msg);
-            case "content":     return this.markContent(msg);
-            case "op":          return this.markOp(msg);
+            case "error":        return this.collectNoteMsgs(msg);
+            case "warning":      return this.collectNoteMsgs(msg);
+            case "test_passed":  return this.collectNoteMsgs(msg);
+            case "test_failed":  return this.collectNoteMsgs(msg);
+            case "test_skipped": return this.collectNoteMsgs(msg);
+            case "comment":      return this.markComment(msg);
+            case "header":       return this.markHeader(msg);
+            case "content":      return this.markContent(msg);
+            case "op":           return this.markOp(msg);
             default: 
                 console.log(`unknown message: ${JSON.stringify(msg)}`);
         }
@@ -179,6 +192,7 @@ class GoogleSheetsDevEnvironment {
         }
 
         msgs[msg.tag].set(msg.longMsg, msg);
+        this.noteMsgsCnts[msg.tag] += 1;
     }
 
     msgs2msg(msgs) {    // msgs is a NoteMsgs object
@@ -193,8 +207,8 @@ class GoogleSheetsDevEnvironment {
                     msg.col = m.col;
                     msg.longMsg = "";
                 }
-                msg.longMsg += m.tag.toUpperCase() + ": " + m.longMsg + 
-                                "\n----------------\n";
+                msg.longMsg += m.tag.toUpperCase().replace(/_/g, ' ') + ": " + 
+                                m.longMsg + "\n----------------\n";
             }
         }
 
@@ -415,6 +429,24 @@ function runTests(symbol, recursive = false) {
         throw(msg);
     }
     devEnv.highlight();
+    SpreadsheetApp.flush();
+
+    const passed = devEnv.noteMsgsCnts.test_passed;
+    const failed = devEnv.noteMsgsCnts.test_failed;
+    const skipped = devEnv.noteMsgsCnts.test_skipped;
+    const total = passed + failed + skipped;
+    const detail = recursive ? "from" : "for";
+    if (total == 0) {
+        alert(`No tests found for symbol '${symbol}'`);
+        return;
+    }
+    const nbsp = "\u00A0"
+    const testSummaryTitle = `Test Summary: ${detail} ${symbol}\n`
+    const testSummary = `✅${nbsp}${passed}/${total} tests passed.${nbsp}\n` +
+                        `❌${nbsp}${failed}/${total} tests failed.${nbsp}\n` +
+                        `⚠️${nbsp}${skipped}/${total} tests not run.`;
+    const spreadsheet = SpreadsheetApp.getActive();
+    spreadsheet.toast(testSummary, testSummaryTitle, -1);
 } 
 
 function highlight() {
@@ -691,8 +723,8 @@ function onOpen() {
         .addItem('Show sidebar', 'showSidebar')
         .addSeparator()
         .addItem('Run all unit tests on sheet', 'runAllTests')
-        .addItem('Run unit tests for symbol', 'runTestsSymbol')
-        .addItem('Run unit tests recursively from symbol', 'runTestsRecursive')
+        .addItem('Run unit tests for symbol...', 'runTestsSymbol')
+        .addItem('Run all unit tests reachable from symbol...', 'runTestsRecursive')
         .addSeparator()
         .addItem('Highlight', 'highlight')
         .addItem('Comment', 'GrambleComment')
