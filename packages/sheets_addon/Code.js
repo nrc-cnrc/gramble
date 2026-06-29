@@ -371,7 +371,7 @@ function getSheetName() {
 function makeInterpreter() {
     const sheetName = getSheetName();
 
-    const opts = { verbose: gramble.VERBOSE_TIME, posFormat: "A1" };
+    const opts = { verbose: gramble.VERBOSE_TIME | gramble.VERBOSE_DEBUG, posFormat: "A1" };
     const devEnv = new GoogleSheetsDevEnvironment(sheetName, opts);
     try {
         const interpreter = gramble.Interpreter.fromSheet(devEnv, sheetName);
@@ -466,10 +466,13 @@ function showAbout() {
     let ui = SpreadsheetApp.getUi(); // Same variations.
     ui.alert(
         'About Gramble',
-        "Gramble is a product of the Digital Technologies Research Centre at the National Research Council of Canada.\n\n" +
-            "Tutorial: https://nrc-cnrc.github.io/gramble/ \n\n" +
-            "GitHub: https://github.com/nrc-cnrc/gramble/\n\n" +
-            "Copyright © 2020-2024 National Research Council Canada.",
+        "Gramble is a product of the Digital Technologies Research Centre at the " +
+            "National Research Council of Canada.\n\n" +
+            "Documentation: https://nrc-cnrc.github.io/gramble/\n" +
+            "Code GitHub: https://github.com/nrc-cnrc/gramble/\n\n" +
+            `Gramble version: ${grambleVersion} ${grambleCommit}\n` +
+            `Deployed on: ${grambleDeployment}\n\n` +
+            "Copyright © 2020-2026 National Research Council Canada.\n",
         ui.ButtonSet.OK
     );
 }

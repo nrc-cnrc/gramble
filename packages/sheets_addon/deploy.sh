@@ -56,6 +56,16 @@ ORIG_DIR=$PWD
 echo "Copying project files to $TARGET_DIR" >&2
 cp Code.js sidebar.html style.html $TARGET_DIR
 
+# save the hash and date of the most recent commit
+echo "Saving the Gramble version in $TARGET_DIR" >&2
+VERSION=$(npm pkg get version --workspaces=false)
+COMMIT=$(git log -1 HEAD --format="%h %ci")
+DEPLOY_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+echo -e "const grambleVersion = $VERSION;\n" \
+        "const grambleCommit = '$COMMIT';\n" \
+        "const grambleDeployment = '$DEPLOY_DATE';\n" \
+    > $TARGET_DIR/grambleVersion.js
+
 cd $TARGET_DIR
 
 # start a Clasp project if it doesn't exist
