@@ -463,14 +463,16 @@ function showSidebar() {
 }
 
 function showAbout() {
-    let ui = SpreadsheetApp.getUi(); // Same variations.
+    let ui = SpreadsheetApp.getUi();
+    const uncommitted = grambleUncommitted ? " (uncommitted changes)" : "";
     ui.alert(
         'About Gramble',
         "Gramble is a product of the Digital Technologies Research Centre at the " +
             "National Research Council of Canada.\n\n" +
             "Documentation: https://nrc-cnrc.github.io/gramble/\n" +
             "Code GitHub: https://github.com/nrc-cnrc/gramble/\n\n" +
-            `Gramble version: ${grambleVersion} ${grambleCommit}\n` +
+            `Gramble version: ${grambleVersion} ${grambleBranch}:${grambleCommit}` +
+                `${uncommitted}\n` +
             `Deployed on: ${grambleDeployment}\n\n` +
             "Copyright © 2020-2026 National Research Council Canada.\n",
         ui.ButtonSet.OK

@@ -59,10 +59,18 @@ cp Code.js sidebar.html style.html $TARGET_DIR
 # save the hash and date of the most recent commit
 echo "Saving the Gramble version in $TARGET_DIR" >&2
 VERSION=$(npm pkg get version --workspaces=false)
+BRANCH=$(git branch --show-current)
 COMMIT=$(git log -1 HEAD --format="%h %ci")
+if [[ -z $(git status --porcelain) ]]; then
+    UNCOMMITTED_CHANGES="false"
+else
+    UNCOMMITTED_CHANGES="true"
+fi
 DEPLOY_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 echo -e "const grambleVersion = $VERSION;\n" \
+        "const grambleBranch = '$BRANCH';\n" \
         "const grambleCommit = '$COMMIT';\n" \
+        "const grambleUncommitted = $UNCOMMITTED_CHANGES;\n" \
         "const grambleDeployment = '$DEPLOY_DATE';\n" \
     > $TARGET_DIR/grambleVersion.js
 
