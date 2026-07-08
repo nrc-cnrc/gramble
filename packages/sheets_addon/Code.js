@@ -207,8 +207,10 @@ class GoogleSheetsDevEnvironment {
                     msg.col = m.col;
                     msg.longMsg = "";
                 }
-                msg.longMsg += m.tag.toUpperCase().replace(/_/g, ' ') + ": " + 
-                                m.longMsg + "\n----------------\n";
+                if (msg.tag != "test_passed") {
+                    msg.longMsg += m.tag.toUpperCase().replace(/_/g, ' ') + ": " + 
+                                    m.longMsg + "\n----------------\n";
+                }
             }
         }
 
