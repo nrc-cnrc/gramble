@@ -604,7 +604,7 @@ export class TokenExpr extends Expr {
         query: Query,
         env: DerivEnv
     ): Derivs {
-        if (query.tapeName != this.tapeName) return;        if (query.tapeName != this.tapeName) return;
+        if (query.tapeName != this.tapeName) return;        
         if (query instanceof EpsilonTokenExpr) return;
         if (!(query instanceof DotExpr) && query.text != this.text) return;
         yield new Deriv(this, EPSILON);
@@ -1963,7 +1963,6 @@ class JITExpr extends UnaryExpr {
     public jitCompile(
         env: DerivEnv 
     ): Expr {
-        
         const wrapped = constructGreedyCursor(env, 
             this.tapeName, this.child, this.vocab, this.atomic);
         

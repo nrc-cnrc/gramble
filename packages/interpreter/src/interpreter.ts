@@ -71,6 +71,7 @@ import {
     INDICES,
     Options
 } from "./utils/options.js";
+import { getExprSymbolTable, setExprSymbolTable } from "./passes/getExprSymbolTable.js";
 
 /**
  * An interpreter object is responsible for applying the passes in between sheets
@@ -94,6 +95,10 @@ export class Interpreter {
 
     // for convenience, rather than parse it as a header every time
     public tapeColors: Dict<string> = {};
+
+    // we keep the Expr-level symbol table between sample/generate invocations,
+    // so as not to keep redoing the JIT compilation that's already happened
+    public exprSymbols: Dict<Expr> | undefined = undefined;
 
     constructor(
         public devEnv: DevEnvironment,
@@ -233,6 +238,11 @@ export class Interpreter {
         }
 
         yield* generate(expr, false, this.opt);
+
+        // this run may have JIT-compiled some of the symbols,
+        // so grab the updated symbol table and remember it for next
+        // time
+        this.exprSymbols = getExprSymbolTable(expr);
     }
     
     public sample(
@@ -253,6 +263,7 @@ export class Interpreter {
     ): Gen<StringDict> {
 
         const expr = this.prepareExpr(symbol, query);
+
         for (let i = 0; i < numSamples; i++) {
             let gen = generate(expr, true, this.opt);
             if (stripHidden) {
@@ -261,6 +272,11 @@ export class Interpreter {
             const [results, _] = iterTake(gen, 1);
             yield* results;
         }
+
+        // this run may have JIT-compiled some of the symbols,
+        // so grab the updated symbol table and remember it for next
+        // time
+        this.exprSymbols = getExprSymbolTable(expr);
     } 
 
     public convertToSingleSource(): string[][] {
@@ -285,7 +301,6 @@ export class Interpreter {
         targetGrammar = new CreateQuery(query)
                          .getEnvAndTransform(targetGrammar, this.opt)
                          .msgTo(THROWER);
-        
         
         // any tape that isn't already inside a Cursor or PreTape needs
         // to have a Cursor made for it, because otherwise that content will
@@ -317,7 +332,11 @@ export class Interpreter {
                      
         // turns the Grammars into Exprs
         const env = new PassEnv(this.opt);
-        return constructExpr(env, targetGrammar);  
+        const expr = constructExpr(env, targetGrammar); 
+        if (this.exprSymbols !== undefined) {
+            setExprSymbolTable(expr, this.exprSymbols);
+        }
+        return expr;
     }
 
     public runTests(symbol: string = ALL_SYMBOL, recursive: boolean = true): void {
@@ -328,9 +347,8 @@ export class Interpreter {
         const env = new PassEnv(this.opt);
 
         const expr = constructExpr(env, targetGrammar);
-        const symbols = expr instanceof SelectionExpr
-                      ? expr.symbols
-                      : {};
+
+        const symbols = getExprSymbolTable(expr) || {}; 
         const pass = new ExecuteTests(symbols, recursive);
 
         pass.getEnvAndTransform(targetGrammar, this.opt)
