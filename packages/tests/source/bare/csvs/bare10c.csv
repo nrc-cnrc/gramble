@@ -6,4 +6,4 @@ table:, text,
       ,     ,
 
 word=, table:, embed,  embed
-     ,       , $Auto5, suffix 
+     ,       , _Auto5, suffix 

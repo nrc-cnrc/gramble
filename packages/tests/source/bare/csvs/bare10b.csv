@@ -5,4 +5,4 @@ suffix=, table:, text, gloss
 table:, %comment
 
 word=, table:, embed,  embed
-     ,       , $Auto5, suffix 
+     ,       , _Auto5, suffix 

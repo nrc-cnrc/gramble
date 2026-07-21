@@ -30,9 +30,9 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(1, 0, "Invalid symbol assignment: 'optional='"),
-            Warning(1, 0, "Assigning temporary symbol name: '$Auto2'"),
+            Warning(1, 0, "Assigning temporary symbol name: '_Auto2'"),
             Error(5, 0, "Invalid symbol assignment: 'test='"),
-            Warning(5, 0, "Assigning temporary symbol name: '$Auto6'"),
+            Warning(5, 0, "Assigning temporary symbol name: '_Auto6'"),
             Error(10, 2, "Error parsing cell: 'optional'"),
             Error(10, 3, "Error parsing cell: 'test'"),
         ]
@@ -54,7 +54,7 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(0, 0, "Invalid symbol name: '123verb'."),
-            Warning(0, 0, "Assigning temporary symbol name: '$Auto1'"),
+            Warning(0, 0, "Assigning temporary symbol name: '_Auto1'"),
             Error(5, 2, "Invalid symbol name: '123verb'")
         ]
     });
@@ -67,7 +67,7 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(0, 0, "Invalid symbol assignment: 'verb vorb='"),
-            Warning(0, 0, "Assigning temporary symbol name: '$Auto1'"),
+            Warning(0, 0, "Assigning temporary symbol name: '_Auto1'"),
             Error(5, 2, "Error parsing cell: 'verb vorb'")
         ]
     });
@@ -179,8 +179,8 @@ describe(`Source ${DIR}`, function() {
 		desc: '6a. Content obliteration by table',
         results: undefined,
         errors: [
-            Warning(0, 0, "Assigning temporary symbol name: '$Auto1'"),
-            Warning(4, 0, "Assigning temporary symbol name: '$Auto5'")
+            Warning(0, 0, "Assigning temporary symbol name: '_Auto1'"),
+            Warning(4, 0, "Assigning temporary symbol name: '_Auto5'")
         ]
     });
 
@@ -191,7 +191,7 @@ describe(`Source ${DIR}`, function() {
             {text: "bar"}
         ],
         errors: [
-            Warning(0, 0, "Assigning temporary symbol name: '$Auto1'")
+            Warning(0, 0, "Assigning temporary symbol name: '_Auto1'")
         ]
     });
 

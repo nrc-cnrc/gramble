@@ -5,4 +5,4 @@ suffix=, table:, text, gloss
        ,       , baz, -2SG
 
 word=, table:, embed,  embed
-     ,       , $Auto1, suffix 
+     ,       , _Auto1, suffix 
