@@ -12,9 +12,14 @@ export function getAllSymbols(
     }
 }
 
+// we don't want interfaces to be able to see internal variables,
+// which have identifiers beginning with $.  (Note, we also have to
+// catch identifiers like X.$Y, hence the more complicated regex.)
+const symbolExcluderRegex = /^\$|\.\$/; 
+
 function getAllSymbolsQualified(
     g: QualifiedGrammar | SelectionGrammar
 ): string[] {
     return Object.keys(g.symbols)
-                 .filter(s => !s.startsWith("$"));
+                 .filter(s => !symbolExcluderRegex.test(s));
 }
