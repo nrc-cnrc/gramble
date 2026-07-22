@@ -184,7 +184,7 @@ export function runTestCmd(
     console.log(`${total} tests ${detail} symbol '${options.symbol}'`)
     console.log(`✅ ${passed}/${total} tests passed`);
     console.log(`❌ ${failed}/${total} tests failed`);
-    console.log(`⚠️ ${skipped}/${total} tests not run`);
+    console.log(`⚠️ ${skipped}/${total} tests skipped`);
     console.log("Test Results:")
     interpreter.devEnv.logErrors();
 };

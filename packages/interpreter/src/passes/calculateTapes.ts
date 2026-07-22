@@ -46,7 +46,7 @@ import {
     update, 
 } from "../utils/func.js";
 
-import { Err, Message, Msg, SkipTest } from "../utils/msgs.js";
+import { Err, Message, Msg, Warn } from "../utils/msgs.js";
 import { Env, Options } from "../utils/options.js";
 
 
@@ -241,9 +241,11 @@ function getTapesTestBlock(
     }
 
     const msgs: Message[] = [];
+    const newHeaders: Grammar[] = [];
     for (const header of g.headers) {
         for (const tape of header.tapeNames) {
             if (g.child.tapes.tapeNames.has(tape)) {
+                newHeaders.push(header);
                 continue;
             }
 
@@ -264,16 +266,20 @@ function getTapesTestBlock(
     }
 
     // tape issues found!
+    // We remove any bad headers from the TapeBlock, but we keep it around
+    // and mark the tests to be skipped so that they can be reported as such
+    // in the interface upon test execution.
+    g.headers = newHeaders;
+
     for (const test of g.tests) {
-        SkipTest("Skipped unit test",
-                `This unit test line was not run due to a missing-header error above.`)
+        Warn("Skipping unit test",
+                `This unit test line will not run due to a missing-header error above.`)
             .localize(test.pos)
             .msgTo(msgs);
+        test.skip = true;
     }
 
-    // there are no tests that will execute and thus no need to
-    // be a TestBlock anymore -- just return the child
-    return g.child.msg(msgs);
+    return updateTapes(g, g.child.tapes).msg(msgs);
 }
 
 function getTapesReplace(

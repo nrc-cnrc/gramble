@@ -4,10 +4,10 @@ function alert(msg) {
 
 const NOTE_COLORS = new Map([
     ["error", "#FF5555"],
-    ["warning", "#FFCC66"],
+    ["warning", "#FED055"],
     ["test_passed", "#77FF99"],
-    ["test_failed", "#FF7777"],
-    ["test_skipped", "#66AAff"],
+    ["test_failed", "#FF5555"],
+    ["test_skipped", "#FED055"],
 ]);
 
 const DEFAULT_BG_COLOR = "#EEEEEE";
@@ -207,7 +207,7 @@ class GoogleSheetsDevEnvironment {
                     msg.col = m.col;
                     msg.longMsg = "";
                 }
-                if (msg.tag != "test_passed") {
+                if (msg.tag != "test_passed" || msg.longMsg != "") {
                     msg.longMsg += m.tag.toUpperCase().replace(/_/g, ' ') + ": " + 
                                     m.longMsg + "\n----------------\n";
                 }
@@ -304,7 +304,6 @@ class GoogleSheetsDevEnvironment {
 
     logDebug(...msgs) {
         gramble.logDebug(this.opt.verbose, ...msgs)
-        alert(`logDebug: ${JSON.stringify(msgs)}`);
     }
 }
 
@@ -446,7 +445,7 @@ function runTests(symbol, recursive = false) {
     const testSummaryTitle = `Test Summary: ${detail} ${symbol}\n`
     const testSummary = `✅${nbsp}${passed}/${total} tests passed.${nbsp}\n` +
                         `❌${nbsp}${failed}/${total} tests failed.${nbsp}\n` +
-                        `⚠️${nbsp}${skipped}/${total} tests not run.`;
+                        `⚠️${nbsp}${skipped}/${total} tests skipped.`;
     const spreadsheet = SpreadsheetApp.getActive();
     spreadsheet.toast(testSummary, testSummaryTitle, -1);
 } 

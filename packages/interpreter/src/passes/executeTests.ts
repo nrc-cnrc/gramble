@@ -16,7 +16,7 @@ import {
 import { Pass, SymbolEnv } from "../passes.js";
 import { ROW_TAPE } from "../utils/constants.js";
 import { Dict, StringDict } from "../utils/func.js";
-import { Message, FailTest, PassTest, THROWER, Msg } from "../utils/msgs.js";
+import { Message, FailTest, PassTest, THROWER, Msg, SkipTest } from "../utils/msgs.js";
 import { Options, Env } from "../utils/options.js";
 
 export class ExecuteTests extends Pass<Grammar,Grammar> {
@@ -96,7 +96,7 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
             if (test.pos === undefined) continue;
             const key = test.pos.row.toString();
             const results = resultsByRow[key] || [];
-            const resultMsgs = gradeResults(test, results);
+            const resultMsgs = gradeResults(test, results, env);
             msgs.push(...resultMsgs);
         }
 
@@ -109,7 +109,7 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
     ): StringDict[] {
         // create a filter for each test
 
-        const tests = g.tests.map(g => g.child);
+        const tests = g.tests.filter(g => !g.skip).map(g => g.child );
 
         let targetGrammar: Grammar = new AlternationGrammar(tests)
                                         .tapify(env);
@@ -133,14 +133,19 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
         let expr = constructExpr(exprEnv, targetGrammar);
         expr = constructSelection(env, expr, this.symbolTable);
         return [...generate(expr, false, env.opt)];
-
     }
 }
 
 function gradeResults(
     test: TestGrammar | TestNotGrammar,
-    results: StringDict[]
+    results: StringDict[],
+    env: SymbolEnv
 ): Message[] {
+    if( test.skip ) {
+        return [SkipTest("Skipped unit test",
+                        `This unit test line was skipped due to a header error above.`)
+                    .localize(test.pos)];
+    }
 
     switch (test.tag) {
         case "test": 
@@ -151,7 +156,6 @@ function gradeResults(
             return []; // won't happen, just for typechecking
     }
 }
-
 
 function gradeTestResults(
     test: TestGrammar, 

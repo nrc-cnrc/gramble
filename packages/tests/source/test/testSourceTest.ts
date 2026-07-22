@@ -4,6 +4,7 @@ import {
     testSource, SourceTest, 
     Error, TestFailed, TestSkipped, Warning 
 } from "../testSourceUtil.js";
+import { Warn } from "@gramble/interpreter/src/utils/msgs.js";
 
 const DIR = "test";
 
@@ -160,6 +161,13 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(12, 4, "Ill-formed unit testblock - no 'pos' header"),
+            Warning(13, 2, "Skipping unit test"),
+            Warning(14, 2, "Skipping unit test"),
+            Warning(15, 2, "Skipping unit test"),
+            Warning(16, 2, "Skipping unit test"),
+            Warning(17, 2, "Skipping unit test"),
+            Warning(18, 2, "Skipping unit test"),
+            Warning(19, 2, "Skipping unit test"),
             TestSkipped(13, 2, "Skipped unit test"),
             TestSkipped(14, 2, "Skipped unit test"),
             TestSkipped(15, 2, "Skipped unit test"),
@@ -185,6 +193,9 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(12, 4, "Ill-formed unit testblock - no 'pos' header"),
+            Warning(13, 2, "Skipping unit test"),
+            Warning(14, 2, "Skipping unit test"),
+            Warning(15, 2, "Skipping unit test"),
             TestSkipped(13, 2, "Skipped unit test"),
             TestSkipped(14, 2, "Skipped unit test"),
             TestSkipped(15, 2, "Skipped unit test"),
@@ -207,6 +218,13 @@ describe(`Source ${DIR}`, function() {
         errors: [
             Error(12, 4, "Ill-formed unit testblock - no 'pos' header"),
             Error(12, 5, "Ill-formed unit testblock - no 'class' header"),
+            Warning(13, 2, "Skipping unit test"),
+            Warning(14, 2, "Skipping unit test"),
+            Warning(15, 2, "Skipping unit test"),
+            Warning(16, 2, "Skipping unit test"),
+            Warning(17, 2, "Skipping unit test"),
+            Warning(18, 2, "Skipping unit test"),
+            Warning(19, 2, "Skipping unit test"),
             TestSkipped(13, 2, "Skipped unit test"),
             TestSkipped(14, 2, "Skipped unit test"),
             TestSkipped(15, 2, "Skipped unit test"),
@@ -505,10 +523,16 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(13, 3, "Ill-formed unit testblock - no 'pos' header"),
+            Error(21, 3, "Ill-formed unit testblock - no 'pos' header"),
+            Warning(14, 2, "Skipping unit test"),
+            Warning(15, 2, "Skipping unit test"),
+            Warning(16, 2, "Skipping unit test"),
+            Warning(22, 2, "Skipping unit test"),
+            Warning(23, 2, "Skipping unit test"),
+            Warning(24, 2, "Skipping unit test"),
             TestSkipped(14, 2, "Skipped unit test"),
             TestSkipped(15, 2, "Skipped unit test"), 
             TestSkipped(16, 2, "Skipped unit test"),
-            Error(21, 3, "Ill-formed unit testblock - no 'pos' header"),
             TestSkipped(22, 2, "Skipped unit test"),    
             TestSkipped(23, 2, "Skipped unit test"),
             TestSkipped(24, 2, "Skipped unit test"),
