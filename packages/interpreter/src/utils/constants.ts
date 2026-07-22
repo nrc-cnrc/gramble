@@ -1,6 +1,6 @@
 export const HIDDEN_PREFIX = ".";
 export const INTERNAL_PREFIX = "$";
-export const FIXUP_PREFIX = "_";
+export const FIXUP_PREFIX = "@";
 
 export const INPUT_TAPE = INTERNAL_PREFIX + "i";
 export const OUTPUT_TAPE = INTERNAL_PREFIX + "o";

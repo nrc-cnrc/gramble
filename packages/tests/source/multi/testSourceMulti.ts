@@ -334,14 +334,14 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(3, 0, "Invalid operator: 'testX:'"),
-            Warning(6, 0, "Assigning temporary symbol name: '_Auto7'"),
+            Warning(6, 0, "Assigning temporary symbol name: '@Auto7'"),
             TestFailed(7, 1, "Failed unit test - no matching outputs"),
         ],
         symbols: [
             "All",
             "multi18.All",
             "multi18.Stem",
-            "multi18._Auto7",
+            "multi18.@Auto7",
             "multi18-2.Root",
             "multi18-2.Root2",
             "multi18-2.All",

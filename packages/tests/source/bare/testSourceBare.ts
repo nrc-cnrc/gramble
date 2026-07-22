@@ -82,14 +82,14 @@ describe(`Source ${DIR}`, function() {
     testSrc({
 		desc: '3b. Bare grammar with embeds and table op',
         errors: [
-            Warning(8, 0, "Assigning temporary symbol name: '_Auto9'")
+            Warning(8, 0, "Assigning temporary symbol name: '@Auto9'")
         ],
         symbols: [
             "All",
             "bare3b.All",
             "bare3b.verb",
             "bare3b.suffix",
-            "bare3b._Auto9",
+            "bare3b.@Auto9",
         ],
     });
 
@@ -189,14 +189,14 @@ describe(`Source ${DIR}`, function() {
             {text: "moo", gloss: "jump"},
         ],
         errors: [
-            Warning(0, 1, "Assigning temporary symbol name: '_Auto1'"),
+            Warning(0, 1, "Assigning temporary symbol name: '@Auto1'"),
             Warning(4, 0, "'word=' in an unexpected column"),
         ],
         symbols: [
             "All",
             "bare4e.All",
             "bare4e.word",
-            "bare4e._Auto1",
+            "bare4e.@Auto1",
         ],
     });
 
@@ -207,13 +207,13 @@ describe(`Source ${DIR}`, function() {
             {text: "moo", gloss: "jump"},
         ],
         errors: [
-            Warning(4, 0, "Assigning temporary symbol name: '_Auto5'"),
+            Warning(4, 0, "Assigning temporary symbol name: '@Auto5'"),
         ],
         symbols: [
             "All",
             "bare5a.All",
             "bare5a.word",
-            "bare5a._Auto5",
+            "bare5a.@Auto5",
         ],
     });
 
@@ -224,12 +224,12 @@ describe(`Source ${DIR}`, function() {
             {text: "moo", gloss: "jump"},
         ],
         errors: [
-            Warning(0, 0, "Assigning temporary symbol name: '_Auto1'"),
+            Warning(0, 0, "Assigning temporary symbol name: '@Auto1'"),
         ],
         symbols: [
             "All",
             "bare5b.All",
-            "bare5b._Auto1",
+            "bare5b.@Auto1",
             "bare5b.word",
         ],
     });
@@ -241,13 +241,13 @@ describe(`Source ${DIR}`, function() {
             {text: "moo", gloss: "jump"},
         ],
         errors: [
-            Warning(4, 0, "Assigning temporary symbol name: '_Auto5'"),
+            Warning(4, 0, "Assigning temporary symbol name: '@Auto5'"),
         ],
         symbols: [
             "All",
             "bare5c.All",
             "bare5c.suffix",
-            "bare5c._Auto5",
+            "bare5c.@Auto5",
             "bare5c.word",
         ],
     });
@@ -259,13 +259,13 @@ describe(`Source ${DIR}`, function() {
             {text: "moo", gloss: "jump"},
         ],
         errors: [
-            Warning(4, 0, "Assigning temporary symbol name: '_Auto5'"),
+            Warning(4, 0, "Assigning temporary symbol name: '@Auto5'"),
         ],
         symbols: [
             "All",
             "bare5d.All",
             "bare5d.word",
-            "bare5d._Auto5",
+            "bare5d.@Auto5",
             "bare5d.suffix",
         ],
     });
@@ -277,13 +277,13 @@ describe(`Source ${DIR}`, function() {
             {text: "moo", gloss: "jump"},
         ],
         errors: [
-            Warning(0, 1, "Assigning temporary symbol name: '_Auto1'"),
+            Warning(0, 1, "Assigning temporary symbol name: '@Auto1'"),
             Warning(4, 0, "'word=' in an unexpected column"),
         ],
         symbols: [
             "All",
             "bare5e.All",
-            "bare5e._Auto1",
+            "bare5e.@Auto1",
             "bare5e.word",
         ],
     });
@@ -291,14 +291,14 @@ describe(`Source ${DIR}`, function() {
     testSrc({
 		desc: '6. Content obliteration by bare table',
         errors: [
-            Warning(0, 0, "Assigning temporary symbol name: '_Auto1'"),
-            Warning(4, 0, "Assigning temporary symbol name: '_Auto5'")
+            Warning(0, 0, "Assigning temporary symbol name: '@Auto1'"),
+            Warning(4, 0, "Assigning temporary symbol name: '@Auto5'")
         ],
         symbols: [
             "All",
             "bare6.All",
-            "bare6._Auto1",
-            "bare6._Auto5",
+            "bare6.@Auto1",
+            "bare6.@Auto5",
         ],
     });
 
@@ -380,14 +380,15 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(0, 0, "'table' operator requires header(s)"),
-            Warning(0, 0, "Assigning temporary symbol name: '_Auto1'"),
-            Warning(0, 0, "No content for symbol '_Auto1'"),
+            Warning(0, 0, "Assigning temporary symbol name: '@Auto1'"),
+            Warning(0, 0, "No content for symbol '@Auto1'"),
             Warning(0, 0, "No content for 'table' operator"),
+            Error(7, 2, "Invalid symbol name: '@Auto1'"),
         ],
         symbols: [
             "All",
             "bare9a.All",
-            "bare9a._Auto1",
+            "bare9a.@Auto1",
             "bare9a.suffix",
             "bare9a.word",
         ],
@@ -401,14 +402,15 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(0, 0, "'table' operator requires header(s)"),
-            Warning(0, 0, "Assigning temporary symbol name: '_Auto1'"),
-            Warning(0, 0, "No content for symbol '_Auto1'"),
+            Warning(0, 0, "Assigning temporary symbol name: '@Auto1'"),
+            Warning(0, 0, "No content for symbol '@Auto1'"),
             Warning(0, 0, "No content for 'table' operator"),
+            Error(7, 2, "Invalid symbol name: '@Auto1'"),
         ],
         symbols: [
             "All",
             "bare9b.All",
-            "bare9b._Auto1",
+            "bare9b.@Auto1",
             "bare9b.suffix",
             "bare9b.word",
         ],
@@ -421,13 +423,14 @@ describe(`Source ${DIR}`, function() {
             {text:"baz", gloss:"-2SG"},
         ],
         errors: [
-            Warning(0, 0, "Assigning temporary symbol name: '_Auto1'"),
+            Warning(0, 0, "Assigning temporary symbol name: '@Auto1'"),
             Warning(0, 1, "No content for header(s)"),
+            Error(8, 2, "Invalid symbol name: '@Auto1'"),
         ],
         symbols: [
             "All",
             "bare9c.All",
-            "bare9c._Auto1",
+            "bare9c.@Auto1",
             "bare9c.suffix",
             "bare9c.word",
         ],
@@ -440,13 +443,14 @@ describe(`Source ${DIR}`, function() {
             {text:"baz", gloss:"-2SG"},
         ],
         errors: [
-            Warning(0, 0, "Assigning temporary symbol name: '_Auto1'"),
+            Warning(0, 0, "Assigning temporary symbol name: '@Auto1'"),
             Warning(0, 1, "No content for header(s)"),
+            Error(8, 2, "Invalid symbol name: '@Auto1'"),
         ],
         symbols: [
             "All",
             "bare9d.All",
-            "bare9d._Auto1",
+            "bare9d.@Auto1",
             "bare9d.suffix",
             "bare9d.word",
         ],
@@ -459,12 +463,13 @@ describe(`Source ${DIR}`, function() {
             {text:"baz", gloss:"-2SG"},
         ],
         errors: [
-            Warning(0, 0, "Assigning temporary symbol name: '_Auto1'"),
+            Warning(0, 0, "Assigning temporary symbol name: '@Auto1'"),
+            Error(8, 2, "Invalid symbol name: '@Auto1'"),
         ],
         symbols: [
             "All",
             "bare9e.All",
-            "bare9e._Auto1",
+            "bare9e.@Auto1",
             "bare9e.suffix",
             "bare9e.word",
         ],
@@ -478,15 +483,16 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(4, 0, "'table' operator requires header(s)"),
-            Warning(4, 0, "Assigning temporary symbol name: '_Auto5'"),
-            Warning(4, 0, "No content for symbol '_Auto5'"),
+            Warning(4, 0, "Assigning temporary symbol name: '@Auto5'"),
+            Warning(4, 0, "No content for symbol '@Auto5'"),
             Warning(4, 0, "No content for 'table' operator"),
+            Error(7, 2, "Invalid symbol name: '@Auto5'"),
         ],
         symbols: [
             "All",
             "bare10a.All",
             "bare10a.suffix",
-            "bare10a._Auto5",
+            "bare10a.@Auto5",
             "bare10a.word",
         ],
     });
@@ -500,15 +506,16 @@ describe(`Source ${DIR}`, function() {
         ],
         errors: [
             Error(4, 0, "'table' operator requires header(s)"),
-            Warning(4, 0, "Assigning temporary symbol name: '_Auto5'"),
-            Warning(4, 0, "No content for symbol '_Auto5'"),
+            Warning(4, 0, "Assigning temporary symbol name: '@Auto5'"),
+            Warning(4, 0, "No content for symbol '@Auto5'"),
             Warning(4, 0, "No content for 'table' operator"),
+            Error(7, 2, "Invalid symbol name: '@Auto5'"),
         ],
         symbols: [
             "All",
             "bare10b.All",
             "bare10b.suffix",
-            "bare10b._Auto5",
+            "bare10b.@Auto5",
             "bare10b.word",
         ],
     });
@@ -521,14 +528,15 @@ describe(`Source ${DIR}`, function() {
             {text:"baz", gloss:"-2SG"},
         ],
         errors: [
-            Warning(4, 0, "Assigning temporary symbol name: '_Auto5'"),
+            Warning(4, 0, "Assigning temporary symbol name: '@Auto5'"),
             Warning(4, 1, "No content for header(s)"),
+            Error(8, 2, "Invalid symbol name: '@Auto5'"),
         ],
         symbols: [
             "All",
             "bare10c.All",
             "bare10c.suffix",
-            "bare10c._Auto5",
+            "bare10c.@Auto5",
             "bare10c.word",
         ],
     });
@@ -541,14 +549,15 @@ describe(`Source ${DIR}`, function() {
             {text:"baz", gloss:"-2SG"},
         ],
         errors: [
-            Warning(4, 0, "Assigning temporary symbol name: '_Auto5'"),
+            Warning(4, 0, "Assigning temporary symbol name: '@Auto5'"),
             Warning(4, 1, "No content for header(s)"),
+            Error(8, 2, "Invalid symbol name: '@Auto5'"),
         ],
         symbols: [
             "All",
             "bare10d.All",
             "bare10d.suffix",
-            "bare10d._Auto5",
+            "bare10d.@Auto5",
             "bare10d.word",
         ],
     });
@@ -561,13 +570,14 @@ describe(`Source ${DIR}`, function() {
             {text:"baz", gloss:"-2SG"},
         ],
         errors: [
-            Warning(4, 0, "Assigning temporary symbol name: '_Auto5'"),
+            Warning(4, 0, "Assigning temporary symbol name: '@Auto5'"),
+            Error(8, 2, "Invalid symbol name: '@Auto5'"),
         ],
         symbols: [
             "All",
             "bare10e.All",
             "bare10e.suffix",
-            "bare10e._Auto5",
+            "bare10e.@Auto5",
             "bare10e.word",
         ],
     });

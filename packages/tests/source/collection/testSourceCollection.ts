@@ -314,13 +314,13 @@ describe(`Source ${DIR}`, function() {
             {text: "baz", gloss: "-2SG"}
         ],
         errors: [
-            Warning(0, 0, "Assigning temporary symbol name: '_Auto1'")
+            Warning(0, 0, "Assigning temporary symbol name: '@Auto1'")
         ],
         symbols: [
             "All",
             "collection11a.All",
-            "collection11a._Auto1.verb",
-            "collection11a._Auto1.All",
+            "collection11a.@Auto1.verb",
+            "collection11a.@Auto1.All",
             "collection11a.suffix",
             "collection11a.word",
         ],
@@ -333,14 +333,14 @@ describe(`Source ${DIR}`, function() {
             {text: "baz", gloss: "-2SG"}
         ],
         errors: [
-            Warning(4, 0, "Assigning temporary symbol name: '_Auto5'")
+            Warning(4, 0, "Assigning temporary symbol name: '@Auto5'")
         ],
         symbols: [
             "All",
             "collection11b.All",
             "collection11b.suffix",
-            "collection11b._Auto5.verb",
-            "collection11b._Auto5.All",
+            "collection11b.@Auto5.verb",
+            "collection11b.@Auto5.All",
             "collection11b.word",
         ],
     });
@@ -349,15 +349,15 @@ describe(`Source ${DIR}`, function() {
 		desc: '11c. Unnamed collection as last child',
         results: undefined,
         errors: [
-            Warning(8, 0, "Assigning temporary symbol name: '_Auto9'")
+            Warning(8, 0, "Assigning temporary symbol name: '@Auto9'")
         ],
         symbols: [
             "All",
             "collection11c.All",
             "collection11c.verb",
             "collection11c.suffix",
-            "collection11c._Auto9.word",
-            "collection11c._Auto9.All",
+            "collection11c.@Auto9.word",
+            "collection11c.@Auto9.All",
         ],
     });
 

@@ -6,4 +6,4 @@ table:, text, %comment
       ,     , xxx
 
 word=, table:, embed,  embed
-     ,       , _Auto5, suffix 
+     ,       , @Auto5, suffix 
