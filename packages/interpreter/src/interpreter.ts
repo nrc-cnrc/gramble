@@ -29,7 +29,7 @@ import {
     SOURCE_PASSES,
     SYMBOL_PASSES
 } from "./passes/allPasses.js";
-import { constructExpr } from "./passes/constructExpr.js";
+import { constructExpr, ConstructExprEnv } from "./passes/constructExpr.js";
 import { CreateCursors } from "./passes/createCursors.js";
 import { CreateQuery } from "./passes/createQuery.js";
 import { ExecuteTests } from "./passes/executeTests.js";
@@ -331,12 +331,8 @@ export class Interpreter {
         const targetGrammar = this.symbolQueryStaging(symbol, query);
                      
         // turns the Grammars into Exprs
-        const env = new PassEnv(this.opt);
-        const expr = constructExpr(env, targetGrammar); 
-        if (this.exprSymbols !== undefined) {
-            setExprSymbolTable(expr, this.exprSymbols);
-        }
-        return expr;
+        const env = new ConstructExprEnv(this.opt, this.exprSymbols);
+        return constructExpr(env, targetGrammar); 
     }
 
     public runTests(symbol: string = ALL_SYMBOL, recursive: boolean = true): void {
@@ -344,8 +340,7 @@ export class Interpreter {
                                 .getEnvAndTransform(this.grammar, this.opt)
                                 .msgTo(THROWER);
         
-        const env = new PassEnv(this.opt);
-
+        const env = new ConstructExprEnv(this.opt, undefined);
         const expr = constructExpr(env, targetGrammar);
 
         const symbols = getExprSymbolTable(expr) || {}; 

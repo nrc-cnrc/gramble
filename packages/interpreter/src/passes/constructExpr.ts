@@ -26,12 +26,22 @@ import {
     constructJIT
 } from "../exprs.js";
 import { INPUT_TAPE } from "../utils/constants.js";
-import { Env } from "../utils/options.js";
+import { Env, Options } from "../utils/options.js";
 import { PassEnv } from "../components.js";
 
+export class ConstructExprEnv extends PassEnv {
+
+    constructor(
+        opt: Options,
+        public symbols: Dict<Expr> | undefined
+    ) {
+        super(opt);
+    }
+}
+
 export function constructExpr(
-    env: PassEnv,
-    g: Grammar
+    env: ConstructExprEnv,
+    g: Grammar,
 ): Expr {
     switch (g.tag) {
 
@@ -71,7 +81,7 @@ export function constructExpr(
 }
 
 function constructExprSeq(
-    env: PassEnv,
+    env: ConstructExprEnv,
     g: SequenceGrammar
 ): Expr {
     const childExprs = g.children.map(c => constructExpr(env, c));
@@ -79,7 +89,7 @@ function constructExprSeq(
 }
 
 function constructExprAlt(
-    env: PassEnv,
+    env: ConstructExprEnv,
     g: AlternationGrammar
 ): Expr {
     const childExprs = g.children.map(c => constructExpr(env, c));
@@ -87,7 +97,7 @@ function constructExprAlt(
 }
 
 function constructExprShort(
-    env: PassEnv,
+    env: ConstructExprEnv,
     g: ShortGrammar
 ): Expr {
     const child = constructExpr(env, g.child);
@@ -95,7 +105,7 @@ function constructExprShort(
 }
 
 function constructExprJoin(
-    env: PassEnv,
+    env: ConstructExprEnv,
     g: JoinGrammar
 ): Expr {
     return constructJoin(env, constructExpr(env, g.child1),
@@ -105,7 +115,7 @@ function constructExprJoin(
 }
 
 function constructExprReplace(
-    env: PassEnv,
+    env: ConstructExprEnv,
     g: ReplaceGrammar
 ): Expr {
     return constructReplace(env, constructExpr(env, g.inputChild),
@@ -118,7 +128,7 @@ function constructExprReplace(
 }
 
 function constructExprCount(
-    env: PassEnv,
+    env: ConstructExprEnv,
     g: CountGrammar
 ): Expr {
     let childExpr = constructExpr(env, g.child);
@@ -127,7 +137,7 @@ function constructExprCount(
 }
 
 function constructExprRename(
-    env: PassEnv,
+    env: ConstructExprEnv,
     g: RenameGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
@@ -135,7 +145,7 @@ function constructExprRename(
 }
 
 function constructExprRepeat(
-    env: PassEnv,
+    env: ConstructExprEnv,
     g: RepeatGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
@@ -143,7 +153,7 @@ function constructExprRepeat(
 }
 
 function constructExprNot(
-    env: PassEnv,
+    env: ConstructExprEnv,
     g: NegationGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
@@ -151,7 +161,7 @@ function constructExprNot(
 }
 
 function constructExprCursor(
-    env: PassEnv,
+    env: ConstructExprEnv,
     g: CursorGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
@@ -159,7 +169,7 @@ function constructExprCursor(
 }
 
 function constructExprGreedyCursor(
-    env: PassEnv,
+    env: ConstructExprEnv,
     g: GreedyCursorGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
@@ -167,7 +177,7 @@ function constructExprGreedyCursor(
 }
 
 function constructExprPreTape(
-    env: PassEnv,
+    env: ConstructExprEnv,
     g: PreTapeGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
@@ -175,7 +185,7 @@ function constructExprPreTape(
 }
 
 function constructExprHide(
-    env: PassEnv,
+    env: ConstructExprEnv,
     g: HideGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
@@ -183,7 +193,7 @@ function constructExprHide(
 }
 
 function constructExprMatch(
-    env: PassEnv,
+    env: ConstructExprEnv,
     g: MatchGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
@@ -191,30 +201,31 @@ function constructExprMatch(
 }
 
 function constructExprSelection(
-    env: PassEnv,
+    env: ConstructExprEnv,
     g: SelectionGrammar
 ): Expr {
-    let newSymbols: Dict<Expr> = {};
+
+    let exprSymbols: Dict<Expr> = {};
     let selectedExpr: Expr = EPSILON;
-    let selectedFound = false;
-    //const newSymbolNS = symbols.push(newSymbols);
+
     for (const [name, referent] of Object.entries(g.symbols)) {
-        let expr = constructExpr(env, referent);
-        newSymbols[name] = expr;
+        
+        if (env.symbols !== undefined && env.symbols[name] !== undefined) {
+            exprSymbols[name] = env.symbols[name];
+        } else {
+            exprSymbols[name] = constructExpr(env, referent);
+        }
         if (name.toLowerCase() == g.selection.toLowerCase()) {
-            selectedExpr = expr;
-            selectedFound = true;
+            selectedExpr = exprSymbols[name];
         }
     }
-    if (selectedFound) {
-        return constructSelection(env, selectedExpr, newSymbols);
-    }
-    return new SelectionExpr(selectedExpr, newSymbols);
+
+    return constructSelection(env, selectedExpr, exprSymbols);
 }
 
 
 function constructExprCorrespond(
-    env: PassEnv,
+    env: ConstructExprEnv,
     g: CorrespondGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);
@@ -222,7 +233,7 @@ function constructExprCorrespond(
 }
 
 function constructExprJIT(
-    env: PassEnv,
+    env: ConstructExprEnv,
     g: JITGrammar
 ): Expr {
     const childExpr = constructExpr(env, g.child);

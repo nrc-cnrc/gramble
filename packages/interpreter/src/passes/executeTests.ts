@@ -1,4 +1,4 @@
-import { constructExpr } from "./constructExpr.js";
+import { constructExpr, ConstructExprEnv } from "./constructExpr.js";
 import { CreateCursors } from "./createCursors.js";
 import { InfinityProtection } from "./infinityProtection.js";
 import { ResolveVocab } from "./resolveVocab.js";
@@ -129,7 +129,8 @@ export class ExecuteTests extends Pass<Grammar,Grammar> {
                                 .transform(targetGrammar, env)
                                 .msgTo(THROWER);
 
-        let expr = constructExpr(env, targetGrammar);
+        let exprEnv = new ConstructExprEnv(env.opt, this.symbolTable);
+        let expr = constructExpr(exprEnv, targetGrammar);
         expr = constructSelection(env, expr, this.symbolTable);
         return [...generate(expr, false, env.opt)];
 

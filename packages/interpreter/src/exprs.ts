@@ -20,7 +20,6 @@ import {
     logStates,
     logTime
 } from "./utils/logging.js";
-import { Namespace } from "./utils/namespace.js";
 import { Env, Options } from "./utils/options.js";
 import { randomCut, randomCutIter } from "./utils/random.js";
 
@@ -1963,6 +1962,8 @@ class JITExpr extends UnaryExpr {
     public jitCompile(
         env: DerivEnv 
     ): Expr {
+        //console.log(`JIT-ing symbol ${this.symbolName}`);
+
         const wrapped = constructGreedyCursor(env, 
             this.tapeName, this.child, this.vocab, this.atomic);
         
