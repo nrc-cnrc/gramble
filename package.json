@@ -27,8 +27,5 @@
   },
   "bugs": {
     "url": "https://github.com/nrc-cnrc/gramble/issues"
-  },
-  "devDependencies": {
-    "tsx": "^4.23.1"
   }
 }
