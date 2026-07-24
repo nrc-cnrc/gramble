@@ -1,17 +1,12 @@
-import { 
-    SymbolOp, 
-} from "../ops.js";
 import { Pass } from "../passes.js";
 import { 
-    TstOp, TstAssignment, TST,
-    TstCollection, TstHeaderPair,
-    TstHeader,
+    TstAssignment, TST,
+    TstCollection, 
     TstAutoEmbed,
     TstJoin
 } from "../tsts.js";
 import { PassEnv } from "../components.js";
 import { Message, Msg } from "../utils/msgs.js";
-import { Cell } from "../utils/cell.js";
 
 
 export class RestructureJoinOps extends Pass<TST,TST> {

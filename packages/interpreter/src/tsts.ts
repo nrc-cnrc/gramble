@@ -40,7 +40,8 @@ export type TST = TstHeader
          | TstParamList
          | TstSequence
          | TstAssignment
-         | TstCollection;
+         | TstCollection
+         | TstMerge;
 
 
 export abstract class AbstractTST extends Component {
@@ -479,10 +480,21 @@ export class TstSequence extends TstCellComponent {
     }
 }
 
+export class TstMerge extends TstCellComponent {
+    public readonly tag = "TstMerge";
+    constructor(
+        cell: Cell,
+        public child1: TST,
+        public child2: TST,
+    ) {
+        super(cell);
+    }
+}
+
 /**
  * TstParams are the result of parsing, validating, and associating headers
  * with content cells, and then segregating them by tag, so that content
- * with the same tag (e.g. "from", "unique") are in same-tag TstSequences.
+ * with the same tag (e.g. "from", "unique") are in same-tag sequences.
  * 
  * The correspond to rows in the table, after param parsing.
  */

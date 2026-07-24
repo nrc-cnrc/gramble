@@ -8,6 +8,7 @@ import {
     TstRow,
     TstSequence,
     TST,
+    TstMerge,
 } from "../tsts.js";
 import { Pass } from "../passes.js";
 import { ContentMsg, Message, Msg, Warn } from "../utils/msgs.js";
@@ -87,11 +88,14 @@ export class AssociateHeaders extends Pass<TST,TST> {
                         continue;
                     }
 
-                    if (!(param in newRow.params)) {
-                        newRow.params[param] = new TstSequence(row.cell);
+                    if (param in newRow.params) {
+                        // if there's already a value in the param, merge what's already there with the new cell
+                        const newMerge = new TstMerge(row.cell, newRow.params[param], newCell);
+                        newRow.params[param] = newMerge;
+                    } else {
+                        // otherwise just put the cell in as the value
+                        newRow.params[param] = newCell;
                     }
-                    const paramSeq = newRow.params[param] as TstSequence;
-                    paramSeq.children.push(newCell);
                 }
                 newRows.push(newRow);
             }

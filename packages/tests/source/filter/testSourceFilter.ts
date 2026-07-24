@@ -1,5 +1,6 @@
 import { 
-    VERBOSE_EXPR
+    VERBOSE_EXPR,
+    VERBOSE_GRAMMAR
 } from "../../../interpreter/src/utils/logging.js";
 
 import {
@@ -316,7 +317,7 @@ describe(`Source ${DIR}`, function() {
         results: [
             {text: "umfoo", gloss: "[1SG]run"},
             {text: "ungoo", gloss: "[1SG]climb"}
-        ]
+        ],
     });
 
     testSrc({
@@ -402,7 +403,6 @@ describe(`Source ${DIR}`, function() {
         ]
     });
    
-    /*
     testSrc({
 		desc: '39. equals and starts modifying same embed',
         results: [

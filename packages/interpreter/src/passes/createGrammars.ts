@@ -14,8 +14,8 @@ import {
     TstTest,
     TstTestNot,
     TST, 
-    AbstractTST,
-    TstAutoEmbed
+    TstAutoEmbed,
+    TstMerge
 } from "../tsts.js";
 import { Pass } from "../passes.js";
 import { 
@@ -73,6 +73,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
             case "join":       return this.handleJoin(t, env);
             case "replace":    return this.handleReplace(t, env);
             case "seq":        return this.handleSequence(t, env);
+            case "TstMerge":   return this.handleMerge(t, env);
             case "assign":     return this.handleAssignment(t, env);
             case "collection": return this.handleCollection(t, env);
 
@@ -309,6 +310,13 @@ export class CreateGrammars extends Pass<TST,Grammar> {
         return msgList(t.children)
                   .map(c => this.transform(c, env))
                   .bind(cs => new SequenceGrammar(cs));
+    }
+
+    public handleMerge(t: TstMerge, env: PassEnv): Msg<Grammar> {
+        return msgList([t.child1, t.child2])
+                    .map(c => this.transform(c, env))
+                    .bind(([c1,c2]) => new SequenceGrammar([c1, c2]))
+                    .bind(c => c.locate(t.cell.pos));
     }
     
     public handleAssignment(t: TstAssignment, env: PassEnv): Msg<Grammar> {
