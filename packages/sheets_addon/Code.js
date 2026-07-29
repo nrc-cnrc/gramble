@@ -399,7 +399,7 @@ function runTestsSymbol(recursive = false) {
         throw("No symbol selected.")
     }
     let value = selectedCell.getValue().trim();
-    if (/^test\s*:$/.test(value)) {
+    if (/^(test|testnot)\s*:$/.test(value)) {
         const selectedRow = selectedCell.getRow();
         const selectedCol = selectedCell.getColumn();
         search: for (let row = selectedRow; row > 0; row--) {
