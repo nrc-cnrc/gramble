@@ -363,11 +363,15 @@
                 blankCell.classList.add("resultsBlank");
             }
 
-            function resultsToTable(labels, entries) {
+            function resultsToTable(labels, entries, addEscapes = false) {
                 labels = labels.filter(l => !l.startsWith("."));
                 return [
                     labels,
-                    ...entries.map(row => labels.map(label => row[label]))
+                    ...entries.map(row => labels.map(label => ' ' + 
+                            (addEscapes ?
+                                row[label].replace(/([ |\\{}])/g, "\\$1") :
+                                row[label])
+                        ))
                 ];
             }
 
@@ -376,7 +380,8 @@
                 const replacer = (key, value) => value === null ? '' : value 
                 return [
                     labels.join(','), // header row first
-                    ...entries.map(row => labels.map(label => JSON.stringify(row[label], replacer)).join(','))
+                    ...entries.map(row => labels.map(label =>
+                                    JSON.stringify(row[label], replacer)).join(','))
                 ].join('\n');
             }
 
@@ -486,7 +491,11 @@
                 // determine what tape names are relevant to this symbol
                 const tapeNames = project.getTapeNames(symbol);
 
-                const resultsTable = resultsToTable(tapeNames, results)
+                // determine whether to add escapes
+                let escapesSelect = document.getElementById("genEscapesSelect");
+                const doEscapes = escapesSelect.value == "true";
+
+                const resultsTable = resultsToTable(tapeNames, results, doEscapes)
                 const sheetName = symbol.replace(".", "_") + "_generated";
                 await scriptRunPromise().makeNewSheet(symbol, sheetName, resultsTable);
             }
@@ -508,7 +517,11 @@
                 // determine what tape names are relevant to this symbol
                 const tapeNames = project.getTapeNames(symbol);
 
-                const resultsTable = resultsToTable(tapeNames, results)
+                // determine whether to add escapes
+                let escapesSelect = document.getElementById("sampEscapesSelect");
+                const doEscapes = escapesSelect.value == "true";
+
+                const resultsTable = resultsToTable(tapeNames, results, doEscapes)
                 const sheetName = symbol.replace(".", "_") + "_sampled";
                 await scriptRunPromise().makeNewSheet(symbol, sheetName, resultsTable);
             }
@@ -574,13 +587,25 @@
                 </td>
             </tr>
             <tr>
-                <td colspan="2">
+                <td>
                     <button id="generateToNewSheetButton" class="sidebarButton" onclick="generateToNewSheet()">Generate to new sheet</button>
+                </td>
+                <td>
+                    <select id="genEscapesSelect">
+                        <option value=false>no escapes</option>
+                        <option value=true>escapes</option>
+                    </select>
                 </td>
             </tr>
             <tr>
-                <td colspan="2">
+                <td>
                     <button id="sampleToNewSheetButton" class="sidebarButton" onclick="sampleToNewSheet()">Sample to new sheet</button>
+                </td>
+                <td>
+                    <select id="sampEscapesSelect">
+                        <option value=false>no escapes</option>
+                        <option value=true>escapes</option>
+                    </select>
                 </td>
             </tr>
             <tr><td colspan="2"><button id="sampleButton" class="sidebarButton">Sample here</button></td></tr>
