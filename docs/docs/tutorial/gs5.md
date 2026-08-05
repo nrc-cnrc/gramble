@@ -20,9 +20,9 @@ It also happens in the other direction.  Say we want to parse `nilipenda` and le
 
 Now, you might say, "This isn't a huge deal in my situation," and that's totally fine.  You can still make a `nilipenda <-> 1-PAST-pend` transducer just like before and it's fine.  All I'm saying is that Gramble doesn't *require* you to express everything as a `input <-> output` transduction like that; we can be more flexible.
 
-## Adding even more tapes
+## Adding even more fields
 
-In the previous chapter, we added a new field to each tape, and it was the same field each time.  But if we wanted, we could make them different, we could have separate `root` and `tense` fields instead.
+In the previous chapter, we added a new field to each table, and it was the same field each time.  But if we wanted, we could make them different, we could have separate `root` and `tense` fields instead.
 
 | **Root =** | **text** | **root** |
 |:--:|:--:|:--:|
