@@ -88,13 +88,13 @@ Here's another way of structuring the same grammar, by building up the stem bit 
 |    | u  | 2 | TenseStem |
 |    | a  | 3 | TenseStem |
 
-Note that there's nothing special about the order we wrote these in, we could also have listed `Verb` first and `Root` last.  The important part is the structure of the `embeds`.  Each `Verb` line embeds the `TenseStem` table, each `TenseStem` line embeds the `Root` table.
+Note that there's nothing special about the order we wrote these in, we could also have listed `Verb` first and `Root` last.  The important part is the structure of the `embeds`.  Each `Verb` row embeds the `TenseStem` table, each `TenseStem` row embeds the `Root` table.
 
-Let's look closely at what the first line of the `TenseStem` table is doing.  We'll step through it left-to-right.  It's adding `text:na` to the output, then adding `tense:pres` to the output, giving us the result `{text:na, tense:pres}`.  And then it hits `embed: Root`. This cell has two possibilities, so it does both, it takes the current output and adds `{text:penda, root:love}`, giving us `{text:napenda, tense:pres, root:love}`, and it **ALSO** takes the current output and adds `{text:ona, root:see}`, giving us another output `{text:naona, tense:pres, root:see}`.
+Let's look closely at what the first row of the `TenseStem` table (right below the row with the headers) is doing.  We'll step through it left-to-right.  It's adding `text:na` to the output, then adding `tense:pres` to the output, giving us the result `{text:na, tense:pres}`.  And then it hits `embed: Root`. This cell has two possibilities, so it does both, it takes the current output and adds `{text:penda, root:love}`, giving us `{text:napenda, tense:pres, root:love}`, and it **ALSO** takes the current output and adds `{text:ona, root:see}`, giving us another output `{text:naona, tense:pres, root:see}`.
 
-So this line has two outputs, and so do the other lines in `TenseStem`, so `TenseStem` has 2 x 3 = 6 outputs.
+So this row has two outputs, and so do the other rows in `TenseStem`, so `TenseStem` has 2 x 3 = 6 outputs.
 
-The same kind of thing is happening in the `Verb` table.  Each line embeds `TenseStem` (with 6 outputs), and there are 3 lines again, so that's 6 x 3 = 18 outputs -- same as the "flat" grammar, and same as the original table.
+The same kind of thing is happening in the `Verb` table.  Each row embeds `TenseStem` (with 6 outputs), and there are 3 rows again, so that's 6 x 3 = 18 outputs -- same as the "flat" grammar, and same as the original table.
 
 ## Why nested?
 
