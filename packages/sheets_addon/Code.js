@@ -317,46 +317,71 @@ function showDialog(htmlString: string, title: string = ""): void {
 }
 */
 
-function GrambleComment() {
-    let spreadsheet = SpreadsheetApp.getActive();
-    let sheet = spreadsheet.getActiveSheet();
-    let range = sheet.getActiveRange();
-    if (range == undefined) {
-        return;
-    }
-    let row_start = range.getRowIndex();
-    let row_end = range.getLastRow();
+const CellCommands = Object.freeze({
+  COMMENT: 'comment',
+  UNCOMMENT: 'uncomment',
+  ADD_ESCAPES: 'add escapes',
+  REMOVE_ESCAPES: 'remove escapes',
+});
 
-    for (let i = row_start; i <= row_end; i++) {
-        let subrange = sheet.getRange(i, 1);
-        let value = subrange.getValue();
-        if (value.trim().startsWith('#')) {
-            continue;
-        }
-        value = "%%" + value;
-        subrange.setValue(value);
-    }
-    highlight();
+function GrambleComment() {
+    processCells(CellCommands.COMMENT, false, true);
 }
 
 function GrambleUncomment() {
-    let spreadsheet = SpreadsheetApp.getActive();
-    let sheet = spreadsheet.getActiveSheet();
-    let range = sheet.getActiveRange();
+    processCells(CellCommands.UNCOMMENT, false, true);
+}
+
+function addEscapes() {
+    processCells(CellCommands.ADD_ESCAPES);
+}
+
+function removeEscapes() {
+    processCells(CellCommands.REMOVE_ESCAPES);
+}
+
+function processCells(command, preserveWhitespace = true, firstColumnOnly = false) {
+    const spreadsheet = SpreadsheetApp.getActive();
+    const sheet = spreadsheet.getActiveSheet();
+    const range = sheet.getActiveRange();
     if (range == undefined) {
         return;
     }
-    let row_start = range.getRowIndex();
-    let row_end = range.getLastRow();
+    const row_start = range.getRow();
+    const row_end = range.getLastRow();
+    const col_start = firstColumnOnly ? 1 : range.getColumn();
+    const col_end = firstColumnOnly ? 1 : range.getLastColumn();
 
     for (let i = row_start; i <= row_end; i++) {
-        let subrange = sheet.getRange(i, 1);
-        let value = subrange.getValue();
-        if (!value.trim().startsWith('%%')) {
-            continue;
+        for (let j = col_start; j <= col_end; j++) {
+            const subrange = sheet.getRange(i, j);
+            let value = subrange.getValue();
+            const leadingWhitespace = preserveWhitespace ? value.match(/^\s*/)[0] : "";
+            const trailingWhitespace = preserveWhitespace ? value.match(/\s*$/)[0] : "";
+            value = value.trim();
+            switch (command) {
+                case CellCommands.COMMENT:
+                    if (value.trim().startsWith('#')) continue;
+                    value = "%%" + value;
+                    break;
+                case CellCommands.UNCOMMENT:
+                    if (!value.trim().startsWith('%%')) continue;
+                    value = value.trim().slice(2); 
+                    break;
+                case CellCommands.ADD_ESCAPES:
+                    if (value.length == 0) continue;
+                    value = value.replace(/([ |\\{}])/g, "\\$1");
+                    break;
+                case CellCommands.REMOVE_ESCAPES:
+                    if (value.length == 0) continue;
+                    value = value.replace(/\\([ |\\{}])/g, "$1");
+                    break;
+            }
+            if (preserveWhitespace) {
+                value = leadingWhitespace + value + trailingWhitespace;
+            }
+            subrange.setValue(value);
         }
-        value = value.trim().slice(2); 
-        subrange.setValue(value);
     }
     highlight();
 }
@@ -735,6 +760,8 @@ function onOpen() {
         .addItem('Highlight', 'highlight')
         .addItem('Comment', 'GrambleComment')
         .addItem('Uncomment', 'GrambleUncomment')
+        .addItem('Add escapes in selection', 'addEscapes')
+        .addItem('Remove escapes in selection', 'removeEscapes')
         .addSeparator()
         .addItem('Create sample project', 'makeSampleSheet')
         .addSubMenu(tutorialMenu)
