@@ -39,7 +39,7 @@ Also, side note, you'll see in the subjunctive row that there's a blank cell.  T
 
 For another example, "kizāgihin", meaning "I love you" in Anishinaabemowin, consists of the stem "sāgih" (here it's pronounced "zāgih") and two additional morphemes, "ki-" and "-in".  However, it's not like one of them means "1SG.SUBJ" and the other one means "2SG.OBJ", it's only the two of them together that add these meanings.  (The "ki-" definitely has a 2nd person singular meaning... but not necessarily the *object*.  Like "kizāgihi" means "You love me".  The "-in" vs. "-i" helps tell you whether to interpret "ki-" as representing the subject or object.  Anyway, it's complicated and you don't have to understand what's really going on here; all we need here is a real-world example of when you need to add two morphemes at once to get the meaning correct.)
 
-Handling these is straightforward in Gramble; you just put both morphemes onto the same line.
+Handling these is straightforward in Gramble; you just put both morphemes into the same row.
 
 | **Root =** | **text** | **root** | | | |
 | :-----------:| :---: | :---: | :--: | :--: | :--: |
@@ -49,7 +49,7 @@ Handling these is straightforward in Gramble; you just put both morphemes onto t
 |              | ki   | Root  | in   | 1SG | 2SG |
 |              | ki   | Root  | i    | 2SG | 1SG |
 
-Again, there's nothing special about this `ki`, all we're doing in the fifth line, for example, is adding `ki` to `text`, embedding the `Root` (meaning adding `zāgih` to `text`, and `love` to `root`), then adding `in` to `text`, and so on for the subject and object.
+Again, there's nothing special about this `ki`, all we're doing in the fifth row (first row below the header row in the `Stem` table), for example, is adding `ki` to `text`, embedding the `Root` (meaning adding `zāgih` to `text`, and `love` to `root`), then adding `in` to `text`, and so on for the subject and object.
 
 ## You can have the same header twice?
 
