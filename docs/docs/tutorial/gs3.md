@@ -41,7 +41,7 @@ Right now we only have 2 roots, 3 tenses, and 3 subjects, and 2 x 3 x 3 = 18.  S
 
 If we were maintaining that all as a giant, human-curated list, adding anything at all would be prohibitively expensive.  Someone might say, "Oh, we need to add a new verb root!" and that might add another 10,000 entries!  Or they'd say, "We need to add the yes no question form!" and that means another 2.4 million entries.
 
-But when you're dealing with the parts, you just add the new parts.  Like if I needed to add a new root to the Swahili database above, I don't have to add all 9 forms of it, I just have to add one more line in the `Root` table.  And this doesn't change if I have 10,000 forms of each verb, it's still just adding one more line.
+But when you're dealing with the parts, you just add the new parts.  Like if I needed to add a new root to the Swahili database above, I don't have to add all 9 forms of it, I just have to add one more row in the `Root` table.  And this doesn't change if I have 10,000 forms of each verb, it's still just adding one more row.
 
 ## Let's back up and make one for English first
 
@@ -89,6 +89,31 @@ Now, we make a table that takes every form in the Root table and concatenates it
 | **Verb =&nbsp;** | **embed** | **embed** |
 |----|:--:|:---:|
 |    | Root| Suffix |
+
+
+## Quick terminology overview
+
+As we go through this tutorial, you will see some terminology that comes from the world of spreadsheets and some that is specific to how we describe Gramble code.
+
+We've just shown you what it looks like to make a **table** in a **sheet**. A sheet can contain more than one table (and we can even reference tables on different sheets, but we'll get to that later).
+
+Let's go over a bit more terminology using this table as an example:
+
+| **Subject =&nbsp;** | **text** | **person** |
+|:--:|:--:|:--:|
+|              | ni   | 1 |
+|              | u   | 2 |
+|              | a   | 3 |
+
+You're probably used to talking about **cells** (the individual rectangles in a spreadsheet) as well as **rows** (the horizontal sequences of cells in a spreadsheet) and **columns** (the vertical sequences of cells in a spreadsheet). Most of the time we will talk about a **row** or **column** within a table but sometimes we'll talk about a **row** or **column** of the whole sheet (and we'll try to make it clear when that's the case).
+
+In the top left cell of our example table, we see `Subject =`; the word that we put there (in this case, "Subject") is a **symbol** that we'll use to refer to the table. So we might refer to "the Subject table" to mean that particular table.
+
+The first row of the table is the **header** row; in this example it contains two **headers** (`text` and `person`), which are the names of our **fields** (sometimes called **tapes**). In the tutorial, we use the term **forms** to refer to the actual text entered in the cells in a particular column of a table (in this example, the **forms** in the `text` field are `ni`, `u`, and `a`).
+
+There are also header and table **operators**, but we've only seen one of these so far. The `/` between field names (like we saw earlier in `text/root`) is a header operator.
+
+We might sometimes refer to **identifiers**, which include field names and symbol names.
 
 
 ## Try it out in the Gramble sheet
