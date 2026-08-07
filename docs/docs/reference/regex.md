@@ -11,9 +11,9 @@ Some header operators -- `equals`, `starts`, `ends`, `contains`, `from`, and `co
 Gramble supports the following regex operations:
 
 * Match any single character `.`
-* Match zero or more characters `*`
-* Match one or more characters `+`
-* Match zero or one character `?`
+* Match zero or more of the preceding element `*`
+* Match one or more of the preceding element `+`
+* Match zero or one of the preceding element `?`
 * Negation `~`
 * Single-character negation `!`
 * Alternation `|`
