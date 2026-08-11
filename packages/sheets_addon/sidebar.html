@@ -408,7 +408,6 @@
                 }
 
                 return symbol;
-
             }
 
             function downloadSource() {
@@ -504,8 +503,10 @@
                 const symbol = getCurrentSymbol();
                 const inputs = getCurrentInputs();
 
+                const numSamples = document.getElementById("numSamples").value;
+
                 let results = gramble.timeIt(() =>
-                    project.sample(symbol, 50, inputs),
+                    project.sample(symbol, numSamples, inputs),
                     true, "Sampling complete", "Started sampling"
                 );
 
@@ -602,10 +603,24 @@
                     <button id="sampleToNewSheetButton" class="sidebarButton" onclick="sampleToNewSheet()">Sample to new sheet</button>
                 </td>
                 <td>
-                    <select id="sampEscapesSelect">
-                        <option value=false>no escapes</option>
-                        <option value=true>escapes</option>
-                    </select>
+                    <table id="sampleOptionsTable">
+                        <tr>
+                            <td>
+                                <select id="sampEscapesSelect">
+                                    <option value=false>no escapes</option>
+                                    <option value=true>escapes</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <label for="numSamples" class="labelText">
+                                    #:
+                                </label>
+                                <input type="number" id="numSamples" name="numSamples" min="1" value="50">
+                            </td>
+                        </tr>
+                    </table>
                 </td>
             </tr>
             <tr><td colspan="2"><button id="sampleButton" class="sidebarButton">Sample here</button></td></tr>
