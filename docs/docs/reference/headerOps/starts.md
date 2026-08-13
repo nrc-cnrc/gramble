@@ -6,7 +6,7 @@ sidebar_label: starts
 
 ## Description
 
-The `starts` operator (used with a given field name) lets you filter a grammar so that an entry can only be generated if the form in the given field contains a particular string or regex.
+The `starts` operator (used with a given field name) lets you filter a grammar so that an entry can only be generated if the form in the given field starts with a particular string or regex.
 
 Like `equals`/`ends`/`contains`, `rename` and `hide`, `starts` applies to the content immediately to its left, but can be chained.
 
