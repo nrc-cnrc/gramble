@@ -6,7 +6,7 @@ sidebar_label: equals
 
 ## Description
 
-The `equals` operator (used with a given field name) lets you filter a grammar so that an entry can only be generated if the form in the given field equals a particular string or regex.
+The `equals` operator (used with a given field name) lets you filter a grammar so that an entry can only be generated if the form in the given field is equal to a particular string or matches a particular regex.
 
 Like `starts`/`ends`/`contains`, `rename` and `hide`, `equals` applies to the content immediately to its left, but can be chained.
 
