@@ -8,7 +8,7 @@ sidebar_label: hide
 
 `hide` is a header operator that makes one or more fields invisible outside of its scope.
 
-Like `equals`/`starts`/`ends`/`contains` and `rename`, `hide` applies to the content immediately to its left, but can be chained.
+`hide` applies to the content immediately to its left, but can be [chained](chaining).
 
 ## Usage examples
 

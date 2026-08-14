@@ -8,7 +8,7 @@ sidebar_label: contains
 
 The `contains` operator (used with a given field name) lets you filter a grammar so that an entry can only be generated if the form in the given field contains a particular string or regex.
 
-Like `equals`/`starts`/`ends`, `rename` and `hide`, `contains` applies to the content immediately to its left, but can be chained.
+`contains` applies to the content immediately to its left, but can be [chained](chaining).
 
 ## Usage examples
 

@@ -8,7 +8,7 @@ sidebar_label: rename (>)
 
 The `rename` operator (which is expressed using `>`) is a header operator that causes a field inside its scope to have a different name outside its scope.
 
-Like `equals`/`starts`/`ends`/`contains` and `hide`, `rename` applies to the content immediately to its left, but can be chained.
+`rename` applies to the content immediately to its left, but can be [chained](chaining).
 
 ## Usage examples
 

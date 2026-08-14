@@ -8,11 +8,11 @@ sidebar_label: starts
 
 The `starts` operator (used with a given field name) lets you filter a grammar so that an entry can only be generated if the form in the given field starts with a particular string or regex.
 
-Like `equals`/`ends`/`contains`, `rename` and `hide`, `starts` applies to the content immediately to its left, but can be chained.
+`starts` applies to the content immediately to its left, but can be [chained](chaining).
 
 ## Usage examples
 
-For example, we could filter **A** only to entries where the text starts with "p", "t", or "k":
+For example, we could define a new symbol **B** that filters **A** only to entries where the text starts with "p", "t", or "k":
 
 | **B =&nbsp;** | **embed** | **starts text** |
 |:--:|:--:|:--:|
