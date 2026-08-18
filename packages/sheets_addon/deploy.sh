@@ -54,7 +54,7 @@ cat <(echo '<script>') $TARGET_DIR/gramble.js <(echo '</script>') > $TARGET_DIR/
 # copy the project files to the target dir
 ORIG_DIR=$PWD
 echo "Copying project files to $TARGET_DIR" >&2
-cp Code.js sidebar.html style.html $TARGET_DIR
+cp Code.js downloadsource.html sidebar.html style.html $TARGET_DIR
 
 # save the hash and date of the most recent commit
 echo "Saving the Gramble version in $TARGET_DIR" >&2

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <base target="_top">
+    </head>
+    <body>
+        <p>Preparing your download. Please wait...</p>
+
+        <script>
+            // Automatically request file data from the backend when the page opens
+            window.onload = function() {
+                google.script.run
+                    .withSuccessHandler(executeDownload)
+                    .withFailureHandler(function(err) {
+                        document.body.innerHTML = "Error: " + err.message;
+                    })
+                    .getSourceData();
+            };
+  
+            // Forces the browser to handle the file byte payload as a local download
+            function executeDownload(fileData) {
+                // create a temporary link element to download from
+                let element = document.createElement('a');
+                element.setAttribute('href', 'data:application/json;charset=utf-8,' + 
+                                            encodeURIComponent(fileData.text));
+                element.setAttribute('download', fileData.filename);
+                element.style.display = 'none';
+                document.body.appendChild(element);
+                element.click();
+                document.body.removeChild(element);
+                
+                // Closes the modal popup if you are using it inside Google Sheets
+                if (google.script.host && google.script.host.close) {
+                    setTimeout(google.script.host.close, 1000);
+                } else {
+                   document.body.innerHTML = "Download complete! You can close this window.";
+                }
+            }
+        </script>
+    </body>
+</html>

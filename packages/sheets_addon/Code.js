@@ -505,9 +505,29 @@ function showAbout() {
     );
 }
 
+function getSourceData() {
+    const [interpreter, devEnv] = makeInterpreter();
+    const cells = interpreter.convertToSingleSource();
+    const text = cells.map(r => r.map(c => JSON.stringify(c)).join(", "))
+                      .join("\n");
+
+    return {
+        filename: `${getSheetName()}_single.csv`,
+        text: text,
+    };
+}
+
+function downloadSource() {
+    const html = HtmlService.createHtmlOutputFromFile('downloadsource')
+                            .setWidth(200)
+                            .setHeight(100);
+    SpreadsheetApp.getUi()
+        .showModalDialog(html, `Downloading Source for sheet ${getSheetName()} ...`);
+}
+
 function include(filename) {
     return HtmlService.createHtmlOutputFromFile(filename)
-        .getContent();
+                      .getContent();
 }
 
 
@@ -685,6 +705,7 @@ function scrollToCell(sheetName, row, col) {
     const range = sheet.getRange(getA1Notation("", row, col));
     sheet.setActiveRange(range);
 }
+
 function getAllCells() {
     highlight();
     try {
@@ -754,8 +775,8 @@ function onOpen() {
         .addItem('Show sidebar', 'showSidebar')
         .addSeparator()
         .addItem('Run all unit tests on sheet', 'runAllTests')
-        .addItem('Run unit tests for symbol...', 'runTestsSymbol')
-        .addItem('Run all unit tests reachable from symbol...', 'runTestsRecursive')
+        .addItem('Run unit tests for symbol', 'runTestsSymbol')
+        .addItem('Run all unit tests reachable from symbol', 'runTestsRecursive')
         .addSeparator()
         .addItem('Highlight', 'highlight')
         .addItem('Comment', 'GrambleComment')
@@ -765,6 +786,8 @@ function onOpen() {
         .addSeparator()
         .addItem('Create sample project', 'makeSampleSheet')
         .addSubMenu(tutorialMenu)
+        .addSeparator()
+        .addItem('Download source...', 'downloadSource')
         .addSeparator()
         .addItem('About Gramble', 'showAbout')
         .addToUi();
