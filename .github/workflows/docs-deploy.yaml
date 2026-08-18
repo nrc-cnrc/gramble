@@ -1,0 +1,51 @@
+# Template sourced from https://dev.to/jajera/setting-up-github-pages-with-github-actions-2o72 accessed: August 18, 2026
+
+name: Deploy Docs to GitHub Pages
+
+on:
+  workflow_dispatch
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node Setup
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: npm
+
+      - name: Install dependencies
+        working-directory: docs
+        run: npm ci
+
+      - name: Build website
+        working-directory: docs
+        run: npm run build -- --configuration production --base-href /gramble/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./docs/dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
