@@ -36,7 +36,7 @@ jobs:
 
       - name: Build website
         working-directory: docs
-        run: npm run build -- --configuration production --base-href /gramble/
+        run: npm run build 
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
