@@ -10,7 +10,7 @@ sidebar_label: join
 
 ## Usage examples
 
-The following example is somewhat trival, since it's only joining two literal tables, but it illustrates a common usage of `join`.  
+The following example is somewhat trivial, since it's only joining two literal tables, but it illustrates a common usage of `join`.  
 
 | **A =&nbsp;** | **table:** | **text** | **person** |
 |:--:|:--:|:--:|:--:|

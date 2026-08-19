@@ -30,4 +30,4 @@ For a negative example, the following filters **A** only to those entries where 
 
 The `ends` operator is a convenience version of the `equals` operator, that converts the regex given into a more complex one.  For example, in the first example above, it is converted to `.*(p|t|k)`.  In the second example, it is converted to `~(.*(p|t|k))`.
 
-The `ends` operator has the same complications and cautions about negation scope as the `starts` operator, which you can read about [here](starts).
+The `ends` operator has the same complications and cautions about negation scope as the `starts` operator, which you can read about on the [starts page](starts).

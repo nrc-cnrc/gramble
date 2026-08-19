@@ -6,7 +6,7 @@ sidebar_label: replace
 
 ## Description
 
-`replace` is a table operator that performs replacement operations on the forms in a given field of its sibling (the content above it). Replace is used along with a field name and uses three special headers: `from`, `to`, and `context` (these column headers are interpreted specially in this context; it is not a problem if your Gramble has fields that share a name with them).
+`replace` is a table operator that performs replacement operations on the forms in a given field of its sibling (the content above it). Replace is used along with a field name and uses three special headers: `from`, `to`, and `context` (these column headers are interpreted specially in this context; it is not a problem if your Gramble has fields that share a name with them). The `context` header is optional (if you wish to perform the replacement in any context).
 
 The character `#` is used in the `context` column of `replace` rules to mark a boundary of the form to which the rules are being applied, while the `_` character represents the location of what is being replaced. `#_` replaces occurrences as the start of a form, while `_#` replaces occurrences at the end of a form.
 

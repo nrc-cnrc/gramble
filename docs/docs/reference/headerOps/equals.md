@@ -25,4 +25,4 @@ For example, we could filter **A** only to entries where the text starts with "p
 |:--:|:--:|:--:|
 |    | A  | (p\|t\|k).* |
 
-(There is also a special convenience operator for this, `starts`, that auto-generates a regex and would suffice for this particular use-case.  However, if you have a more complex regex you wish to filter on, we recommend using `equals` and being explicit about which regex you want to match.)
+(There is also a special convenience operator for this, `starts`, which you can read about on the [starts page](starts), that auto-generates a regex and would suffice for this particular use-case.  However, if you have a more complex regex you wish to filter on, we recommend using `equals` and being explicit about which regex you want to match.)

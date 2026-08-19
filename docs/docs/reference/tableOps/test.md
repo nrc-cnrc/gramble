@@ -25,13 +25,13 @@ In this example, the grammar produced by the symbol **Verb** consists of six ent
 | **Verb =** | **embed** | **embed** |
 |    | Root | Suffix |
 | &nbsp; |
-|  test:  | text |  |
+|  **test:**  | **text** |  |
 |    | calls |  |
 |    | jumping |  |
 
 We can include any fields from the symbol in our test, for example:
 
-|  test:  | text | tense |
+|  **test:**  | **text** | **tense** |
 |:--:|:--:|:--:|
 |    | calls | 3SG.PRES |
 |    | jumping | PRES.PROG |
