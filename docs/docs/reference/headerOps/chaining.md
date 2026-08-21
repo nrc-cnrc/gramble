@@ -1,7 +1,7 @@
 ---
 id: chaining
-title: chaining
-sidebar_label: chaining
+title: Chaining
+sidebar_label: Chaining
 ---
 
 ## Description

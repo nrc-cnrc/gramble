@@ -10,7 +10,7 @@ sidebar_label: replace
 
 The character `#` is used in the `context` column of `replace` rules to mark a boundary of the form to which the rules are being applied, while the `_` character represents the location of what is being replaced. `#_` replaces occurrences as the start of a form, while `_#` replaces occurrences at the end of a form.
 
-Both `from` and `context` can contain strings or regular expressions. If you have defined a grammar with just one field (for example, a grammar **VOWEL** with just the field text, containing a list of the language's vowels), you can use that in regular expressions in replace rules, for example if you want to replace something only in the context where it appears between two vowels: `{VOWEL}_{VOWEL}`.
+Both `from` and `context` can contain strings or regular expressions. If you have defined a grammar with just one field (for example, a grammar **VOWEL** with a single field, containing a list of the language's vowels), you can use that in regular expressions in replace rules, for example if you want to replace something only in the context where it appears between two vowels: `{VOWEL}_{VOWEL}`.
 
 ## Usage examples
 
