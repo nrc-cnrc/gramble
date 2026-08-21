@@ -50,7 +50,7 @@ Suppose we want to define a new symbol **V** that contains any entry from **Noun
 | | sabor | |
 | | animal | |
 | **V =&nbsp;** | `embed` | `equals` _text_ |
-| | Nouns | .*{VOWEL}
+| | Nouns | .*\{VOWEL\} |
 
 To use a symbol like this, it can only have one field.
 
