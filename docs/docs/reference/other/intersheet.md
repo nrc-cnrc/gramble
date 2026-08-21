@@ -5,7 +5,7 @@ sidebar_label: Intersheet Reference
 ---
 
 ## Description
-Intersheet references let you refer to symbols that appear on a different sheet. They are referenced using the format **SheetName.Symbol** where **Sheetname** is the name of the sheet where **Symbol** is defined.
+Intersheet references let you refer to symbols that appear on a different sheet. They are referenced using the format **SheetName.Symbol** where **SheetName** is the name of the sheet where **Symbol** is defined.
 
 ## Usage Example
 
