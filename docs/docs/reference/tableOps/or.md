@@ -14,7 +14,7 @@ In general, alternation in Gramble is handled by just adding another row to a ta
 
 Say, for example, that there's a class of reduplicated verbs that require many more fields than ordinary verbs.  You *could* put all of these fields in the main table (and just leave the cells below them mostly blank), but you could also keep the main table simple and introduce those new fields with an "or".
 
-| **A =&nbsp;** | _table:_ | _text_ | _gloss_ | | | | |
+| **A =&nbsp;** | `table:` | _text_ | _gloss_ | | | | |
 |:--:|:--:|:---:|:---:|:--:|:--:|:--:|:--:|
 |    |    | ipa | walk |
 |    |    | zar | eat |

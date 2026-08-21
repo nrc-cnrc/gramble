@@ -13,16 +13,20 @@ The `ends` operator (used with a given field name) lets you filter a grammar so 
 ## Usage examples
 
 For example, we could filter **A** only to entries where the text ends with "p", "t", or "k":
-
-| **B =&nbsp;** | **embed** | **ends text** |
+| **A =&nbsp;** | _text_ | _translation_ |
 |:--:|:--:|:--:|
+| | eat | manger |
+| | apple | pomme |
+| | apprenticeship | apprentissage |
+| | five | cinq |
+| **B =&nbsp;** | `embed` | `ends` _text_ |
 |    | A  | p\|t\|k |
 
 Like `equals`, content below `ends` is interpreted as a regex.
 
 For a negative example, the following filters **A** only to those entries where the text *doesn't* end with "p", "t", or "k".
 
-| **B =&nbsp;** | **embed** | **ends text** |
+| **B =&nbsp;** | `embed` | `ends` _text_ |
 |:--:|:--:|:--:|
 |    | A  | ~(p\|t\|k) |
 

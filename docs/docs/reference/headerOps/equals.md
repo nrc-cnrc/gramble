@@ -12,16 +12,21 @@ The `equals` operator (used with a given field name) lets you filter a grammar s
 
 ## Usage examples
 
-Say, for example, that the **A** symbol defines the fields `text`, `gloss` and `class`, and `class` can be either `X`, `C1`, or `C2`.  The following code creates a symbol **B** that only contains entries where the `class` equals `C1`.
-
-| **B =&nbsp;** | **embed** | **equals class** |
+Say, for example, that the **A** symbol defines the fields _text_ and _group_, and _group_ can be either "ER", "IR", or "OTHER".  The following code creates a symbol **B** that only contains entries where the _group_ equals "OTHER".
+| **A =&nbsp;** | _text_ | _group_ |
 |:--:|:--:|:--:|
-|    | A  | C1 |
+| | manger | ER |
+| | aller | OTHER |
+| | choisir | IR |
+| | vendre | OTHER |
+| | pouvoir | OTHER |
+| **B =&nbsp;** | `embed` | `equals` _group_ |
+|    | A  | OTHER |
 
 Below an `equals` operator, content is interpreted as a regex.
 For example, we could filter **A** only to entries where the text starts with "p", "t", or "k":
 
-| **B =&nbsp;** | **embed** | **equals text** |
+| **B =&nbsp;** | `embed` | `equals` _text_ |
 |:--:|:--:|:--:|
 |    | A  | (p\|t\|k).* |
 

@@ -11,21 +11,21 @@ The `slash` operator (which is expressed using `/`) is a header operator that ca
 Unlike other operators, which precede the field name, the slash operator is inserted between two or more field names in a single column header.
 
 ## Usage examples
-For the table `Root` below, we have two fields (`text` and `gloss`) that are identical (i.e., contain exactly the same forms):
+For the table **Root** below, we have two fields (_text_ and _gloss_) that are identical (i.e., contain exactly the same forms):
 
-| **Root =&nbsp;** | **text** | **gloss** |
+| **Root =&nbsp;** | _text_ | _gloss_ |
 |----|:--:|:--:|
 |    | call  | call  |
 |    | jump  | jump  |
 
-We can wewrite this using the `slash` operator to join the two field names in the header (`text/gloss`):
+We can wewrite this using the `slash` operator to join the two field names in the header (_text_`/`_gloss_):
 
-| **Root =&nbsp;** | **text/gloss** |
+| **Root =&nbsp;** | _text_`/`_gloss_ |
 |----|:--:|
 |    | call  |
 |    | jump  |
 
-If you had a third field, `word` (also identical), you could write `text/gloss/word`.
+If you had a third field, _word_ (also identical), you could write _text_`/`_gloss_`/`_word_.
 
 ## Why would we want to use this?
 

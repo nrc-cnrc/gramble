@@ -13,16 +13,20 @@ The `contains` operator (used with a given field name) lets you filter a grammar
 ## Usage examples
 
 For example, we could filter **A** only to entries where the text contains "p", "t", or "k":
-
-| **B =&nbsp;** | **embed** | **contains text** |
+| **A =&nbsp;** | _text_ | _translation_ |
 |:--:|:--:|:--:|
+| | eat | manger |
+| | apple | pomme |
+| | apprenticeship | apprentissage |
+| | five | cinq |
+| **B =&nbsp;** | `embed` | `contains` _text_ |
 |    | A  | p\|t\|k |
 
 Like `equals`, content below `contains` is interpreted as a regex.
 
 For a negative example, the following filters **A** only to those entries where the text *doesn't* contain "p", "t", or "k".
 
-| **B =&nbsp;** | **embed** | **contains text** |
+| **B =&nbsp;** | `embed` | `contains` _text_ |
 |:--:|:--:|:--:|
 |    | A  | ~(p\|t\|k) |
 

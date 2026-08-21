@@ -13,9 +13,13 @@ The `starts` operator (used with a given field name) lets you filter a grammar s
 ## Usage examples
 
 For example, we could define a new symbol **B** that filters **A** only to entries where the text starts with "p", "t", or "k":
-
-| **B =&nbsp;** | **embed** | **starts text** |
+| **A =&nbsp;** | _text_ | _translation_ |
 |:--:|:--:|:--:|
+| | eat | manger |
+| | apple | pomme |
+| | apprenticeship | apprentissage |
+| | five | cinq |
+| **B =&nbsp;** | `embed` | `starts` _text_ |
 |    | A  | p\|t\|k |
 
 
@@ -23,7 +27,7 @@ Like `equals`, content below `starts` is interpreted as a regex.
 
 For a negative example, the following filters **A** only to those entries where the text *doesn't* start with "p", "t", or "k".
 
-| **B =&nbsp;** | **embed** | **starts text** |
+| **B =&nbsp;** | `embed` | `starts` _text_ |
 |:--:|:--:|:--:|
 |    | A  | ~(p\|t\|k) |
 
