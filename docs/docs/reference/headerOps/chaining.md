@@ -1,7 +1,7 @@
 ---
 id: chaining
-title: chaining
-sidebar_label: chaining
+title: Chaining
+sidebar_label: Chaining
 ---
 
 ## Description
@@ -17,7 +17,7 @@ For example, the symbol **B** defines a grammar that will generate the subset of
 | | apple | pomme | |
 | | at | à | |
 | | apprenticeship | apprentissage | |
-| **B =&nbsp;** | **embed** | **ends text** | **starts text** |
+| **B =&nbsp;** | `embed` | `ends` text** | `starts` _text_ |
 |    | A  | p\|t\|k | a\|e |
 
 While `ends` and `starts` are commutative (meaning that their order doesn't matter for the outcome), in this case `ends` would be applied first, followed by `starts`.
