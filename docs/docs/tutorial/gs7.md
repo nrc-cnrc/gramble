@@ -14,11 +14,11 @@ I was a little hand-wavey earlier with what "-a" meant at the end of Swahili ver
 
 I call this "tense" below but it's not exactly tense in the linguistic sense, it's tied up with mood and negation and various other meanings.  But plenty of sources just call this "tense" for convenience, and so will I.
 
-| **Root =&nbsp;** | **text** | **root** | |  |
+| **Root =&nbsp;** | _text_ | _root_ | |  |
 | :-----------:| :---:| :--- |:----: | :--: |
 |              | pend | love |
 | &nbsp; |
-| **Stem =** | **text** | **embed** | **text** | **tense** |
+| **Stem =** | _text_ | `embed` | _text_ | _tense_ |
 |              | na   | Root  | a    | present.continuous |
 |              | li   | Root  | a    | past |
 |              | me   | Root  | a    | past.perfect |
@@ -31,7 +31,7 @@ I call this "tense" below but it's not exactly tense in the linguistic sense, it
 
 When you look at the whole chart (and this isn't the whole chart, there are about two dozen of these), it becomes hard to pin down exactly *where* the idea of negation or subjunctivity rests -- there's not *one* morpheme that's present if and only if something is negative, or subjunctive.  It's only the combination of the two that pins down the tense.  
 
-Note that there's nothing special about any particular morpheme here.  In the `expeditious` row, for example, you're just adding `ka` to the `text` field, then embedding the `Root` (meaning adding `pend` to the `text` field and `love` to the `root` field), then addding `e` to the `text` field.  There's nothing saying that this is a special case of `ka` or `e` compared to the usual uses, or that this `ka` and `e` are related in some way; these are just instructions about what gets added where.  They're *related* only in the sense that there's a derivational path through this grammar that puts `ka` and `e` on some verbs and these also have `expeditious` in the `tense` field.
+Note that there's nothing special about any particular morpheme here.  In the "expeditious" row, for example, you're just adding "ka" to the _text_ field, then embedding the **Root** (meaning adding "pend" to the _text_ field and "love" to the _root_ field), then addding "e" to the _text_ field.  There's nothing saying that this is a special case of "ka" or "e" compared to the usual uses, or that this "ka" and "e" are related in some way; these are just instructions about what gets added where.  They're *related* only in the sense that there's a derivational path through this grammar that puts "ka" and "e" on some verbs and these also have "expeditious" in the "tense" field.
 
 Also, side note, you'll see in the subjunctive row that there's a blank cell.  That's fine, that just means "don't add anything here".
 
@@ -41,18 +41,18 @@ For another example, "kizāgihin", meaning "I love you" in Anishinaabemowin, con
 
 Handling these is straightforward in Gramble; you just put both morphemes into the same row.
 
-| **Root =** | **text** | **root** | | | |
+| **Root =** | _text_ | _root_ | | | |
 | :-----------:| :---: | :---: | :--: | :--: | :--: |
 |              | zāgih | love |
 | &nbsp; |
-| **Stem =&nbsp;** | **text** | **embed** | **text** | **subj** | **obj** |
+| **Stem =&nbsp;** | _text_ | `embed` | _text_ | _subj_ | _obj_ |
 |              | ki   | Root  | in   | 1SG | 2SG |
 |              | ki   | Root  | i    | 2SG | 1SG |
 
-Again, there's nothing special about this `ki`, all we're doing in the fifth row (first row below the header row in the `Stem` table), for example, is adding `ki` to `text`, embedding the `Root` (meaning adding `zāgih` to `text`, and `love` to `root`), then adding `in` to `text`, and so on for the subject and object.
+Again, there's nothing special about this "ki", all we're doing in the fifth row (first row below the header row in the **Stem** table), for example, is adding "ki" to _text_, embedding the **Root** (meaning adding "zāgih" to _text_, and "love" to _root_), then adding "in" to _text_, and so on for the subject and object.
 
 ## You can have the same header twice?
 
-You may have noticed that `text` appeared twice, and thought, "Wait, thinking of this as a database table, that makes no sense.  Does the text field contain 'ki' or 'in'?"
+You may have noticed that _text_ appeared twice, and thought, "Wait, thinking of this as a database table, that makes no sense.  Does the text field contain 'ki' or 'in'?"
 
 Good catch, and the truth is these aren't database tables.  Think of them more like instructions on how to build a database, step by step.  We designed them so that the two look very similar, so that many data-description spreadsheets your team might come up with are -- TA-DA! -- magically also working Gramble source code.  But the same isn't true in the other direction; tables in Gramble source code aren't necessarily valid when interpreted as database tables.
