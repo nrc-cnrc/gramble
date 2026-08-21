@@ -12,13 +12,13 @@ sidebar_label: join
 
 The following example is somewhat trivial, since it's only joining two literal tables, but it illustrates a common usage of `join`.  
 
-| **A =&nbsp;** | **table:** | **text** | **person** |
+| **A =&nbsp;** | `table:` | _text_ | _person_ |
 |:--:|:--:|:--:|:--:|
 |    |    | pa | 1sg |
 |    |    | na | 2sg |
 |    |    | i  | 3sg |
 | &nbsp; |
-|    | **join:** | **person** | **eng** |
+|    | `join:` | _person_ | _eng_ |
 |    |           | 1sg        | I       |
 |    |           | 2sg        | you     |
 |    |           | 3sg        | he/she/it | 
@@ -29,13 +29,13 @@ Doing a join between a grammar and a "legend" table that associates each existin
 
 Note that, like all table operators, it is also possible to make the `join` a direct sibling of an assignment, like so:
 
-| **A =&nbsp;** | **text** | **person** |
+| **A =&nbsp;** | _text_ | _person_ |
 |:--:|:--:|:--:|
 |    | pa | 1sg |
 |    | na | 2sg |
 |    | i  | 3sg |
 | &nbsp; |
-| **join:** | **person** | **eng** |
+| `join:` | _person_ | _eng_ |
 |    | 1sg        | I       |
 |    | 2sg        | you     |
 |    | 3sg        | he/she/it | 

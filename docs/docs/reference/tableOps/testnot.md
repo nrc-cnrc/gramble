@@ -12,26 +12,26 @@ sidebar_label: testnot
 
 In this example, the grammar produced by the symbol **Verb** consists of six entries (each of the two **Root** forms concatenated with each of the three **Suffix** forms). If we want to confirm that the output of **Verb** does not contain an entry with the _text_ "caller" and that it does not contain an entry with the _text_ form "jump", we can write a `testnot` for it:
 
-| **Root =** | **text** | **root** |
+| **Root =** | _text_ | _root_ |
 |:--:|:--:|:--:|
 |    | call  | call |
 |    | jump  | jump |
 | &nbsp; |
-| **Suffix =&nbsp;** | **text** | **tense** |
+| **Suffix =&nbsp;** | _text_ | _tense_ |
 |    | s   | 3SG.PRES |
 |    | ed  | PAST |
 |    | ing | PRES.PROG |
 | &nbsp; |
-| **Verb =** | **embed** | **embed** |
+| **Verb =** | `embed` | `embed` |
 |    | Root | Suffix |
 | &nbsp; |
-|  **testnot:**  | **text** |  |
+|  `testnot:`  | _text_ |  |
 |    | caller |  |
 |    | jump |  |
 
 We can include any fields from the symbol in our test, for example:
 
-|  **testnot:**  | **text** | **tense** |
+|  `testnot:`  | _text_ | _tense_ |
 |:--:|:--:|:--:|
 |    | caller | 3SG.PRES |
 |    | jump | PRES.PROG |

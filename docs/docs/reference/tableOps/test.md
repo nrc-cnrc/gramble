@@ -12,26 +12,26 @@ sidebar_label: test
 
 In this example, the grammar produced by the symbol **Verb** consists of six entries (each of the two **Root** forms concatenated with each of the three **Suffix** forms). If we want to confirm that the output of **Verb** contains an entry with the _text_ "calls" as well as an entry with the _text_ form "jumping", we can write a `test` for it:
 
-| **Root =** | **text** | **root** |
+| **Root =** | _text_ | _root_ |
 |:--:|:--:|:--:|
 |    | call  | call |
 |    | jump  | jump |
 | &nbsp; |
-| **Suffix =&nbsp;** | **text** | **tense** |
+| **Suffix =&nbsp;** | _text_ | _tense_ |
 |    | s   | 3SG.PRES |
 |    | ed  | PAST |
 |    | ing | PRES.PROG |
 | &nbsp; |
-| **Verb =** | **embed** | **embed** |
+| **Verb =** | `embed` | `embed` |
 |    | Root | Suffix |
 | &nbsp; |
-|  **test:**  | **text** |  |
+|  `test:`  | _text_ |  |
 |    | calls |  |
 |    | jumping |  |
 
 We can include any fields from the symbol in our test, for example:
 
-|  **test:**  | **text** | **tense** |
+|  `test:`  | _text_ | _tense_ |
 |:--:|:--:|:--:|
 |    | calls | 3SG.PRES |
 |    | jumping | PRES.PROG |
