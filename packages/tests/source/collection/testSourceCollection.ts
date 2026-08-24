@@ -1,7 +1,7 @@
 import {VERBOSE_DEBUG } from "../../../interpreter/src/utils/logging.js";
 import {
     testSource, SourceTest, 
-    Error, Warning 
+    Error, TestSkipped, Warning 
 } from "../testSourceUtil.js";
 
 const DIR = "collection";
@@ -468,4 +468,104 @@ describe(`Source ${DIR}`, function() {
             "importedGrammar2.All",
         ],
     });
+
+    testSrc({
+		desc: '14a. Collection containing first assignment with a replace',
+        results: [
+            {text: "foebar", gloss: "run-1SG"},
+            {text: "moebar", gloss: "jump-1SG"},
+            {text: "foebaz", gloss: "run-2SG"},
+            {text: "moebaz", gloss: "jump-2SG"},
+        ],
+    });
+
+    testSrc({
+		desc: '14b. Collection containing second assignment with a replace',
+        results: [
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobez", gloss: "run-2SG"},
+            {text: "moobez", gloss: "jump-2SG"},
+        ],
+    });
+
+    testSrc({
+		desc: '14c. Collection containing second assignment (with an implicit ' +
+                'table op) with a replace',
+        results: [
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobez", gloss: "run-2SG"},
+            {text: "moobez", gloss: "jump-2SG"},
+        ],
+    });
+
+    testSrc({
+		desc: '15. Collection as an operand of replace op',
+        results: [
+            {},
+        ],
+        errors: [
+            Error(0, 1, "Wayward collection, operand of 'replace'"),
+            Error(8, 1, "Replacing on non-existent header: 'text'"),
+            Error(12, 2, "Undefined symbol: 'x.verb'"),
+            Error(12, 3, "Undefined symbol: 'x.suffix'"),
+        ]
+    });
+
+    // test 16 is similar to test 12b.
+    testSrc({
+		desc: '16. Collection as an operand of or op',
+        results: [
+            {},
+        ],
+        errors: [
+            Error(0, 1, "Wayward collection, operand of 'or'"),
+            Error(12, 2, "Undefined symbol: 'x.verb'"),
+            Error(12, 3, "Undefined symbol: 'x.suffix'"),
+        ]
+    });
+
+    testSrc({
+		desc: '17. Collection as an operand of join op',
+        results: [
+            {},
+        ],
+        errors: [
+            Error(8, 1, "Undefined symbol: '$x(S)'"),
+            Error(12, 2, "Undefined symbol: 'x.verb'"),
+            Error(12, 3, "Undefined symbol: 'x.suffix'"),
+        ]
+    });
+
+    testSrc({
+		desc: '18. Collection as an operand of test op',
+        results: [
+            {},
+        ],
+        errors: [
+            Error(0, 1, "Wayward collection, operand of 'test'"),
+            Error(8, 2, "Ill-formed unit testblock - no 'text' header"),
+            Warning(9, 2, "Skipping unit test"),
+            TestSkipped(9, 2, "Skipped unit test"),
+            Error(12, 2, "Undefined symbol: 'x.verb'"),
+            Error(12, 3, "Undefined symbol: 'x.suffix'"),
+        ]
+    });
+
+    testSrc({
+		desc: '19. Collection as an operand of testnot op',
+        results: [
+            {},
+        ],
+        errors: [
+            Error(0, 1, "Wayward collection, operand of 'testnot'"),
+            Error(8, 2, "Ill-formed unit testblock - no 'text' header"),
+            Warning(9, 2, "Skipping unit test"),
+            TestSkipped(9, 2, "Skipped unit test"),
+            Error(12, 2, "Undefined symbol: 'x.verb'"),
+            Error(12, 3, "Undefined symbol: 'x.suffix'"),
+        ]
+    });
+
 });
