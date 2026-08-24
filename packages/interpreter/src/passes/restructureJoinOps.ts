@@ -36,7 +36,7 @@ export class RestructureJoinOps extends Pass<TST,TST> {
     public handleJoin(t: TstJoin, env: PassEnv): Msg<TST> {
 
         const msgs: Message[] = [];
-        if (t.sibling.tag !== "empty") {
+        if (t.sibling.tag !== "empty" && t.sibling.tag != "collection") {
             
             // make a new Assignment with a special name
             const newName = "$" + this.symbolName + "(S)";

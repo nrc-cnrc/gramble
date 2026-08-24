@@ -532,7 +532,7 @@ describe(`Source ${DIR}`, function() {
             {},
         ],
         errors: [
-            Error(8, 1, "Undefined symbol: '$x(S)'"),
+            Error(0, 1, "Wayward collection, operand of 'join'"),
             Error(12, 2, "Undefined symbol: 'x.verb'"),
             Error(12, 3, "Undefined symbol: 'x.suffix'"),
         ]
