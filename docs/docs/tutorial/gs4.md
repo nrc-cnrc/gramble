@@ -22,7 +22,7 @@ Let's take the previous program and add another field, _gloss_.  (By the way, if
 
 We have to decide what our gloss is going to look like, so let's say "jumps" comes out as "jump-3SG.PRES", "jumped" comes out as "jump-PAST", etc.  (But there's nothing special about these labels.  I chose linguist-y labels, but you could use any labels you want.  Gramble doesn't understand what _text_ or _gloss_ or "jump" or "3SG.PRES" mean.) 
 
-(If you're following along in the interface, this is the second example, `2: text<->gloss`, in the `Gramble`->`Tutorial sheets` menu.)
+(If you're following along in the interface, this is the second example, `2: Text <-> Gloss`, in the `Gramble`->`Tutorial sheets` menu.)
 
 | **Root =** | _text_ | _gloss_ |
 |:--:|:--:|:--:|
