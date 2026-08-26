@@ -1,8 +1,0 @@
-x=, collection:, verb=  , table:       , text
-  ,            ,        ,              , foo
-
-  , replace text:, from, to
-  ,              , o,    a
-
-word=, table:, embed
-     ,       , x.verb

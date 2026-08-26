@@ -388,22 +388,21 @@ describe(`Source ${DIR}`, function() {
 
     testSrc({
 		desc: '12b. Op with collection as a sibling',
+        symbol: "word.All",
         results: [
-            {},
-            {text: "foobar", gloss: "run-1SG"},
-            {text: "moobar", gloss: "jump-1SG"},
-            {text: "foobaz", gloss: "run-2SG"},
-            {text: "moobaz", gloss: "jump-2SG"}
+            {text: "goo"},
         ],
         errors: [
-            Error(8, 1, "Wayward collection, operand of 'or'")
+            Error(11, 1, "Wayward 'or', 'collection' as operand"),
+            // Error(8, 1, "Wayward collection, operand of 'or'")
         ],
         symbols: [
             "All",
             "collection12b.All",
             "collection12b.verb",
             "collection12b.suffix",
-            "collection12b.word",
+            "collection12b.word.noun",
+            "collection12b.word.All",
         ],
         // verbose: VERBOSE_DEBUG,
     });
@@ -503,13 +502,13 @@ describe(`Source ${DIR}`, function() {
     testSrc({
 		desc: '15. Collection as an operand of replace op',
         results: [
-            {},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
         ],
         errors: [
-            Error(0, 1, "Wayward collection, operand of 'replace'"),
-            Error(8, 1, "Replacing on non-existent header: 'text'"),
-            Error(12, 2, "Undefined symbol: 'x.verb'"),
-            Error(12, 3, "Undefined symbol: 'x.suffix'"),
+            Error(8, 1, "Wayward 'replace', 'collection' as operand"),
         ]
     });
 
@@ -517,54 +516,52 @@ describe(`Source ${DIR}`, function() {
     testSrc({
 		desc: '16. Collection as an operand of or op',
         results: [
-            {},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
         ],
         errors: [
-            Error(0, 1, "Wayward collection, operand of 'or'"),
-            Error(12, 2, "Undefined symbol: 'x.verb'"),
-            Error(12, 3, "Undefined symbol: 'x.suffix'"),
+            Error(8, 1, "Wayward 'or', 'collection' as operand"),
         ]
     });
 
     testSrc({
 		desc: '17. Collection as an operand of join op',
         results: [
-            {},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
         ],
         errors: [
-            Error(0, 1, "Wayward collection, operand of 'join'"),
-            Error(12, 2, "Undefined symbol: 'x.verb'"),
-            Error(12, 3, "Undefined symbol: 'x.suffix'"),
+            Error(8, 1, "Wayward 'join', 'collection' as operand"),
         ]
     });
 
     testSrc({
 		desc: '18. Collection as an operand of test op',
         results: [
-            {},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
         ],
         errors: [
-            Error(0, 1, "Wayward collection, operand of 'test'"),
-            Error(8, 2, "Ill-formed unit testblock - no 'text' header"),
-            Warning(9, 2, "Skipping unit test"),
-            TestSkipped(9, 2, "Skipped unit test"),
-            Error(12, 2, "Undefined symbol: 'x.verb'"),
-            Error(12, 3, "Undefined symbol: 'x.suffix'"),
+            Error(8, 1, "Wayward 'test', 'collection' as operand"),
         ]
     });
 
     testSrc({
 		desc: '19. Collection as an operand of testnot op',
         results: [
-            {},
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
         ],
         errors: [
-            Error(0, 1, "Wayward collection, operand of 'testnot'"),
-            Error(8, 2, "Ill-formed unit testblock - no 'text' header"),
-            Warning(9, 2, "Skipping unit test"),
-            TestSkipped(9, 2, "Skipped unit test"),
-            Error(12, 2, "Undefined symbol: 'x.verb'"),
-            Error(12, 3, "Undefined symbol: 'x.suffix'"),
+            Error(8, 1, "Wayward 'testnot', 'collection' as operand"),
         ]
     });
 
