@@ -576,7 +576,7 @@ const TUTORIAL_2 = [
     ["Suffix = ", "text", "gloss"],
     ["", "s", "-3SG.PRES"],
     ["", "ed", "-PAST"],
-    ["", "ing", "-PRES"],
+    ["", "ing", "-PRES.PROG"],
     [],
     ["Verb = ", "embed", "embed"],
     ["", "Root", "Suffix"]
@@ -590,7 +590,7 @@ const TUTORIAL_3 = [
     ["Suffix = ", "text", "tense"],
     ["", "s", "3SG.PRES"],
     ["", "ed", "PAST"],
-    ["", "ing", "PRES"],
+    ["", "ing", "PRES.PROG"],
     [],
     ["Verb = ", "embed", "embed"],
     ["", "Root", "Suffix"]
@@ -604,7 +604,7 @@ const TUTORIAL_4 = [
     ["Suffix = ", "text", "tense/gloss"],
     ["", "s", "[3SG.PRES]"],
     ["", "ed", "[PAST]"],
-    ["", "ing", "[PRES]"],
+    ["", "ing", "[PRES.PROG]"],
     [],
     ["Verb = ", "embed", "embed"],
     ["", "Root", "Suffix"]
