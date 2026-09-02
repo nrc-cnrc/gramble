@@ -1,4 +1,5 @@
 import {
+    cellToCSV,
     Interpreter,
     SILENT,
     TestTextDevEnvironment
@@ -140,12 +141,11 @@ export function generateToCSV(
     labels: string[],
     max: number = Infinity
 ): void {
-    const replacer = (key: string, value:string | null) => value === null ? '' : value;
     outputStream.write(labels.join(",") + "\n");
     let count: number = 0;
     if (max == 0) return;
     for (const entry of generator) {
-        const line = labels.map(label =>  JSON.stringify(entry[label], replacer));
+        const line = labels.map(label => cellToCSV(entry[label]));
         outputStream.write(line.join(",") + "\n");
         if (++count >= max) break;
     }

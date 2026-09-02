@@ -6,6 +6,7 @@ import {
     VERBOSE_GRAMMAR, VERBOSE_STATES, VERBOSE_TIME,
 } from "./utils/logging.js";
 import { Options } from "./utils/options.js";
+import { cellToCSV } from "./utils/strings.js";
 
 export { 
     Interpreter, 
@@ -19,4 +20,5 @@ export {
     VERBOSE_STATES,
     VERBOSE_TIME,
     Options,
+    cellToCSV,
 };

@@ -508,7 +508,7 @@ function showAbout() {
 function getSourceData() {
     const [interpreter, devEnv] = makeInterpreter();
     const cells = interpreter.convertToSingleSource();
-    const text = cells.map(r => r.map(c => JSON.stringify(c)).join(", "))
+    const text = cells.map(r => r.map(c => gramble.cellToCSV(c)).join(", "))
                       .join("\n");
 
     return {

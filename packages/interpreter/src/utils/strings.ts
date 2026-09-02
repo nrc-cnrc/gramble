@@ -119,3 +119,10 @@ export function tokenizeUnicode(str: string): string[] {
 export function capitalize(s: string): string {
     return s.slice(0,1).toUpperCase() + s.slice(1);
 }
+
+export function cellToCSV(cell: any): string {
+    const replacer = (key: string, value: any) => value === null ? '' : value;
+    return JSON.stringify(cell, replacer)
+            .replace(/\\\\/g, "\\")     // \\ -> \
+            .replace(/\\"/g, "\"\"");   // \" -> ""
+}

@@ -380,8 +380,9 @@
                 const replacer = (key, value) => value === null ? '' : value 
                 return [
                     labels.join(','), // header row first
-                    ...entries.map(row => labels.map(label =>
-                                    JSON.stringify(row[label], replacer)).join(','))
+                    ...entries.map(row => labels.map(label => 
+                                                    gramble.cellToCSV(row[label]))
+                                                .join(','))
                 ].join('\n');
             }
 

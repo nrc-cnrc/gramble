@@ -1,0 +1,11 @@
+greeting =, text
+          , "good""bye"
+
+recipient =, text
+           , kitty
+
+main =, embed,    text, embed
+      , greeting, \ ,   recipient
+
+all =, embed
+     , main

@@ -660,6 +660,15 @@ describe(`${cliTestSuiteName(module)}`, function() {
         ],
     });
 
+    testCLI({
+        desc: 'g10. test generate: gramble generate cli/csvs/clig10.csv',
+        command: `gramble generate cli/csvs/clig10.csv -s clig10.main`,
+        results: [
+            'text',
+            '"good""bye\ kitty"',
+        ],
+    });
+
 
     // testing gramble sample
 

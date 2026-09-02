@@ -8,6 +8,7 @@ import {
 } from "./utils/logging.js";
 import { Message } from "./utils/msgs.js";
 import { Options } from "./utils/options.js";
+import { cellToCSV } from "./utils/strings.js";
 
 export { 
     Interpreter, 
@@ -24,4 +25,5 @@ export {
     VERBOSE_TIME,
     Message,
     Options,
+    cellToCSV,
 };
