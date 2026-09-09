@@ -140,15 +140,24 @@ export class CheckStructuralParams extends Pass<TST,TST> {
                     (t.child instanceof TstGrid && t.child.isEmpty())) {
                 Err(`${capitalize(opTag)} operator requires header(s)`,
                     `This ${opTag} operator requires header(s) to the right, ` +
-                    "but none was found.")
+                    "but none was found." +
+                    `\nThus, this ${opTag} operator will be ignored.`)
                     .msgTo(msgs);
+                t.hasErrors = true;
                 result = t.sibling;
             } else if (!(t.child instanceof TstGrid)) {
-                const content = t.child.cell.text.trim();
-                Err(`${capitalize(opTag)} operator requires header(s), not '${content}'`,
+                let content = `'${t.child.cell.text.trim()}'`;
+                if (t.child instanceof TstOp) {
+                    if (t.child.sibling instanceof TstOp) {
+                        content = `'${t.child.sibling.cell.text.trim()}' and ${content}`;
+                    }
+                }
+                Err(`${capitalize(opTag)} operator requires header(s), not ${content}`,
                     `This ${opTag} operator requires header(s) to the right, ` +
-                    `but has another operator instead: '${content}'.`)
+                    `but has other operator(s) instead: ${content}.` +
+                    `\nThus, these ${opTag} and ${content} operators will be ignored.`)
                     .msgTo(msgs);
+                t.hasErrors = true;
                 result = t.sibling;
             }
         }
@@ -160,8 +169,10 @@ export class CheckStructuralParams extends Pass<TST,TST> {
                             "and to the right, but both are" : "but it's";
             Err(`Missing content for ${opTag} operator`,
                 `This ${opTag} operator requires content above it ` +
-                `${details} empty or erroneous.`)
+                `${details} empty or erroneous.` +
+                `\nThus, this ${opTag} operator will be ignored.`)
                 .localize(t.sibling.pos).msgTo(msgs);
+            t.hasErrors = true;
             result = new TstEmpty();
         }
 
@@ -170,7 +181,8 @@ export class CheckStructuralParams extends Pass<TST,TST> {
         if (t.child instanceof TstEmpty ||
                 (t.child instanceof TstGrid && t.child.isEmpty())) {
             Warn(`No content for ${opTag} operator`,
-                `This ${opTag} operator will not contain any content.`)
+                `This ${opTag} operator will not contain any content.` +
+                `\nThus, this ${opTag} operator will be ignored.`)
                 .localize(t.pos).msgTo(msgs);
             result = t.sibling;
         }

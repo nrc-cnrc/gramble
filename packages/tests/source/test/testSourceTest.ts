@@ -394,7 +394,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '13a. or: op under unit test',
+		desc: '13a. table: and or: ops under unit test',
         results: [
             {text: "foobar", gloss: "run-1SG"},
             {text: "moobar", gloss: "jump-1SG"},
@@ -402,12 +402,12 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12, 1, "'test' operator requires header(s), not 'or:'")
+            Error(12, 1, "'test' operator requires header(s), not 'table:' and 'or:'")
         ],
     });
 
     testSrc({
-		desc: '13b. or: op under negative unit test',
+		desc: '13b. table and or: ops under negative unit test',
         results: [
             {text: "foobar", gloss: "run-1SG"},
             {text: "moobar", gloss: "jump-1SG"},
@@ -415,8 +415,37 @@ describe(`Source ${DIR}`, function() {
             {text: "moobaz", gloss: "jump-2SG"}
         ],
         errors: [
-            Error(12, 1, "'testnot' operator requires header(s), not 'or:'")
+            Error(12, 1, "'testnot' operator requires header(s), not 'table:' and 'or:'")
         ]
+    });
+
+    testSrc({
+		desc: '13c. or: op as sibling of unit test (i.e. same column as test:)',
+        results: [
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG"},
+            {text: "maabar", gloss: "jump-1SG"},
+        ],
+        errors: [
+            TestFailed(14, 2, "Failed unit test - no matching outputs"),
+        ],
+    });
+
+    testSrc({
+		desc: '13d. or: op as test lines',
+        results: [
+            {text: "foobar", gloss: "run-1SG"},
+            {text: "moobar", gloss: "jump-1SG"},
+            {text: "foobaz", gloss: "run-2SG"},
+            {text: "moobaz", gloss: "jump-2SG"}
+        ],
+        errors: [
+            TestFailed(14, 2, "Failed unit test - no matching outputs"),
+            TestFailed(16, 2, "Failed unit test - no matching outputs"),
+            TestFailed(17, 2, "Failed unit test - no matching outputs"),
+        ],
     });
 
     testSrc({
