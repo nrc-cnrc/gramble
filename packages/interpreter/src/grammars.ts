@@ -507,8 +507,8 @@ export abstract class AbstractTestGrammar extends AbstractGrammar {
 
     constructor(
         public child: Grammar,
-        public uniques: LiteralGrammar[] = [],
         public skip: boolean = false,
+        public uniques: LiteralGrammar[] = [],
     ) {
         super();
     }

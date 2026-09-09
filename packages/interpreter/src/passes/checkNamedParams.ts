@@ -1,6 +1,11 @@
 import { 
-    TstEmpty, TstHeader, 
-    TstOp, TstHeadedGrid, TST 
+    TstEmpty,
+    TstHeadedGrid,
+    TstHeader,
+    TstOp,
+    TstTest,
+    TstTestNot,
+    TST,
 } from "../tsts.js";
 import { Pass } from "../passes.js";
 import {
@@ -54,7 +59,7 @@ export class CheckNamedParams extends Pass<TST,TST> {
     }
 
     public transformAux(t: TST, env: PassEnv): TST|Msg<TST> {
-        switch(t.tag) {
+        switch (t.tag) {
             case "op":          return this.handleOp(t, env);
             case "header":      return this.handleHeader(t, env);
             case "headedgrid":  return this.handleHeadedGrid(t, env);
@@ -89,14 +94,20 @@ export class CheckNamedParams extends Pass<TST,TST> {
             Warn(`'${t.op.tag}' operator has erroneous operands`,
                 `This '${t.op.tag}' operator has erroneous operands and will not execute.`)
                 .localize(t.cell.pos).msgTo(opMsgs);
-            return sib.msg(sibMsgs).msg(childMsgs).msg(opMsgs);
+            switch ((op as TstOp).op.tag) {
+                case 'test':
+                case 'testnot':
+                    (op as TstOp).hasErrors = true;
+                    return op.msg(sibMsgs).msg(childMsgs).msg(opMsgs);
+                default:
+                    return sib.msg(sibMsgs).msg(childMsgs).msg(opMsgs);
+            }
         }
 
         return op.msg(sibMsgs).msg(childMsgs).msg(opMsgs);
     }
 
     public checkRequiredParams(t: TstOp): Msg<TST> {
-
         const msgs: Message[] = [];
         
         // now check that the required params are present.  if the

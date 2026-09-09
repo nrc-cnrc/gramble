@@ -286,7 +286,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
 
             if (t.tag == "testnot") {
                 // testnots are a bit simpler
-                const testGrammar = new TestNotGrammar(inputsWithRow)
+                const testGrammar = new TestNotGrammar(inputsWithRow, t.skip)
                                         .locate(params.pos) as TestNotGrammar;
                 tests.push(testGrammar);  
                 continue;
@@ -295,7 +295,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
             // tests require another param for uniques.
             const unique = this.transform(params.getParam("unique"), env).msgTo(msgs);
             const uniqueLits = uniqueLiterals(unique);
-            const testGrammar = new TestGrammar(inputsWithRow, uniqueLits)
+            const testGrammar = new TestGrammar(inputsWithRow, t.skip, uniqueLits)
                                     .locate(params.pos) as TestGrammar;
             tests.push(testGrammar);
         }

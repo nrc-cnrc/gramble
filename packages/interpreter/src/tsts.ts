@@ -372,7 +372,8 @@ export class TstOp extends TstBinary {
         cell: Cell,
         public op: Op,
         sibling: TST = new TstEmpty(),
-        child: TST = new TstEmpty()
+        child: TST = new TstEmpty(),
+        public hasErrors: boolean = false
     ) { 
         super(cell, sibling, child);
     }
@@ -429,7 +430,8 @@ export class TstTest extends TstCellComponent {
     constructor(
         cell: Cell,
         public sibling: TST,
-        public child: TstParamList
+        public child: TstParamList,
+        public skip: boolean = false
     ) { 
         super(cell);
     }
@@ -447,7 +449,8 @@ export class TstTestNot extends TstCellComponent {
     constructor(
         cell: Cell,
         public sibling: TST,
-        public child: TstParamList
+        public child: TstParamList,
+        public skip: boolean = false
     ) { 
         super(cell);
     }

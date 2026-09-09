@@ -38,19 +38,16 @@ export class CreateOps extends AutoPass<TST> {
     }
 
     public handleTest(t: TstOp): TST {
-        return new TstTest(t.cell, t.sibling, 
-                    t.child as TstParamList);  
+        return new TstTest(t.cell, t.sibling, t.child as TstParamList, t.hasErrors);  
     }
 
     public handleTestNot(t: TstOp): TST {
-        return new TstTestNot(t.cell, t.sibling, 
-                    t.child as TstParamList);
+        return new TstTestNot(t.cell, t.sibling, t.child as TstParamList, t.hasErrors);
     }
     
     public handleReplace(t: TstOp): TST {
         const tapeName = (t.op as ReplaceOp).child.text;
-        return new TstReplace(t.cell, tapeName, 
-                    t.sibling, t.child as TstParamList);
+        return new TstReplace(t.cell, tapeName, t.sibling, t.child as TstParamList);
     }
     
     public handleOr(t: TstOp): TST {

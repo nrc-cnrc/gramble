@@ -466,6 +466,13 @@ describe(`Source ${DIR}`, function() {
         errors: [
             Warning(13, 1, "'testnot' operator has erroneous operands"),
             Error(13, 3, "Invalid 'unique' header: 'unique gloss'"),
+            TestSkipped(14, 2, "Skipped unit test"),
+            TestSkipped(15, 2, "Skipped unit test"),
+            TestSkipped(16, 2, "Skipped unit test"),
+            TestSkipped(17, 2, "Skipped unit test"),
+            TestSkipped(18, 2, "Skipped unit test"),
+            TestSkipped(19, 2, "Skipped unit test"),
+            TestSkipped(20, 2, "Skipped unit test"),
         ]
     });
 
