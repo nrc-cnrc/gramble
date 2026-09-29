@@ -706,6 +706,33 @@ function scrollToCell(sheetName, row, col) {
     sheet.setActiveRange(range);
 }
 
+function getRelevantCells() {
+    const [interpreter, devEnv] = makeInterpreter(false);
+    devEnv.highlight();
+    try {
+        const results = { "success": true,
+                          "payload": { 
+                             "startSheet": "",
+                             "sheets": {}
+                          } 
+                        };
+        const spreadsheet = SpreadsheetApp.getActive();
+
+        // add the name of the sheet that's currently active
+        results["payload"]["startSheet"] = interpreter.workbook.mainSheetName;
+
+        for (const worksheet of Object.entries(interpreter.workbook.sheets)) {
+            const name = worksheet[0];
+            const sheet = spreadsheet.getSheetByName(worksheet[0]);
+            const data = sheet.getDataRange().getDisplayValues();
+            results["payload"]["sheets"][name] = data;
+        }
+        return results;
+    } catch (e) {
+        return { "success": false, "message": e.toString() };
+    }
+}
+
 function getAllCells() {
     highlight();
     try {

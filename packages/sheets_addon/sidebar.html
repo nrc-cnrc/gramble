@@ -132,7 +132,7 @@
                 // ask for the latest data from GSuite
                 let responseFromGSuite;
                 try {
-                    responseFromGSuite = await scriptRunPromise().getAllCells();
+                    responseFromGSuite = await scriptRunPromise().getRelevantCells();
                 } catch (err) {
                     const msg = "longMsg" in err ? err.longMsg : err;
                     console.error(msg);
