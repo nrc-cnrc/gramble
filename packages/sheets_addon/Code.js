@@ -394,13 +394,13 @@ function getSheetName() {
     return sheetName;
 }
 
-function makeInterpreter() {
+function makeInterpreter(applyJITPasses = true) {
     const sheetName = getSheetName();
 
     const opts = { verbose: gramble.VERBOSE_TIME | gramble.VERBOSE_DEBUG, posFormat: "A1" };
     const devEnv = new GoogleSheetsDevEnvironment(sheetName, opts);
     try {
-        const interpreter = gramble.Interpreter.fromSheet(devEnv, sheetName);
+        const interpreter = gramble.Interpreter.fromSheet(devEnv, sheetName, applyJITPasses);
         return [interpreter, devEnv];
     } catch(err) {
         const msg = "longMsg" in err ? `ERROR: ${err.longMsg}` : err;
@@ -447,7 +447,7 @@ function runTestsSymbol(recursive = false) {
 }
 
 function runTests(symbol, recursive = false) {
-    const [interpreter, devEnv] = makeInterpreter();
+    const [interpreter, devEnv] = makeInterpreter(true);
     try {
         interpreter.runTests(symbol, recursive);
     } catch(err) {
@@ -476,7 +476,7 @@ function runTests(symbol, recursive = false) {
 } 
 
 function highlight() {
-    const [interpreter, devEnv] = makeInterpreter();
+    const [interpreter, devEnv] = makeInterpreter(false);
     devEnv.highlight();
 } 
 
@@ -506,7 +506,7 @@ function showAbout() {
 }
 
 function getSourceData() {
-    const [interpreter, devEnv] = makeInterpreter();
+    const [interpreter, devEnv] = makeInterpreter(false);
     const cells = interpreter.convertToSingleSource();
     const text = cells.map(r => r.map(c => gramble.cellToCSV(c)).join(", "))
                       .join("\n");

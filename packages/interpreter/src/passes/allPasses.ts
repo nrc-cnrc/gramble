@@ -189,9 +189,11 @@ export const TAPE_PASSES =
     new TimerPass(
         "Creating replacement rule blocks", 
         new ConstructReplaceBlocks()
-    ).compose(
+    ))));
 
+// JIT passes are optional and certainly are not needed if we are not generating.
+export const JIT_PASSES = 
     new TimerPass(
         "Identifying compilation targets",
         new IdentifyJITTargets()
-    )))));
+    );
