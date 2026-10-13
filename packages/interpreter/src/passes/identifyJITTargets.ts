@@ -53,6 +53,19 @@ export class IdentifyJITTargets extends Pass<Grammar,Grammar> {
 
         const [newG, msgs] = g.mapChildren(this, env).destructure() as [JoinGrammar, Message[]];
 
+        
+        // we need a name that uniquely identifies this grammar wherever it occurs.  this
+        // join might happen many times in a grammar, and we don't want a different name each 
+        // time; that would defeat the purpose of JIT compilation.  the toStr representation 
+        // suffices, at least for the simple grammars that will be picked out by the above 
+        // constraints.  it's not a valid identifier but at this point in compilation that's 
+        // fine; the identifier rules are only constraints on programmers.
+        const newEmbedName = '$JIT' + toStr(newG);
+        if (newEmbedName in env.symbolNS) {
+            return newG.msg(msgs);
+        }
+
+
         if (newG.child1.tag != "embed") {
             // compiling joined embeds is our priority
             return newG.msg(msgs);
@@ -80,14 +93,9 @@ export class IdentifyJITTargets extends Pass<Grammar,Grammar> {
             return newG.msg(msgs);
         }
 
-        // we need a name that uniquely identifies this grammar wherever it occurs.  this
-        // join might happen many times in a grammar, and we don't want a different name each 
-        // time; that would defeat the purpose of JIT compilation.  the toStr representation 
-        // suffices, at least for the simple grammars that will be picked out by the above 
-        // constraints.  it's not a valid identifier but at this point in compilation that's 
-        // fine; the identifier rules are only constraints on programmers.
-        const newEmbedName = '$JIT' + toStr(newG);
 
+        console.log(`Identified new JIT target: ${newEmbedName}`);
+        
         const jitG = new JITGrammar(newG, sharedTape, newEmbedName);
         
         env.symbolNS[newEmbedName] = jitG;

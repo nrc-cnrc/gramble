@@ -62,7 +62,7 @@ export class DerivEnv extends Env {
         public vocab: Set<string>,
         public atomic: boolean,
         public random: boolean,
-        public stats: DerivStats
+        public stats: DerivStats,
     ) { 
         super(opt);
     }
@@ -1962,7 +1962,7 @@ class JITExpr extends UnaryExpr {
     public jitCompile(
         env: DerivEnv 
     ): Expr {
-        //console.log(`JIT-ing symbol ${this.symbolName}`);
+        console.log(`JIT-ing symbol ${this.symbolName}`);
 
         const wrapped = constructGreedyCursor(env, 
             this.tapeName, this.child, this.vocab, this.atomic);
@@ -1997,7 +1997,8 @@ class JITExpr extends UnaryExpr {
                 throw new Error(`JIT compilation resulted in ${result.tag}`);
             }
         }
-
+        
+        console.log(`done JIT-ing symbol ${this.symbolName}`);
         const newAlt = constructAlternation(env, ...compiledExprs);
         env.symbols[this.symbolName] = newAlt;
         return newAlt;
