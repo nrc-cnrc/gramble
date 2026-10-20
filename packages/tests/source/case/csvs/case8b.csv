@@ -1,0 +1,6 @@
+word=, table:, text, gloss, Text, GLOSS
+     ,       , foo,  run,   bar,  -1SG
+     ,
+     , testNOT:, TEXT,   Gloss
+     ,         , foobaz, run-1SG
+     ,         , foobar, run-2SG

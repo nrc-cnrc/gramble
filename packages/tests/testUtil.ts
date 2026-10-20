@@ -18,7 +18,7 @@ import {
     HIDDEN_PREFIX
 } from "../interpreter/src/utils/constants.js";
 import { Dict,
-    getCaseInsensitive,
+    caseInsensitiveStringDict,
     StringDict,
     stringDictToStr
 } from "../interpreter/src/utils/func.js";
@@ -130,7 +130,9 @@ export function testMatchOutputs(
     // comparison blocks quite large. 
 
     const outputStrs = outputs.map(o => stringDictToStr(o)).sort();
-    const expectedStrs = expected_outputs.map(o => stringDictToStr(o)).sort();
+    const expectedStrs = expected_outputs.map(o => stringDictToStr(
+                                                   caseInsensitiveStringDict(o)))
+                                         .sort();
 
     if ((verbose & VERBOSE_DEBUG) == VERBOSE_DEBUG) {
         console.log("sorted outputStrs: ", outputStrs);
