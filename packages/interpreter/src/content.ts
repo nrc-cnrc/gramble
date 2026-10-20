@@ -117,14 +117,14 @@ const TAPENAME_SEQUENCE: RegexParser = MPDelay(() => MPSequence(
         if (!(c1 instanceof TapeNamesGrammar) || !(c2 instanceof TapeNamesGrammar)) {
             return new TapeNamesGrammar([]);
         }
-        return new TapeNamesGrammar([...c1.symbols, ...c2.symbols]);
+        return new TapeNamesGrammar([...c1.symbols, ...c2.symbols].map(s => s.toLowerCase()));
     }
 ));
 
 const TAPENAME_UNRESERVED = MPUnreserved<Grammar>(
     (s) => {
         if (isValidSymbol(s)) {
-            return new TapeNamesGrammar([s])
+            return new TapeNamesGrammar([s.toLowerCase()])
         } else {
             throw new TapeNamesGrammar([]).err(
                 `Invalid header name: '${s}'`, 

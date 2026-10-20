@@ -139,7 +139,7 @@ describe(`Parse header`, function() {
     testHeaderID("14a", "textε", "(tape textε)");
     testHeaderID("14b", "εtext", "(tape εtext)");
     testHeaderID("14c", "नमस्ते", "(tape नमस्ते)");
-    testHeaderID("14d", "Привет", "(tape Привет)");
+    testHeaderID("14d", "Привет", "(tape привет)");
     testHeaderID("14e", "ᓄᓇᕕᒃ", "(tape ᓄᓇᕕᒃ)");
     testHeaderID("14f", "οἶκος", "(tape οἶκος)");
     testHeaderID("14g", "あの人", "(tape あの人)");

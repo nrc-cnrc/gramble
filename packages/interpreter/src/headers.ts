@@ -246,7 +246,7 @@ const HP_COMMENT = MPComment<Header>(
 const HP_UNRESERVED = MPUnreserved<Header>(
     (s) => {
         if (isValidSymbol(s)) {
-            return new TapeHeader(s)
+            return new TapeHeader(s.toLowerCase());
         } else {
             throw new ErrorHeader().err(
                 `Invalid header: '${s}'`, 

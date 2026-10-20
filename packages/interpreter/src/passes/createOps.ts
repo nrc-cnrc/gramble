@@ -46,7 +46,7 @@ export class CreateOps extends AutoPass<TST> {
     }
     
     public handleReplace(t: TstOp): TST {
-        const tapeName = (t.op as ReplaceOp).child.text;
+        const tapeName = (t.op as ReplaceOp).child.text.toLowerCase();
         return new TstReplace(t.cell, tapeName, t.sibling, t.child as TstParamList);
     }
     

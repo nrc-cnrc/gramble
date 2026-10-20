@@ -25,6 +25,7 @@ import {
 } from "./sources.js";
 
 import {
+    JIT_PASSES,
     TAPE_PASSES,
     SOURCE_PASSES,
     SYMBOL_PASSES
@@ -103,6 +104,7 @@ export class Interpreter {
     constructor(
         public devEnv: DevEnvironment,
         g: Grammar,
+        applyJITPasses: boolean = true,
     ) { 
 
         // reset indices to zero
@@ -115,10 +117,13 @@ export class Interpreter {
         // to get the grammar into an executable state: symbol references fully-qualified,
         // semantically impossible tape structures are massaged into well-formed ones, some 
         // scope problems adjusted, etc.
-        this.grammar = msg(g)
+        let newG_msg = msg(g)
                         .bind(g => SYMBOL_PASSES.getEnvAndTransform(g, devEnv.opt))
                         .bind(g => TAPE_PASSES.getEnvAndTransform(g, devEnv.opt))
-                        .msgTo(m => sendMsg(this.devEnv, m));
+        if (applyJITPasses) {
+            newG_msg = newG_msg.bind(g => JIT_PASSES.getEnvAndTransform(g, devEnv.opt));
+        }
+        this.grammar = newG_msg.msgTo(m => sendMsg(this.devEnv, m));
 
         logGrammar(this.opt.verbose, this.grammar);
     }
@@ -148,6 +153,7 @@ export class Interpreter {
     public static fromSheet(
         devEnv: DevEnvironment, 
         mainSheetName: string,
+        applyJITPasses: boolean = true,
     ): Interpreter {
         // First, load all the sheets
         let startTime = Date.now();
@@ -157,14 +163,15 @@ export class Interpreter {
         let elapsedTime = msToTime(Date.now() - startTime);
         logTime(devEnv.opt.verbose, `...] Loading sheet(s): ${elapsedTime}`);
 
-        const result = new Interpreter(devEnv, workbook.grammar);
+        const result = new Interpreter(devEnv, workbook.grammar, applyJITPasses);
         result.workbook = workbook;
         return result;
     }
 
     public static fromGrammar(
         grammar: Grammar | Dict<Grammar>, 
-        opt: Partial<Options> = {}
+        opt: Partial<Options> = {},
+        applyJITPasses: boolean = true,
     ): Interpreter {
         const devEnv = new SimpleDevEnvironment(opt);
 
@@ -179,7 +186,7 @@ export class Interpreter {
             grammar = coll;
         }
 
-        return new Interpreter(devEnv, grammar);
+        return new Interpreter(devEnv, grammar, applyJITPasses);
     }
 
     public allSymbols(): string[] {

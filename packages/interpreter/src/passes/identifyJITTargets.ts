@@ -53,6 +53,11 @@ export class IdentifyJITTargets extends Pass<Grammar,Grammar> {
 
         const [newG, msgs] = g.mapChildren(this, env).destructure() as [JoinGrammar, Message[]];
 
+        if (newG.child1.tag != "embed") {
+            // compiling joined embeds is our priority
+            return newG.msg(msgs);
+        }
+
         const sharedTapes = listIntersection(newG.child1.tapeNames, newG.child2.tapeNames);
 
         if (sharedTapes.length != 1) {
@@ -60,23 +65,18 @@ export class IdentifyJITTargets extends Pass<Grammar,Grammar> {
             return newG.msg(msgs);
         }
 
-        const sharedTape = sharedTapes[0]
-        const sharedTapeSize = getTapeSize(newG, sharedTape, new CounterStack(), env);
+        const sharedTape = sharedTapes[0];
+
         const rightChildSize = getTapeSize(newG.child1, sharedTape, new CounterStack(), env);
-        
         if (rightChildSize.cardinality === Infinity) {
             // we don't want to precompile anything with a dot, replace, etc.
             return newG.msg(msgs);
         }
 
+        const sharedTapeSize = getTapeSize(newG, sharedTape, new CounterStack(), env);
         if (sharedTapeSize.maxLength === Infinity) {
             // our code can't compile grammars that allow infinite-length 
             // strings.
-            return newG.msg(msgs);
-        }
-
-        if (newG.child1.tag != "embed") {
-            // compiling joined embeds is our priority
             return newG.msg(msgs);
         }
 

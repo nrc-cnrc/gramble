@@ -1,3 +1,8 @@
+import {
+    HIDDEN_PREFIX,
+    INTERNAL_PREFIX,
+    FIXUP_PREFIX,
+} from "./constants.js";
 
 export type Func<T1,T2> = (i: T1) => T2;
 export type Gen<T> = Generator<T, void, undefined>;
@@ -180,6 +185,27 @@ export function stringDictToStr(d: StringDict): string {
     const keys = Object.keys(d).sort();
     const strs = keys.map(k => `${k}:${d[k]}`);
     return strs.join(", ");
+}
+
+/*
+ *  Map the keys of a tape StringDict to lowercase unless they start with '$'.
+ *  Internally generated tape names starting with '$' can be case sensitive.
+ */
+export function caseInsensitiveStringDict(d: StringDict): StringDict {
+    const result: StringDict = {};
+    for (const [k,v] of Object.entries(d)) {
+        switch(k[0]) {
+            case HIDDEN_PREFIX:
+            case INTERNAL_PREFIX:
+            case FIXUP_PREFIX:
+                result[k] = v;
+                break;
+            default:
+                result[k.toLowerCase()] = v;
+                break;
+        }
+    }
+    return result;
 }
 
 export function outputProduct(ds1: StringDict[], ds2: StringDict[]): StringDict[] {
