@@ -402,7 +402,6 @@ describe(`Source ${DIR}`, function() {
         ]
     });
    
-    /*
     testSrc({
 		desc: '39. equals and starts modifying same embed',
         results: [
