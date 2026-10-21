@@ -559,7 +559,9 @@ describe(`${cliTestSuiteName(module)}`, function() {
             "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
             "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) " +
                 "to the right, but none was found.",
+            "Thus, this 'table' operator will be ignored.",
             "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "Thus, this 'table' operator will be ignored.",
             "Generation not run because source has 1 Gramble error.",
         ],
     });
@@ -574,7 +576,9 @@ describe(`${cliTestSuiteName(module)}`, function() {
             "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
             "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) " +
                 "to the right, but none was found.",
+            "Thus, this 'table' operator will be ignored.",
             "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "Thus, this 'table' operator will be ignored.",
             "Generation not run because source has 3 Gramble errors.",
         ],
     });
@@ -593,7 +597,9 @@ describe(`${cliTestSuiteName(module)}`, function() {
             "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
             "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) " +
                 "to the right, but none was found.",
+            "Thus, this 'table' operator will be ignored.",
             "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "Thus, this 'table' operator will be ignored.",
             "Generation running even though source has 1 Gramble error.",
         ],
     });
@@ -1007,7 +1013,9 @@ describe(`${cliTestSuiteName(module)}`, function() {
             "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
             "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) " +
                 "to the right, but none was found.",
+            "Thus, this 'table' operator will be ignored.",
             "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "Thus, this 'table' operator will be ignored.",
             "Sampling not run because source has 1 Gramble error.",
         ],
     });
@@ -1022,7 +1030,9 @@ describe(`${cliTestSuiteName(module)}`, function() {
             "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
             "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) " +
                 "to the right, but none was found.",
+            "Thus, this 'table' operator will be ignored.",
             "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "Thus, this 'table' operator will be ignored.",
             "Sampling not run because source has 3 Gramble errors.",
         ],
     });
@@ -1044,7 +1054,9 @@ describe(`${cliTestSuiteName(module)}`, function() {
             "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
             "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) " +
                 "to the right, but none was found.",
+            "Thus, this 'table' operator will be ignored.",
             "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "Thus, this 'table' operator will be ignored.",
             "Sampling running even though source has 1 Gramble error.",
         ],
     });
@@ -1132,7 +1144,9 @@ describe(`${cliTestSuiteName(module)}`, function() {
             "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
             "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
                 "but none was found.",
+            "Thus, this 'table' operator will be ignored.",
             "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "Thus, this 'table' operator will be ignored.",
         ],
     });
 
@@ -1148,7 +1162,9 @@ describe(`${cliTestSuiteName(module)}`, function() {
             "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
             "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
                 "but none was found.",
+            "Thus, this 'table' operator will be ignored.",
             "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "Thus, this 'table' operator will be ignored.",
         ],
     });
 
@@ -1171,7 +1187,9 @@ describe(`${cliTestSuiteName(module)}`, function() {
             "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
             "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
                 "but none was found.",
+            "Thus, this 'table' operator will be ignored.",
             "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "Thus, this 'table' operator will be ignored.",
         ],
     });
 
@@ -1187,7 +1205,9 @@ describe(`${cliTestSuiteName(module)}`, function() {
             "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
             "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
                 "but none was found.",
+            "Thus, this 'table' operator will be ignored.",
             "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "Thus, this 'table' operator will be ignored.",
         ],
     });
 
@@ -1203,7 +1223,9 @@ describe(`${cliTestSuiteName(module)}`, function() {
             "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
             "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
                 "but none was found.",
+            "Thus, this 'table' operator will be ignored.",
             "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "Thus, this 'table' operator will be ignored.",
         ],
     });
 
@@ -1219,7 +1241,9 @@ describe(`${cliTestSuiteName(module)}`, function() {
             "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
             "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
                 "but none was found.",
+            "Thus, this 'table' operator will be ignored.",
             "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "Thus, this 'table' operator will be ignored.",
         ],
     });
 
@@ -1235,7 +1259,9 @@ describe(`${cliTestSuiteName(module)}`, function() {
             "⚠️ basic5a:2:1: WARNING: This symbol 'verb' will not contain any content.",
             "❌ basic5a:2:2: ERROR: This 'table' operator requires header(s) to the right, " +
                 "but none was found.",
+            "Thus, this 'table' operator will be ignored.",
             "⚠️ basic5a:2:2: WARNING: This 'table' operator will not contain any content.",
+            "Thus, this 'table' operator will be ignored.",
         ],
     });
 
