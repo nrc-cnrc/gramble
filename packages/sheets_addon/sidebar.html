@@ -166,7 +166,7 @@
 
                 previousSheetName = currentSheetName;
 
-                const opt = {verbose: gramble.VERBOSE_TIME | gramble.VERBOSE_GRAMMAR};
+                const opt = {verbose: gramble.VERBOSE_TIME | gramble.VERBOSE_GRAMMAR };
                 devEnv = new SidebarDevEnvironment(cellsBySheet, opt);
                 project = gramble.Interpreter.fromSheet(devEnv, currentSheetName);
 

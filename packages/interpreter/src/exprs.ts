@@ -63,6 +63,9 @@ export class DerivEnv extends Env {
         public atomic: boolean,
         public random: boolean,
         public stats: DerivStats,
+        public jitDepth: number
+        //public jitPass: boolean,
+        //public jitted: Set<String>,
     ) { 
         super(opt);
     }
@@ -74,7 +77,20 @@ export class DerivEnv extends Env {
     public setRandom(random: boolean): DerivEnv {
         return update(this, {random});
     }
-    
+
+    public setJitDepth(jitDepth: number): DerivEnv {
+        return update(this, {jitDepth})
+    }
+/*
+    public setJitPass(jitPass: boolean): DerivEnv {
+        return update(this, {jitPass});
+    }
+
+    public addJitted(id: String): DerivEnv {
+        this.jitted.add(id);
+        return this;
+    } */
+
     public setSymbols(symbols: Dict<Expr>): DerivEnv {
         return update(this, {symbols});
     }
@@ -1959,16 +1975,66 @@ class JITExpr extends UnaryExpr {
         return `Jit(${this.child.id})`;
     }
 
+    public *jitRandom(
+        env: DerivEnv 
+    ): Generator<Expr, void, undefined> {
+        console.log(`sample JIT-ing symbol ${this.symbolName}`);
+
+        const cursor = constructGreedyCursor(env, 
+            this.tapeName, this.child, this.vocab, this.atomic);
+        const jitEnv = env.setJitDepth(env.jitDepth+1);
+
+        for (const [handled, result] of cursor.forward(jitEnv)) {
+
+            if (!handled) {
+                throw new Error(`JIT of ${this.tapeName} not handled?`);  // shouldn't happen
+            }
+            
+            if (result instanceof GreedyCursorExpr ||
+                    result instanceof CursorExpr ||
+                    result instanceof FinishedExpr) {
+                const zipperBack = result.back(jitEnv) as GreedyCursorExpr|FinishedExpr;
+                yield zipperBack.child;
+            } else if (result instanceof OutputExpr) {
+                const [z1, z2] = result.back(jitEnv);
+                if (!(z1.child instanceof EpsilonExpr)) {
+                    // if the left branch of this Output isn't eps here, 
+                    // that's unexpected, raise an expection
+                    throw new Error(`zipped-back output not eps: ${z1.child}`);
+                }
+                yield z2;
+            } else if (result instanceof NullExpr) {
+                continue;
+            } else {
+                // this can probably happen, I'm just not sure yet the 
+                // range of what result can be.
+                throw new Error(`JIT compilation resulted in ${result.tag}`);
+            }
+        }
+
+        return;
+
+    }
+
     public jitCompile(
         env: DerivEnv 
     ): Expr {
         console.log(`JIT-ing symbol ${this.symbolName}`);
 
-        const wrapped = constructGreedyCursor(env, 
+        /*
+        if (env.jitDepth > 1) {
+            console.log(`skipping JIT`);
+            env.symbols[this.symbolName] = this.child;
+            return this.child;
+        }
+        */
+
+        const cursor = constructGreedyCursor(env, 
             this.tapeName, this.child, this.vocab, this.atomic);
         
         const compiledExprs = [];
-        for (const [handled, result] of wrapped.forward(env)) {
+        const jitEnv = env.setJitDepth(env.jitDepth+1);
+        for (const [handled, result] of cursor.forward(jitEnv)) {
             // we go through all the results of forward, then
             // "unzip" them and put the resulting expressions into 
             // the compiledExprs list.
@@ -1979,10 +2045,10 @@ class JITExpr extends UnaryExpr {
             if (result instanceof GreedyCursorExpr ||
                     result instanceof CursorExpr ||
                     result instanceof FinishedExpr) {
-                const zipperBack = result.back(env) as GreedyCursorExpr|FinishedExpr;
+                const zipperBack = result.back(jitEnv) as GreedyCursorExpr|FinishedExpr;
                 compiledExprs.push(zipperBack.child);
             } else if (result instanceof OutputExpr) {
-                const [z1, z2] = result.back(env);
+                const [z1, z2] = result.back(jitEnv);
                 if (!(z1.child instanceof EpsilonExpr)) {
                     // if the left branch of this Output isn't eps here, 
                     // that's unexpected, raise an expection
@@ -2008,6 +2074,13 @@ class JITExpr extends UnaryExpr {
         tapeName: string, 
         env: DerivEnv
     ): Expr {
+
+        console.log(`entering jit delta for ${this.id}`);
+        if (env.random) {
+            const result = this.child.delta(tapeName, env);
+            return constructJIT(env, result, this.tapeName, this.symbolName, this.vocab, this.atomic);
+        }
+
         const jitted = this.jitCompile(env);
         return jitted.delta(tapeName, env);
     }
@@ -2016,6 +2089,15 @@ class JITExpr extends UnaryExpr {
         query: Query,
         env: DerivEnv
     ): Derivs {
+
+        console.log(`entering jit deriv for ${this.id}`);
+        if (env.random) {
+            for (const jitted of this.jitRandom(env)) {
+                yield* jitted.deriv(query, env);
+            }
+            return;
+        }
+
         const jitted = this.jitCompile(env);
         yield* jitted.deriv(query, env);
     }

@@ -40,7 +40,7 @@ export function* generate(
     const stack = new CounterStack(opt.maxRecursion);
     const stats = new DerivStats();
     const env = new DerivEnv(opt, {}, stack, 
-                    new Set(), false, random, stats);
+                    new Set(), false, random, stats, 0);
 
     const NEXTS_TO_TAKE = random ? 1 : Infinity;
     const startingTime = Date.now();
