@@ -117,6 +117,8 @@ export abstract class AbstractGrammar extends Component {
 
     public tapes: TapeSet = Tapes.Unknown();
 
+    public tapeSize: Dict<TapeSize> = {};
+
     //public _tapes: string[] | undefined = undefined;
 
     public get tapeNames(): string[] {

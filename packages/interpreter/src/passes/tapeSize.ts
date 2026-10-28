@@ -25,7 +25,24 @@ const TAPE_SIZE_EPSILON: TapeSize = { cardinality: 1, minLength: 0, maxLength: 0
  * though, because it truncates the outputs of the grammar-as-written,
  * we want the addition of CountGrammar to be a last resort.
  */
+
 export function getTapeSize(
+    g: Grammar,
+    tapeName: string, 
+    stack: CounterStack, 
+    env: SymbolEnv
+): TapeSize {
+
+    if (tapeName in g.tapeSize) {
+        return g.tapeSize[tapeName];
+    }
+
+    const tapeSize = getTapeSizeAux(g, tapeName, stack, env);
+    g.tapeSize[tapeName] = tapeSize;
+    return tapeSize;
+}
+
+export function getTapeSizeAux(
     g: Grammar,
     tapeName: string, 
     stack: CounterStack, 

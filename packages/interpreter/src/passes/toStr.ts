@@ -76,13 +76,14 @@ export function repeatToStr(g: RepeatGrammar): string {
 const EXCLUDED_FROM_STR = new Set([
     "tag",
     "tapes",
+    "tapeSize",
     "qualifier",
     "pos"
 ]);
 
 export function componentToStr(c: Component): string {
     // by default, components' string representation is an
-    // s-expr on the model of (tag toStr(child) toStr(child).
+    // s-expr on the model of (tag toStr(child) toStr(child)).
     const elements = [ c.tag ];
 
     const kvPairs = Object.entries(c)
