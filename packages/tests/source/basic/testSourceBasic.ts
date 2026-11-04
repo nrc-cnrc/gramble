@@ -152,20 +152,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '5b. Empty table op followed by comment header',
-        results: [
-            {text:"bar", gloss:"-1SG"},
-            {text:"baz", gloss:"-2SG"},
-        ],
-        errors: [
-            Warning(1, 0, "No content for symbol 'verb'"),
-            Error(1, 1, "'table' operator requires header(s)"),
-            Warning(1, 1, "No content for 'table' operator"),
-        ],
-    });
-
-    testSrc({
-		desc: '5c. table op with empty text content',
+		desc: '5b. table op with empty text content',
         results: [
             {text:"bar", gloss:"-1SG"},
             {text:"baz", gloss:"-2SG"},
@@ -173,27 +160,6 @@ describe(`Source ${DIR}`, function() {
         errors: [
             Warning(1, 2, "No content for header(s)"),
         ],
-    });
-
-    testSrc({
-		desc: '5d. table op with empty text content & empty comment content',
-        results: [
-            {text:"bar", gloss:"-1SG"},
-            {text:"baz", gloss:"-2SG"},
-        ],
-        errors: [
-            Warning(1, 2, "No content for header(s)"),
-        ],
-        // verbose: VERBOSE_DEBUG,
-    });
-
-    testSrc({
-		desc: '5e. table op with empty text content & non-empty comment content',
-        results: [
-            {text:"bar", gloss:"-1SG"},
-            {text:"baz", gloss:"-2SG"},
-        ],
-        // verbose: VERBOSE_DEBUG,
     });
 
     testSrc({
@@ -239,15 +205,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '8. Header commented out',
-        results: [
-            {text: "foo", gloss: "run"},
-            {text: "moo", gloss: "jump"}
-        ]
-    });
-
-    testSrc({
-		desc: '9. Headers with lots of parens',
+		desc: '8. Headers with lots of parens',
         results: [
             {text: "foo", gloss: "foo"},
             {text: "moo", gloss: "moo"}
@@ -255,7 +213,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '10a. Empty assignment',
+		desc: '9. Empty assignment',
         results: [
             {}
         ],
@@ -264,30 +222,13 @@ describe(`Source ${DIR}`, function() {
         ],
         symbols: [
             "All",
-            "basic10a.All",
-            "basic10a.word",
+            "basic9.All",
+            "basic9.word",
         ],
     });
 
     testSrc({
-		desc: '10b. Empty assignment followed by comment header',
-        results: [
-            {}
-        ],
-        errors: [
-            Warning(0, 0, "No content for symbol 'word'"),
-            Error(0, 2, "Implicit 'table' operator requires header(s)"),
-            Warning(0, 2, "No content for implicit 'table' operator"),
-        ],
-        symbols: [
-            "All",
-            "basic10b.All",
-            "basic10b.word",
-        ],
-    });
-
-    testSrc({
-		desc: '11. Nested tables',
+		desc: '10. Nested tables',
         results: [
             {text: "foo", gloss: "run"},
         ],
@@ -297,23 +238,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-        desc: '12. Commented operators & assignments',
-        results: [
-            {text: "goo1goo2goo3goo4"},
-        ],
-        symbols: [
-            "All",
-            "basic12.All",
-            "basic12.word",
-            "basic12.part1",
-            "basic12.part2",
-            "basic12.part3",
-            "basic12.part4",
-        ],
-    });
-
-    testSrc({
-		desc: '13a. Line after assignment, empty table op',
+		desc: '11a. Line after assignment, empty table op',
         results: [
             {text:"bar", gloss:"-1SG"},
             {text:"baz", gloss:"-2SG"},
@@ -326,7 +251,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '13b. Line after assignment, empty table op followed by comment header',
+		desc: '11b. Line after assignment, empty table op followed by comment header',
         results: [
             {text:"bar", gloss:"-1SG"},
             {text:"baz", gloss:"-2SG"},
@@ -339,7 +264,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '13c. Line after assignment, table op with empty text content',
+		desc: '11c. Line after assignment, table op with empty text content',
         results: [
             {text:"bar", gloss:"-1SG"},
             {text:"baz", gloss:"-2SG"},
@@ -350,7 +275,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '13d. Line after assignment, table op with empty text content ' +
+		desc: '11d. Line after assignment, table op with empty text content ' +
                 '& empty comment content',
         results: [
             {text:"bar", gloss:"-1SG"},
@@ -362,7 +287,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '13e. Line after assignment, table op with empty text content ' +
+		desc: '11e. Line after assignment, table op with empty text content ' +
                 '& non-empty comment content',
         results: [
             {text:"bar", gloss:"-1SG"},
@@ -371,7 +296,7 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '13f. Line after assignment, empty text content ' +
+		desc: '11f. Line after assignment, empty text content ' +
                 '& non-empty comment content',
         results: [
             {text:"bar", gloss:"-1SG"},
@@ -380,60 +305,11 @@ describe(`Source ${DIR}`, function() {
     });
 
     testSrc({
-		desc: '13g. Empty lines after assignment, the empty text content ' +
+		desc: '11g. Empty lines after assignment, the empty text content ' +
                 '& non-empty comment content',
         results: [
             {text:"bar", gloss:"-1SG"},
             {text:"baz", gloss:"-2SG"},
-        ],
-    });
-
-    testSrc({
-		desc: '14a. Comment on assignment line, with table op with empty text content ' +
-                '& non-empty comment content on the next line',
-        results: [
-            {text:"bar", gloss:"-1SG"},
-            {text:"baz", gloss:"-2SG"},
-        ],
-        errors: [
-            Error(1, 4, "Implicit 'table' operator requires header(s)"),
-            Warning(1, 4, "No content for implicit 'table' operator"),
-            Warning(2, 1, "'table:' in an unexpected column"),
-        ],
-        symbols: [
-            "All",
-            "basic14a.All",
-            "basic14a.word",
-            "basic14a.verb",
-            "basic14a.suffix",
-        ],
-        // verbose: VERBOSE_DEBUG,
-    });
-
-    testSrc({
-		desc: '14b. Comment on assignment line, with empty text content ' +
-                '& non-empty comment content on the next line',
-        results: [
-            {text:"bar", gloss:"-1SG"},
-            {text:"baz", gloss:"-2SG"},
-        ],
-        errors: [
-            Warning(2, 1, "'text' in an unexpected column"),
-        ],
-        // verbose: VERBOSE_DEBUG,
-    });
-
-    testSrc({
-		desc: '14c. Comment on assignment line, with commented content on the next lines',
-        results: [
-            {text:"bar", gloss:"-1SG"},
-            {text:"baz", gloss:"-2SG"},
-        ],
-        errors: [
-            Warning(1, 0, "No content for symbol 'verb'"),
-            Error(2, 1, "Implicit 'table' operator requires header(s)"),
-            Warning(2, 1, "No content for implicit 'table' operator"),
-            Warning(2, 1, "'%text' in an unexpected column"),
         ],
     });
 

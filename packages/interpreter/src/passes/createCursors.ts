@@ -27,7 +27,6 @@ export class CreateCursors extends Pass<Grammar,Grammar> {
 
     public transformAux(g: Grammar, env: SymbolEnv): Grammar {
         const priorities = prioritizeTapes(g, env);
-        //env.logDebug(`priorities = ${priorities}`);
         return Cursor(priorities, g).tapify(env);
     }
 }
@@ -63,7 +62,6 @@ export function prioritizeTapes(
     const result = env.opt.priority.concat(prioritiesOnly)
                         .filter((e, idx, self) => idx === self.indexOf(e));
 
-    // env.logDebug(`result: ${result}`);
     return result;
 }
 
@@ -74,40 +72,41 @@ function getTapePriority(
     env: SymbolEnv
 ): number {
     switch (g.tag) {
+        case "alt":
+        case "comment":
+        case "correspond":  
+        case "count":    
         case "epsilon": 
+        case "jit":
+        case "match":
+        case "not":    
         case "null": 
         case "seq":
-        case "alt":
         case "repeat":  
-        case "not":    
-        case "singletape": 
-        case "count":    
-        case "match":
-        case "test":     
-        case "testnot": 
-        case "testblock":
         case "short":
-        case "match":
-        case "jit":
-        case "correspond":  return getTapePriorityDefault(g, tape, symbolsVisited, env);
+        case "singletape": 
+        case "test":     
+        case "testblock":
+        case "testnot": 
+                            return getTapePriorityDefault(g, tape, symbolsVisited, env);
 
         // literals & similar start things out, they're priority 1 for their tape
-        case "lit":         return getTapePriorityLeaf(g, tape, symbolsVisited, env);
         case "dot":         return getTapePriorityLeaf(g, tape, symbolsVisited, env);
+        case "lit":         return getTapePriorityLeaf(g, tape, symbolsVisited, env);
 
         // joins & similar increase the priority of their intersecting tapes
         case "join":        return getTapePriorityJoin(g, tape, symbolsVisited, env);
         case "replace":     return getTapePriorityReplace(g, tape, symbolsVisited, env);
 
         // cursor and pretape handle priority on their own, so they're -1 for the tape they handle
-        case "pretape":     return getTapePriorityPreTape(g, tape, symbolsVisited, env);
         case "cursor":      return getTapePriorityCursor(g, tape, symbolsVisited, env);
+        case "pretape":     return getTapePriorityPreTape(g, tape, symbolsVisited, env);
 
         // embed/rename etc. have their usual complications
         case "embed":       return getTapePriorityEmbed(g, tape, symbolsVisited, env);
-        case "selection":  return getTapePrioritySelection(g, tape, symbolsVisited, env);
         case "hide":        return getTapePriorityHide(g, tape, symbolsVisited, env);
         case "rename":      return getTapePriorityRename(g, tape, symbolsVisited, env);
+        case "selection":   return getTapePrioritySelection(g, tape, symbolsVisited, env);
 
         default:            throw new Error(`missing grammar in getTapePriority: ${g.tag}`);
     }

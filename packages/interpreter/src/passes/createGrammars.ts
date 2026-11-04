@@ -1,6 +1,8 @@
 import { 
     TstAssignment,
+    TstAutoEmbed,
     TstCollection, 
+    TstComment,
     TstEmpty, 
     TstFilter,
     TstHeaderPair, 
@@ -14,18 +16,19 @@ import {
     TstTest,
     TstTestNot,
     TST, 
-    AbstractTST,
-    TstAutoEmbed
 } from "../tsts.js";
 import { Pass } from "../passes.js";
 import { 
     Grammar, 
     AlternationGrammar,
     CollectionGrammar,
+    CommentGrammar,
+    EmbedGrammar,
     EpsilonGrammar, 
     FilterGrammar,
     HideGrammar,  
     JoinGrammar,
+    LiteralGrammar,
     ReplaceBlockGrammar, 
     RenameGrammar, 
     ReplaceGrammar,
@@ -35,9 +38,6 @@ import {
     TestGrammar, 
     TestNotGrammar,
     TestBlockGrammar,
-    LiteralGrammar,
-    AbstractTestGrammar,
-    EmbedGrammar,
 } from "../grammars.js";
 import { PassEnv } from "../components.js";
 import { parseContent } from "../content.js";
@@ -67,6 +67,7 @@ export class CreateGrammars extends Pass<TST,Grammar> {
             case "rename":     return this.handleRename(t, env);
             case "hide":       return this.handleHide(t, env);
             case "filter":     return this.handleFilter(t, env);
+            case "comment":    return this.handleComment(t, env);
             case "empty":      return this.handleEmpty(t, env);
             case "table":      return this.handleTable(t, env);
             case "or":         return this.handleOr(t, env);
@@ -183,7 +184,23 @@ export class CreateGrammars extends Pass<TST,Grammar> {
         const result = new FilterGrammar(prevGrammar, grammar);
         return result.locate(t.cell.pos).msg(prevMsgs).msg(msgs);
     }
-    
+
+    public handleComment(t: TstComment, env: PassEnv): Msg<Grammar> {
+        const [prevGrammar, prevMsgs] = this.transform(t.prev, env)
+                                            .destructure();
+
+        const pc = parseClass(t.header.header);
+        const [grammar, msgs] = parseContent(pc, t.cell.text)
+                .bind(g => new HeaderToGrammar(g))
+                .bind(h => h.transform(t.header.header, env))
+                .localize(t.cell.pos)
+                .bind(g => g.locate(t.pos))
+                .destructure();
+
+        const result = new CommentGrammar(prevGrammar, grammar);
+        return result.locate(t.cell.pos).msg(prevMsgs).msg(msgs);
+    }
+
     public handleEmpty(t: TstEmpty, env: PassEnv): Grammar {
         return new EpsilonGrammar();
     }

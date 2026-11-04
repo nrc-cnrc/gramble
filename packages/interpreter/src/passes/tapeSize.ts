@@ -83,6 +83,9 @@ export function getTapeSizeAux(
         case "correspond":
         case "jit":
             return getTapeSize(g.child, tapeName, stack, env);
+        
+        case "comment":
+            return getTapeSize(g.child1, tapeName, stack, env);
 
         // ones where it's based on the child(ren) but complicated
         case "embed":       return getTapeSizeEmbed(g, tapeName, stack, env);

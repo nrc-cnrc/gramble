@@ -1,0 +1,7 @@
+root=, table:, text, pos
+     ,       , foo,  verb
+     ,       , moo,  noun
+     ,       , goo,  verb
+
+word=, table:, embed, %comment1, starts text, ends pos
+     ,       , root,  ??,        f,           b

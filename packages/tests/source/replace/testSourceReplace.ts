@@ -800,13 +800,4 @@ describe(`Source ${DIR}`, function() {
         ],
     });
 
-    testSrc({
-		desc: '38. Replace with to/from/context and surrounding column comments',
-        results: [
-            {text: "ava"},
-            {text: "abra"},
-            {text: "arba"},
-        ],
-    });
-
 });

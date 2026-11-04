@@ -1,0 +1,7 @@
+root=, table:, text, pos
+     ,       , foo,  v
+     ,       , moo,  n
+     ,       , goo,  v
+
+word=, table:, embed, %comment, equals pos
+     ,       , root,  ??,       v

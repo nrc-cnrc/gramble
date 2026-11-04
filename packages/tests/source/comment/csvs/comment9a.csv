@@ -1,0 +1,19 @@
+word=, text,   gloss
+     , IGNORE, IGNORE
+
+%comment, verb=, table:, text, gloss
+        ,      ,       , foo,  run
+        ,      ,       , moo,  jump
+
+suffix=, table:, text, gloss
+       ,       , bar,  -1SG
+       ,       , baz,  -2SG
+
+extra1=, table:, text, gloss
+       ,       , X,    -?
+
+extra2=, table:, text, gloss
+       ,       , Z,    -?
+
+word2=, table:, embed, embed,  embed,  embed
+      ,       , verb,  suffix, extra1, extra2

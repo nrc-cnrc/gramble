@@ -19,28 +19,31 @@ import { Component } from "./components.js";
 import { Pass } from "./passes.js";
 import { Env } from "./utils/options.js";
 
-export type TST = TstHeader
-         | TstContent
+export type TST = 
+           TstAssignment
+         | TstCollection
          | TstAutoEmbed
+         | TstComment
+         | TstContent
+         | TstEmpty
+         | TstFilter
          | TstGrid
-         | TstRow
+         | TstHeader
          | TstHeadedGrid
          | TstHeaderPair
-         | TstRename
          | TstHide
-         | TstFilter
-         | TstEmpty
-         | TstOp
-         | TstTable
-         | TstOr
          | TstJoin
+         | TstOp
+         | TstOr
+         | TstParamList
+         | TstRow
+         | TstRename
+         | TstTable
          | TstReplace
+         | TstSequence
          | TstTest
          | TstTestNot
-         | TstParamList
-         | TstSequence
-         | TstAssignment
-         | TstCollection;
+         ;
 
 
 export abstract class AbstractTST extends Component {
@@ -320,6 +323,18 @@ export class TstFilter extends TstCellComponent {
         super(content);
     }
     
+}
+
+export class TstComment extends TstCellComponent {
+    public readonly tag = "comment";
+
+    constructor(
+        public prev: TST,
+        public header: TstHeader,
+        content: Cell
+    ) { 
+        super(content);
+    }
 }
 
 export class TstEmpty extends AbstractTST {

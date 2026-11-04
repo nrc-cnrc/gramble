@@ -1,6 +1,6 @@
-
-verb=, table:, text,
-     ,       ,     ,
+verb=, table:, text, %comment, gloss
+     ,       , foo,  1,        run
+     ,       , moo,  2,        jump
 
 suffix=, table:, text, gloss
        ,       , bar,  -1SG

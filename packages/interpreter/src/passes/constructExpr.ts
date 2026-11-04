@@ -1,29 +1,49 @@
 import {
     AlternationGrammar,
-    SelectionGrammar, CorrespondGrammar, 
-    CountGrammar, GreedyCursorGrammar, 
-    Grammar, HideGrammar,
-    JoinGrammar, MatchGrammar,
-    NegationGrammar, PreTapeGrammar, 
-    RenameGrammar, RepeatGrammar,
-    ReplaceGrammar, SequenceGrammar, 
-    ShortGrammar,
+    CommentGrammar,
+    CorrespondGrammar, 
+    CountGrammar,
     CursorGrammar,
+    GreedyCursorGrammar, 
+    Grammar,
+    HideGrammar,
     JITGrammar,
+    JoinGrammar,
+    MatchGrammar,
+    NegationGrammar,
+    PreTapeGrammar, 
+    RenameGrammar,
+    RepeatGrammar,
+    ReplaceGrammar,
+    SelectionGrammar,
+    SequenceGrammar, 
+    ShortGrammar,
 } from "../grammars.js";
 import { Dict } from "../utils/func.js";
 import { 
-    SelectionExpr, EPSILON,
+    EPSILON,
     Expr, 
-    NULL, constructAlternation, constructSelection, 
-    constructCorrespond, constructCount, constructCursor, 
-    constructDot, constructDotStar, constructEmbed, 
-    constructJoin, constructLiteral, 
-    constructMatch, constructNegation, constructPreTape, 
-    constructRename, constructRepeat, 
-    constructSeq, constructShort, constructReplace,
+    NULL,
+    constructAlternation,
+    constructCorrespond,
+    constructCount,
+    constructCursor, 
+    constructDot,
+    constructDotStar,
+    constructEmbed, 
     constructGreedyCursor,
-    constructJIT
+    constructJIT,
+    constructJoin,
+    constructLiteral, 
+    constructMatch,
+    constructNegation,
+    constructPreTape, 
+    constructRename,
+    constructRepeat, 
+    constructReplace,
+    constructSelection, 
+    constructSeq,
+    constructShort,
 } from "../exprs.js";
 import { INPUT_TAPE } from "../utils/constants.js";
 import { Env, Options } from "../utils/options.js";
@@ -58,23 +78,24 @@ export function constructExpr(
         case "embed":           return constructEmbed(env, g.symbol, undefined);
     
         // everything else has children
-        case "seq":             return constructExprSeq(env, g);
         case "alt":             return constructExprAlt(env, g);
-        case "short":           return constructExprShort(env, g);
-        case "join":            return constructExprJoin(env, g);
-        case "replace":         return constructExprReplace(env, g);
+        case "comment":         return constructExpr(env, g.child1);
         case "count":           return constructExprCount(env, g);
-        case "rename":          return constructExprRename(env, g);
-        case "repeat":          return constructExprRepeat(env, g);
-        case "not":             return constructExprNot(env, g);
+        case "correspond":      return constructExprCorrespond(env, g);
         case "cursor":          return constructExprCursor(env, g);
         case "greedyCursor":    return constructExprGreedyCursor(env, g);
-        case "pretape":         return constructExprPreTape(env, g);
         case "hide":            return constructExprHide(env, g);
-        case "match":           return constructExprMatch(env, g);
-        case "selection":       return constructExprSelection(env, g);
-        case "correspond":      return constructExprCorrespond(env, g);
         case "jit":             return constructExprJIT(env, g);
+        case "join":            return constructExprJoin(env, g);
+        case "match":           return constructExprMatch(env, g);
+        case "not":             return constructExprNot(env, g);
+        case "pretape":         return constructExprPreTape(env, g);
+        case "rename":          return constructExprRename(env, g);
+        case "repeat":          return constructExprRepeat(env, g);
+        case "replace":         return constructExprReplace(env, g);
+        case "seq":             return constructExprSeq(env, g);
+        case "selection":       return constructExprSelection(env, g);
+        case "short":           return constructExprShort(env, g);
         
         default: throw new Error(`unhandled grammar in constructExpr: ${g.tag}`)
     }
@@ -222,7 +243,6 @@ function constructExprSelection(
 
     return constructSelection(env, selectedExpr, exprSymbols);
 }
-
 
 function constructExprCorrespond(
     env: ConstructExprEnv,

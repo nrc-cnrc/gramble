@@ -1,7 +1,9 @@
+verb=, table:  , text, gloss
+     ,         , foo,  run
+     ,         , moo,  jump
 
-verb=,      ,         ,   , % This comment messes with content on next line
-     , %text, %comment
-     ,      , xxx
+     , %test:  , text, gloss
+     ,         , goo,  walk
 
 suffix=, table:, text, gloss
        ,       , bar,  -1SG

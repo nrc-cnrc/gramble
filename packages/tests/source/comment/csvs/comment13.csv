@@ -1,0 +1,12 @@
+verb=, table:, text, gloss, %comment
+     ,       , foo,  run,   1
+     ,       , moo,  jump,  2
+     ,       ,    ,      ,  3
+     ,       ,    ,      ,  4
+
+suffix=, table:, text, gloss
+       ,       , bar,  -1SG
+       ,       , baz,  -2SG
+
+word=, table:, embed, embed
+     ,       , verb,  suffix 

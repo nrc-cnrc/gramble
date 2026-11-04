@@ -1,0 +1,14 @@
+part1=, %table:, text
+      ,        , goo1
+
+part2=, %comment, %table:, text
+      ,         ,        , goo2
+
+part3=, %noun=, text
+      ,       , goo3
+
+part4=, %comment, %noun=, text
+      ,         ,       , goo4
+
+word=, embed, embed, embed, embed
+     , part1, part2, part3, part4

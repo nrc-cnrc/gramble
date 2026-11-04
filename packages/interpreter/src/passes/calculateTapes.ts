@@ -98,39 +98,40 @@ export class CalculateTapes extends AutoPass<Grammar> {
 
     public postTransform(g: Grammar, env: TapesEnv): Grammar|Msg<Grammar> {
         switch (g.tag) {
-
             // have no tapes
             case "epsilon":
-            case "null": return updateTapes(g, Tapes.Lit());
+            case "null":        return updateTapes(g, Tapes.Lit());
 
             // have their own tape name as tapes
-            case "lit": return getTapesLit(g, env);
-            case "dot": return getTapesDot(g, env);
+            case "lit":         return getTapesLit(g, env);
+            case "dot":         return getTapesDot(g, env);
             
-            case "singletape": return getTapesSingleTape(g);
+            case "singletape":  return getTapesSingleTape(g);
 
             // just the union of children's tapes
             case "alt":
-            case "count": 
+            case "comment":
+            case "context":
+            case "count":
+            case "not":
+            case "pretape":
+            case "short":
             case "test":
             case "testnot":
-            case "context":
-            case "short":    
-            case "not":      
-            case "pretape": return getTapesDefault(g);
+                                return getTapesDefault(g);
             
-            case "cursor":  return getTapesCursor(g, env);
-            case "greedyCursor":  return getTapesCursor(g, env);
+            case "cursor":      return getTapesCursor(g, env);
+            case "greedyCursor": return getTapesCursor(g, env);
             
             // the tapes of .child but not the tapes of individual tests
-            case "testblock": return getTapesTestBlock(g, env);
+            case "testblock":   return getTapesTestBlock(g, env);
 
             // join and filter are special w.r.t. vocabs and wildcards
-            case "join":       return getTapesJoin(g);
-            case "filter":     return getTapesFilter(g);
+            case "join":        return getTapesJoin(g);
+            case "filter":      return getTapesFilter(g, env);
             case "starts":
             case "ends":
-            case "contains":   return getTapesCondition(g);
+            case "contains":    return getTapesCondition(g);
 
             // seq and repeat involve products
             case "seq":         return getTapesSeq(g);
@@ -138,12 +139,12 @@ export class CalculateTapes extends AutoPass<Grammar> {
 
             // something special
 
-            case "embed":        return getTapesEmbed(g, env);
-            case "selection":     return this.getTapesSelection(g, env);
+            case "embed":       return getTapesEmbed(g, env);
+            case "selection":   return this.getTapesSelection(g, env);
             case "qualified":   return this.getTapesQualified(g, env);
-            case "rename":       return getTapesRename(g);
-            case "hide":         return getTapesHide(g);
-            case "match":        return getTapesMatch(g);
+            case "rename":      return getTapesRename(g);
+            case "hide":        return getTapesHide(g);
+            case "match":       return getTapesMatch(g);
             case "replaceblock": return getTapesReplaceBlock(g);
             
             case "replace":     return getTapesReplace(g, env);
@@ -330,7 +331,6 @@ function getTapesLit(g: LiteralGrammar, env: TapesEnv): Grammar {
 }
 
 function getTapesSingleTape(g: SingleTapeGrammar): Grammar {
-
     if (g.child.tapes.tag !== Tapes.Tag.Lit) {
         // we know there should be a single tape, but we don't
         // yet know what it is.
@@ -385,7 +385,6 @@ function getTapesJoin(g: JoinGrammar | FilterGrammar): Grammar {
 }
 
 function getTapesRename(g: RenameGrammar): Grammar {
-
     const tapes = Tapes.Rename(g.child.tapes, g.fromTape, g.toTape);
     const result = updateTapes(g, tapes);
 
@@ -426,8 +425,7 @@ function getTapesHide(g: HideGrammar): Grammar {
  * too but handling it specially lets us return a clearer error message. 
  * If we fail, we return the left child and an error message.
  */
-function getTapesFilter(g: FilterGrammar): Grammar {
-
+function getTapesFilter(g: FilterGrammar, env: TapesEnv): Grammar {
     if (g.child1.tapes.tag !== Tapes.Tag.Lit || 
             g.child2.tapes.tag !== Tapes.Tag.Lit) {
         // there's nothing we can check right now
@@ -447,14 +445,13 @@ function getTapesFilter(g: FilterGrammar): Grammar {
     const t2 = g.child2.tapeNames[0];
     if (!g.child1.tapes.tapeNames.has(t2)) {
         throw g.child1.err(`Filtering non-existent header '${t2}'`, 
-        `This filter references a header '${t2}' that does not exist`);
+                `This filter references a header '${t2}' that does not exist`);
     }
 
     return getTapesJoin(g);
 }
 
 function getTapesReplaceBlock(g: ReplaceBlockGrammar): Grammar {
-
     // make sure the tape we're replacing exists, otherwise
     // we generate infinitely
     if (g.child.tapes.tag === Tapes.Tag.Lit &&

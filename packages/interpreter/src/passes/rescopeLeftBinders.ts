@@ -1,13 +1,16 @@
 import { 
-    TstSequence, 
+    TstComment,
     TstFilter,
-    TstHeaderPair,
     TstHeader,
+    TstHeaderPair,
     TstHide,
     TstRename,
+    TstSequence, 
     TST,
+    TstEmpty,
 } from "../tsts.js";
 import {
+    CommentHeader,
     ContainsHeader,
     EndsHeader,
     EqualsHeader,
@@ -57,8 +60,8 @@ export class RescopeLeftBinders extends AutoPass<TST> {
             if (child.header.header instanceof HideHeader) {
                 const prevChild = newChildren.pop();
                 if (prevChild == undefined) {
-                    Err("Wayward renaming",
-                        "There is nothing to the left to rename").msgTo(msgs);
+                    Err("Wayward hide",
+                        "There is nothing to the left to hide").msgTo(msgs);
                     continue;
                 }
                 const newChild = new TstHide(prevChild, child.cell);
@@ -78,6 +81,19 @@ export class RescopeLeftBinders extends AutoPass<TST> {
                     continue;
                 }
                 const newChild = new TstFilter(prevChild, child.header, child.cell);
+                newChildren.push(newChild);
+                continue;
+            }
+
+            if (child.header.header instanceof CommentHeader) {
+                let prevChild = newChildren.pop();
+                if (prevChild == undefined) {
+                    prevChild = new TstEmpty();
+                    // Err("Wayward comment",
+                    //     "There is nothing to the left").msgTo(msgs);
+                    // continue;
+                }
+                const newChild = new TstComment(prevChild, child.header, child.cell);
                 newChildren.push(newChild);
                 continue;
             }

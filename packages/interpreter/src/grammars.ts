@@ -24,41 +24,44 @@ export type TapeSize = {
     maxLength: number
 }
 
-export type Grammar = EpsilonGrammar
-             | NullGrammar
-             | LiteralGrammar
-             | DotGrammar
-             | SequenceGrammar
+export type Grammar =
              | AlternationGrammar
-             | ShortGrammar
-             | JoinGrammar
-             | CountGrammar
-             | StartsGrammar
-             | EndsGrammar
+             | CollectionGrammar
+             | CommentGrammar
              | ContainsGrammar
-             | FilterGrammar
-             | SingleTapeGrammar
-             | RenameGrammar
-             | RepeatGrammar
-             | NegationGrammar
-             | PreTapeGrammar
+             | CorrespondGrammar
+             | CountGrammar
              | CursorGrammar
+             | DotGrammar
+             | EmbedGrammar
+             | EndsGrammar
+             | EpsilonGrammar
+             | FilterGrammar
              | GreedyCursorGrammar
              | HideGrammar
+             | JITGrammar
+             | JoinGrammar
+             | LiteralGrammar
              | MatchGrammar
-             | CollectionGrammar
+             | NegationGrammar
+             | NullGrammar
+             | PreTapeGrammar
              | QualifiedGrammar
-             | SelectionGrammar
-             | EmbedGrammar
-             | TestGrammar
-             | TestNotGrammar
-             | TestBlockGrammar
-             | ReplaceBlockGrammar
+             | RenameGrammar
+             | RepeatGrammar
              | ReplaceGrammar
-             | CorrespondGrammar
+             | ReplaceBlockGrammar
              | RuleContextGrammar
+             | SelectionGrammar
+             | SequenceGrammar
+             | ShortGrammar
+             | SingleTapeGrammar
+             | StartsGrammar
+             | TestGrammar
+             | TestBlockGrammar
+             | TestNotGrammar
              | TapeNamesGrammar
-             | JITGrammar;
+             ;
 /**
  * Grammar components represent the linguistic grammar that the
  * programmer is expressing (in terms of sequences, alternations, joins,
@@ -242,6 +245,10 @@ export class JoinGrammar extends BinaryGrammar {
 
 export class FilterGrammar extends BinaryGrammar {
     public readonly tag = "filter";
+}
+
+export class CommentGrammar extends BinaryGrammar {
+    public readonly tag = "comment";
 }
 
 export class ReplaceGrammar extends AbstractGrammar {
