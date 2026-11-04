@@ -182,8 +182,9 @@ export class ParseSource extends Pass<Source,TST> {
 
                 // bare content to the right of, or right of and below, bare content
                 if (top.tst instanceof TstErrorEnclosure) {
-                    Warn(`Unexpected bare header/content: '${cellTextTrimmed}'`,
-                        `'${cellTextTrimmed}' looks like a bare header/content, ` +
+                    Warn(`Unexpected bare header/op/content: '${cellTextTrimmed}'`,
+                        `'${cellTextTrimmed}' looks like a bare ` +
+                        "header/header-operator/content, " +
                         "but that is not permitted here.")
                         .localize(cellPos).msgTo(msgs);
                     continue;
@@ -195,10 +196,12 @@ export class ParseSource extends Pass<Source,TST> {
                             || cellTextTrimmed.endsWith("="))) {
                     if (top.tst instanceof TstGrid) {
                         const opStr = cellTextTrimmed.endsWith("=") ? 
-                                        "assignment" : "operator";
+                                        "assignment" : "table-operator";
+                        const artStr = opStr == "assignment" ? "an" : "a";
                         Err(`Unexpected ${opStr}: '${cellTextTrimmed}'`,
-                            `'${cellTextTrimmed}' looks like an ${opStr}, ` +
-                            " but only a header can follow a header.")
+                            `'${cellTextTrimmed}' looks like ${artStr} ${opStr}, ` +
+                            "but only a header/header-operator can follow " +
+                            "(to the right of) a header/header-operator.")
                             .msgTo(msgs, cellPos);
                         continue;
                     }
@@ -219,9 +222,10 @@ export class ParseSource extends Pass<Source,TST> {
 
                 if (worksheetHasSymbols && top.col === -1) {
                     // Found bare content after there are symbol assignments.
-                    Err(`Unexpected bare header/content: '${cellTextTrimmed}'`,
-                        `'${cellTextTrimmed}' looks like a bare header/content, ` +
-                        "but that is not permitted after an assignment.")
+                    Err(`Unexpected bare header/op/content: '${cellTextTrimmed}'`,
+                        `'${cellTextTrimmed}' looks like a bare ` +
+                        "header/header-operator/content, " +
+                        "but that is not permitted after (below) an assignment.")
                         .msgTo(msgs, cellPos);
                     const errTST = new TstErrorEnclosure(cell);
                     const errTop = { tst: errTST, row: rowIndex, col: colIndex };

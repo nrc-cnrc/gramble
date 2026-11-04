@@ -201,7 +201,7 @@ describe(`Source ${DIR}`, function() {
             {text: "foobarbaz", gloss: "run-1SG-2SG"}
         ],
         errors: [
-            Error(4, 4, "Unexpected operator: 'table:'")
+            Error(4, 4, "Unexpected table-operator: 'table:'")
         ]
     });
 
@@ -404,7 +404,7 @@ describe(`Source ${DIR}`, function() {
             Error(1, 1, "Wayward assignment: 'word2'"),
             Error(1, 3, "Wayward assignment: 'word3'"),
             Error(1, 4, "Wayward 'table' operator"),
-            Error(1, 6, "Unexpected operator: 'table:'"),
+            Error(1, 6, "Unexpected table-operator: 'table:'"),
             Error(1, 8, "Unexpected assignment: 'word4='"),
             Error(1, 9, "Unexpected assignment: 'word5='"),
         ],
@@ -422,7 +422,7 @@ describe(`Source ${DIR}`, function() {
             Error(1, 5, "Wayward 'table' operator"),
             Error(1, 6, "Wayward assignment: 'word4'"),
             Error(1, 7, "Wayward assignment: 'word5'"),
-            Error(1, 10, "Unexpected operator: 'table:'"),
+            Error(1, 10, "Unexpected table-operator: 'table:'"),
         ],
     });
 
