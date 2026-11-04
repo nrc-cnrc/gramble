@@ -799,4 +799,14 @@ describe(`Source ${DIR}`, function() {
             { text: "kan", person: "[3subj]", gloss: "walk[3subj]" },
         ],
     });
+
+    testSrc({
+		desc: '38. Replace with to/from/context and surrounding column comments',
+        results: [
+            {text: "ava"},
+            {text: "abra"},
+            {text: "arba"},
+        ],
+    });
+
 });

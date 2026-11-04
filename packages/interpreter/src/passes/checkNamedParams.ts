@@ -16,6 +16,7 @@ import {
     Warn
 } from "../utils/msgs.js";
 import {
+    CommentHeader,
     FromHeader,
     RuleContextHeader,
     ToHeader,
@@ -170,6 +171,12 @@ export class CheckNamedParams extends Pass<TST,TST> {
                 && this.allowedParams.has("context")) {
                 return new TstHeader(t.cell, new RuleContextHeader());
             }
+
+            if (h.header.tag === "comment") {
+                return new TstHeader(t.cell, new CommentHeader());
+            }
+
+            // env.logDebug(`h.header.tag: ${h.header.tag}, h.cell.text: ${h.cell.text}`);
 
             // it's not any of those.  other than the above three, every
             // header has a fixed param name.  "unique" has the param name
