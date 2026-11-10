@@ -21,7 +21,7 @@ Say, for example, that the **A** symbol defines the fields _text_, _gloss_, and 
 | | vendre | sell | OTHER |
 | | savoir | know | OTHER |
 | **B =&nbsp;** | `embed` | `>`_type_ | |
-|    | A  | class | |
+|    | A  | group | |
 
 ## Why would we want to use this?
 
