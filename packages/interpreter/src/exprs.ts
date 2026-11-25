@@ -1994,6 +1994,7 @@ class JITExpr extends UnaryExpr {
                     result instanceof CursorExpr ||
                     result instanceof FinishedExpr) {
                 const zipperBack = result.back(jitEnv) as GreedyCursorExpr|FinishedExpr;
+                console.log(`result is ${zipperBack.child.id}`);
                 yield zipperBack.child;
             } else if (result instanceof OutputExpr) {
                 const [z1, z2] = result.back(jitEnv);
@@ -2002,6 +2003,7 @@ class JITExpr extends UnaryExpr {
                     // that's unexpected, raise an expection
                     throw new Error(`zipped-back output not eps: ${z1.child}`);
                 }
+                console.log(`result (outputExpr) is ${z2.id}`);
                 yield z2;
             } else if (result instanceof NullExpr) {
                 continue;
@@ -2075,7 +2077,7 @@ class JITExpr extends UnaryExpr {
         env: DerivEnv
     ): Expr {
 
-        console.log(`entering jit delta for ${this.id}`);
+        //console.log(`entering jit delta for ${this.symbolName} on tape ${tapeName}`);
         if (env.random) {
             const result = this.child.delta(tapeName, env);
             return constructJIT(env, result, this.tapeName, this.symbolName, this.vocab, this.atomic);
@@ -2090,10 +2092,14 @@ class JITExpr extends UnaryExpr {
         env: DerivEnv
     ): Derivs {
 
-        console.log(`entering jit deriv for ${this.id}`);
+        console.log(`entering jit deriv for ${this.symbolName}, pausing query ${query.id}`);
         if (env.random) {
             for (const jitted of this.jitRandom(env)) {
-                yield* jitted.deriv(query, env);
+                console.log(`querying ${query.id} to jitted ${jitted.id}`);
+                for (const result of jitted.deriv(query, env)) {
+                    console.log(`jitted result = ${result.result.id},${result.next.id}`);
+                    yield result;
+                }
             }
             return;
         }
